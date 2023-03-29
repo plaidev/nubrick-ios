@@ -8,26 +8,38 @@
 import Foundation
 import SwiftUI
 
+public struct Config {
+    public let apiKey: String
+    public let url: String = "http://localhost:8060/client"
+}
+
 public struct Nativebrik {
-    private let apiKey: String
-    private let url: String = "http://localhost:8060/client"
-    
+    private let config: Config
+
     public init(apiKey: String) {
-        self.apiKey = apiKey
+        self.config = Config(
+            apiKey: apiKey
+        )
     }
     
     /**
      returns SwiftUI.View
      */
     public func Component(id: String) -> some View {
-        return ComponentViewControllerRepresentable(componentId: id, apiKey: self.apiKey, url: self.url)
+        return ComponentViewControllerRepresentable(
+            componentId: id,
+            config: self.config
+        )
     }
     
     /**
      returns UIView.ViewController
      */
     public func ComponentVC(id: String) -> ComponentViewController {
-        return ComponentViewController(componentId: id, apiKey: self.apiKey, url: self.url)
+        return ComponentViewController(
+            componentId: id,
+            config: self.config
+        )
     }
 }
 
