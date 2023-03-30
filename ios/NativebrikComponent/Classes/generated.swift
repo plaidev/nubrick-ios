@@ -248,6 +248,7 @@ struct UIImageBlock: Decodable {
 struct UIImageBlockData: Decodable {
   var __typename = "UIImageBlockData"
   var src: String?
+  var fallback: String?
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
 }
