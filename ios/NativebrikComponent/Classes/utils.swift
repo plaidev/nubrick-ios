@@ -117,6 +117,21 @@ func parseTextBlockDataToUIFont(_ data: UITextBlockData?) -> UIFont {
     }
 }
 
+struct ImageFallback {
+    let blurhash: String
+    let width: Int
+    let height: Int
+}
+func parseImageFallbackToBlurhash(_ src: String) -> ImageFallback {
+    let components = src.split(separator: ",", maxSplits: 2)
+    if components.count == 3, let width = Int(components[0]), let height = Int(components[1]) {
+        let blurhash = String(components[2])
+        return ImageFallback(blurhash: blurhash, width: width, height: height)
+    } else {
+        return ImageFallback(blurhash: "", width: 0, height: 0)
+    }
+}
+
 func configurePadding(layout: YGLayout, frame: FrameData?) {
     layout.paddingTop = parseInt(frame?.paddingTop)
     layout.paddingLeft = parseInt(frame?.paddingLeft)
