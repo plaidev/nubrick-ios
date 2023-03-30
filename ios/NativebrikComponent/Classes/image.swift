@@ -27,8 +27,12 @@ class ImageView: UIView {
             configureBorder(view: self, frame: block.data?.frame)
         }
         
-        // todo
-        let fallback = UIImage()
+        let fallbackSetting = parseImageFallbackToBlurhash(block.data?.fallback ?? "")
+        let fallback = fallbackSetting.blurhash == "" ? UIImage() : UIImage(
+            blurHash: fallbackSetting.blurhash,
+            size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))
+        )
+        self.image.image = fallback
         self.image.configureLayout { layout in
             layout.isEnabled = true
             
@@ -53,25 +57,26 @@ class ImageView: UIView {
         )
         
         let imgSrc = block.data?.src ?? ""
-        self.asyncLoadImage(url: imgSrc, fallback: fallback)
+        self.asyncLoadImage(url: imgSrc)
     }
     
-    func asyncLoadImage(url: String, fallback: UIImage? = nil) {
+    func asyncLoadImage(url: String) {
         guard let requestUrl = URL(string: url) else {
-            self.image.image = fallback
             return
         }
         URLSession.shared.dataTask(with: requestUrl) { (data, response, error) in
             DispatchQueue.main.async { [weak self] in
                 if error != nil {
-                    self?.image.image = fallback
                     return
                 }
                 if let imageData = data {
-                    self?.image.image = UIImage(data: imageData)
+                    if isGif(response) {
+                        self?.image.image = UIImage.gifImageWithData(imageData)
+                    } else {
+                        self?.image.image = UIImage(data: imageData)
+                    }
                     self?.layoutSubviews()
                 } else {
-                    self?.image.image = fallback
                     return
                 }
             }
@@ -87,4 +92,15 @@ class ImageView: UIView {
             onClick()
         }
     }
+}
+
+func isGif(_ response: URLResponse?) -> Boolean {
+    guard let response = response else {
+        return false
+    }
+    let contentType = (response as! HTTPURLResponse).allHeaderFields["Content-Type"] as? String
+    guard let contentType = contentType else {
+        return false
+    }
+    return contentType.hasSuffix("gif")
 }
