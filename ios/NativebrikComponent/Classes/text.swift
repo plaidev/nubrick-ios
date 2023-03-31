@@ -23,7 +23,7 @@ class TextView: UIView {
         label.textColor = parseColor(block.data?.color)
         label.font = parseTextBlockDataToUIFont(block.data)
         let text = compileTemplate(template: block.data?.value ?? "") { placeholder in
-            context.getByReferenceKey(key: placeholder)
+            return context.getByReferenceKey(key: placeholder)
         }
         label.text = text
         label.numberOfLines = 0

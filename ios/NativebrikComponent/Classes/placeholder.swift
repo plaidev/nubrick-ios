@@ -29,19 +29,18 @@ func compileTemplate(template: String, getByPath: (String) -> Any?) -> String {
     var result = template as NSString
     for _ in 1...20 {
         let range = NSRange(location: 0, length: result.length)
-        guard let match = regex.firstMatch(in: template, range: range) else {
+        guard let match = regex.firstMatch(in: result as String, range: range) else {
             break
         }
         let placeholder = result.substring(with: match.range)
         guard let placeholderPath = getPlaceholderPath(placeholder: placeholder) else {
-            return ""
+            break
         }
         if placeholderPath == "" {
             break
         }
         let value = getByPath(placeholderPath)
         let valueStr = value.flatMap({ String.init(describing: $0 )}) ?? ""
-        
         result = result.replacingOccurrences(of: placeholder, with: valueStr) as NSString
     }
     return result as String
