@@ -21,8 +21,8 @@ func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
     switch data {
     case .EUIFlexContainerBlock(let block):
         return FlexView(block: block, context: context)
-    case .EUICollectionBlock:
-        return UIView(frame: .zero)
+    case .EUICollectionBlock(let block):
+        return CollectionView(block: block, context: context)
     case .EUICarouselBlock:
         return UIView(frame: .zero)
     case .EUIImageBlock(let image):
@@ -58,7 +58,5 @@ class UIViewBlock: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        
-        self.yoga.applyLayout(preservingOrigin: false)
     }
 }

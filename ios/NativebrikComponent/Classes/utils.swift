@@ -117,6 +117,15 @@ func parseTextBlockDataToUIFont(_ data: UITextBlockData?) -> UIFont {
     }
 }
 
+func parseFrameDataToUIKitUIEdgeInsets(_ data: FrameData?) -> UIEdgeInsets {
+    return UIEdgeInsets(
+        top: CGFloat(data?.paddingTop ?? 0),
+        left: CGFloat(data?.paddingLeft ?? 0),
+        bottom: CGFloat(data?.paddingBottom ?? 0),
+        right: CGFloat(data?.paddingRight ?? 0)
+    )
+}
+
 struct ImageFallback {
     let blurhash: String
     let width: Int
