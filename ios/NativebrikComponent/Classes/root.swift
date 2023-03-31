@@ -148,19 +148,6 @@ class RootViewController: UIViewController {
     
     func presentPage(pageId: String, props: [Property]?) {
         if let previous = self.currentPVC {
-//            self.view.transform = CGAffineTransform(translationX: 0, y: 0)
-//            UIView.animate(
-//                withDuration: 0.28,
-//                delay: 0.1,
-//                options: .curveEaseInOut,
-//                animations: {
-//                    self.view.transform = CGAffineTransform(translationX: 400, y: 0)
-//                },
-//                completion: {_ in
-//                    previous.view.removeFromSuperview()
-//                    previous.removeFromParent()
-//                }
-//            )
             previous.view.removeFromSuperview()
             previous.removeFromParentViewController()
         }
