@@ -75,11 +75,9 @@ fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollection
     case .SCROLL:
         return GridLayout(block)
     case .CAROUSEL:
-        return GridLayout(block)
+        return CarouselLayout(block)
     default:
         return GridLayout(block)
-//    case .CAROUSEL:
-//        return CarouselLayout(data: data)
     }
 }
 
@@ -145,6 +143,9 @@ class CollectionView: UIView, UICollectionViewDataSource, UICollectionViewDelega
         )
         self.gesture = gesture
         
+        self.configureLayout { layout in
+            layout.isEnabled = true
+        }
         self.addSubview(root)
         
     }
