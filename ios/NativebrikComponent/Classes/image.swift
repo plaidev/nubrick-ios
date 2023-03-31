@@ -27,7 +27,7 @@ class ImageView: UIView {
             configureBorder(view: self, frame: block.data?.frame)
         }
         
-        let fallbackSetting = parseImageFallbackToBlurhash(block.data?.fallback ?? "")
+        let fallbackSetting = parseImageFallbackToBlurhash(block.data?.src ?? "")
         let fallback = fallbackSetting.blurhash == "" ? UIImage() : UIImage(
             blurHash: fallbackSetting.blurhash,
             size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))

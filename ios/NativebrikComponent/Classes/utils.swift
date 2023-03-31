@@ -123,14 +123,31 @@ struct ImageFallback {
     let height: Int
 }
 func parseImageFallbackToBlurhash(_ src: String) -> ImageFallback {
-    let components = src.split(separator: ",", maxSplits: 2)
-    if components.count == 3, let width = Int(components[0]), let height = Int(components[1]) {
-        let blurhash = String(components[2])
-        return ImageFallback(blurhash: blurhash, width: width, height: height)
+    guard let url = URL(string: src) else {
+        return ImageFallback(blurhash: "", width: 0, height: 0)
+    }
+    
+    let width = url.value(for: "w")
+    let height = url.value(for: "h")
+    let blurhash = url.value(for: "b")
+    
+    if let width = width, let height = height, let blurhash = blurhash {
+        return ImageFallback(blurhash: blurhash, width: Int(width) ?? 0, height: Int(height) ?? 0)
     } else {
         return ImageFallback(blurhash: "", width: 0, height: 0)
     }
 }
+
+extension URL {
+    func value(for parameter: String) -> String? {
+        guard let components = URLComponents(url: self, resolvingAgainstBaseURL: false) else {
+            return nil
+        }
+        
+        return components.queryItems?.first(where: { $0.name == parameter })?.value
+    }
+}
+
 
 func configurePadding(layout: YGLayout, frame: FrameData?) {
     layout.paddingTop = parseInt(frame?.paddingTop)
