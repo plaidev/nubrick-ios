@@ -27,7 +27,11 @@ class ImageView: UIView {
             configureBorder(view: self, frame: block.data?.frame)
         }
         
-        let fallbackSetting = parseImageFallbackToBlurhash(block.data?.src ?? "")
+        let compiledSrc = compileTemplate(template: block.data?.src ?? "") { placeholder in
+            return context.getByReferenceKey(key: placeholder)
+        }
+
+        let fallbackSetting = parseImageFallbackToBlurhash(compiledSrc)
         let fallback = fallbackSetting.blurhash == "" ? UIImage() : UIImage(
             blurHash: fallbackSetting.blurhash,
             size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))
@@ -56,8 +60,7 @@ class ImageView: UIView {
             event: block.data?.onClick
         )
         
-        let imgSrc = block.data?.src ?? ""
-        self.asyncLoadImage(url: imgSrc)
+        self.asyncLoadImage(url: compiledSrc)
     }
     
     func asyncLoadImage(url: String) {
