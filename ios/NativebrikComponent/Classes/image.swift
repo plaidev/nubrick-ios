@@ -23,7 +23,7 @@ class ImageView: UIView {
             layout.isEnabled = true
             
             configurePadding(layout: layout, frame: block.data?.frame)
-            configureSize(layout: layout, frame: block.data?.frame)
+            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
             configureBorder(view: self, frame: block.data?.frame)
         }
         

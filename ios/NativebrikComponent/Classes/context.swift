@@ -22,19 +22,36 @@ class UIBlockContext {
     private let data: JSON?
     private let event: UIBlockEventManager?
     private var parentClickListener: ClickListener?
+    private var parentDirection: FlexDirection?
     
-    init(data: JSON?, event: UIBlockEventManager?, parentClickListener: ClickListener?) {
+    init(
+        data: JSON?,
+        event: UIBlockEventManager?,
+        parentClickListener: ClickListener?,
+        parentDirection: FlexDirection?
+    ) {
         self.data = data
         self.event = event
         self.parentClickListener = parentClickListener
+        self.parentDirection = parentDirection
     }
     
-    func instanciateFrom(data: JSON?, event: UIBlockEventManager?, parentClickListener: ClickListener?) -> UIBlockContext {
+    func instanciateFrom(
+        data: JSON?,
+        event: UIBlockEventManager?,
+        parentClickListener: ClickListener?,
+        parentDirection: FlexDirection?
+    ) -> UIBlockContext {
         return UIBlockContext(
             data: data ?? self.data,
             event: event ?? self.event,
-            parentClickListener: parentClickListener ?? self.parentClickListener
+            parentClickListener: parentClickListener ?? self.parentClickListener,
+            parentDirection: parentDirection ?? self.parentDirection
         )
+    }
+    
+    func getParentDireciton() -> FlexDirection? {
+        return self.parentDirection
     }
     
     func dipatch(event: UIBlockEventDispatcher) {

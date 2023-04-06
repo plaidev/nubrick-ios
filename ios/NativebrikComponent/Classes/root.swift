@@ -49,7 +49,8 @@ class PageViewController: UIViewController {
                 context: UIBlockContext(
                     data: self.data,
                     event: self.event,
-                    parentClickListener: nil
+                    parentClickListener: nil,
+                    parentDirection: nil
                 )
             )
         }

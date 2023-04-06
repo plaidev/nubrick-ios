@@ -20,7 +20,12 @@ func childrenToUIViews(data: [UIBlock]?, context: UIBlockContext) -> [UIView] {
 func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
     switch data {
     case .EUIFlexContainerBlock(let block):
-        return FlexView(block: block, context: context)
+        switch block.data?.overflow {
+        case .SCROLL, .HIDDEN:
+            return FlexOverflowView(block: block, context: context)
+        default:
+            return FlexView(block: block, context: context)
+        }
     case .EUICollectionBlock(let block):
         return CollectionView(block: block, context: context)
     case .EUICarouselBlock:

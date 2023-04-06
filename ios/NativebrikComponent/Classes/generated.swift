@@ -82,6 +82,15 @@ enum JustifyContent: String, Decodable, Encodable {
     self = try JustifyContent(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+enum Overflow: String, Decodable, Encodable {
+  case VISIBLE = "VISIBLE"
+  case HIDDEN = "HIDDEN"
+  case SCROLL = "SCROLL"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try Overflow(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
 struct PlaceholderInput: Encodable {
   var properties: [PropertyInput]?
 }
@@ -233,6 +242,7 @@ struct UIFlexContainerBlockData: Decodable {
   var alignItems: AlignItems?
   var gap: Int?
   var frame: FrameData?
+  var overflow: Overflow?
   var onClick: UIBlockEventDispatcher?
 }
 struct UIFlexContainerRoot: Decodable {

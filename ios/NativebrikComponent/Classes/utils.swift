@@ -33,6 +33,19 @@ func parseDirection(_ data: FlexDirection?) -> YGFlexDirection {
     }
 }
 
+func parseOverflow(_ data: Overflow?) -> YGOverflow {
+    switch data {
+    case .HIDDEN:
+        return .hidden
+    case .SCROLL:
+        return .scroll
+    case .VISIBLE:
+        return .visible
+    default:
+        return .visible
+    }
+}
+
 func parseAlignItems(_ data: AlignItems?) -> YGAlign {
     switch data {
     case .CENTER:
@@ -165,7 +178,7 @@ func configurePadding(layout: YGLayout, frame: FrameData?) {
     layout.paddingBottom = parseInt(frame?.paddingBottom)
 }
 
-func configureSize(layout: YGLayout, frame: FrameData?) {
+func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDirection?) {
     if let height = frame?.height {
         if height == 0 {
             layout.height = .init(value: 100.0, unit: .percent)
@@ -185,6 +198,21 @@ func configureSize(layout: YGLayout, frame: FrameData?) {
         
     layout.maxWidth = .init(value: 100, unit: .percent)
     layout.maxHeight = .init(value: 100, unit: .percent)
+    layout.flexShrink = 0.0
+    
+    if parentDirection == FlexDirection.ROW && frame?.width == 0 {
+        layout.width = YGValueAuto
+        layout.minWidth = YGValueUndefined
+        layout.flexGrow = 1.0
+        layout.flexShrink = 1.0
+    }
+
+    if parentDirection == FlexDirection.COLUMN && frame?.height == 0 {
+        layout.height = YGValueAuto
+        layout.minHeight = YGValueUndefined
+        layout.flexGrow = 1.0
+        layout.flexShrink = 1.0
+    }
 }
 
 func configureBorder(view: UIView, frame: FrameData?) {

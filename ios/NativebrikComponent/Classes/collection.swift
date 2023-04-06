@@ -90,7 +90,7 @@ class CollectionView: UIView, UICollectionViewDataSource, UICollectionViewDelega
     private var gesture: ClickListener? = nil
     required init?(coder aDecoder: NSCoder) {
         self.block = nil
-        self.context = UIBlockContext(data: nil, event: nil, parentClickListener: nil)
+        self.context = UIBlockContext(data: nil, event: nil, parentClickListener: nil, parentDirection: nil)
         self.childrenCount = 0
         self.isReferenced = false
         self.data = nil
@@ -131,7 +131,7 @@ class CollectionView: UIView, UICollectionViewDataSource, UICollectionViewDelega
         
         root.configureLayout { layout in
             layout.isEnabled = true
-            configureSize(layout: layout, frame: block.data?.frame)
+            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
             configureBorder(view: root, frame: block.data?.frame)
         }
         
@@ -175,7 +175,8 @@ class CollectionView: UIView, UICollectionViewDataSource, UICollectionViewDelega
                     context: self.context.instanciateFrom(
                         data: JSON(value: childData),
                         event: nil,
-                        parentClickListener: self.gesture
+                        parentClickListener: self.gesture,
+                        parentDirection: self.block?.data?.direction
                     )
                 )
                 cell.setView(view: childView)
@@ -188,7 +189,8 @@ class CollectionView: UIView, UICollectionViewDataSource, UICollectionViewDelega
                     context: self.context.instanciateFrom(
                         data: nil,
                         event: nil,
-                        parentClickListener: self.gesture
+                        parentClickListener: self.gesture,
+                        parentDirection: self.block?.data?.direction
                     )
                 )
                 cell.setView(view: childView)

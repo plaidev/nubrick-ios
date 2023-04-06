@@ -25,9 +25,8 @@ class FlexView: UIView {
             layout.direction = .LTR
             layout.alignItems = parseAlignItems(block.data?.alignItems)
             layout.justifyContent = parseJustifyContent(block.data?.justifyContent)
-
             configurePadding(layout: layout, frame: block.data?.frame)
-            configureSize(layout: layout, frame: block.data?.frame)
+            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
             configureBorder(view: self, frame: block.data?.frame)
         }
         
@@ -36,7 +35,8 @@ class FlexView: UIView {
             uiblockToUIView(data: $0, context: context.instanciateFrom(
                 data: nil,
                 event: nil,
-                parentClickListener: gesture
+                parentClickListener: gesture,
+                parentDirection: block.data?.direction
             ))
         } ?? []
         // somehow, a container.padding won't work when the container size is 100%.
@@ -78,5 +78,70 @@ class FlexView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+    }
+}
+
+class FlexOverflowView: UIScrollView {
+    private var flexView: UIView = UIView()
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+    }
+
+    init(block: UIFlexContainerBlock, context: UIBlockContext) {
+        super.init(frame: .zero)
+        
+        let direction = parseDirection(block.data?.direction)
+        let overflow = parseOverflow(block.data?.overflow)
+        self.configureLayout { layout in
+            layout.isEnabled = true
+            layout.display = .flex
+            layout.direction = .LTR
+            layout.overflow = overflow
+            if direction == .column {
+                layout.alignItems = .center
+                layout.justifyContent = .flexStart
+            } else {
+                layout.alignItems = .flexStart
+                layout.justifyContent = .center
+            }
+            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
+            configureBorder(view: self, frame: block.data?.frame)
+        }
+        
+        self.showsVerticalScrollIndicator = false
+        self.showsHorizontalScrollIndicator = false
+        self.isScrollEnabled = (block.data?.overflow == Overflow.SCROLL) ? true : false
+        
+        let _ = configureOnClickGesture(target: self, action: #selector(onClicked(sender:)), context: context, event: block.data?.onClick)
+        let flexView = FlexView(block: block, context: context)
+        flexView.configureLayout { layout in
+            if direction == .column {
+                layout.width = .init(value: 100, unit: .percent)
+                layout.maxHeight = YGValueUndefined
+                layout.minHeight = YGValueUndefined
+                layout.height = YGValueAuto
+            } else {
+                layout.height = .init(value: 100, unit: .percent)
+                layout.width = YGValueAuto
+                layout.maxWidth = YGValueUndefined
+                layout.minWidth = YGValueUndefined
+            }
+            layout.flexShrink = 0
+        }
+        flexView.layer.borderColor = .init(gray: 0, alpha: 0)
+        flexView.layer.backgroundColor = .init(gray: 0, alpha: 0)
+        self.flexView = flexView
+        self.addSubview(flexView)
+    }
+    
+    @objc func onClicked(sender: ClickListener) {
+        if let onClick = sender.onClick {
+            onClick()
+        }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        self.contentSize = self.flexView.bounds.size
     }
 }
