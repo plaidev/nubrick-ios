@@ -72,8 +72,6 @@ fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollection
     switch block.data?.kind {
     case .GRID:
         return GridLayout(block)
-    case .SCROLL:
-        return GridLayout(block)
     case .CAROUSEL:
         return CarouselLayout(block)
     default:
