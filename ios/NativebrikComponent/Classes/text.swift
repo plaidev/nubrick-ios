@@ -2,7 +2,7 @@ import Foundation
 import YogaKit
 import UIKit
 
-class TextView: UIView {
+class TextView: AnimatedUIControl {
     var label: UILabel = UILabel()
     required init?(coder: NSCoder) {
         super.init(coder: coder)
@@ -41,11 +41,5 @@ class TextView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-    }
-    
-    @objc func onClicked(sender: ClickListener) {
-        if let onClick = sender.onClick {
-            onClick()
-        }
     }
 }

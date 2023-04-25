@@ -67,6 +67,10 @@ class UIBlockContext {
         }
     }
     
+    func getParentClickListener() -> ClickListener? {
+        return self.parentClickListener
+    }
+    
     func getByReferenceKey(key: String?) -> Any? {
         if let key = key {
             if key.count == 0 {

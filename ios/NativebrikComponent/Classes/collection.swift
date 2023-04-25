@@ -79,7 +79,7 @@ fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollection
     }
 }
 
-class CollectionView: UIView, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     private let block: UICollectionBlock?
     private let context: UIBlockContext
     private var childrenCount: Int = 0
@@ -150,12 +150,6 @@ class CollectionView: UIView, UICollectionViewDataSource, UICollectionViewDelega
     
     override func layoutSubviews() {
         super.layoutSubviews()
-    }
-    
-    @objc func onClicked(sender: ClickListener) {
-        if let onClick = sender.onClick {
-            onClick()
-        }
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {

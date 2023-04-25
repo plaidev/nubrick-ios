@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 import YogaKit
 
-class ImageView: UIView {
+class ImageView: AnimatedUIControl {
     private let image: UIImageView = UIImageView()
     
     required init?(coder aDecoder: NSCoder) {
@@ -88,12 +88,6 @@ class ImageView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-    }
-    
-    @objc func onClicked(sender: ClickListener) {
-        if let onClick = sender.onClick {
-            onClick()
-        }
     }
 }
 

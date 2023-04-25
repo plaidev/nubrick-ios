@@ -9,7 +9,7 @@ import Foundation
 import YogaKit
 import UIKit
 
-class FlexView: UIView {
+class FlexView: AnimatedUIControl {
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
@@ -67,12 +67,6 @@ class FlexView: UIView {
             }
 
             self.addSubview(child)
-        }
-    }
-    
-    @objc func onClicked(sender: ClickListener) {
-        if let onClick = sender.onClick {
-            onClick()
         }
     }
     
@@ -135,8 +129,10 @@ class FlexOverflowView: UIScrollView {
     }
     
     @objc func onClicked(sender: ClickListener) {
-        if let onClick = sender.onClick {
-            onClick()
+        if sender.state == .ended {
+            if let onClick = sender.onClick {
+                onClick()
+            }
         }
     }
     
