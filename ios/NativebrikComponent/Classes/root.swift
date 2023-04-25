@@ -16,6 +16,7 @@ class PageViewController: UIViewController {
     private let config: Config
     private var data: JSON? = nil
     private var event: UIBlockEventManager? = nil
+    private var fullScreenInitialNavItemVisibility = false
 
     required init?(coder: NSCoder) {
         self.page = nil
@@ -32,8 +33,13 @@ class PageViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
     
+    func showFullScreenInitialNavItem() {
+        self.fullScreenInitialNavItemVisibility = true
+    }
+    
     override func viewDidLoad() {
         self.renderView()
+        self.renderNavItems()
         self.loadData()
     }
 
@@ -95,6 +101,17 @@ class PageViewController: UIViewController {
             }
         }
     }
+    
+    func renderNavItems() {
+        if !self.fullScreenInitialNavItemVisibility {
+            return
+        }
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Close", style: .plain, target: self, action: #selector(onDismiss))
+    }
+    
+    @objc func onDismiss(){
+        self.dismiss(animated: true)
+    }
 }
 
 class RootViewController: UIViewController {
@@ -103,7 +120,8 @@ class RootViewController: UIViewController {
     private let config: Config
     private var event: UIBlockEventManager? = nil
     private var currentPageId: String = ""
-    private var currentPVC: PageViewController? = nil
+    private var currentNC: UINavigationController? = nil
+    private var currentPVC: UIViewController? = nil
 
     required init?(coder: NSCoder) {
         self.id = ""
@@ -148,11 +166,6 @@ class RootViewController: UIViewController {
     }
     
     func presentPage(pageId: String, props: [Property]?) {
-        if let previous = self.currentPVC {
-            previous.view.removeFromSuperview()
-            previous.removeFromParentViewController()
-        }
-        
         let page = self.pages.first { page in
             return pageId == page.id
         }
@@ -162,9 +175,56 @@ class RootViewController: UIViewController {
             event: self.event,
             config: self.config
         )
-        self.addChildViewController(pageController)
-        self.currentPVC = pageController
-        self.view.addSubview(pageController.view)
+        
+        switch page?.data?.kind {
+        case .PAGE_SHEET:
+            if let sheet = pageController.sheetPresentationController {
+                sheet.detents = [.medium(), .large()]
+            }
+            if let presentedVC = self.presentedViewController {
+                presentedVC.present(pageController, animated: true, completion: nil)
+            } else {
+                self.present(pageController, animated: true, completion: nil)
+            }
+            break
+        case .FULL_SCREEN:
+            if self.presentedViewController == nil {
+                self.currentNC = nil
+            }
+            if let nc = self.currentNC {
+                nc.pushViewController(pageController, animated: true)
+            } else {
+                if self.currentPVC != nil {
+                    pageController.showFullScreenInitialNavItem()
+                }
+                let currentNC = NavigationViewControlller(
+                    rootViewController: pageController,
+                    hasPrevious: self.currentPVC != nil
+                )
+                currentNC.modalPresentationStyle = .overFullScreen
+                self.currentNC = currentNC
+                if let presentedVC = self.presentedViewController {
+                    presentedVC.present(currentNC, animated: true, completion: nil)
+                } else {
+                    self.present(currentNC, animated: true, completion: nil)
+                }
+            }
+            break
+        default:
+            if let previous = self.currentPVC {
+                previous.view.removeFromSuperview()
+                previous.removeFromParentViewController()
+            }
+            let newPVC = pageController
+            self.view.addSubview(newPVC.view)
+            self.addChildViewController(newPVC)
+            self.currentPVC = newPVC
+            break
+        }
+    }
+    
+     @objc func dismissModal() {
+         self.presentedViewController?.dismiss(animated: true)
     }
 }
 
