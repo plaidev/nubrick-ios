@@ -8,9 +8,9 @@
 import Foundation
 import SwiftUI
 
-public struct Config {
-    public let apiKey: String
-    public let url: String = "http://localhost:8060/client"
+struct Config {
+    let apiKey: String
+    var url: String = "https://nativebrik.com/client"
 }
 
 public struct Nativebrik {
@@ -21,7 +21,14 @@ public struct Nativebrik {
             apiKey: apiKey
         )
     }
-    
+
+    public init(apiKey: String, environment: String) {
+        self.config = Config(
+            apiKey: apiKey,
+            url: environment
+        )
+    }
+
     /**
      returns SwiftUI.View
      */
@@ -31,7 +38,7 @@ public struct Nativebrik {
             config: self.config
         )
     }
-    
+
     /**
      returns UIView.ViewController
      */
