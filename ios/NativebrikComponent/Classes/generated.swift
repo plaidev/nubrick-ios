@@ -82,6 +82,15 @@ enum JustifyContent: String, Decodable, Encodable {
     self = try JustifyContent(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+enum ModalScreenSize: String, Decodable, Encodable {
+  case MEDIUM = "MEDIUM"
+  case LARGE = "LARGE"
+  case MEDIUM_AND_LARGE = "MEDIUM_AND_LARGE"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try ModalScreenSize(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
 enum Overflow: String, Decodable, Encodable {
   case VISIBLE = "VISIBLE"
   case HIDDEN = "HIDDEN"
@@ -89,6 +98,18 @@ enum Overflow: String, Decodable, Encodable {
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try Overflow(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
+enum PageKind: String, Decodable, Encodable {
+  case COMPONENT = "COMPONENT"
+  case FULL_SCREEN = "FULL_SCREEN"
+  case PAGE_SHEET = "PAGE_SHEET"
+  case TRIGGER = "TRIGGER"
+  case LOAD_BALANCER = "LOAD_BALANCER"
+  case DISMISSED = "DISMISSED"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try PageKind(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
 struct PlaceholderInput: Encodable {
@@ -196,6 +217,7 @@ struct UIBlockEventDispatcher: Decodable {
   var __typename = "UIBlockEventDispatcher"
   var name: String?
   var destinationPageId: String?
+  var deepLink: String?
   var payload: [Property]?
 }
 struct UICarouselBlock: Decodable {
@@ -268,6 +290,8 @@ struct UIPageBlock: Decodable {
 }
 struct UIPageBlockData: Decodable {
   var __typename = "UIPageBlockData"
+  var modalScreenSize: ModalScreenSize?
+  var kind: PageKind?
   var renderAs: UIBlock?
   var position: UIPageBlockPosition?
   var props: [Property]?
