@@ -31,6 +31,12 @@ class PageViewController: UIViewController {
         self.config = config
         self.event = event
         super.init(nibName: nil, bundle: nil)
+        
+        if page?.data?.kind == PageKind.PAGE_SHEET {
+            if let sheet = self.sheetPresentationController {
+                sheet.detents = parseModalScreenSize(page?.data?.modalScreenSize)
+            }
+        }
     }
     
     func showFullScreenInitialNavItem() {
@@ -199,9 +205,6 @@ class RootViewController: UIViewController {
         
         switch page?.data?.kind {
         case .PAGE_SHEET:
-            if let sheet = pageController.sheetPresentationController {
-                sheet.detents = [.medium(), .large()]
-            }
             if let presentedVC = self.presentedViewController {
                 presentedVC.present(pageController, animated: true, completion: nil)
             } else {

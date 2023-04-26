@@ -139,6 +139,17 @@ func parseFrameDataToUIKitUIEdgeInsets(_ data: FrameData?) -> UIEdgeInsets {
     )
 }
 
+func parseModalScreenSize(_ data: ModalScreenSize?) -> [UISheetPresentationController.Detent] {
+    switch data {
+    case .MEDIUM:
+        return [.medium()]
+    case .LARGE:
+        return [.large()]
+    default:
+        return [.medium(), .large()]
+    }
+}
+
 struct ImageFallback {
     let blurhash: String
     let width: Int
@@ -221,3 +232,4 @@ func configureBorder(view: UIView, frame: FrameData?) {
     view.layer.borderColor = parseColorToCGColor(frame?.borderColor)
     view.layer.cornerRadius = CGFloat(frame?.borderRadius ?? 0)
 }
+
