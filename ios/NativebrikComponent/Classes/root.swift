@@ -133,7 +133,10 @@ class RootViewController: UIViewController {
     init(root: UIRootBlock?, config: Config) {
         self.id = root?.id ?? ""
         self.pages = root?.data?.pages ?? []
-        self.currentPageId = root?.data?.currentPageId ?? ""
+        let trigger = self.pages.first { page in
+            return page.data?.kind == PageKind.TRIGGER
+        }
+        self.currentPageId = trigger?.id ?? root?.data?.currentPageId ?? ""
         self.config = config
         super.init(nibName: nil, bundle: nil)
 
@@ -166,9 +169,27 @@ class RootViewController: UIViewController {
     }
     
     func presentPage(pageId: String, props: [Property]?) {
-        let page = self.pages.first { page in
+        var page = self.pages.first { page in
             return pageId == page.id
         }
+
+        // when it's trigger
+        if page?.data?.kind == PageKind.TRIGGER {
+            page = self.pages.first { p in
+                return p.id == page?.data?.triggerSetting?.onTrigger?.destinationPageId
+            }
+        }
+        
+        // when it's dismissed
+        if page?.data?.kind == PageKind.DISMISSED {
+            if let previous = self.currentPVC {
+                previous.view.removeFromSuperview()
+                previous.removeFromParentViewController()
+            }
+            self.dismiss(animated: true)
+            return
+        }
+        
         let pageController = PageViewController(
             page: page,
             props: props,
@@ -215,6 +236,7 @@ class RootViewController: UIViewController {
                 previous.view.removeFromSuperview()
                 previous.removeFromParentViewController()
             }
+            self.dismiss(animated: true)
             let newPVC = pageController
             self.view.addSubview(newPVC.view)
             self.addChildViewController(newPVC)

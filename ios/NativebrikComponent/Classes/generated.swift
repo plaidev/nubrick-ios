@@ -159,6 +159,10 @@ enum SystemColorCode: String, Decodable, Encodable {
     self = try SystemColorCode(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+struct TriggerSetting: Decodable {
+  var __typename = "TriggerSetting"
+  var onTrigger: UIBlockEventDispatcher?
+}
 indirect enum UIBlock: Decodable {
   case EUIRootBlock(UIRootBlock)
   case EUIPageBlock(UIPageBlock)
@@ -290,8 +294,9 @@ struct UIPageBlock: Decodable {
 }
 struct UIPageBlockData: Decodable {
   var __typename = "UIPageBlockData"
-  var modalScreenSize: ModalScreenSize?
   var kind: PageKind?
+  var modalScreenSize: ModalScreenSize?
+  var triggerSetting: TriggerSetting?
   var renderAs: UIBlock?
   var position: UIPageBlockPosition?
   var props: [Property]?
