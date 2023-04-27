@@ -150,6 +150,15 @@ func parseModalScreenSize(_ data: ModalScreenSize?) -> [UISheetPresentationContr
     }
 }
 
+func parseImageContentMode(_ data: ImageContentMode?) -> UIView.ContentMode {
+    switch data {
+    case .FIT:
+        return .scaleAspectFit
+    default:
+        return .scaleAspectFill
+    }
+}
+
 struct ImageFallback {
     let blurhash: String
     let width: Int

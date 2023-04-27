@@ -50,7 +50,7 @@ class ImageView: AnimatedUIControl {
             layout.minWidth = 100%
             layout.minHeight = 100%
         }
-        self.image.contentMode = .scaleAspectFit
+        self.image.contentMode = parseImageContentMode(block.data?.contentMode)
         self.image.clipsToBounds = true
         self.layer.masksToBounds = true
         

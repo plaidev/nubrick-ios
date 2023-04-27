@@ -72,6 +72,14 @@ struct FrameData: Decodable {
   var background: Color?
   var backgroundSrc: String?
 }
+enum ImageContentMode: String, Decodable, Encodable {
+  case FIT = "FIT"
+  case FILL = "FILL"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try ImageContentMode(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
 enum JustifyContent: String, Decodable, Encodable {
   case START = "START"
   case CENTER = "CENTER"
@@ -284,6 +292,7 @@ struct UIImageBlock: Decodable {
 struct UIImageBlockData: Decodable {
   var __typename = "UIImageBlockData"
   var src: String?
+  var contentMode: ImageContentMode?
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
 }
