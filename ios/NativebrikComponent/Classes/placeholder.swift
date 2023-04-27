@@ -22,6 +22,14 @@ func getPlaceholderPath(placeholder: String) -> String? {
     return String(placeholder.dropFirst(2).dropLast(2))
 }
 
+func hasPlaceholderPath(template: String) -> Bool {
+    guard let regex = getPlaceholderRegex() else {
+        return false
+    }
+    let templateAsNsstring = template as NSString
+    return regex.numberOfMatches(in: template, range: NSRange(location: 0, length: templateAsNsstring.length)) > 0
+}
+
 func compileTemplate(template: String, getByPath: (String) -> Any?) -> String {
     guard let regex = getPlaceholderRegex() else {
         return template

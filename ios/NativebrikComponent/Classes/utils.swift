@@ -233,3 +233,34 @@ func configureBorder(view: UIView, frame: FrameData?) {
     view.layer.cornerRadius = CGFloat(frame?.borderRadius ?? 0)
 }
 
+func configureSkelton(view: UIView, showSkelton: Bool) {
+    if showSkelton == false {
+        return
+    }
+    let gray = 0.5
+    let alpha = 0.3
+    view.layer.backgroundColor = .init(gray: gray, alpha: alpha)
+    UIView.animateKeyframes(withDuration: 1.5, delay: 0.0, options: [.repeat, .calculationModeCubicPaced, .allowUserInteraction]) {
+        UIView.addKeyframe(withRelativeStartTime: 0.0, relativeDuration: 0) {
+            view.layer.backgroundColor = .init(gray: gray, alpha: alpha)
+        }
+        UIView.addKeyframe(withRelativeStartTime: 0.5, relativeDuration: 0.5) {
+            view.layer.backgroundColor = .init(gray: gray, alpha: alpha * 0.7)
+        }
+        UIView.addKeyframe(withRelativeStartTime: 1.0, relativeDuration: 0.5) {
+            view.layer.backgroundColor = .init(gray: gray, alpha: alpha)
+        }
+    }
+}
+
+func configureSkeltonText(view: UILabel, showSkelton: Bool) {
+    if showSkelton == false {
+        return
+    }
+    let text = view.text ?? ""
+    if text.lengthOfBytes(using: .utf8) < 2 {
+        view.text = "TRANSPARENT"
+    }
+    
+    view.textColor = .init(white: 0, alpha: 0)
+}

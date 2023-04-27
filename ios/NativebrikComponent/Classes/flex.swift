@@ -36,7 +36,8 @@ class FlexView: AnimatedUIControl {
                 data: nil,
                 event: nil,
                 parentClickListener: gesture,
-                parentDirection: block.data?.direction
+                parentDirection: block.data?.direction,
+                loading: nil
             ))
         } ?? []
         // somehow, a container.padding won't work when the container size is 100%.

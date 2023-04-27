@@ -88,7 +88,13 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     private var gesture: ClickListener? = nil
     required init?(coder aDecoder: NSCoder) {
         self.block = nil
-        self.context = UIBlockContext(data: nil, event: nil, parentClickListener: nil, parentDirection: nil)
+        self.context = UIBlockContext(
+            data: nil,
+            event: nil,
+            parentClickListener: nil,
+            parentDirection: nil,
+            loading: nil
+        )
         self.childrenCount = 0
         self.isReferenced = false
         self.data = nil
@@ -168,7 +174,8 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                         data: JSON(value: childData),
                         event: nil,
                         parentClickListener: self.gesture,
-                        parentDirection: self.block?.data?.direction
+                        parentDirection: self.block?.data?.direction,
+                        loading: nil
                     )
                 )
                 cell.setView(view: childView)
@@ -182,7 +189,8 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                         data: nil,
                         event: nil,
                         parentClickListener: self.gesture,
-                        parentDirection: self.block?.data?.direction
+                        parentDirection: self.block?.data?.direction,
+                        loading: nil
                     )
                 )
                 cell.setView(view: childView)

@@ -18,6 +18,7 @@ class ImageView: AnimatedUIControl {
     
     init(block: UIImageBlock, context: UIBlockContext) {
         super.init(frame: .zero)
+        let showSkelton = context.isLoading() && hasPlaceholderPath(template: block.data?.src ?? "")
         
         self.configureLayout { layout in
             layout.isEnabled = true
@@ -25,6 +26,8 @@ class ImageView: AnimatedUIControl {
             configurePadding(layout: layout, frame: block.data?.frame)
             configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
             configureBorder(view: self, frame: block.data?.frame)
+            
+            configureSkelton(view: self, showSkelton: showSkelton)
         }
         
         let compiledSrc = compileTemplate(template: block.data?.src ?? "") { placeholder in

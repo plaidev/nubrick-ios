@@ -10,12 +10,15 @@ class TextView: AnimatedUIControl {
     
     init(block: UITextBlock, context: UIBlockContext) {
         super.init(frame: .zero)
+        let showSkelton = context.isLoading() && hasPlaceholderPath(template: block.data?.value ?? "")
 
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.display = .flex
             layout.direction = .LTR
             configureBorder(view: self, frame: block.data?.frame)
+            
+            configureSkelton(view: self, showSkelton: showSkelton)
         }
         
         let label = UILabel()
@@ -27,6 +30,7 @@ class TextView: AnimatedUIControl {
         }
         label.text = text
         label.numberOfLines = 0
+        configureSkeltonText(view: label, showSkelton: showSkelton)
         
         self.label = label
         self.addSubview(label)

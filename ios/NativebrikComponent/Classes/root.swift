@@ -17,6 +17,7 @@ class PageViewController: UIViewController {
     private var data: JSON? = nil
     private var event: UIBlockEventManager? = nil
     private var fullScreenInitialNavItemVisibility = false
+    private var loading: Bool = false
 
     required init?(coder: NSCoder) {
         self.page = nil
@@ -44,9 +45,8 @@ class PageViewController: UIViewController {
     }
     
     override func viewDidLoad() {
-        self.renderView()
         self.renderNavItems()
-        self.loadData()
+        self.loadDataAndRender()
     }
 
     override func viewDidLayoutSubviews() {
@@ -62,18 +62,24 @@ class PageViewController: UIViewController {
                     data: self.data,
                     event: self.event,
                     parentClickListener: nil,
-                    parentDirection: nil
+                    parentDirection: nil,
+                    loading: self.loading
                 )
             )
         }
     }
     
-    func loadData() {
+    func loadDataAndRender() {
         let query = self.page?.data?.query ?? ""
         if query == "" {
+            self.loading = false
             self.renderView()
             return
+        } else {
+            self.loading = true
+            self.renderView()
         }
+        
         let properties: [PropertyInput] = self.page?.data?.props?.enumerated().map { (index, property) in
             let propIndexInEvent = self.props?.firstIndex(where: { prop in
                 return property.name == prop.name
@@ -102,6 +108,7 @@ class PageViewController: UIViewController {
                     if let data = data.data?.data {
                         self.data = data
                     }
+                    self.loading = false
                     self.renderView()
                 }
             }
