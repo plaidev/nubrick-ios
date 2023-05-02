@@ -112,6 +112,7 @@ enum PageKind: String, Decodable, Encodable {
   case COMPONENT = "COMPONENT"
   case FULL_SCREEN = "FULL_SCREEN"
   case PAGE_SHEET = "PAGE_SHEET"
+  case PAGE_VIEW = "PAGE_VIEW"
   case TRIGGER = "TRIGGER"
   case LOAD_BALANCER = "LOAD_BALANCER"
   case DISMISSED = "DISMISSED"

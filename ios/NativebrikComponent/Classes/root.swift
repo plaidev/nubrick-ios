@@ -8,124 +8,6 @@
 import Foundation
 import UIKit
 import YogaKit
-import SwiftUI
-
-class PageViewController: UIViewController {
-    private let page: UIPageBlock?
-    private let props: [Property]?
-    private let config: Config
-    private var data: JSON? = nil
-    private var event: UIBlockEventManager? = nil
-    private var fullScreenInitialNavItemVisibility = false
-    private var loading: Bool = false
-
-    required init?(coder: NSCoder) {
-        self.page = nil
-        self.props = nil
-        self.config = Config(apiKey: "")
-        super.init(coder: coder)
-    }
-    
-    init(page: UIPageBlock?, props: [Property]?, event: UIBlockEventManager?, config: Config) {
-        self.page = page
-        self.props = props
-        self.config = config
-        self.event = event
-        super.init(nibName: nil, bundle: nil)
-        
-        if page?.data?.kind == PageKind.PAGE_SHEET {
-            if let sheet = self.sheetPresentationController {
-                sheet.detents = parseModalScreenSize(page?.data?.modalScreenSize)
-            }
-        }
-    }
-    
-    func showFullScreenInitialNavItem() {
-        self.fullScreenInitialNavItemVisibility = true
-    }
-    
-    override func viewDidLoad() {
-        self.renderNavItems()
-        self.loadDataAndRender()
-    }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        self.view.yoga.applyLayout(preservingOrigin: true)
-    }
-    
-    func renderView() {
-        if let renderAs = self.page?.data?.renderAs {
-            self.view = UIViewBlock(
-                data: renderAs,
-                context: UIBlockContext(
-                    data: self.data,
-                    event: self.event,
-                    parentClickListener: nil,
-                    parentDirection: nil,
-                    loading: self.loading
-                )
-            )
-        }
-    }
-    
-    func loadDataAndRender() {
-        let query = self.page?.data?.query ?? ""
-        if query == "" {
-            self.loading = false
-            self.renderView()
-            return
-        } else {
-            self.loading = true
-            self.renderView()
-        }
-        
-        let properties: [PropertyInput] = self.page?.data?.props?.enumerated().map { (index, property) in
-            let propIndexInEvent = self.props?.firstIndex(where: { prop in
-                return property.name == prop.name
-            }) ?? -1
-            let propInEvent = propIndexInEvent >= 0 ? self.props![propIndexInEvent] : nil
-            
-            return PropertyInput(
-                name: property.name ?? "",
-                value: propInEvent?.value ?? property.value ?? "",
-                ptype: property.ptype ?? PropertyType.STRING
-            )
-        } ?? []
-        let placeholderInput = PlaceholderInput(properties: properties)
-        
-        DispatchQueue.global().async {
-            Task {
-                let data = try await getData(
-                    query: getDataQuery(
-                        query: query,
-                        placeholder: placeholderInput
-                    ),
-                    apiKey: self.config.apiKey,
-                    url: self.config.url
-                )
-                DispatchQueue.main.async {
-                    if let data = data.data?.data {
-                        self.data = data
-                    }
-                    self.loading = false
-                    self.renderView()
-                }
-            }
-        }
-    }
-    
-    func renderNavItems() {
-        if !self.fullScreenInitialNavItemVisibility {
-            return
-        }
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Close", style: .plain, target: self, action: #selector(onDismiss))
-    }
-    
-    @objc func onDismiss(){
-        self.dismiss(animated: true)
-    }
-}
 
 class RootViewController: UIViewController {
     private let id: String!
@@ -134,7 +16,8 @@ class RootViewController: UIViewController {
     private var event: UIBlockEventManager? = nil
     private var currentPageId: String = ""
     private var currentNC: UINavigationController? = nil
-    private var currentPVC: UIViewController? = nil
+    private var currentPVC: PageViewController? = nil
+    private var currentPC: UIViewController? = nil
 
     required init?(coder: NSCoder) {
         self.id = ""
@@ -203,7 +86,7 @@ class RootViewController: UIViewController {
             return
         }
         
-        let pageController = PageViewController(
+        let pageController = PageController(
             page: page,
             props: props,
             event: self.event,
@@ -212,11 +95,7 @@ class RootViewController: UIViewController {
         
         switch page?.data?.kind {
         case .PAGE_SHEET:
-            if let presentedVC = self.presentedViewController {
-                presentedVC.present(pageController, animated: true, completion: nil)
-            } else {
-                self.present(pageController, animated: true, completion: nil)
-            }
+            self.presentToTop(pageController)
             break
         case .FULL_SCREEN:
             if self.presentedViewController == nil {
@@ -225,33 +104,68 @@ class RootViewController: UIViewController {
             if let nc = self.currentNC {
                 nc.pushViewController(pageController, animated: true)
             } else {
-                if self.currentPVC != nil {
+                if self.currentPC != nil {
                     pageController.showFullScreenInitialNavItem()
                 }
                 let currentNC = NavigationViewControlller(
                     rootViewController: pageController,
-                    hasPrevious: self.currentPVC != nil
+                    hasPrevious: self.currentPC != nil
                 )
                 currentNC.modalPresentationStyle = .overFullScreen
                 self.currentNC = currentNC
-                if let presentedVC = self.presentedViewController {
-                    presentedVC.present(currentNC, animated: true, completion: nil)
-                } else {
-                    self.present(currentNC, animated: true, completion: nil)
-                }
+                self.presentToTop(currentNC)
             }
             break
+        case .PAGE_VIEW:
+            if self.presentedViewController == nil {
+                self.currentPVC = nil
+            }
+            if let pvc = self.currentPVC {
+                if pvc.isInPage(id: pageId) {
+                    pvc.goTo(id: pageId)
+                    break
+                } else {
+                    pvc.dismiss(animated: true)
+                    self.currentPVC = nil
+                }
+            }
+
+            let pageBlocks = getLinkedPageViewsFromPages(pages: pages, id: pageId)
+            let pageIds = pageBlocks.map { page in
+                return page.id ?? ""
+            }
+            let controllers = pageBlocks.map { page in
+                return PageController(
+                    page: page,
+                    props: props,
+                    event: self.event,
+                    config: self.config
+                )
+            }
+            let pvc = PageViewController(controllers: controllers, ids: pageIds)
+            pvc.modalPresentationStyle = .overFullScreen
+            self.presentToTop(pvc)
+            self.currentPVC = pvc
+            break
         default:
-            if let previous = self.currentPVC {
+            if let previous = self.currentPC {
                 previous.view.removeFromSuperview()
                 previous.removeFromParentViewController()
             }
             self.dismiss(animated: true)
-            let newPVC = pageController
-            self.view.addSubview(newPVC.view)
-            self.addChildViewController(newPVC)
-            self.currentPVC = newPVC
+            let newPC = pageController
+            self.view.addSubview(newPC.view)
+            self.addChildViewController(newPC)
+            self.currentPC = newPC
             break
+        }
+    }
+    
+    func presentToTop(_ viewController: UIViewController) {
+        if let presentedVC = self.presentedViewController {
+            presentedVC.present(viewController, animated: true, completion: nil)
+        } else {
+            self.present(viewController, animated: true, completion: nil)
         }
     }
     
@@ -260,71 +174,86 @@ class RootViewController: UIViewController {
     }
 }
 
-public class ComponentViewController: UIViewController {
-    private let config: Config
-    required init?(coder: NSCoder) {
-        self.config = Config(apiKey: "")
-        super.init(coder: coder)
+func getLinkedPageViewsFromPages(pages: [UIPageBlock], id: String) -> [UIPageBlock] {
+    var result: [UIPageBlock] = []
+    var currentId: String = id
+    var trackedIds: [String] = []
+    var counter: Int = 0
+    let pageViewIds = pages.filter { page in
+        return page.data?.kind == PageKind.PAGE_VIEW
+    }.map { page in
+        return page.id ?? ""
     }
     
-    init(componentId: String, config: Config) {
-        self.config = config
-        super.init(nibName: nil, bundle: nil)
-        self.loadComponent(componentId: componentId)
-    }
-    
-    override public func viewDidLoad() {
-        self.view.configureLayout { layout in
-            layout.isEnabled = true
-            layout.alignItems = .center
-            layout.justifyContent = .center
+    // add limit to while.
+    while counter < 100 {
+        counter += 1
+        if trackedIds.contains(where: { id in
+            return id == currentId
+        }) {
+            break
         }
-    }
-    
-    private func loadComponent(componentId: String) {
-        DispatchQueue.global().async {
-            Task {
-                let data = try await getComponent(
-                    query: getComponentQuery(id: componentId),
-                    apiKey: self.config.apiKey,
-                    url: self.config.url
+        trackedIds.append(currentId)
+
+        let page = pages.first { page in
+            return page.id == currentId && page.data?.kind == PageKind.PAGE_VIEW
+        }
+        if let page = page {
+            if let renderAs = page.data?.renderAs {
+                let eventDispatchers = findEventDispatcherToPageView(
+                    block: renderAs,
+                    pageViewIds: pageViewIds
                 )
-                DispatchQueue.main.async {
-                    if let view = data.data?.component??.view {
-                        switch view {
-                        case .EUIRootBlock(let root):
-                            let rootController = RootViewController(
-                                root: root,
-                                config: self.config
-                            )
-                            self.addChildViewController(rootController)
-                            self.view.addSubview(rootController.view)
-                        default:
-                            print("ERROR")
-                        }
-                    }
+                if let destId = eventDispatchers.first?.destinationPageId {
+                    currentId = destId
                 }
             }
+            result.append(page)
+        } else {
+            break
         }
     }
     
-    override public func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        self.view.yoga.applyLayout(preservingOrigin: true)
+    return result
+}
+
+func findEventDispatcherToPageView(block: UIBlock, pageViewIds: [String]) -> [UIBlockEventDispatcher] {
+    var events: [UIBlockEventDispatcher] = []
+    walkOnClick(block: block) { event in
+        events.append(event)
+    }
+    return events.filter { event in
+        return pageViewIds.contains { id in
+            return event.destinationPageId == id
+        }
     }
 }
 
-struct ComponentViewControllerRepresentable: UIViewControllerRepresentable {
-    let componentId: String
-    let config: Config
-
-    func makeUIViewController(context: Context) -> ComponentViewController {
-        return ComponentViewController(
-            componentId: self.componentId,
-            config: self.config
-        )
-    }
-
-    func updateUIViewController(_ uiViewController: ComponentViewController, context: Context) {
+func walkOnClick(block: UIBlock, onWalk: ((_ event: UIBlockEventDispatcher) -> Void)) -> Void {
+    switch block {
+    case .EUIFlexContainerBlock(let block):
+        if let event = block.data?.onClick {
+            onWalk(event)
+        }
+        block.data?.children?.forEach({ block in
+            walkOnClick(block: block, onWalk: onWalk)
+        })
+    case .EUICollectionBlock(let block):
+        if let event = block.data?.onClick {
+            onWalk(event)
+        }
+        block.data?.children?.forEach({ block in
+            walkOnClick(block: block, onWalk: onWalk)
+        })
+    case .EUITextBlock(let block):
+        if let event = block.data?.onClick {
+            onWalk(event)
+        }
+    case .EUIImageBlock(let block):
+        if let event = block.data?.onClick {
+            onWalk(event)
+        }
+    default:
+        return
     }
 }

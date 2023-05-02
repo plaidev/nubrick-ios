@@ -13,7 +13,9 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        let blockController = Nativebrik(apiKey: "02JfQkulJJXyvgHHZHr3CCmgiJcG3gVo").ComponentVC(id: "cgetcniq5o2ctv8nlh2g")
+        let url: String = "http://localhost:8060/client"
+        let apiKey: String = "1G67fRWJlE9dNZoJffmLTFzAhHhMRh7R"
+        let blockController = Nativebrik(apiKey: apiKey, environment: url).ComponentVC(id: "cgqeu8et3eust2slcvc0")
         self.addChildViewController(blockController)
         self.view.addSubview(blockController.view)
         // Do any additional setup after loading the view, typically from a nib.

@@ -84,7 +84,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
                 delay: 0,
                 options: .curveEaseInOut,
                 animations: { [weak target] in
-                    target?.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+                    target?.transform = CGAffineTransform(scaleX: 1.018, y: 1.018)
             })
         } else {
             if let onTouchBegan = context.getParentClickListener()?.onTouchBegan {
