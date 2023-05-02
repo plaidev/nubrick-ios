@@ -59,6 +59,10 @@ class UIBlockContext {
         return self.loading
     }
     
+    func hasParent() -> Bool {
+        return self.parentClickListener != nil
+    }
+    
     func getParentDireciton() -> FlexDirection? {
         return self.parentDirection
     }
