@@ -78,7 +78,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
     }
     
     gesture.onTouchBegan = {
-        if event != nil {
+        if event != nil && context.hasParent() {
             UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -93,7 +93,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
         }
     }
     gesture.onTouchEnded = {
-        if event != nil {
+        if event != nil && context.hasParent() {
             UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -109,7 +109,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
         
     }
     gesture.onTouchCanceled = {
-        if event != nil {
+        if event != nil && context.hasParent() {
             UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -124,7 +124,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
         }
     }
     
-    if target is AnimatedUIControl && context.hasParent() {
+    if target is AnimatedUIControl {
         let animatedTarget = target as! AnimatedUIControl
         animatedTarget.setClickListener(clickListener: gesture)
     }
