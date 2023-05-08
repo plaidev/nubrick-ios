@@ -43,6 +43,7 @@ class RootViewController: UIViewController {
                     props: event.payload
                 )
             }
+            self.config.dispatchUIBlockEvent(event: event)
         })
     }
 

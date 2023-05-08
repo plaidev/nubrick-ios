@@ -10,11 +10,6 @@ import UIKit
 import SwiftUI
 import YogaKit
 
-public enum ComponentLoadingState {
-    case LOADING
-    case ERROR
-}
-
 class ComponentViewController: UIViewController {
     private let componentId: String
     private let config: Config
@@ -91,7 +86,6 @@ class ComponentViewController: UIViewController {
     }
     
     func renderFallback(state: ComponentLoadingState) {
-        print("error", state)
         if let fallback = self.fallback {
             let fallbackView = fallback(state)
             UIView.transition(
@@ -110,16 +104,23 @@ class ComponentViewController: UIViewController {
     }
 }
 
-struct ComponentViewControllerRepresentable: UIViewControllerRepresentable {
+struct ComponentViewControllerRepresentable<V: View>: UIViewControllerRepresentable {
     let componentId: String
     let config: Config
-    let fallback: ((_ state: ComponentLoadingState) -> UIView)?
+    let fallback: ((_ state: ComponentLoadingState) -> V)?
 
     func makeUIViewController(context: Context) -> ComponentViewController {
+        var fallbackFunc: ((_ state: ComponentLoadingState) -> UIView)? = nil
+        if let fallback = self.fallback {
+            fallbackFunc = { state in
+                let hostingController = UIHostingController(rootView: fallback(state))
+                return hostingController.view
+            }
+        }
         return ComponentViewController(
             componentId: self.componentId,
             config: self.config,
-            fallback: self.fallback
+            fallback: fallbackFunc
         )
     }
 
