@@ -35,17 +35,27 @@ public struct Nativebrik {
     public func Component(id: String) -> some View {
         return ComponentViewControllerRepresentable(
             componentId: id,
-            config: self.config
+            config: self.config,
+            fallback: nil
         )
     }
 
     /**
      returns UIView.ViewController
      */
-    public func ComponentVC(id: String) -> ComponentViewController {
+    public func ComponentVC(id: String) -> UIViewController {
         return ComponentViewController(
             componentId: id,
-            config: self.config
+            config: self.config,
+            fallback: nil
+        )
+    }
+    
+    public func ComponentVC(id: String, fallback: ((_ state: ComponentLoadingState) -> UIView)?) -> UIViewController {
+        return ComponentViewController(
+            componentId: id,
+            config: self.config,
+            fallback: fallback
         )
     }
 }
