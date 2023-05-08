@@ -77,9 +77,23 @@ class ImageView: AnimatedUIControl {
                 }
                 if let imageData = data {
                     if isGif(response) {
-                        self?.image.image = UIImage.gifImageWithData(imageData)
+                        UIView.transition(
+                            with: self?.image ?? UIImageView(),
+                            duration: 0.2,
+                            options: .transitionCrossDissolve,
+                            animations: {
+                                self?.image.image = UIImage.gifImageWithData(imageData)
+                            },
+                            completion: nil)
                     } else {
-                        self?.image.image = UIImage(data: imageData)
+                        UIView.transition(
+                            with: self?.image ?? UIImageView(),
+                            duration: 0.2,
+                            options: .transitionCrossDissolve,
+                            animations: {
+                                self?.image.image = UIImage(data: imageData)
+                            },
+                            completion: nil)
                     }
                     self?.layoutSubviews()
                 } else {
