@@ -77,7 +77,7 @@ class Config {
     }
 }
 
-public enum ComponentLoadingState {
+public enum LoadingState {
     case LOADING
     case ERROR
 }
@@ -131,7 +131,7 @@ public struct Nativebrik {
 
     public func Component<V: View>(
         id: String,
-        fallback: ((_ state: ComponentLoadingState) -> V)?) -> some View {
+        fallback: ((_ state: LoadingState) -> V)?) -> some View {
         return ComponentViewControllerRepresentable(
             componentId: id,
             config: self.config,
@@ -153,7 +153,7 @@ public struct Nativebrik {
     
     public func ComponentVC(
         id: String,
-        fallback: ((_ state: ComponentLoadingState) -> UIView)?,
+        fallback: ((_ state: LoadingState) -> UIView)?,
         onEvent: ((_ event: Event) -> Void)?
     ) -> UIViewController {
         return ComponentViewController(

@@ -13,7 +13,7 @@ import YogaKit
 class ComponentViewController: UIViewController {
     private let componentId: String
     private let config: Config
-    private let fallback: ((_ state: ComponentLoadingState) -> UIView)?
+    private let fallback: ((_ state: LoadingState) -> UIView)?
     private var fallbackView: UIView = UIView()
     required init?(coder: NSCoder) {
         self.config = Config(apiKey: "")
@@ -25,7 +25,7 @@ class ComponentViewController: UIViewController {
     init(
         componentId: String,
         config: Config,
-        fallback: ((_ state: ComponentLoadingState) -> UIView)?
+        fallback: ((_ state: LoadingState) -> UIView)?
     ) {
         self.config = config
         self.fallback = fallback
@@ -85,7 +85,7 @@ class ComponentViewController: UIViewController {
         }
     }
     
-    func renderFallback(state: ComponentLoadingState) {
+    func renderFallback(state: LoadingState) {
         if let fallback = self.fallback {
             let fallbackView = fallback(state)
             UIView.transition(
@@ -107,10 +107,10 @@ class ComponentViewController: UIViewController {
 struct ComponentViewControllerRepresentable<V: View>: UIViewControllerRepresentable {
     let componentId: String
     let config: Config
-    let fallback: ((_ state: ComponentLoadingState) -> V)?
+    let fallback: ((_ state: LoadingState) -> V)?
 
     func makeUIViewController(context: Context) -> ComponentViewController {
-        var fallbackFunc: ((_ state: ComponentLoadingState) -> UIView)? = nil
+        var fallbackFunc: ((_ state: LoadingState) -> UIView)? = nil
         if let fallback = self.fallback {
             fallbackFunc = { state in
                 let hostingController = UIHostingController(rootView: fallback(state))
