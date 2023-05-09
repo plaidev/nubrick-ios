@@ -18,7 +18,7 @@ class PageViewController: UIPageViewController, UIPageViewControllerDelegate {
         self.controllersIdMap = Dictionary(uniqueKeysWithValues: ids.enumerated().map({ (index, id) in
             return (id, controllers[index])
         }))
-        self.pageControl = UIPageControl(frame: CGRect(x: 0,y: UIScreen.main.bounds.maxY - 80, width: UIScreen.main.bounds.width, height: 50))
+        self.pageControl = UIPageControl(frame: CGRect(x: 0,y: UIScreen.main.bounds.maxY - 140, width: UIScreen.main.bounds.width, height: 30))
         self.pageControl.numberOfPages = self.controllers.count
         self.pageControl.currentPage = 0
         super.init(transitionStyle: .scroll, navigationOrientation: .horizontal)

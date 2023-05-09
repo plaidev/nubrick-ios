@@ -148,6 +148,7 @@ struct Query: Decodable {
   var __typename = "Query"
   var data: JSON?
   var component: Component?
+  var trigger: Component?
 }
 enum SystemColorCode: String, Decodable, Encodable {
   case CLEAR = "CLEAR"
@@ -168,9 +169,26 @@ enum SystemColorCode: String, Decodable, Encodable {
     self = try SystemColorCode(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+struct TriggerEventDef: Decodable {
+  var __typename = "TriggerEventDef"
+  var name: String?
+}
+struct TriggerEventInput: Encodable {
+  var name: String
+}
+enum TriggerEventNameDefs: String, Decodable, Encodable {
+  case NATIVEBRIK_NO_TRIGGER = "NATIVEBRIK_NO_TRIGGER"
+  case NATIVEBRIK_SDK_INITIALIZED = "NATIVEBRIK_SDK_INITIALIZED"
+  case NATOVEBRIK_SDK_USER_FIRST_VISIT = "NATOVEBRIK_SDK_USER_FIRST_VISIT"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try TriggerEventNameDefs(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
 struct TriggerSetting: Decodable {
   var __typename = "TriggerSetting"
   var onTrigger: UIBlockEventDispatcher?
+  var trigger: TriggerEventDef?
 }
 indirect enum UIBlock: Decodable {
   case EUIRootBlock(UIRootBlock)
@@ -395,6 +413,72 @@ query getData($query: String!, $placeholder: PlaceholderInput) {
   data(query: $query, placeholder: $placeholder)
 }
 
+query getComponentByTrigger($event: TriggerEventInput!) {
+  trigger(event: $event) {
+    __typename
+    id
+    view
+  }
+}
+
+"""}
+func getComponentByTrigger(query: getComponentByTriggerQuery, apiKey: String, url: String) async throws -> getComponentByTriggerQueryResult {
+  let urlComponents = URLComponents(string: url)!
+  let document = getComponentByTriggerQuery.__document__
+  struct BodyData: Encodable {
+    var operationName = "getComponentByTrigger"
+    var query: String
+    var variables: getComponentByTriggerQuery
+  }
+  let body = BodyData(query: document, variables: query)
+  let jsonData = try JSONEncoder().encode(body)
+  var request = URLRequest(url: urlComponents.url!)
+  request.httpBody = jsonData
+  request.httpMethod = "POST"
+  request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+  request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
+  let (data, response) = try await URLSession.shared.data(for: request)
+  guard let httpResponse = response as? HTTPURLResponse,
+  httpResponse.statusCode == 200 else {
+    throw GraphqlQueryError.Network
+  }
+  let decoder = JSONDecoder()
+  let result = try decoder.decode(getComponentByTriggerQueryResult.self, from: data)
+  return result
+}
+struct getComponentByTriggerQueryResult: Decodable {
+  var data: ResultData?
+  var errors: [GraphqlError]?
+  struct ResultData: Decodable {
+    var trigger: Component??
+  }
+}
+struct getComponentByTriggerQuery: Encodable {
+  var event: TriggerEventInput?
+  enum CodingKeys: String, CodingKey {
+    case event
+  }
+  static let __document__ = """
+query getComponent($id: ID!) {
+  component(id: $id) {
+    __typename
+    id
+    view
+  }
+}
+
+query getData($query: String!, $placeholder: PlaceholderInput) {
+  data(query: $query, placeholder: $placeholder)
+}
+
+query getComponentByTrigger($event: TriggerEventInput!) {
+  trigger(event: $event) {
+    __typename
+    id
+    view
+  }
+}
+
 """}
 func getData(query: getDataQuery, apiKey: String, url: String) async throws -> getDataQueryResult {
   let urlComponents = URLComponents(string: url)!
@@ -445,6 +529,14 @@ query getComponent($id: ID!) {
 
 query getData($query: String!, $placeholder: PlaceholderInput) {
   data(query: $query, placeholder: $placeholder)
+}
+
+query getComponentByTrigger($event: TriggerEventInput!) {
+  trigger(event: $event) {
+    __typename
+    id
+    view
+  }
 }
 
 """}

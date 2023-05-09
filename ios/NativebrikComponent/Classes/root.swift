@@ -69,21 +69,25 @@ class RootViewController: UIViewController {
         var page = self.pages.first { page in
             return pageId == page.id
         }
+        var currentPageId = pageId
 
         // when it's trigger
         if page?.data?.kind == PageKind.TRIGGER {
             page = self.pages.first { p in
                 return p.id == page?.data?.triggerSetting?.onTrigger?.destinationPageId
             }
+            if let pageId = page?.id {
+                currentPageId = pageId
+            }
         }
         
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
-            if let previous = self.currentPVC {
+            self.dismissModal()
+            if let previous = self.currentPC {
                 previous.view.removeFromSuperview()
                 previous.removeFromParentViewController()
             }
-            self.dismiss(animated: true)
             return
         }
         
@@ -122,8 +126,8 @@ class RootViewController: UIViewController {
                 self.currentPVC = nil
             }
             if let pvc = self.currentPVC {
-                if pvc.isInPage(id: pageId) {
-                    pvc.goTo(id: pageId)
+                if pvc.isInPage(id: currentPageId) {
+                    pvc.goTo(id: currentPageId)
                     break
                 } else {
                     pvc.dismiss(animated: true)
@@ -131,7 +135,7 @@ class RootViewController: UIViewController {
                 }
             }
 
-            let pageBlocks = getLinkedPageViewsFromPages(pages: pages, id: pageId)
+            let pageBlocks = getLinkedPageViewsFromPages(pages: pages, id: currentPageId)
             let pageIds = pageBlocks.map { page in
                 return page.id ?? ""
             }
@@ -153,7 +157,7 @@ class RootViewController: UIViewController {
                 previous.view.removeFromSuperview()
                 previous.removeFromParentViewController()
             }
-            self.dismiss(animated: true)
+            self.dismissModal()
             let newPC = pageController
             self.view.addSubview(newPC.view)
             self.addChildViewController(newPC)
@@ -171,7 +175,12 @@ class RootViewController: UIViewController {
     }
     
      @objc func dismissModal() {
-         self.presentedViewController?.dismiss(animated: true)
+         if let pvc = self.currentPVC {
+             pvc.dismiss(animated: true)
+         }
+         if let nvc = self.currentNC {
+             nvc.dismiss(animated: true)
+         }
     }
 }
 
