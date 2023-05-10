@@ -14,10 +14,9 @@ class RootViewController: UIViewController {
     private let pages: [UIPageBlock]!
     private let config: Config
     private var event: UIBlockEventManager? = nil
-    private var currentPageId: String = ""
-    private var currentNC: UINavigationController? = nil
-    private var currentPVC: PageViewController? = nil
-    private var currentPC: UIViewController? = nil
+    private var initialPageId: String = ""
+    private var currentComponent: UIViewController? = nil
+    private var currentModal: NavigationViewControlller? = nil
 
     required init?(coder: NSCoder) {
         self.id = ""
@@ -32,7 +31,7 @@ class RootViewController: UIViewController {
         let trigger = self.pages.first { page in
             return page.data?.kind == PageKind.TRIGGER
         }
-        self.currentPageId = trigger?.id ?? root?.data?.currentPageId ?? ""
+        self.initialPageId = trigger?.id ?? root?.data?.currentPageId ?? ""
         self.config = config
         super.init(nibName: nil, bundle: nil)
 
@@ -57,7 +56,7 @@ class RootViewController: UIViewController {
             layout.justifyContent = .center
         }
 
-        self.presentPage(pageId: self.currentPageId, props: nil)
+        self.presentPage(pageId: self.initialPageId, props: nil)
     }
     
     override func viewDidLayoutSubviews() {
@@ -84,7 +83,7 @@ class RootViewController: UIViewController {
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
             self.dismissModal()
-            if let previous = self.currentPC {
+            if let previous = self.currentComponent {
                 previous.view.removeFromSuperview()
                 previous.removeFromParentViewController()
             }
@@ -99,171 +98,87 @@ class RootViewController: UIViewController {
         )
         
         switch page?.data?.kind {
-        case .PAGE_SHEET:
-            self.presentToTop(pageController)
-            break
-        case .FULL_SCREEN:
-            if self.presentedViewController == nil {
-                self.currentNC = nil
-            }
-            if let nc = self.currentNC {
-                nc.pushViewController(pageController, animated: true)
-            } else {
-                if self.currentPC != nil {
-                    pageController.showFullScreenInitialNavItem()
-                }
-                let currentNC = NavigationViewControlller(
-                    rootViewController: pageController,
-                    hasPrevious: self.currentPC != nil
-                )
-                currentNC.modalPresentationStyle = .overFullScreen
-                self.currentNC = currentNC
-                self.presentToTop(currentNC)
-            }
-            break
-        case .PAGE_VIEW:
-            if self.presentedViewController == nil {
-                self.currentPVC = nil
-            }
-            if let pvc = self.currentPVC {
-                if pvc.isInPage(id: currentPageId) {
-                    pvc.goTo(id: currentPageId)
-                    break
-                } else {
-                    pvc.dismiss(animated: true)
-                    self.currentPVC = nil
-                }
-            }
-
-            let pageBlocks = getLinkedPageViewsFromPages(pages: pages, id: currentPageId)
-            let pageIds = pageBlocks.map { page in
-                return page.id ?? ""
-            }
-            let controllers = pageBlocks.map { page in
-                return PageController(
-                    page: page,
-                    props: props,
-                    event: self.event,
-                    config: self.config
-                )
-            }
-            let pvc = PageViewController(controllers: controllers, ids: pageIds)
-            pvc.modalPresentationStyle = .overFullScreen
-            self.presentToTop(pvc)
-            self.currentPVC = pvc
+        case .MODAL:
+            self.presentNavigation(
+                pageController: pageController,
+                modalPresentationStyle: page?.data?.modalPresentationStyle,
+                modalScreenSize: page?.data?.modalScreenSize
+            )
             break
         default:
-            if let previous = self.currentPC {
+            if let previous = self.currentComponent {
                 previous.view.removeFromSuperview()
                 previous.removeFromParentViewController()
             }
             self.dismissModal()
-            let newPC = pageController
-            self.view.addSubview(newPC.view)
-            self.addChildViewController(newPC)
-            self.currentPC = newPC
+            let component = pageController
+            self.view.addSubview(component.view)
+            self.addChildViewController(component)
+            self.currentComponent = component
             break
         }
+    }
+    
+    func presentNavigation(
+        pageController: PageController,
+        modalPresentationStyle: ModalPresentationStyle?,
+        modalScreenSize: ModalScreenSize?
+    ) {
+        if let modal = self.currentModal {
+            if !isPresenting(presented: self.presentedViewController, vc: modal) {
+                self.currentModal = nil
+            }
+        }
+        
+        if let modal = self.currentModal {
+            modal.pushViewController(pageController, animated: true)
+        } else {
+            pageController.showFullScreenInitialNavItem()
+            let modal = NavigationViewControlller(
+                rootViewController: pageController,
+                hasPrevious: true
+            )
+            modal.modalPresentationStyle = parseModalPresentationStyle(modalPresentationStyle)
+            if let sheet = modal.sheetPresentationController {
+                sheet.detents = parseModalScreenSize(modalScreenSize)
+            }
+            self.currentModal = modal
+            self.presentToTop(modal)
+        }
+        return
     }
     
     func presentToTop(_ viewController: UIViewController) {
-        if let presentedVC = self.presentedViewController {
-            presentedVC.present(viewController, animated: true, completion: nil)
-        } else {
-            self.present(viewController, animated: true, completion: nil)
-        }
+        let top = findTopPresenting(self)
+        top.present(viewController, animated: true, completion: nil)
     }
     
-     @objc func dismissModal() {
-         if let pvc = self.currentPVC {
-             pvc.dismiss(animated: true)
+    @objc func dismissModal() {
+         if let modal = self.currentModal {
+             modal.dismiss(animated: true)
          }
-         if let nvc = self.currentNC {
-             nvc.dismiss(animated: true)
-         }
+         self.currentModal = nil
     }
 }
 
-func getLinkedPageViewsFromPages(pages: [UIPageBlock], id: String) -> [UIPageBlock] {
-    var result: [UIPageBlock] = []
-    var currentId: String = id
-    var trackedIds: [String] = []
-    var counter: Int = 0
-    let pageViewIds = pages.filter { page in
-        return page.data?.kind == PageKind.PAGE_VIEW
-    }.map { page in
-        return page.id ?? ""
-    }
-    
-    // add limit to while.
-    while counter < 100 {
-        counter += 1
-        if trackedIds.contains(where: { id in
-            return id == currentId
-        }) {
-            break
-        }
-        trackedIds.append(currentId)
 
-        let page = pages.first { page in
-            return page.id == currentId && page.data?.kind == PageKind.PAGE_VIEW
-        }
-        if let page = page {
-            if let renderAs = page.data?.renderAs {
-                let eventDispatchers = findEventDispatcherToPageView(
-                    block: renderAs,
-                    pageViewIds: pageViewIds
-                )
-                if let destId = eventDispatchers.first?.destinationPageId {
-                    currentId = destId
-                }
-            }
-            result.append(page)
+
+func findTopPresenting(_ viewContorller: UIViewController) ->  UIViewController {
+    if let presented = viewContorller.presentedViewController {
+        return findTopPresenting(presented)
+    } else {
+        return viewContorller
+    }
+}
+
+func isPresenting(presented: UIViewController?, vc: UIViewController) -> Bool {
+    if let presented = presented {
+        if presented == vc {
+            return true
         } else {
-            break
+            return isPresenting(presented: presented.presentedViewController, vc: vc)
         }
-    }
-    
-    return result
-}
-
-func findEventDispatcherToPageView(block: UIBlock, pageViewIds: [String]) -> [UIBlockEventDispatcher] {
-    var events: [UIBlockEventDispatcher] = []
-    walkOnClick(block: block) { event in
-        events.append(event)
-    }
-    return events.filter { event in
-        return pageViewIds.contains { id in
-            return event.destinationPageId == id
-        }
-    }
-}
-
-func walkOnClick(block: UIBlock, onWalk: ((_ event: UIBlockEventDispatcher) -> Void)) -> Void {
-    switch block {
-    case .EUIFlexContainerBlock(let block):
-        if let event = block.data?.onClick {
-            onWalk(event)
-        }
-        block.data?.children?.forEach({ block in
-            walkOnClick(block: block, onWalk: onWalk)
-        })
-    case .EUICollectionBlock(let block):
-        if let event = block.data?.onClick {
-            onWalk(event)
-        }
-        block.data?.children?.forEach({ block in
-            walkOnClick(block: block, onWalk: onWalk)
-        })
-    case .EUITextBlock(let block):
-        if let event = block.data?.onClick {
-            onWalk(event)
-        }
-    case .EUIImageBlock(let block):
-        if let event = block.data?.onClick {
-            onWalk(event)
-        }
-    default:
-        return
+    } else {
+        return false
     }
 }

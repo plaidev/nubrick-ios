@@ -139,6 +139,15 @@ func parseFrameDataToUIKitUIEdgeInsets(_ data: FrameData?) -> UIEdgeInsets {
     )
 }
 
+func parseModalPresentationStyle(_ data: ModalPresentationStyle?) -> UIModalPresentationStyle {
+    switch data {
+    case .DEPENDS_ON_CONTEXT_OR_PAGE_SHEET:
+        return .pageSheet
+    default:
+        return .overFullScreen
+    }
+}
+
 func parseModalScreenSize(_ data: ModalScreenSize?) -> [UISheetPresentationController.Detent] {
     switch data {
     case .MEDIUM:

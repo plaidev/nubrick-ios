@@ -90,6 +90,14 @@ enum JustifyContent: String, Decodable, Encodable {
     self = try JustifyContent(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+enum ModalPresentationStyle: String, Decodable, Encodable {
+  case DEPENDS_ON_CONTEXT_OR_FULL_SCREEN = "DEPENDS_ON_CONTEXT_OR_FULL_SCREEN"
+  case DEPENDS_ON_CONTEXT_OR_PAGE_SHEET = "DEPENDS_ON_CONTEXT_OR_PAGE_SHEET"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try ModalPresentationStyle(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
 enum ModalScreenSize: String, Decodable, Encodable {
   case MEDIUM = "MEDIUM"
   case LARGE = "LARGE"
@@ -110,9 +118,7 @@ enum Overflow: String, Decodable, Encodable {
 }
 enum PageKind: String, Decodable, Encodable {
   case COMPONENT = "COMPONENT"
-  case FULL_SCREEN = "FULL_SCREEN"
-  case PAGE_SHEET = "PAGE_SHEET"
-  case PAGE_VIEW = "PAGE_VIEW"
+  case MODAL = "MODAL"
   case TRIGGER = "TRIGGER"
   case LOAD_BALANCER = "LOAD_BALANCER"
   case DISMISSED = "DISMISSED"
@@ -323,6 +329,7 @@ struct UIPageBlock: Decodable {
 struct UIPageBlockData: Decodable {
   var __typename = "UIPageBlockData"
   var kind: PageKind?
+  var modalPresentationStyle: ModalPresentationStyle?
   var modalScreenSize: ModalScreenSize?
   var triggerSetting: TriggerSetting?
   var renderAs: UIBlock?

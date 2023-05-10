@@ -32,7 +32,7 @@ class PageController: UIViewController {
         self.event = event
         super.init(nibName: nil, bundle: nil)
         
-        if page?.data?.kind == PageKind.PAGE_SHEET {
+        if page?.data?.kind == PageKind.MODAL {
             if let sheet = self.sheetPresentationController {
                 sheet.detents = parseModalScreenSize(page?.data?.modalScreenSize)
             }
@@ -121,7 +121,7 @@ class PageController: UIViewController {
         self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Close", style: .plain, target: self, action: #selector(onDismiss))
     }
     
-    @objc func onDismiss(){
-        self.dismiss(animated: true)
+    @objc func onDismiss() {
+        self.parent?.dismiss(animated: true)
     }
 }
