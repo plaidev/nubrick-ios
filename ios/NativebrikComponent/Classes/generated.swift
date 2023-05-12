@@ -107,6 +107,12 @@ enum ModalScreenSize: String, Decodable, Encodable {
     self = try ModalScreenSize(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+struct NavigationBackButton: Decodable {
+  var __typename = "NavigationBackButton"
+  var title: String?
+  var color: Color?
+  var visible: Boolean?
+}
 enum Overflow: String, Decodable, Encodable {
   case VISIBLE = "VISIBLE"
   case HIDDEN = "HIDDEN"
@@ -331,6 +337,7 @@ struct UIPageBlockData: Decodable {
   var kind: PageKind?
   var modalPresentationStyle: ModalPresentationStyle?
   var modalScreenSize: ModalScreenSize?
+  var modalNavigationBackButton: NavigationBackButton?
   var triggerSetting: TriggerSetting?
   var renderAs: UIBlock?
   var position: UIPageBlockPosition?
