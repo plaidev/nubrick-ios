@@ -15,6 +15,7 @@ class PageController: UIViewController {
     private let config: Config
     private var data: JSON? = nil
     private var event: UIBlockEventManager? = nil
+    // TODO: rename to isFirstModal
     private var fullScreenInitialNavItemVisibility = false
     private var loading: Bool = false
 
@@ -24,25 +25,25 @@ class PageController: UIViewController {
         self.config = Config(apiKey: "")
         super.init(coder: coder)
     }
-    
+
     init(page: UIPageBlock?, props: [Property]?, event: UIBlockEventManager?, config: Config) {
         self.page = page
         self.props = props
         self.config = config
         self.event = event
         super.init(nibName: nil, bundle: nil)
-        
+
         if page?.data?.kind == PageKind.MODAL {
             if let sheet = self.sheetPresentationController {
                 sheet.detents = parseModalScreenSize(page?.data?.modalScreenSize)
             }
         }
     }
-    
+
     func showFullScreenInitialNavItem() {
         self.fullScreenInitialNavItemVisibility = true
     }
-    
+
     override func viewDidLoad() {
         self.renderNavItems()
         self.loadDataAndRender()
@@ -52,7 +53,7 @@ class PageController: UIViewController {
         super.viewDidLayoutSubviews()
         self.view.yoga.applyLayout(preservingOrigin: true)
     }
-    
+
     func renderView() {
         if let renderAs = self.page?.data?.renderAs {
             self.view = UIViewBlock(
@@ -67,7 +68,7 @@ class PageController: UIViewController {
             )
         }
     }
-    
+
     func loadDataAndRender() {
         let query = self.page?.data?.query ?? ""
         if query == "" {
@@ -78,13 +79,13 @@ class PageController: UIViewController {
             self.loading = true
             self.renderView()
         }
-        
+
         let properties: [PropertyInput] = self.page?.data?.props?.enumerated().map { (index, property) in
             let propIndexInEvent = self.props?.firstIndex(where: { prop in
                 return property.name == prop.name
             }) ?? -1
             let propInEvent = propIndexInEvent >= 0 ? self.props![propIndexInEvent] : nil
-            
+
             return PropertyInput(
                 name: property.name ?? "",
                 value: propInEvent?.value ?? property.value ?? "",
@@ -92,7 +93,7 @@ class PageController: UIViewController {
             )
         } ?? []
         let placeholderInput = PlaceholderInput(properties: properties)
-        
+
         DispatchQueue.global().async {
             Task {
                 let data = try await getData(
@@ -113,15 +114,44 @@ class PageController: UIViewController {
             }
         }
     }
-    
+
     func renderNavItems() {
-        if !self.fullScreenInitialNavItemVisibility {
+        let buttonData = self.page?.data?.modalNavigationBackButton
+        if buttonData?.visible == false {
+            self.navigationItem.setHidesBackButton(true, animated: true)
             return
+        } else {
+            self.navigationItem.setHidesBackButton(false, animated: true)
         }
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Close", style: .plain, target: self, action: #selector(onDismiss))
+        let leftButton = UIBarButtonItem(
+            title: "",
+            style: .plain,
+            target: self,
+            action: #selector(onClickBack)
+        )
+
+        if let color = buttonData?.color {
+            leftButton.tintColor = parseColor(color)
+        }
+
+        if self.fullScreenInitialNavItemVisibility {
+            if let title = buttonData?.title {
+                leftButton.title = title
+            } else {
+                leftButton.title = "Close"
+            }
+            self.navigationItem.leftBarButtonItem = leftButton
+        } else {
+            if let title = buttonData?.title {
+                leftButton.title = title
+            } else {
+                leftButton.title = "Back"
+            }
+            self.navigationController?.navigationBar.topItem?.backBarButtonItem = leftButton
+        }
     }
-    
-    @objc func onDismiss() {
-        self.parent?.dismiss(animated: true)
+
+    @objc func onClickBack() {
+        self.navigationController?.popViewController(animated: true)
     }
 }
