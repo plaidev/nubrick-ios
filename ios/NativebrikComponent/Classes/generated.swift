@@ -26,8 +26,6 @@ struct Color: Decodable {
   var green: Float?
   var blue: Float?
   var alpha: Float?
-  var code: SystemColorCode?
-  var string: String?
 }
 struct Component: Decodable {
   var __typename = "Component"
@@ -161,25 +159,6 @@ struct Query: Decodable {
   var data: JSON?
   var component: Component?
   var trigger: Component?
-}
-enum SystemColorCode: String, Decodable, Encodable {
-  case CLEAR = "CLEAR"
-  case PRIMARY = "PRIMARY"
-  case SECONDARY = "SECONDARY"
-  case BLACK = "BLACK"
-  case BLUE = "BLUE"
-  case GRAY = "GRAY"
-  case GREEN = "GREEN"
-  case ORANGE = "ORANGE"
-  case PINK = "PINK"
-  case PURPLE = "PURPLE"
-  case RED = "RED"
-  case WHITE = "WHITE"
-  case YELLOW = "YELLOW"
-  case unknown = "unknown"
-  init(from decoder: Decoder) throws {
-    self = try SystemColorCode(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-  }
 }
 struct TriggerEventDef: Decodable {
   var __typename = "TriggerEventDef"
