@@ -43,6 +43,10 @@ class ComponentViewController: UIViewController {
             let fallbackView = fallback(.LOADING)
             self.view.addSubview(fallbackView)
             self.fallbackView = fallbackView
+        } else {
+            let fallbackView = UIView()
+            self.view.addSubview(fallbackView)
+            self.fallbackView = fallbackView
         }
         self.loadComponent(componentId: self.componentId)
     }
