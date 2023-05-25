@@ -2,10 +2,12 @@ use_frameworks!
 
 platform :ios, '10.0'
 
-target 'NativebrikComponent_Example' do
-  pod 'NativebrikComponent', :path => '../'
+project 'Nativebrik_Example/Nativebrik_Example.xcodeproj'
 
-  target 'NativebrikComponent_Tests' do
+target 'Nativebrik_Example' do
+  pod 'Nativebrik', :path => '../../'
+
+  target 'Nativebrik_ExampleTests' do
     inherit! :search_paths
 
     pod 'Quick', '~> 2.2.0'

@@ -4,30 +4,23 @@
 
 ### ios
 
+#### Swift package
+
 #### Cocoapods
 
 ```ruby
-pod 'NativebrikComponent'
+pod 'Nativebrik'
 ```
 
 ### android
-
-### react native
-
-### xamarin
 
 ## examples
 
 ios
 
 ```
-open ./ios/Example/NativebrikComponent.xcworkspace
+open ./ios/Example/Nativebrik_Example.xcworkspace
 ```
 
 android
 
-react-native
-
-flutter
-
-xamarin
