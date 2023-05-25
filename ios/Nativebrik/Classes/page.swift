@@ -135,17 +135,19 @@ class PageController: UIViewController {
         }
 
         if self.fullScreenInitialNavItemVisibility {
+            leftButton.title = "Close"
             if let title = buttonData?.title {
-                leftButton.title = title
-            } else {
-                leftButton.title = "Close"
+                if title != "" {
+                    leftButton.title = title
+                }
             }
             self.navigationItem.leftBarButtonItem = leftButton
         } else {
+            leftButton.title = "Back"
             if let title = buttonData?.title {
-                leftButton.title = title
-            } else {
-                leftButton.title = "Back"
+                if title != "" {
+                    leftButton.title = title
+                }
             }
             self.navigationController?.navigationBar.topItem?.backBarButtonItem = leftButton
         }
