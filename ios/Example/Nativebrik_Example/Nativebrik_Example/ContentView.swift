@@ -10,6 +10,7 @@ import Nativebrik
 
 struct ItemBuyButton: View {
     let price: String
+    let onAction: () -> ()
     var body: some View {
         VStack {
             Divider()
@@ -17,6 +18,7 @@ struct ItemBuyButton: View {
                 Text(self.price).fontWeight(.medium)
                 Spacer()
                 Button(action: {
+                    self.onAction()
                 }) {
                     Text("Book").foregroundColor(.white).fontWeight(.medium)
                 }.padding(.horizontal, 38).padding(.vertical, 8).background(.primary).cornerRadius(8)
@@ -76,7 +78,12 @@ struct ItemPanel: View {
                         Spacer()
                     }.padding()
                 }
-                ItemBuyButton(price: self.price)
+                ItemBuyButton(
+                    price: self.price,
+                    onAction: {
+                        self.isShowingItemView.toggle()
+                    }
+                )
             }
         }
     }
