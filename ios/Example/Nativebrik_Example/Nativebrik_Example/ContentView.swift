@@ -129,9 +129,9 @@ Morondava is a charming coastal town located on the western coast of Madagascar.
             Header()
             ScrollView(.vertical) {
                 Nativebrik(
-                    apiKey: "1G67fRWJlE9dNZoJffmLTFzAhHhMRh7R",
-                    environment: "http://localhost:8060/client")
-                .Component(id: "ch8cre6t3eujf4bktfn0").frame(width: UIScreen.main.bounds.width, height: 260)
+                    apiKey: "pdqfE6r1Zlng8FiqZ5jvlXIbwqS6jsVP"
+                )
+                .Component(id: "chq34ea23akg00echmd0").frame(width: UIScreen.main.bounds.width, height: 260)
                 ForEach(self.items, id: \.title) { item in
                     item.padding()
                 }
@@ -144,8 +144,7 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .top) {
             Nativebrik(
-                apiKey: "1G67fRWJlE9dNZoJffmLTFzAhHhMRh7R",
-                environment: "http://localhost:8060/client"
+                apiKey: "pdqfE6r1Zlng8FiqZ5jvlXIbwqS6jsVP"
             ).TriggerManager()
             AppView()
         }
