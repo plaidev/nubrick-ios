@@ -1,0 +1,20 @@
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install
+        run: gem install cocoapods
+      - name: Release
+        run: |
+          set -eo pipefail
+          pod lib lint --allow-warnings Nativebrik.podspec
+          pod trunk push  --allow-warnings Nativebrik.podspec
+        env:
+          COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
