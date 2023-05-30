@@ -1,6 +1,6 @@
 use_frameworks!
 
-platform :ios, '10.0'
+platform :ios, '16.4'
 
 project 'Nativebrik_Example/Nativebrik_Example.xcodeproj'
 
@@ -15,4 +15,9 @@ target 'Nativebrik_Example' do
     pod 'FBSnapshotTestCase' , '~> 2.1.4'
     pod 'Nimble-Snapshots' , '~> 9.4.0'
   end
+end
+
+post_install do |installer|
+  puts 'Patching Yoga.cpp to compile with Xcode 14.3'
+  %x(patch Pods/Yoga/yoga/Yoga.cpp < ./Yoga.cpp.patch)
 end

@@ -11,10 +11,10 @@ TODO: Add long description of the pod here.
   s.author           = { '14113526' => 'RyosukeCla@users.noreply.github.com' }
   s.source           = { :git => 'https://github.com/plaidev/nativebrik-sdk.git', :tag => s.version.to_s }
 
-  s.ios.deployment_target = '15.0'
+  s.ios.deployment_target = '16.4'
 
   s.source_files = 'ios/Nativebrik/Classes/**/*'
 
   s.frameworks = 'UIKit', 'Foundation'
-  s.dependency 'YogaKit', '~> 1.7'
+  s.dependency 'YogaKit', '~> 1.18'
 end
