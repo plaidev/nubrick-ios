@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3AAD4EF0846C42C3D8866C39 /* Pods_Nativebrik_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BEA15960FE3C66BB75C9A8C /* Pods_Nativebrik_Example.framework */; };
-		BBEA312FBBAD6F86462AC7D2 /* Pods_Nativebrik_ExampleTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A9B150EF0E6EBC53C813120B /* Pods_Nativebrik_ExampleTests.framework */; };
 		C17002562A1F2757003E20C9 /* Nativebrik_ExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17002552A1F2757003E20C9 /* Nativebrik_ExampleApp.swift */; };
 		C17002582A1F2757003E20C9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17002572A1F2757003E20C9 /* ContentView.swift */; };
 		C170025A2A1F2758003E20C9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C17002592A1F2758003E20C9 /* Assets.xcassets */; };
@@ -16,6 +14,8 @@
 		C17002672A1F2758003E20C9 /* Nativebrik_ExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17002662A1F2758003E20C9 /* Nativebrik_ExampleTests.swift */; };
 		C17002712A1F2758003E20C9 /* Nativebrik_ExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17002702A1F2758003E20C9 /* Nativebrik_ExampleUITests.swift */; };
 		C17002732A1F2758003E20C9 /* Nativebrik_ExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17002722A1F2758003E20C9 /* Nativebrik_ExampleUITestsLaunchTests.swift */; };
+		F0A7BF072A656BD3BF5310A2 /* Pods_Nativebrik_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A0AF88AF576D0AAAEA19DDE /* Pods_Nativebrik_Example.framework */; };
+		FFE85287B4925D973F32A803 /* Pods_Nativebrik_ExampleTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E80529B4F05BF9F08DDA2869 /* Pods_Nativebrik_ExampleTests.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,12 +36,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2BEA15960FE3C66BB75C9A8C /* Pods_Nativebrik_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Nativebrik_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		472032F688205BE38928C575 /* Pods-Nativebrik_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Nativebrik_Example.release.xcconfig"; path = "Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example.release.xcconfig"; sourceTree = "<group>"; };
-		58BA260FFE87B04D915AFD5C /* Pods-Nativebrik_ExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Nativebrik_ExampleTests.release.xcconfig"; path = "Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests.release.xcconfig"; sourceTree = "<group>"; };
-		5ED831C7A2001AFD08DD4E91 /* Pods-Nativebrik_ExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Nativebrik_ExampleTests.debug.xcconfig"; path = "Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
-		94631993CF1C7E8D17C2BA8A /* Pods-Nativebrik_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Nativebrik_Example.debug.xcconfig"; path = "Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example.debug.xcconfig"; sourceTree = "<group>"; };
-		A9B150EF0E6EBC53C813120B /* Pods_Nativebrik_ExampleTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Nativebrik_ExampleTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		06D813980A5CAC2168CC8A49 /* Pods-Nativebrik_ExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Nativebrik_ExampleTests.release.xcconfig"; path = "Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests.release.xcconfig"; sourceTree = "<group>"; };
+		4A0AF88AF576D0AAAEA19DDE /* Pods_Nativebrik_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Nativebrik_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		780618F358D431D88216D77A /* Pods-Nativebrik_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Nativebrik_Example.release.xcconfig"; path = "Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example.release.xcconfig"; sourceTree = "<group>"; };
 		C17002522A1F2757003E20C9 /* Nativebrik_Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nativebrik_Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C17002552A1F2757003E20C9 /* Nativebrik_ExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nativebrik_ExampleApp.swift; sourceTree = "<group>"; };
 		C17002572A1F2757003E20C9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -52,6 +49,9 @@
 		C170026C2A1F2758003E20C9 /* Nativebrik_ExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Nativebrik_ExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C17002702A1F2758003E20C9 /* Nativebrik_ExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nativebrik_ExampleUITests.swift; sourceTree = "<group>"; };
 		C17002722A1F2758003E20C9 /* Nativebrik_ExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nativebrik_ExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		C6254460EA9239CC055C7668 /* Pods-Nativebrik_ExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Nativebrik_ExampleTests.debug.xcconfig"; path = "Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
+		D02D15D30014AA4C133B54DE /* Pods-Nativebrik_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Nativebrik_Example.debug.xcconfig"; path = "Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example.debug.xcconfig"; sourceTree = "<group>"; };
+		E80529B4F05BF9F08DDA2869 /* Pods_Nativebrik_ExampleTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Nativebrik_ExampleTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,7 +59,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3AAD4EF0846C42C3D8866C39 /* Pods_Nativebrik_Example.framework in Frameworks */,
+				F0A7BF072A656BD3BF5310A2 /* Pods_Nativebrik_Example.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -67,7 +67,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BBEA312FBBAD6F86462AC7D2 /* Pods_Nativebrik_ExampleTests.framework in Frameworks */,
+				FFE85287B4925D973F32A803 /* Pods_Nativebrik_ExampleTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -81,22 +81,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		8CD8E12498610096213E28AC /* Frameworks */ = {
+		A35A3730CB85BE2B0C390FB0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				2BEA15960FE3C66BB75C9A8C /* Pods_Nativebrik_Example.framework */,
-				A9B150EF0E6EBC53C813120B /* Pods_Nativebrik_ExampleTests.framework */,
+				4A0AF88AF576D0AAAEA19DDE /* Pods_Nativebrik_Example.framework */,
+				E80529B4F05BF9F08DDA2869 /* Pods_Nativebrik_ExampleTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		9AD707E7C6CE56F9B497A7E2 /* Pods */ = {
+		BB283430AC7F8B5B060583D2 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				94631993CF1C7E8D17C2BA8A /* Pods-Nativebrik_Example.debug.xcconfig */,
-				472032F688205BE38928C575 /* Pods-Nativebrik_Example.release.xcconfig */,
-				5ED831C7A2001AFD08DD4E91 /* Pods-Nativebrik_ExampleTests.debug.xcconfig */,
-				58BA260FFE87B04D915AFD5C /* Pods-Nativebrik_ExampleTests.release.xcconfig */,
+				D02D15D30014AA4C133B54DE /* Pods-Nativebrik_Example.debug.xcconfig */,
+				780618F358D431D88216D77A /* Pods-Nativebrik_Example.release.xcconfig */,
+				C6254460EA9239CC055C7668 /* Pods-Nativebrik_ExampleTests.debug.xcconfig */,
+				06D813980A5CAC2168CC8A49 /* Pods-Nativebrik_ExampleTests.release.xcconfig */,
 			);
 			name = Pods;
 			path = ../Pods;
@@ -109,8 +109,8 @@
 				C17002652A1F2758003E20C9 /* Nativebrik_ExampleTests */,
 				C170026F2A1F2758003E20C9 /* Nativebrik_ExampleUITests */,
 				C17002532A1F2757003E20C9 /* Products */,
-				9AD707E7C6CE56F9B497A7E2 /* Pods */,
-				8CD8E12498610096213E28AC /* Frameworks */,
+				BB283430AC7F8B5B060583D2 /* Pods */,
+				A35A3730CB85BE2B0C390FB0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -167,11 +167,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C17002762A1F2758003E20C9 /* Build configuration list for PBXNativeTarget "Nativebrik_Example" */;
 			buildPhases = (
-				3CFDDEE2B8EC284AD64A89E2 /* [CP] Check Pods Manifest.lock */,
+				7AFB1A74FAC56A701142BB63 /* [CP] Check Pods Manifest.lock */,
 				C170024E2A1F2757003E20C9 /* Sources */,
 				C170024F2A1F2757003E20C9 /* Frameworks */,
 				C17002502A1F2757003E20C9 /* Resources */,
-				2B52291141B8924E2C1E8C5D /* [CP] Embed Pods Frameworks */,
+				7B0D1BB5D0612CF1161A087B /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -186,11 +186,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C17002792A1F2758003E20C9 /* Build configuration list for PBXNativeTarget "Nativebrik_ExampleTests" */;
 			buildPhases = (
-				ACE2138C8372D5C068A8EFEF /* [CP] Check Pods Manifest.lock */,
+				74386BCED223D1C6E1EC1043 /* [CP] Check Pods Manifest.lock */,
 				C170025E2A1F2758003E20C9 /* Sources */,
 				C170025F2A1F2758003E20C9 /* Frameworks */,
 				C17002602A1F2758003E20C9 /* Resources */,
-				0940670BDA26FE1FFBB6F741 /* [CP] Embed Pods Frameworks */,
+				A408D8DC11386A82546BE130 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -290,41 +290,29 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		0940670BDA26FE1FFBB6F741 /* [CP] Embed Pods Frameworks */ = {
+		74386BCED223D1C6E1EC1043 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			name = "[CP] Embed Pods Frameworks";
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Nativebrik_ExampleTests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests-frameworks.sh\"\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		2B52291141B8924E2C1E8C5D /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		3CFDDEE2B8EC284AD64A89E2 /* [CP] Check Pods Manifest.lock */ = {
+		7AFB1A74FAC56A701142BB63 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -346,26 +334,38 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		ACE2138C8372D5C068A8EFEF /* [CP] Check Pods Manifest.lock */ = {
+		7B0D1BB5D0612CF1161A087B /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
+			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Nativebrik_ExampleTests-checkManifestLockResult.txt",
+				"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A408D8DC11386A82546BE130 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Nativebrik_ExampleTests/Pods-Nativebrik_ExampleTests-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -463,7 +463,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -517,7 +517,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -529,13 +529,14 @@
 		};
 		C17002772A1F2758003E20C9 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 94631993CF1C7E8D17C2BA8A /* Pods-Nativebrik_Example.debug.xcconfig */;
+			baseConfigurationReference = D02D15D30014AA4C133B54DE /* Pods-Nativebrik_Example.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Nativebrik_Example/Preview Content\"";
+				DEVELOPMENT_TEAM = M3LJ3SDTT4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -558,13 +559,14 @@
 		};
 		C17002782A1F2758003E20C9 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 472032F688205BE38928C575 /* Pods-Nativebrik_Example.release.xcconfig */;
+			baseConfigurationReference = 780618F358D431D88216D77A /* Pods-Nativebrik_Example.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Nativebrik_Example/Preview Content\"";
+				DEVELOPMENT_TEAM = M3LJ3SDTT4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -587,7 +589,7 @@
 		};
 		C170027A2A1F2758003E20C9 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5ED831C7A2001AFD08DD4E91 /* Pods-Nativebrik_ExampleTests.debug.xcconfig */;
+			baseConfigurationReference = C6254460EA9239CC055C7668 /* Pods-Nativebrik_ExampleTests.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -607,7 +609,7 @@
 		};
 		C170027B2A1F2758003E20C9 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 58BA260FFE87B04D915AFD5C /* Pods-Nativebrik_ExampleTests.release.xcconfig */;
+			baseConfigurationReference = 06D813980A5CAC2168CC8A49 /* Pods-Nativebrik_ExampleTests.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
