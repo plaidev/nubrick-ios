@@ -11,7 +11,7 @@ Nativebrik SDK for iOS.
   s.author           = { '14113526' => 'RyosukeCla@users.noreply.github.com' }
   s.source           = { :git => 'https://github.com/plaidev/nativebrik-sdk.git', :tag => 'v' + s.version.to_s }
 
-  s.swift-version = '~> 5.7'
+  s.swift_version = '5'
   s.ios.deployment_target = '16.4'
 
   s.source_files = 'ios/Nativebrik/Classes/**/*'
