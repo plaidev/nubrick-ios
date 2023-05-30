@@ -13,8 +13,8 @@ jobs:
         run: gem install cocoapods
       - name: Release
         run: |
-          set -eo pipefail
+          set -eux
           pod lib lint --allow-warnings Nativebrik.podspec
-          pod trunk push  --allow-warnings Nativebrik.podspec
+          pod trunk push --verbose --allow-warnings Nativebrik.podspec
         env:
           COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
