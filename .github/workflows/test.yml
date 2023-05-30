@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install
         run: gem install cocoapods
-      - name: Release
+      - name: Test
         run: |
           set -eo pipefail
           pod lib lint --allow-warnings Nativebrik.podspec
