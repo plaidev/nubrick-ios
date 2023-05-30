@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Nativebrik'
-  s.version          = '0.1.0'
+  s.version          = '0.1.1'
   s.summary          = 'Nativebrik SDK'
   s.description      = <<-DESC
 Nativebrik SDK for iOS.
@@ -11,6 +11,7 @@ Nativebrik SDK for iOS.
   s.author           = { '14113526' => 'RyosukeCla@users.noreply.github.com' }
   s.source           = { :git => 'https://github.com/plaidev/nativebrik-sdk.git', :tag => 'v' + s.version.to_s }
 
+  s.swift-version = '~> 5.7'
   s.ios.deployment_target = '16.4'
 
   s.source_files = 'ios/Nativebrik/Classes/**/*'
