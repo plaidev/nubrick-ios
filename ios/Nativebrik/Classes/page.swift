@@ -34,8 +34,10 @@ class PageController: UIViewController {
         super.init(nibName: nil, bundle: nil)
 
         if page?.data?.kind == PageKind.MODAL {
-            if let sheet = self.sheetPresentationController {
-                sheet.detents = parseModalScreenSize(page?.data?.modalScreenSize)
+            if #available(iOS 15.0, *) {
+                if let sheet = self.sheetPresentationController {
+                    sheet.detents = parseModalScreenSize(page?.data?.modalScreenSize)
+                }
             }
         }
     }

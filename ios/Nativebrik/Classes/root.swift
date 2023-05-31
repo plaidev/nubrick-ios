@@ -139,8 +139,10 @@ class RootViewController: UIViewController {
                 hasPrevious: true
             )
             modal.modalPresentationStyle = parseModalPresentationStyle(modalPresentationStyle)
-            if let sheet = modal.sheetPresentationController {
-                sheet.detents = parseModalScreenSize(modalScreenSize)
+            if #available(iOS 15.0, *) {
+                if let sheet = modal.sheetPresentationController {
+                    sheet.detents = parseModalScreenSize(modalScreenSize)
+                }
             }
             self.currentModal = modal
             self.presentToTop(modal)

@@ -148,6 +148,7 @@ func parseModalPresentationStyle(_ data: ModalPresentationStyle?) -> UIModalPres
     }
 }
 
+@available(iOS 15.0, *)
 func parseModalScreenSize(_ data: ModalScreenSize?) -> [UISheetPresentationController.Detent] {
     switch data {
     case .MEDIUM:
