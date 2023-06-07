@@ -68,6 +68,12 @@ class PageController: UIViewController {
                     loading: self.loading
                 )
             )
+
+            // if it's transparent and it's modal, use systemBgColor as the background.
+            // i think this should be refactored someday.
+            if self.view.backgroundColor == nil && self.page?.data?.kind == .MODAL {
+                self.view.backgroundColor = .systemBackground
+            }
         }
     }
 
