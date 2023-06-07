@@ -246,9 +246,13 @@ func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDir
 }
 
 func configureBorder(view: UIView, frame: FrameData?) {
-    view.layer.backgroundColor = parseColorToCGColor(frame?.background)
+    if let bg = frame?.background {
+        view.layer.backgroundColor = parseColorToCGColor(bg)
+    }
     view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
-    view.layer.borderColor = parseColorToCGColor(frame?.borderColor)
+    if let bc = frame?.borderColor {
+        view.layer.borderColor = parseColorToCGColor(bc)
+    }
     view.layer.cornerRadius = CGFloat(frame?.borderRadius ?? 0)
 }
 
