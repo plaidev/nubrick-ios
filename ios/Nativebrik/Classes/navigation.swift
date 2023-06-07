@@ -41,6 +41,7 @@ class NavigationViewControlller: UINavigationController {
             layout.alignItems = .center
             layout.justifyContent = .center
         }
+        self.view.backgroundColor = .systemBackground
         self.interactivePopGestureRecognizer?.delegate = self
         self.interactivePopGestureRecognizer?.isEnabled = true
     }
