@@ -23,7 +23,11 @@ class TextView: AnimatedUIControl {
         
         let label = UILabel()
         label.yoga.isEnabled = true
-        label.textColor = parseColor(block.data?.color)
+        if let color = block.data?.color {
+            label.textColor = parseColor(color)
+        } else {
+            label.textColor = .label
+        }
         label.font = parseTextBlockDataToUIFont(block.data)
         let text = compileTemplate(template: block.data?.value ?? "") { placeholder in
             return context.getByReferenceKey(key: placeholder)
