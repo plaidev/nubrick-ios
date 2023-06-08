@@ -1,0 +1,11 @@
+--- ./Pods/Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example-frameworks.sh	2023-06-07 19:04:57
++++ ./Pods/Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example-frameworks.patched.sh	2023-06-07 19:04:57
+@@ -41,7 +41,7 @@
+
+   if [ -L "${source}" ]; then
+     echo "Symlinked..."
+-    source="$(readlink "${source}")"
++    source="$(readlink -f "${source}")"
+   fi
+
+   if [ -d "${source}/${BCSYMBOLMAP_DIR}" ]; then

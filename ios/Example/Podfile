@@ -20,4 +20,6 @@ end
 post_install do |installer|
   puts 'Patching Yoga.cpp to compile with Xcode 14.3'
   %x(patch -N Pods/Yoga/yoga/Yoga.cpp < ./Yoga.cpp.patch || true)
+  puts 'Patching frameworks.sh to compile with Xcode 14.3'
+  %x(patch -N "Pods/Target Support Files/Pods-Nativebrik_Example/Pods-Nativebrik_Example-frameworks.sh" < ./frameworks.sh.patch || true)
 end
