@@ -33,9 +33,9 @@ struct ItemPanel: View {
     let subtitle: String
     let price: String
     var desc: String = "Lorem Ipsum"
-    
+
     @State private var isShowingItemView = false
-    
+
     var body: some View {
         VStack {
             AsyncImage(url: URL(string: self.image)) { phase in
@@ -131,7 +131,7 @@ Morondava is a charming coastal town located on the western coast of Madagascar.
                 Nativebrik(
                     apiKey: "pdqfE6r1Zlng8FiqZ5jvlXIbwqS6jsVP"
                 )
-                .Component(id: "chq34ea23akg00echmd0").frame(width: UIScreen.main.bounds.width, height: 260)
+                .Component(id: "ci396q223akg00audcqg").frame(width: UIScreen.main.bounds.width, height: 270)
                 ForEach(self.items, id: \.title) { item in
                     item.padding()
                 }
