@@ -167,7 +167,7 @@ public class Nativebrik {
 
     public func Component<V: View>(
         id: String,
-        fallback: ((_ state: LoadingState) -> V)?) -> some View {
+        @ViewBuilder fallback: (@escaping (_ state: LoadingState) -> V)) -> some View {
         return ComponentViewControllerRepresentable(
             componentId: id,
             config: self.config,
