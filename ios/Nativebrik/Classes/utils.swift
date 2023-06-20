@@ -121,12 +121,36 @@ func parseFontWeight(_ data: FontWeight?) -> UIFont.Weight {
     }
 }
 
+func parseFontDesign(_ data: FontDesign?) -> UIFontDescriptor.SystemDesign {
+    switch data {
+    case .MONOSPACE:
+        return .monospaced
+    case .ROUNDED:
+        return .rounded
+    case .SERIF:
+        return .serif
+    default:
+        return .default
+    }
+}
+
 func parseTextBlockDataToUIFont(_ data: UITextBlockData?) -> UIFont {
     switch data {
     case .none:
-        return UIFont.systemFont(ofSize: 16, weight: parseFontWeight(nil))
+        return UIFont.systemFont(
+            ofSize: 16,
+            weight: parseFontWeight(nil)
+        )
     case .some(let text):
-        return UIFont.systemFont(ofSize: CGFloat(text.size ?? 16), weight: parseFontWeight(text.weight))
+        let size = CGFloat(text.size ?? 16)
+        let systemFont = UIFont.systemFont(ofSize: size, weight: parseFontWeight(data?.weight))
+        let font: UIFont
+        if let descriptor = systemFont.fontDescriptor.withDesign(parseFontDesign(data?.design)) {
+            font = UIFont(descriptor: descriptor, size: size)
+        } else {
+            font = systemFont
+        }
+        return font
     }
 }
 

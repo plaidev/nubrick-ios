@@ -41,6 +41,16 @@ enum FlexDirection: String, Decodable, Encodable {
     self = try FlexDirection(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+enum FontDesign: String, Decodable, Encodable {
+  case DEFAULT = "DEFAULT"
+  case MONOSPACE = "MONOSPACE"
+  case ROUNDED = "ROUNDED"
+  case SERIF = "SERIF"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try FontDesign(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
 enum FontWeight: String, Decodable, Encodable {
   case ULTRA_LIGHT = "ULTRA_LIGHT"
   case THIN = "THIN"
@@ -348,6 +358,7 @@ struct UITextBlockData: Decodable {
   var value: String?
   var size: Int?
   var color: Color?
+  var design: FontDesign?
   var weight: FontWeight?
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
