@@ -7,39 +7,41 @@
 
 import Foundation
 import SwiftUI
+import Combine
 
 class Config {
-    let apiKey: String
+    let projectId: String
     var url: String = "https://nativebrik.com/client"
+    var cdnUrl: String = "https://cdn.nativebrik.com"
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
 
     init() {
-        self.apiKey = ""
+        self.projectId = ""
     }
 
-    init(apiKey: String) {
-        self.apiKey = apiKey
+    init(projectId: String) {
+        self.projectId = projectId
     }
 
     init(
-        apiKey: String,
+        projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)?
     ) {
-        self.apiKey = apiKey
+        self.projectId = projectId
         if let onEvent = onEvent {
             self.eventListeners.append(onEvent)
         }
     }
 
     // for internal use
-    init(apiKey: String, url: String) {
-        self.apiKey = apiKey
+    init(projectId: String, url: String) {
+        self.projectId = projectId
         self.url = url
     }
 
     func initFrom(onEvent: ((_ event: ComponentEvent) -> Void)?) -> Config {
         let config = Config(
-            apiKey: self.apiKey,
+            projectId: self.projectId,
             url: self.url
         )
 
@@ -80,11 +82,6 @@ class Config {
     }
 }
 
-public enum LoadingState {
-    case LOADING
-    case ERROR
-}
-
 public enum EventPropertyType {
     case INTEGER
     case STRING
@@ -107,6 +104,7 @@ public struct ComponentEvent {
 
 public struct TriggerEvent {
     public let name: String
+    public var properties: [EventProperty]? = nil
 }
 
 public struct TriggerEventFactory {
@@ -121,102 +119,153 @@ public struct TriggerEventFactory {
     public static func custom(name: String) -> TriggerEvent {
         return TriggerEvent(name: name)
     }
+    
+    public static func custom(name: String, properties: [EventProperty]) -> TriggerEvent {
+        return TriggerEvent(name: name, properties: properties)
+    }
 }
 
-public enum NativebrikError: Error {
-    case triggerShouldBeInitialized
-}
-
-public class Nativebrik {
+public class Nativebrik: ObservableObject {
     private let config: Config
-    private var triggerVC: TriggerViewController? = nil
+    private let repositories: Repositories
+    private let overlayVC: OverlayViewController
 
-    public init(apiKey: String) {
+    public init(projectId: String) {
         self.config = Config(
-            apiKey: apiKey
+            projectId: projectId
         )
+        self.repositories = Repositories(config: config)
+        self.overlayVC = OverlayViewController(config: config, repositories: repositories)
     }
 
     public init(
-        apiKey: String,
+        projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)?
     ) {
         self.config = Config(
-            apiKey: apiKey,
+            projectId: projectId,
             onEvent: onEvent
         )
+        self.repositories = Repositories(config: config)
+        self.overlayVC = OverlayViewController(config: config, repositories: repositories)
     }
 
-    public init(apiKey: String, environment: String) {
+    public init(projectId: String, environment: String) {
         self.config = Config(
-            apiKey: apiKey,
+            projectId: projectId,
             url: environment
         )
+        self.repositories = Repositories(config: config)
+        self.overlayVC = OverlayViewController(config: config, repositories: repositories)
     }
 
-    /**
-     returns SwiftUI.View
-     */
-    public func Component(id: String) -> some View {
-        return ComponentViewControllerRepresentable<EmptyView>(
+    public func component(
+        id: String
+    ) -> some View {
+        return ComponentSwiftView(
             componentId: id,
             config: self.config,
-            fallback: nil
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController
         )
     }
 
-    public func Component<V: View>(
+    public func component(
         id: String,
-        @ViewBuilder fallback: (@escaping (_ state: LoadingState) -> V)) -> some View {
-        return ComponentViewControllerRepresentable(
-            componentId: id,
-            config: self.config,
-            fallback: fallback
-        )
-    }
-
-
-    /**
-     returns UIView.ViewController
-     */
-    public func ComponentVC(id: String) -> UIViewController {
-        return ComponentViewController(
-            componentId: id,
-            config: self.config,
-            fallback: nil
-        )
-    }
-
-    public func ComponentVC(
-        id: String,
-        fallback: ((_ state: LoadingState) -> UIView)?,
         onEvent: ((_ event: ComponentEvent) -> Void)?
-    ) -> UIViewController {
-        return ComponentViewController(
+    ) -> some View {
+        return ComponentSwiftView(
             componentId: id,
             config: self.config.initFrom(onEvent: onEvent),
-            fallback: fallback
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController
         )
     }
 
-    public func TriggerManagerVC() -> UIViewController {
-        if let triggerVC = self.triggerVC {
-            return triggerVC
-        }
-        let triggerVC = TriggerViewController(config: self.config)
-        self.triggerVC = triggerVC
-        return triggerVC
-    }
-    
-    public func TriggerManager() -> some View {
-        return TriggerViewControllerRepresentable(config: self.config)
+    public func component<V: View>(
+        id: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        @ViewBuilder content: (@escaping (_ phase: AsyncComponentPhase) -> V)
+    ) -> some View {
+        return ComponentSwiftView.init<V>(
+            componentId: id,
+            config: self.config.initFrom(onEvent: onEvent),
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            content: content
+        )
     }
 
-    public func Dispatch(event: TriggerEvent) throws {
-        if let triggerVC = triggerVC {
-            triggerVC.dispatch(event: event)
-        } else {
-            throw NativebrikError.triggerShouldBeInitialized
-        }
+    public func component<I: View, P: View>(
+        id: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        @ViewBuilder content: (@escaping (_ component: any View) -> I),
+        @ViewBuilder placeholder: (@escaping () -> P)
+    ) -> some View {
+        return ComponentSwiftView.init<I, P>(
+            componentId: id,
+            config: self.config.initFrom(onEvent: onEvent),
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            content: content,
+            placeholder: placeholder
+        )
+    }
+
+    public func componentView(id: String) -> UIView {
+        return ComponentView(
+            componentId: id,
+            config: self.config,
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            fallback: nil
+        )
+    }
+    
+    public func componentView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> UIView {
+        return ComponentView(
+            componentId: id,
+            config: self.config.initFrom(onEvent: onEvent),
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            fallback: nil
+        )
+    }
+    
+    public func componentView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?, content: @escaping (_ phase: ComponentPhase) -> UIView) -> UIView {
+        return ComponentView(
+            componentId: id,
+            config: self.config.initFrom(onEvent: onEvent),
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            fallback: content
+        )
+    }
+
+    public func overlayViewController() -> UIViewController {
+        return self.overlayVC
+    }
+
+    public func overlay() -> some View {
+        return OverlayViewControllerRepresentable(overlayVC: self.overlayVC)
+    }
+
+    public func dispatch(event: TriggerEvent) throws {
+        self.overlayVC.triggerViewController.dispatch(event: event)
+    }
+}
+
+public struct NativebrikProvider<Content: View>: View {
+    private let _content: Content
+    private let context: Nativebrik
+
+    public init(client: Nativebrik, @ViewBuilder content: () -> Content) {
+        self._content = content()
+        self.context = client
+    }
+
+    public var body: some View {
+        self.context.overlay()
+        _content.environmentObject(self.context)
     }
 }

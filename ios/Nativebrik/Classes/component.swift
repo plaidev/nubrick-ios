@@ -10,14 +10,76 @@ import UIKit
 import SwiftUI
 import YogaKit
 
-class ComponentViewController: UIViewController {
+class ModalComponentViewController: UIViewController {
+    private var currentModal: NavigationViewControlller? = nil
+
+    func presentNavigation(
+        pageView: PageView,
+        modalPresentationStyle: ModalPresentationStyle?,
+        modalScreenSize: ModalScreenSize?
+    ) {
+        if let modal = self.currentModal {
+            if !isPresenting(presented: self.presentedViewController, vc: modal) {
+                self.currentModal?.dismiss(animated: false)
+                self.currentModal = nil
+            }
+        }
+
+        let pageController = ModalPageViewController(pageView: pageView)
+
+        if let modal = self.currentModal {
+            modal.pushViewController(pageController, animated: true)
+        } else {
+            pageController.setIsFirstModalToTrue()
+            let modal = NavigationViewControlller(
+                rootViewController: pageController,
+                hasPrevious: true
+            )
+            modal.modalPresentationStyle = parseModalPresentationStyle(modalPresentationStyle)
+            if #available(iOS 15.0, *) {
+                if let sheet = modal.sheetPresentationController {
+                    sheet.detents = parseModalScreenSize(modalScreenSize)
+                }
+            }
+            self.currentModal = modal
+            self.presentToTop(modal)
+        }
+        return
+    }
+
+    func presentToTop(_ viewController: UIViewController) {
+        self.view.window?.rootViewController?.present(viewController, animated: true)
+    }
+
+    @objc func dismissModal() {
+         if let modal = self.currentModal {
+             modal.dismiss(animated: true)
+         }
+         self.currentModal = nil
+    }
+}
+
+public enum ComponentPhase {
+    case loading
+    case completed(UIView)
+    case failure
+}
+
+class ComponentView: UIView {
     private let componentId: String
     private let config: Config
-    private let fallback: ((_ state: LoadingState) -> UIView)?
+    private let repositories: Repositories
+    private let fallback: ((_ phase: ComponentPhase) -> UIView)
     private var fallbackView: UIView = UIView()
+
+    private var modalViewController: ModalComponentViewController? = nil
+
     required init?(coder: NSCoder) {
-        self.config = Config(apiKey: "")
-        self.fallback = nil
+        self.config = Config()
+        self.repositories = Repositories(config: self.config)
+        self.fallback = { (_ phase) in
+            return UIProgressView()
+        }
         self.componentId = ""
         super.init(coder: coder)
     }
@@ -25,109 +87,208 @@ class ComponentViewController: UIViewController {
     init(
         componentId: String,
         config: Config,
-        fallback: ((_ state: LoadingState) -> UIView)?
+        repositories: Repositories,
+        modalViewController: ModalComponentViewController?,
+        fallback: ((_ phase: ComponentPhase) -> UIView)?
     ) {
         self.config = config
-        self.fallback = fallback
+        self.fallback = fallback ?? { (_ phase) in
+            switch phase {
+            case .completed(let view):
+                return view
+            default:
+                return UIProgressView()
+            }
+        }
         self.componentId = componentId
-        super.init(nibName: nil, bundle: nil)
-    }
+        self.repositories = repositories
+        self.modalViewController = modalViewController
+        super.init(frame: .zero)
 
-    override public func viewDidLoad() {
-        self.view.configureLayout { layout in
+        self.configureLayout { layout in
             layout.isEnabled = true
             layout.alignItems = .center
             layout.justifyContent = .center
         }
-        if let fallback = self.fallback {
-            let fallbackView = fallback(.LOADING)
-            self.view.addSubview(fallbackView)
-            self.fallbackView = fallbackView
-        } else {
-            let fallbackView = UIView()
-            self.view.addSubview(fallbackView)
-            self.fallbackView = fallbackView
-        }
-        self.loadComponent(componentId: self.componentId)
+        
+        let fallbackView = self.fallback(.loading)
+        self.addSubview(fallbackView)
+        self.fallbackView = fallbackView
+
+        self.loadAndTransition(componentId: componentId)
     }
 
-    private func loadComponent(componentId: String) {
-        DispatchQueue.global().async {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        self.yoga.applyLayout(preservingOrigin: true)
+    }
+
+    private func loadAndTransition(componentId: String) {
+        DispatchQueue.global().async { [weak self] in
             Task {
-                do {
-                    let data = try await getComponent(
-                        query: getComponentQuery(id: componentId),
-                        apiKey: self.config.apiKey,
-                        url: self.config.url
-                    )
-                    DispatchQueue.main.async {
-                        if data.errors != nil {
-                            self.renderFallback(state: .ERROR)
+                self?.repositories.component.fetch(id: componentId) { entry in
+                    DispatchQueue.main.async { [weak self] in
+                        if self == nil {
+                            return
                         }
-                        if let view = data.data?.component??.view {
+                        if entry.state == .FAILED {
+                            self?.renderFallback(phase: .failure)
+                        }
+                        if let view = entry.value?.view {
                             switch view {
                             case .EUIRootBlock(let root):
-                                let rootController = RootViewController(
+                                let rootView = RootView(
                                     root: root,
-                                    config: self.config
+                                    config: self!.config,
+                                    repositories: self!.repositories,
+                                    modalViewController: self?.modalViewController
                                 )
-                                self.addChild(rootController)
-                                UIView.transition(
-                                    from: self.fallbackView,
-                                    to: rootController.view,
-                                    duration: 0.2,
-                                    options: .transitionCrossDissolve)
+                                self?.renderFallback(phase: .completed(rootView))
                             default:
-                                self.renderFallback(state: .ERROR)
+                                self?.renderFallback(phase: .failure)
                             }
                         }
                     }
-                } catch {
-                    self.renderFallback(state: .ERROR)
                 }
             }
         }
     }
 
-    func renderFallback(state: LoadingState) {
-        if let fallback = self.fallback {
-            let fallbackView = fallback(state)
-            UIView.transition(
-                from: self.fallbackView,
-                to: fallbackView,
-                duration: 0.1,
-                options: .transitionCrossDissolve,
-                completion: nil)
-            self.fallbackView = fallbackView
-        }
-    }
-
-    override public func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        self.view.yoga.applyLayout(preservingOrigin: true)
+    private func renderFallback(phase: ComponentPhase) {
+        let view = self.fallback(phase)
+        UIView.transition(
+            from: self.fallbackView,
+            to: view,
+            duration: 0.2,
+            options: .transitionCrossDissolve,
+            completion: nil)
+        self.fallbackView = view
     }
 }
 
-struct ComponentViewControllerRepresentable<V: View>: UIViewControllerRepresentable {
-    let componentId: String
-    let config: Config
-    let fallback: ((_ state: LoadingState) -> V)?
+class ComponentSwiftViewModel: ObservableObject {
+    @Published var phase: AsyncComponentPhase = .loading
 
-    func makeUIViewController(context: Context) -> ComponentViewController {
-        var fallbackFunc: ((_ state: LoadingState) -> UIView)? = nil
-        if let fallback = self.fallback {
-            fallbackFunc = { state in
-                let hostingController = UIHostingController(rootView: fallback(state))
-                return hostingController.view
+    init(id: String, config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
+        DispatchQueue.global().async {
+            Task {
+                repositories.component.fetch(id: id, callback: { entry in
+                    DispatchQueue.main.sync {
+                        if let view = entry.value?.view {
+                            switch view {
+                            case .EUIRootBlock(let root):
+                                self.phase = .completed(
+                                    RootViewRepresentable(
+                                        root: root,
+                                        config: config,
+                                        repositories: repositories,
+                                        modalViewController: modalViewController
+                                    )
+                                )
+                            default:
+                                self.phase = .failure
+                            }
+                        } else {
+                            self.phase = .failure
+                        }
+                    }
+                })
             }
         }
-        return ComponentViewController(
-            componentId: self.componentId,
+    }
+}
+
+public enum AsyncComponentPhase {
+    case loading
+    case completed(any View)
+    case failure
+}
+struct ComponentSwiftView: View {
+    private let componentId: String
+    private let config: Config
+    private let repositories: Repositories
+    private let modalViewController: ModalComponentViewController?
+    @ViewBuilder private let content: ((_ phase: AsyncComponentPhase) -> AnyView)
+    @ObservedObject private var data: ComponentSwiftViewModel
+
+
+    init(
+        componentId: String,
+        config: Config,
+        repositories: Repositories,
+        modalViewController: ModalComponentViewController?
+    ) {
+        self.componentId = componentId
+        self.config = config
+        self.repositories = repositories
+        self.modalViewController = modalViewController
+        self.content = { phase in
+            switch phase {
+            case .completed(let component):
+                return AnyView(component)
+            default:
+                return AnyView(ProgressView())
+            }
+        }
+        self.data = ComponentSwiftViewModel(
+            id: self.componentId,
             config: self.config,
-            fallback: fallbackFunc
+            repositories: self.repositories,
+            modalViewController: self.modalViewController
         )
     }
 
-    func updateUIViewController(_ uiViewController: ComponentViewController, context: Context) {
+    init<V: View>(
+        componentId: String,
+        config: Config,
+        repositories: Repositories,
+        modalViewController: ModalComponentViewController?,
+        content: @escaping ((_ phase: AsyncComponentPhase) -> V)
+    ) {
+        self.componentId = componentId
+        self.config = config
+        self.repositories = repositories
+        self.modalViewController = modalViewController
+        self.content = { phase in
+            AnyView(content(phase))
+        }
+        self.data = ComponentSwiftViewModel(
+            id: self.componentId,
+            config: self.config,
+            repositories: self.repositories,
+            modalViewController: self.modalViewController
+        )
+    }
+
+    init<I: View, P: View>(
+        componentId: String,
+        config: Config,
+        repositories: Repositories,
+        modalViewController: ModalComponentViewController?,
+        content: @escaping ((_ component: any View) -> I),
+        placeholder: @escaping (() -> P)
+    ) {
+        self.componentId = componentId
+        self.config = config
+        self.repositories = repositories
+        self.modalViewController = modalViewController
+        self.content = { phase in
+            switch phase {
+            case .completed(let component):
+                return AnyView(content(component))
+            default:
+                return AnyView(placeholder())
+            }
+        }
+        self.data = ComponentSwiftViewModel(
+            id: self.componentId,
+            config: self.config,
+            repositories: self.repositories,
+            modalViewController: self.modalViewController
+        )
+    }
+
+    var body: some View {
+        self.content(data.phase)
     }
 }

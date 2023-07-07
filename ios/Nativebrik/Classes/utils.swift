@@ -280,6 +280,18 @@ func configureBorder(view: UIView, frame: FrameData?) {
     view.layer.cornerRadius = CGFloat(frame?.borderRadius ?? 0)
 }
 
+func configureShadow(view: UIView, shadow: BoxShadow?) {
+    let uiview = UIView()
+    if let shadow = shadow {
+        view.layer.shadowColor = parseColorToCGColor(shadow.color)
+        view.layer.shadowOffset = CGSize(width: shadow.offsetX ?? 0, height: shadow.offsetY ?? 0)
+        view.layer.shadowOpacity = 1
+        view.layer.shadowRadius = CGFloat(shadow.radius ?? 0)
+        view.layer.shouldRasterize = true
+        view.layer.shadowPath = UIBezierPath(roundedRect: view.frame, cornerRadius: 8).cgPath
+    }
+}
+
 func configureSkelton(view: UIView, showSkelton: Bool) {
     if showSkelton == false {
         return

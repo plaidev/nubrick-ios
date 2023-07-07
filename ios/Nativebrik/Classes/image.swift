@@ -75,6 +75,7 @@ class ImageView: AnimatedUIControl {
                 if error != nil {
                     return
                 }
+                
                 if let imageData = data {
                     if isGif(response) {
                         UIView.transition(

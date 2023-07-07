@@ -8,31 +8,23 @@
 import Foundation
 import UIKit
 import YogaKit
+import SwiftUI
 
-class RootViewController: UIViewController {
-    private let id: String!
+class ModalRootViewController: UIViewController {
     private let pages: [UIPageBlock]!
     private let config: Config
+    private let repositories: Repositories
+    private let modalViewController: ModalComponentViewController?
     private var event: UIBlockEventManager? = nil
-    private var initialPageId: String = ""
-    private var currentComponent: UIViewController? = nil
-    private var currentModal: NavigationViewControlller? = nil
 
-    required init?(coder: NSCoder) {
-        self.id = ""
-        self.pages = []
-        self.config = Config(apiKey: "")
-        super.init(coder: coder)
-    }
-
-    init(root: UIRootBlock?, config: Config) {
-        self.id = root?.id ?? ""
+    init(root: UIRootBlock?, config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
             return page.data?.kind == PageKind.TRIGGER
         }
-        self.initialPageId = trigger?.id ?? root?.data?.currentPageId ?? ""
         self.config = config
+        self.repositories = repositories
+        self.modalViewController = modalViewController
         super.init(nibName: nil, bundle: nil)
 
         self.event = UIBlockEventManager(on: { event in
@@ -44,24 +36,131 @@ class RootViewController: UIViewController {
             }
             self.config.dispatchUIBlockEvent(event: event)
         })
+
+        if let destId = trigger?.data?.triggerSetting?.onTrigger?.destinationPageId {
+            self.presentPage(pageId: destId, props: nil)
+        }
     }
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        self.view.configureLayout { layout in
-            layout.isEnabled = true
+    required init?(coder: NSCoder) {
+        self.pages = []
+        self.config = Config()
+        self.repositories = Repositories(config: self.config)
+        self.modalViewController = nil
+        super.init(coder: coder)
+    }
 
-            layout.display = .flex
-            layout.alignItems = .center
-            layout.justifyContent = .center
+    func presentPage(pageId: String, props: [Property]?) {
+        var page = self.pages.first { page in
+            return pageId == page.id
         }
 
-        self.presentPage(pageId: self.initialPageId, props: nil)
+        // when it's trigger
+        if page?.data?.kind == PageKind.TRIGGER {
+            page = self.pages.first { p in
+                return p.id == page?.data?.triggerSetting?.onTrigger?.destinationPageId
+            }
+        }
+
+        // when there are no pages
+        if page == nil {
+            return
+        }
+
+        // when it's dismissed
+        if page?.data?.kind == PageKind.DISMISSED {
+            self.modalViewController?.dismissModal()
+            return
+        }
+
+        let pageView = PageView(
+            page: page,
+            props: props,
+            event: self.event,
+            config: self.config,
+            repositories: self.repositories,
+            modalViewController: self.modalViewController
+        )
+
+        switch page?.data?.kind {
+        case .MODAL:
+            self.modalViewController?.presentNavigation(
+                pageView: pageView,
+                modalPresentationStyle: page?.data?.modalPresentationStyle,
+                modalScreenSize: page?.data?.modalScreenSize
+            )
+            break
+        default:
+            self.modalViewController?.dismissModal()
+            break
+        }
+    }
+}
+
+struct RootViewRepresentable: UIViewRepresentable {
+    typealias UIViewType = RootView
+    let root: UIRootBlock?
+    let config: Config
+    let repositories: Repositories
+    let modalViewController: ModalComponentViewController?
+
+    func makeUIView(context: Self.Context) -> Self.UIViewType {
+        return RootView(root: root, config: config, repositories: repositories, modalViewController: modalViewController)
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        self.parent?.viewDidLayoutSubviews()
+    // データの更新に応じてラップしている UIView を更新する
+    func updateUIView(_ uiView: Self.UIViewType, context: Self.Context) {
+
+    }
+}
+
+class RootView: UIView {
+    private let id: String!
+    private let pages: [UIPageBlock]!
+    private let config: Config
+    private let repositories: Repositories
+    private var event: UIBlockEventManager? = nil
+    private var currentEmbeddedPageId: String = ""
+    private var view: UIView? = nil
+    private var modalViewController: ModalComponentViewController? = nil
+
+    required init?(coder: NSCoder) {
+        self.id = ""
+        self.pages = []
+        self.config = Config()
+        self.repositories = Repositories(config: self.config)
+        self.view = UIView()
+        super.init(coder: coder)
+    }
+
+    init(root: UIRootBlock?, config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
+        self.id = root?.id ?? ""
+        self.pages = root?.data?.pages ?? []
+        let trigger = self.pages.first { page in
+            return page.data?.kind == PageKind.TRIGGER
+        }
+        self.config = config
+        self.repositories = repositories
+        self.modalViewController = modalViewController
+        super.init(frame: .zero)
+
+        self.configureLayout { layout in
+            layout.isEnabled = true
+        }
+
+        self.event = UIBlockEventManager(on: { event in
+            if let destPageId = event.destinationPageId {
+                self.presentPage(
+                    pageId: destPageId,
+                    props: event.payload
+                )
+            }
+            self.config.dispatchUIBlockEvent(event: event)
+        })
+
+        if let destId = trigger?.data?.triggerSetting?.onTrigger?.destinationPageId {
+            self.presentPage(pageId: destId, props: nil)
+        }
     }
 
     func presentPage(pageId: String, props: [Property]?) {
@@ -80,89 +179,56 @@ class RootViewController: UIViewController {
             }
         }
 
-        // when it's dismissed
-        if page?.data?.kind == PageKind.DISMISSED {
-            self.dismissModal()
-            if let previous = self.currentComponent {
-                previous.view.removeFromSuperview()
-                previous.removeFromParent()
-            }
+        // when there are no pages
+        if page == nil {
             return
         }
 
-        let pageController = PageController(
+        // when it's dismissed
+        if page?.data?.kind == PageKind.DISMISSED {
+            self.modalViewController?.dismissModal()
+//            if let previous = self.currentComponent {
+//                previous.view.removeFromSuperview()
+//                previous.removeFromParent()
+//            }
+            return
+        }
+
+        let pageView = PageView(
             page: page,
             props: props,
             event: self.event,
-            config: self.config
+            config: self.config,
+            repositories: self.repositories,
+            modalViewController: self.modalViewController
         )
 
         switch page?.data?.kind {
         case .MODAL:
-            self.presentNavigation(
-                pageController: pageController,
+            self.modalViewController?.presentNavigation(
+                pageView: pageView,
                 modalPresentationStyle: page?.data?.modalPresentationStyle,
                 modalScreenSize: page?.data?.modalScreenSize
             )
             break
         default:
-            if let previous = self.currentComponent {
-                previous.view.removeFromSuperview()
-                previous.removeFromParent()
+            self.modalViewController?.dismissModal()
+            if self.currentEmbeddedPageId == currentPageId {
+                return
             }
-            self.dismissModal()
-            let component = pageController
-            self.view.addSubview(component.view)
-            self.addChild(component)
-            self.currentComponent = component
+            self.view?.removeFromSuperview()
+            self.view = pageView
+            self.addSubview(pageView)
+            self.currentEmbeddedPageId = currentPageId
             break
         }
     }
 
-    func presentNavigation(
-        pageController: PageController,
-        modalPresentationStyle: ModalPresentationStyle?,
-        modalScreenSize: ModalScreenSize?
-    ) {
-        if let modal = self.currentModal {
-            if !isPresenting(presented: self.presentedViewController, vc: modal) {
-                self.currentModal = nil
-            }
-        }
-
-        if let modal = self.currentModal {
-            modal.pushViewController(pageController, animated: true)
-        } else {
-            pageController.showFullScreenInitialNavItem()
-            let modal = NavigationViewControlller(
-                rootViewController: pageController,
-                hasPrevious: true
-            )
-            modal.modalPresentationStyle = parseModalPresentationStyle(modalPresentationStyle)
-            if #available(iOS 15.0, *) {
-                if let sheet = modal.sheetPresentationController {
-                    sheet.detents = parseModalScreenSize(modalScreenSize)
-                }
-            }
-            self.currentModal = modal
-            self.presentToTop(modal)
-        }
-        return
-    }
-
-    func presentToTop(_ viewController: UIViewController) {
-        let top = findTopPresenting(self)
-        top.present(viewController, animated: true, completion: nil)
-    }
-
-    @objc func dismissModal() {
-         if let modal = self.currentModal {
-             modal.dismiss(animated: true)
-         }
-         self.currentModal = nil
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        self.yoga.applyLayout(preservingOrigin: true)
     }
 }
-
 
 
 func findTopPresenting(_ viewContorller: UIViewController) ->  UIViewController {

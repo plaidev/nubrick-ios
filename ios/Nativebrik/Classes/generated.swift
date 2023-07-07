@@ -11,6 +11,13 @@ enum AlignItems: String, Decodable, Encodable {
     self = try AlignItems(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+struct BoxShadow: Decodable {
+  var __typename = "BoxShadow"
+  var color: Color?
+  var offsetX: Int?
+  var offsetY: Int?
+  var radius: Int?
+}
 enum CollectionKind: String, Decodable, Encodable {
   case CAROUSEL = "CAROUSEL"
   case SCROLL = "SCROLL"
@@ -79,6 +86,7 @@ struct FrameData: Decodable {
   var borderColor: Color?
   var background: Color?
   var backgroundSrc: String?
+  var shadow: BoxShadow?
 }
 enum ImageContentMode: String, Decodable, Encodable {
   case FIT = "FIT"
@@ -176,6 +184,7 @@ struct TriggerEventDef: Decodable {
 }
 struct TriggerEventInput: Encodable {
   var name: String
+  var properties: [PropertyInput]?
 }
 enum TriggerEventNameDefs: String, Decodable, Encodable {
   case NATIVEBRIK_NO_TRIGGER = "NATIVEBRIK_NO_TRIGGER"
@@ -368,65 +377,7 @@ struct GraphqlError: Decodable {}
 enum GraphqlQueryError: Error {
   case Network
 }
-func getComponent(query: getComponentQuery, apiKey: String, url: String) async throws -> getComponentQueryResult {
-  let urlComponents = URLComponents(string: url)!
-  let document = getComponentQuery.__document__
-  struct BodyData: Encodable {
-    var operationName = "getComponent"
-    var query: String
-    var variables: getComponentQuery
-  }
-  let body = BodyData(query: document, variables: query)
-  let jsonData = try JSONEncoder().encode(body)
-  var request = URLRequest(url: urlComponents.url!)
-  request.httpBody = jsonData
-  request.httpMethod = "POST"
-  request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-  request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
-  let (data, response) = try await URLSession.shared.data(for: request)
-  guard let httpResponse = response as? HTTPURLResponse,
-  httpResponse.statusCode == 200 else {
-    throw GraphqlQueryError.Network
-  }
-  let decoder = JSONDecoder()
-  let result = try decoder.decode(getComponentQueryResult.self, from: data)
-  return result
-}
-struct getComponentQueryResult: Decodable {
-  var data: ResultData?
-  var errors: [GraphqlError]?
-  struct ResultData: Decodable {
-    var component: Component??
-  }
-}
-struct getComponentQuery: Encodable {
-  var id: ID?
-  enum CodingKeys: String, CodingKey {
-    case id
-  }
-  static let __document__ = """
-query getComponent($id: ID!) {
-  component(id: $id) {
-    __typename
-    id
-    view
-  }
-}
-
-query getData($query: String!, $placeholder: PlaceholderInput) {
-  data(query: $query, placeholder: $placeholder)
-}
-
-query getComponentByTrigger($event: TriggerEventInput!) {
-  trigger(event: $event) {
-    __typename
-    id
-    view
-  }
-}
-
-"""}
-func getComponentByTrigger(query: getComponentByTriggerQuery, apiKey: String, url: String) async throws -> getComponentByTriggerQueryResult {
+func getComponentByTrigger(query: getComponentByTriggerQuery, projectId: String, url: String) async throws -> getComponentByTriggerQueryResult {
   let urlComponents = URLComponents(string: url)!
   let document = getComponentByTriggerQuery.__document__
   struct BodyData: Encodable {
@@ -440,7 +391,7 @@ func getComponentByTrigger(query: getComponentByTriggerQuery, apiKey: String, ur
   request.httpBody = jsonData
   request.httpMethod = "POST"
   request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-  request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
+  request.setValue(projectId, forHTTPHeaderField: "X-Project-Id")
   let (data, response) = try await URLSession.shared.data(for: request)
   guard let httpResponse = response as? HTTPURLResponse,
   httpResponse.statusCode == 200 else {
@@ -463,28 +414,14 @@ struct getComponentByTriggerQuery: Encodable {
     case event
   }
   static let __document__ = """
-query getComponent($id: ID!) {
-  component(id: $id) {
-    __typename
-    id
-    view
-  }
-}
-
-query getData($query: String!, $placeholder: PlaceholderInput) {
-  data(query: $query, placeholder: $placeholder)
-}
-
-query getComponentByTrigger($event: TriggerEventInput!) {
+query getComponentByTrigger ($event: TriggerEventInput!) {
   trigger(event: $event) {
     __typename
     id
-    view
   }
 }
-
 """}
-func getData(query: getDataQuery, apiKey: String, url: String) async throws -> getDataQueryResult {
+func getData(query: getDataQuery, projectId: String, url: String) async throws -> getDataQueryResult {
   let urlComponents = URLComponents(string: url)!
   let document = getDataQuery.__document__
   struct BodyData: Encodable {
@@ -498,7 +435,7 @@ func getData(query: getDataQuery, apiKey: String, url: String) async throws -> g
   request.httpBody = jsonData
   request.httpMethod = "POST"
   request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-  request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
+  request.setValue(projectId, forHTTPHeaderField: "X-Project-Id")
   let (data, response) = try await URLSession.shared.data(for: request)
   guard let httpResponse = response as? HTTPURLResponse,
   httpResponse.statusCode == 200 else {
@@ -523,24 +460,7 @@ struct getDataQuery: Encodable {
     case placeholder
   }
   static let __document__ = """
-query getComponent($id: ID!) {
-  component(id: $id) {
-    __typename
-    id
-    view
-  }
-}
-
-query getData($query: String!, $placeholder: PlaceholderInput) {
+query getData ($query: String!, $placeholder: PlaceholderInput) {
   data(query: $query, placeholder: $placeholder)
 }
-
-query getComponentByTrigger($event: TriggerEventInput!) {
-  trigger(event: $event) {
-    __typename
-    id
-    view
-  }
-}
-
 """}
