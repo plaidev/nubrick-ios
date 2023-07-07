@@ -16,6 +16,6 @@ Nativebrik SDK for iOS.
 
   s.source_files = 'ios/Nativebrik/Classes/**/*'
 
-  s.frameworks = 'UIKit', 'Foundation', 'SwiftUI'
+  s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine'
   s.dependency 'YogaKit', '~> 1.18'
 end
