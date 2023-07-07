@@ -265,7 +265,9 @@ public struct NativebrikProvider<Content: View>: View {
     }
 
     public var body: some View {
-        self.context.overlay()
-        _content.environmentObject(self.context)
+        ZStack(alignment: .top) {
+            self.context.overlay()
+            _content.environmentObject(self.context)
+        }
     }
 }
