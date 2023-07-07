@@ -65,7 +65,7 @@ public enum ComponentPhase {
     case failure
 }
 
-class ComponentView: UIView {
+class ComponentUIView: UIView {
     private let componentId: String
     private let config: Config
     private let repositories: Repositories
@@ -178,12 +178,12 @@ class ComponentSwiftViewModel: ObservableObject {
                             switch view {
                             case .EUIRootBlock(let root):
                                 self.phase = .completed(
-                                    RootViewRepresentable(
+                                    ComponentView(content: RootViewRepresentable(
                                         root: root,
                                         config: config,
                                         repositories: repositories,
                                         modalViewController: modalViewController
-                                    )
+                                    ))
                                 )
                             default:
                                 self.phase = .failure
@@ -198,9 +198,15 @@ class ComponentSwiftViewModel: ObservableObject {
     }
 }
 
+public struct ComponentView: View {
+    fileprivate let content: RootViewRepresentable
+    public var body: some View {
+        self.content
+    }
+}
 public enum AsyncComponentPhase {
     case loading
-    case completed(any View)
+    case completed(ComponentView)
     case failure
 }
 struct ComponentSwiftView: View {

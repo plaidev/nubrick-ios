@@ -213,7 +213,7 @@ public class Nativebrik: ObservableObject {
     }
 
     public func componentView(id: String) -> UIView {
-        return ComponentView(
+        return ComponentUIView(
             componentId: id,
             config: self.config,
             repositories: self.repositories,
@@ -223,7 +223,7 @@ public class Nativebrik: ObservableObject {
     }
     
     public func componentView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> UIView {
-        return ComponentView(
+        return ComponentUIView(
             componentId: id,
             config: self.config.initFrom(onEvent: onEvent),
             repositories: self.repositories,
@@ -233,7 +233,7 @@ public class Nativebrik: ObservableObject {
     }
     
     public func componentView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?, content: @escaping (_ phase: ComponentPhase) -> UIView) -> UIView {
-        return ComponentView(
+        return ComponentUIView(
             componentId: id,
             config: self.config.initFrom(onEvent: onEvent),
             repositories: self.repositories,
