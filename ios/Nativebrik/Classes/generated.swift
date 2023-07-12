@@ -37,8 +37,6 @@ struct Color: Decodable {
 struct Component: Decodable {
   var __typename = "Component"
   var id: ID?
-  var viewId: ID?
-  var view: UIBlockJSON?
 }
 enum FlexDirection: String, Decodable, Encodable {
   case ROW = "ROW"
@@ -175,7 +173,6 @@ enum PropertyType: String, Decodable, Encodable {
 struct Query: Decodable {
   var __typename = "Query"
   var data: JSON?
-  var component: Component?
   var trigger: Component?
 }
 struct TriggerEventDef: Decodable {
