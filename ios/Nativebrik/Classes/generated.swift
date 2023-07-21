@@ -12,11 +12,30 @@ enum AlignItems: String, Decodable, Encodable {
   }
 }
 struct BoxShadow: Decodable {
-  var __typename = "BoxShadow"
   var color: Color?
   var offsetX: Int?
   var offsetY: Int?
   var radius: Int?
+}
+enum BuiltinUserProperty: String, Decodable, Encodable {
+  case userId = "userId"
+  case userRnd = "userRnd"
+  case languageCode = "languageCode"
+  case regionCode = "regionCode"
+  case currentTime = "currentTime"
+  case firstBootTime = "firstBootTime"
+  case lastBootTime = "lastBootTime"
+  case retentionPeriod = "retentionPeriod"
+  case bootingTime = "bootingTime"
+  case sdkVersion = "sdkVersion"
+  case osVersion = "osVersion"
+  case osName = "osName"
+  case appVersion = "appVersion"
+  case cfBundleVersion = "cfBundleVersion"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try BuiltinUserProperty(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
 }
 enum CollectionKind: String, Decodable, Encodable {
   case CAROUSEL = "CAROUSEL"
@@ -28,15 +47,43 @@ enum CollectionKind: String, Decodable, Encodable {
   }
 }
 struct Color: Decodable {
-  var __typename = "Color"
   var red: Float?
   var green: Float?
   var blue: Float?
   var alpha: Float?
 }
 struct Component: Decodable {
-  var __typename = "Component"
   var id: ID?
+}
+struct ExperimentCondition: Decodable {
+  var property: String?
+  var `operator`: String?
+  var value: String?
+}
+struct ExperimentConfig: Decodable {
+  var id: ID?
+  var kind: ExperimentKind?
+  var destribution: [ExperimentCondition]?
+  var baseline: ExperimentVariant?
+  var variants: [ExperimentVariant]?
+  var seed: Int?
+}
+struct ExperimentConfigs: Decodable {
+  var configs: [ExperimentConfig]?
+}
+enum ExperimentKind: String, Decodable, Encodable {
+  case EMBED = "EMBED"
+  case POPUP = "POPUP"
+  case CONFIG = "CONFIG"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try ExperimentKind(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
+struct ExperimentVariant: Decodable {
+  var id: ID?
+  var configs: [VariantConfig]?
+  var weight: Int?
 }
 enum FlexDirection: String, Decodable, Encodable {
   case ROW = "ROW"
@@ -72,7 +119,6 @@ enum FontWeight: String, Decodable, Encodable {
   }
 }
 struct FrameData: Decodable {
-  var __typename = "FrameData"
   var width: Int?
   var height: Int?
   var paddingLeft: Int?
@@ -122,7 +168,6 @@ enum ModalScreenSize: String, Decodable, Encodable {
   }
 }
 struct NavigationBackButton: Decodable {
-  var __typename = "NavigationBackButton"
   var title: String?
   var color: Color?
   var visible: Boolean?
@@ -151,7 +196,6 @@ struct PlaceholderInput: Encodable {
   var properties: [PropertyInput]?
 }
 struct Property: Decodable {
-  var __typename = "Property"
   var name: String?
   var value: String?
   var ptype: PropertyType?
@@ -171,12 +215,10 @@ enum PropertyType: String, Decodable, Encodable {
   }
 }
 struct Query: Decodable {
-  var __typename = "Query"
   var data: JSON?
   var trigger: Component?
 }
 struct TriggerEventDef: Decodable {
-  var __typename = "TriggerEventDef"
   var name: String?
 }
 struct TriggerEventInput: Encodable {
@@ -193,7 +235,6 @@ enum TriggerEventNameDefs: String, Decodable, Encodable {
   }
 }
 struct TriggerSetting: Decodable {
-  var __typename = "TriggerSetting"
   var onTrigger: UIBlockEventDispatcher?
   var trigger: TriggerEventDef?
 }
@@ -252,31 +293,26 @@ indirect enum UIBlock: Decodable {
   }
 }
 struct UIBlockEventDispatcher: Decodable {
-  var __typename = "UIBlockEventDispatcher"
   var name: String?
   var destinationPageId: String?
   var deepLink: String?
   var payload: [Property]?
 }
 struct UICarouselBlock: Decodable {
-  var __typename = "UICarouselBlock"
   var id: ID?
   var data: UICarouselBlockData?
 }
 struct UICarouselBlockData: Decodable {
-  var __typename = "UICarouselBlockData"
   var children: [UIBlock]?
   var frame: FrameData?
   var gap: Int?
   var onClick: UIBlockEventDispatcher?
 }
 struct UICollectionBlock: Decodable {
-  var __typename = "UICollectionBlock"
   var id: ID?
   var data: UICollectionBlockData?
 }
 struct UICollectionBlockData: Decodable {
-  var __typename = "UICollectionBlockData"
   var children: [UIBlock]?
   var frame: FrameData?
   var gap: Int?
@@ -289,13 +325,11 @@ struct UICollectionBlockData: Decodable {
   var onClick: UIBlockEventDispatcher?
 }
 struct UIFlexContainerBlock: Decodable {
-  var __typename = "UIFlexContainerBlock"
   var id: ID?
   var data: UIFlexContainerBlockData?
   var root: UIFlexContainerRoot?
 }
 struct UIFlexContainerBlockData: Decodable {
-  var __typename = "UIFlexContainerBlockData"
   var children: [UIBlock]?
   var direction: FlexDirection?
   var justifyContent: JustifyContent?
@@ -306,29 +340,24 @@ struct UIFlexContainerBlockData: Decodable {
   var onClick: UIBlockEventDispatcher?
 }
 struct UIFlexContainerRoot: Decodable {
-  var __typename = "UIFlexContainerRoot"
   var x: Int?
   var y: Int?
 }
 struct UIImageBlock: Decodable {
-  var __typename = "UIImageBlock"
   var id: ID?
   var data: UIImageBlockData?
 }
 struct UIImageBlockData: Decodable {
-  var __typename = "UIImageBlockData"
   var src: String?
   var contentMode: ImageContentMode?
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
 }
 struct UIPageBlock: Decodable {
-  var __typename = "UIPageBlock"
   var id: ID?
   var data: UIPageBlockData?
 }
 struct UIPageBlockData: Decodable {
-  var __typename = "UIPageBlockData"
   var kind: PageKind?
   var modalPresentationStyle: ModalPresentationStyle?
   var modalScreenSize: ModalScreenSize?
@@ -340,27 +369,22 @@ struct UIPageBlockData: Decodable {
   var query: String?
 }
 struct UIPageBlockPosition: Decodable {
-  var __typename = "UIPageBlockPosition"
   var x: Int?
   var y: Int?
 }
 struct UIRootBlock: Decodable {
-  var __typename = "UIRootBlock"
   var id: ID?
   var data: UIRootBlockData?
 }
 struct UIRootBlockData: Decodable {
-  var __typename = "UIRootBlockData"
   var pages: [UIPageBlock]?
   var currentPageId: ID?
 }
 struct UITextBlock: Decodable {
-  var __typename = "UITextBlock"
   var id: ID?
   var data: UITextBlockData?
 }
 struct UITextBlockData: Decodable {
-  var __typename = "UITextBlockData"
   var value: String?
   var size: Int?
   var color: Color?
@@ -368,6 +392,22 @@ struct UITextBlockData: Decodable {
   var weight: FontWeight?
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
+}
+struct VariantConfig: Decodable {
+  var key: String?
+  var kind: VariantConfigKind?
+  var value: String?
+}
+enum VariantConfigKind: String, Decodable, Encodable {
+  case COMPONENT = "COMPONENT"
+  case STRING = "STRING"
+  case NUMBER = "NUMBER"
+  case BOOLEAN = "BOOLEAN"
+  case JSON = "JSON"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try VariantConfigKind(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
 }
 import Foundation
 struct GraphqlError: Decodable {}
