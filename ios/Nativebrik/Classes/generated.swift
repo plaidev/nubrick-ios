@@ -55,6 +55,20 @@ struct Color: Decodable {
 struct Component: Decodable {
   var id: ID?
 }
+enum ConditionOperator: String, Decodable, Encodable {
+  case Equal = "Equal"
+  case NotEqual = "NotEqual"
+  case GreaterThan = "GreaterThan"
+  case GreaterThanOrEqual = "GreaterThanOrEqual"
+  case LessThan = "LessThan"
+  case LessThanOrEqual = "LessThanOrEqual"
+  case In = "In"
+  case NotIn = "NotIn"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try ConditionOperator(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
 struct ExperimentCondition: Decodable {
   var property: String?
   var `operator`: String?
@@ -67,6 +81,8 @@ struct ExperimentConfig: Decodable {
   var baseline: ExperimentVariant?
   var variants: [ExperimentVariant]?
   var seed: Int?
+  var startedAt: DateTime?
+  var endedAt: DateTime?
 }
 struct ExperimentConfigs: Decodable {
   var configs: [ExperimentConfig]?
@@ -226,9 +242,9 @@ struct TriggerEventInput: Encodable {
   var properties: [PropertyInput]?
 }
 enum TriggerEventNameDefs: String, Decodable, Encodable {
+  case nativebrikSdkInitialized = "nativebrikSdkInitialized"
+  case nativebrikSdkUserFirstInitialized = "nativebrikSdkUserFirstInitialized"
   case NATIVEBRIK_NO_TRIGGER = "NATIVEBRIK_NO_TRIGGER"
-  case NATIVEBRIK_SDK_INITIALIZED = "NATIVEBRIK_SDK_INITIALIZED"
-  case NATOVEBRIK_SDK_USER_FIRST_VISIT = "NATOVEBRIK_SDK_USER_FIRST_VISIT"
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try TriggerEventNameDefs(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown

@@ -109,11 +109,11 @@ public struct TriggerEvent {
 
 public struct TriggerEventFactory {
     public static func sdkInitialized() -> TriggerEvent {
-        return TriggerEvent(name: TriggerEventNameDefs.NATIVEBRIK_SDK_INITIALIZED.rawValue)
+        return TriggerEvent(name: TriggerEventNameDefs.nativebrikSdkInitialized.rawValue)
     }
 
     public static func userFirstVisit() -> TriggerEvent {
-        return TriggerEvent(name: TriggerEventNameDefs.NATOVEBRIK_SDK_USER_FIRST_VISIT.rawValue)
+        return TriggerEvent(name: TriggerEventNameDefs.nativebrikSdkUserFirstInitialized.rawValue)
     }
 
     public static func custom(name: String) -> TriggerEvent {
