@@ -25,7 +25,7 @@ public class RemoteConfigVariant {
         self.repositories = repositories
         self.modalViewController = modalViewController
     }
-    
+
     public func get(_ key: String) -> String? {
         let config = self.configs.first { config in
             if config.key == key {
@@ -33,42 +33,42 @@ public class RemoteConfigVariant {
             }
             return false
         }
-        
+
         return config?.value
     }
-    
+
     public func getAsString(_ key: String) -> String? {
         return self.get(key)
     }
-    
+
     public func getAsBool(_ key: String) -> Bool? {
         guard let value = self.get(key) else {
             return nil
         }
         return value == "TRUE"
     }
-    
+
     public func getAsInt(_ key: String) -> Int? {
         guard let value = self.get(key) else {
             return nil
         }
         return Int(value) ?? 0
     }
-    
+
     public func getAsFloat(_ key: String) -> Float? {
         guard let value = self.get(key) else {
             return nil
         }
         return Float(value) ?? 0.0
     }
-    
+
     public func getAsDouble(_ key: String) -> Double? {
         guard let value = self.get(key) else {
             return nil
         }
         return Double(value) ?? 0.0
     }
-    
+
     public func getAsData(_ key: String) -> Data? {
         guard let value = self.get(key) else {
             return nil
@@ -76,7 +76,7 @@ public class RemoteConfigVariant {
         let data = Data(value.utf8)
         return data
     }
-    
+
     public func getAsView(_ key: String) -> some View {
         let componentId = self.get(key)
         return ComponentSwiftView(
@@ -87,7 +87,7 @@ public class RemoteConfigVariant {
             modalViewController: self.modalViewController
         )
     }
-    
+
     public func getAsView<V: View>(
         _ key: String,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
@@ -103,7 +103,7 @@ public class RemoteConfigVariant {
             content: content
         )
     }
-    
+
     public func getAsUIView(_ key: String) -> UIView? {
         guard let componentId = self.get(key) else {
             return nil
@@ -117,7 +117,7 @@ public class RemoteConfigVariant {
         uiview.loadAndTransition(experimentId: self.experimentId, componentId: componentId)
         return uiview
     }
-    
+
     public func getAsUIView(_ key: String, onEvent: ((_ event: ComponentEvent) -> Void)?, content: @escaping (_ phase: ComponentPhase) -> UIView) -> UIView? {
         guard let componentId = self.get(key) else {
             return nil
@@ -145,7 +145,7 @@ public class RemoteConfig {
     private let repositories: Repositories
     private let config: Config
     private let modalViewController: ModalComponentViewController
-    
+
     init(
         user: NativebrikUser,
         experimentId: String,
@@ -160,7 +160,7 @@ public class RemoteConfig {
         self.config = config
         self.modalViewController = modalViewController
         phase(.loading)
-    
+
         DispatchQueue.global().async {
             Task {
                 await self.repositories.experiment.fetch(
@@ -177,7 +177,6 @@ public class RemoteConfig {
                             return
                         }
                         let normalizedUsrRnd = self.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0)
-                        print("normalizedUsrRnd", normalizedUsrRnd)
                         guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUsrRnd) else {
                             phase(.failure)
                             return
@@ -190,7 +189,7 @@ public class RemoteConfig {
                             phase(.failure)
                             return
                         }
-                        
+
                         phase(.completed(RemoteConfigVariant(
                             experimentId: experimentId,
                             variantId: variantId,
@@ -253,7 +252,7 @@ struct RemoteConfigAsView: View {
             modalViewController: modalViewController
         )
     }
-    
+
     var body: some View {
         self.content(data.phase)
     }

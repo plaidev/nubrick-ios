@@ -25,15 +25,15 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     guard let baseline = config.baseline else {
         return nil
     }
-    
+
     guard let variants = config.variants else {
         return baseline
     }
-    
+
     if variants.count == 0 {
         return baseline
     }
-    
+
     let baselineWeight = baseline.weight ?? 1
     var weights = [baselineWeight]
     var weightSum = baselineWeight
@@ -42,7 +42,7 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
         weights.append(variantWeight)
         weightSum += variantWeight
     }
-    
+
     // here is calculation of the picking from the probability.
     // X is selected when p_X(x) >= F_X(x)
     // where F_X(x) := Integral p_X(t)dt, the definition of comulative distribution function
@@ -51,17 +51,17 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     for (index, weight) in weights.enumerated() {
         let probability: Double = Double(weight) / Double(weightSum)
         comulativeDistributionValue += probability
-        
+
         if comulativeDistributionValue >= normalizedUsrRnd {
             selectedVariantIndex = index
             break
         }
     }
-    
+
     if selectedVariantIndex == 0 {
         return baseline
     }
-    
+
     return variants[selectedVariantIndex - 1]
 }
 
