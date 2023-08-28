@@ -9,11 +9,11 @@ import Foundation
 
 class CacheStrategy<V: NSObject> {
     private let cache = NSCache<NSString, Entry<V>>()
-    
+
     fileprivate func get(key: String) -> Entry<V>? {
         return cache.object(forKey: key as NSString)
     }
-    
+
     fileprivate func set(entry: Entry<V>, forKey: String) {
         cache.setObject(entry, forKey: forKey as NSString)
     }
@@ -41,7 +41,8 @@ class Repositories {
     let component: ComponentRepository
     let queryData: QueryDataRepository
     let trigger: TriggerRepository
-    
+    let experiment: ExperimentConfigsRepository
+
     init(config: Config) {
         self.image = ImageRepository(
             cacheStrategy: CacheStrategy()
@@ -49,6 +50,7 @@ class Repositories {
         self.component = ComponentRepository(config: config, cacheStrategy: CacheStrategy())
         self.queryData = QueryDataRepository(cache: CacheStrategy(), config: config)
         self.trigger = TriggerRepository(config: config, cacheStrategy: CacheStrategy())
+        self.experiment = ExperimentConfigsRepository(config: config, cacheStrategy: CacheStrategy())
     }
 }
 
@@ -63,11 +65,11 @@ class ImageData: NSObject {
 
 class ImageRepository {
     private let cache: CacheStrategy<ImageData>
-    
+
     init(cacheStrategy: CacheStrategy<ImageData>) {
         self.cache = cacheStrategy
     }
-    
+
     func fetch(url: String, callback: @escaping (_ entry: Entry<ImageData>) -> Void) {
         if let dataFromCache = self.cache.get(key: url) {
             callback(dataFromCache)
@@ -128,13 +130,13 @@ class ComponentData: NSObject {
 class ComponentRepository {
     private let cache: CacheStrategy<ComponentData>
     private let config: Config
-    
+
     init(config: Config, cacheStrategy: CacheStrategy<ComponentData>) {
         self.config = config
         self.cache = cacheStrategy
     }
-    
-    func fetch(id: String, callback: @escaping (_ entry: Entry<ComponentData>) -> Void) {
+
+    func fetch(experimentId: String, id: String, callback: @escaping (_ entry: Entry<ComponentData>) -> Void) {
         if id == "" {
             return
         }
@@ -142,9 +144,7 @@ class ComponentRepository {
             callback(entry)
             return
         }
-        
-        let url = self.config.cdnUrl + "/projects/" + self.config.projectId + "/components/" + id
-        
+        let url = self.config.cdnUrl + "/projects/" + self.config.projectId + "/experiments/components/" + experimentId + "/" + id
         guard let requestUrl = URL(string: url) else {
             return
         }
@@ -155,7 +155,7 @@ class ComponentRepository {
                 self.cache.set(entry: entry, forKey: id)
                 return
             }
-            
+
             if let viewData = data {
                 do {
                     let decoder = JSONDecoder()
@@ -196,20 +196,20 @@ class TriggerData: NSObject {
 class TriggerRepository {
     private let cache: CacheStrategy<TriggerData>
     private let config: Config
-    
+
     init(config: Config, cacheStrategy: CacheStrategy<TriggerData>) {
         self.config = config
         self.cache = cacheStrategy
     }
-    
+
     func fetch(event: TriggerEvent, callback: @escaping (_ entry: Entry<TriggerData>) -> Void) async {
         let key = event.name
-        
+
         if let entry = self.cache.get(key: key) {
             callback(entry)
             return
         }
-        
+
         do {
             let propertyInputs: [PropertyInput] = []
             let triggerEventInput = TriggerEventInput(name: event.name, properties: propertyInputs)
@@ -240,6 +240,78 @@ class TriggerRepository {
     }
 }
 
+class ExperimentConfigsData: NSObject {
+    let value: ExperimentConfigs
+    init(value: ExperimentConfigs) {
+        self.value = value
+    }
+}
+
+class ExperimentConfigsRepository {
+    private let cache: CacheStrategy<ExperimentConfigsData>
+    private let config: Config
+
+    init(config: Config, cacheStrategy: CacheStrategy<ExperimentConfigsData>) {
+        self.config = config
+        self.cache = cacheStrategy
+    }
+
+    func trigger(event: TriggerEvent, callback: @escaping (_ entry: Entry<ExperimentConfigsData>) -> Void) async {
+        let url = self.config.cdnUrl + "/projects/" + self.config.projectId + "/experiments/trigger/" + event.name
+        await self._fetch(key: event.name, url: url, callback: callback)
+    }
+
+    func fetch(id: String, callback: @escaping (_ entry: Entry<ExperimentConfigsData>) -> Void) async {
+        let url = self.config.cdnUrl + "/projects/" + self.config.projectId + "/experiments/id/" + id
+        await _fetch(key: id, url: url, callback: callback)
+    }
+
+    private func _fetch(key: String, url: String, callback: @escaping (_ entry: Entry<ExperimentConfigsData>) -> Void) async {
+        if let entry = self.cache.get(key: key) {
+            callback(entry)
+            return
+        }
+
+        guard let requestUrl = URL(string: url) else {
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: requestUrl) { (data, response, error) in
+            if error != nil {
+                let entry = Entry<ExperimentConfigsData>()
+                callback(entry)
+                self.cache.set(entry: entry, forKey: key)
+                return
+            }
+
+            if let experimentRawData = data {
+                do {
+                    let decoder = JSONDecoder()
+                    let result = try decoder.decode(ExperimentConfigs.self, from: experimentRawData)
+                    let entry = Entry<ExperimentConfigsData>(
+                        value: ExperimentConfigsData(
+                            value: result
+                        )
+                    )
+                    callback(entry)
+                    self.cache.set(entry: entry, forKey: key)
+                    return
+                } catch {
+                    let entry = Entry<ExperimentConfigsData>()
+                    callback(entry)
+                    self.cache.set(entry: entry, forKey: key)
+                    return
+                }
+            } else {
+                let entry = Entry<ExperimentConfigsData>()
+                callback(entry)
+                self.cache.set(entry: entry, forKey: key)
+                return
+            }
+        }
+        task.resume()
+    }
+}
 
 class JSONData: NSObject {
     let data: JSON?
@@ -250,20 +322,20 @@ class JSONData: NSObject {
 class QueryDataRepository {
     private let cache: CacheStrategy<JSONData>
     private let config: Config
-    
+
     init(cache: CacheStrategy<JSONData>, config: Config) {
         self.cache = cache
         self.config = config
     }
-    
+
     func fetch(query: String, placeholder: PlaceholderInput, callback: @escaping (_ entry: Entry<JSONData>) -> Void) async {
         let key = query + ":" + placeholderInputToString(input: placeholder)
-        
+
         if let entry = self.cache.get(key: key) {
             callback(entry)
             return
         }
-        
+
         do {
             let data = try await getData(
                 query: getDataQuery(query: query, placeholder: placeholder),

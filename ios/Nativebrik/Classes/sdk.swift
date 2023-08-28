@@ -129,6 +129,7 @@ public class Nativebrik: ObservableObject {
     private let config: Config
     private let repositories: Repositories
     private let overlayVC: OverlayViewController
+    public final let experiment: NativebrikExperiment
 
     public init(projectId: String) {
         self.config = Config(
@@ -136,6 +137,7 @@ public class Nativebrik: ObservableObject {
         )
         self.repositories = Repositories(config: config)
         self.overlayVC = OverlayViewController(config: config, repositories: repositories)
+        self.experiment = NativebrikExperiment(config: config, repositories: repositories, overlay: self.overlayVC)
     }
 
     public init(
@@ -148,6 +150,7 @@ public class Nativebrik: ObservableObject {
         )
         self.repositories = Repositories(config: config)
         self.overlayVC = OverlayViewController(config: config, repositories: repositories)
+        self.experiment = NativebrikExperiment(config: config, repositories: repositories, overlay: self.overlayVC)
     }
 
     public init(projectId: String, environment: String) {
@@ -157,91 +160,9 @@ public class Nativebrik: ObservableObject {
         )
         self.repositories = Repositories(config: config)
         self.overlayVC = OverlayViewController(config: config, repositories: repositories)
-    }
-
-    public func component(
-        id: String
-    ) -> some View {
-        return ComponentSwiftView(
-            componentId: id,
-            config: self.config,
-            repositories: self.repositories,
-            modalViewController: self.overlayVC.modalViewController
-        )
-    }
-
-    public func component(
-        id: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?
-    ) -> some View {
-        return ComponentSwiftView(
-            componentId: id,
-            config: self.config.initFrom(onEvent: onEvent),
-            repositories: self.repositories,
-            modalViewController: self.overlayVC.modalViewController
-        )
-    }
-
-    public func component<V: View>(
-        id: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?,
-        @ViewBuilder content: (@escaping (_ phase: AsyncComponentPhase) -> V)
-    ) -> some View {
-        return ComponentSwiftView.init<V>(
-            componentId: id,
-            config: self.config.initFrom(onEvent: onEvent),
-            repositories: self.repositories,
-            modalViewController: self.overlayVC.modalViewController,
-            content: content
-        )
-    }
-
-    public func component<I: View, P: View>(
-        id: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?,
-        @ViewBuilder content: (@escaping (_ component: any View) -> I),
-        @ViewBuilder placeholder: (@escaping () -> P)
-    ) -> some View {
-        return ComponentSwiftView.init<I, P>(
-            componentId: id,
-            config: self.config.initFrom(onEvent: onEvent),
-            repositories: self.repositories,
-            modalViewController: self.overlayVC.modalViewController,
-            content: content,
-            placeholder: placeholder
-        )
-    }
-
-    public func componentView(id: String) -> UIView {
-        return ComponentUIView(
-            componentId: id,
-            config: self.config,
-            repositories: self.repositories,
-            modalViewController: self.overlayVC.modalViewController,
-            fallback: nil
-        )
+        self.experiment = NativebrikExperiment(config: config, repositories: repositories, overlay: self.overlayVC)
     }
     
-    public func componentView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> UIView {
-        return ComponentUIView(
-            componentId: id,
-            config: self.config.initFrom(onEvent: onEvent),
-            repositories: self.repositories,
-            modalViewController: self.overlayVC.modalViewController,
-            fallback: nil
-        )
-    }
-    
-    public func componentView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?, content: @escaping (_ phase: ComponentPhase) -> UIView) -> UIView {
-        return ComponentUIView(
-            componentId: id,
-            config: self.config.initFrom(onEvent: onEvent),
-            repositories: self.repositories,
-            modalViewController: self.overlayVC.modalViewController,
-            fallback: content
-        )
-    }
-
     public func overlayViewController() -> UIViewController {
         return self.overlayVC
     }
@@ -252,6 +173,95 @@ public class Nativebrik: ObservableObject {
 
     public func dispatch(event: TriggerEvent) throws {
         self.overlayVC.triggerViewController.dispatch(event: event)
+    }
+}
+
+public class NativebrikExperiment {
+    private let config: Config
+    private let repositories: Repositories
+    private let overlayVC: OverlayViewController
+
+    fileprivate init(config: Config, repositories: Repositories, overlay: OverlayViewController) {
+        self.config = config
+        self.repositories = repositories
+        self.overlayVC = overlay
+    }
+    
+    public func embedding(id: String) -> some View {
+        return EmbeddingSwiftView(
+            experimentId: id,
+            config: self.config,
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController
+        )
+    }
+    
+    public func embedding<V: View>(
+        id: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        @ViewBuilder content: (@escaping (_ phase: AsyncComponentPhase) -> V)
+    ) -> some View {
+        return EmbeddingSwiftView.init<V>(
+            experimentId: id,
+            config: self.config.initFrom(onEvent: onEvent),
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            content: content
+        )
+    }
+    
+    public func embedding<I: View, P: View>(
+        id: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        @ViewBuilder content: (@escaping (_ component: any View) -> I),
+        @ViewBuilder placeholder: (@escaping () -> P)
+    ) -> some View {
+        return EmbeddingSwiftView.init<I, P>(
+            experimentId: id,
+            config: self.config.initFrom(onEvent: onEvent),
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            content: content,
+            placeholder: placeholder
+        )
+    }
+    
+    public func embeddingUIView(id: String) -> UIView {
+        return EmbeddingUIView(
+            experimentId: id,
+            config: self.config,
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            fallback: nil
+        )
+    }
+    
+    public func embeddingUIView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> UIView {
+        return EmbeddingUIView(
+            experimentId: id,
+            config: self.config.initFrom(onEvent: onEvent),
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            fallback: nil
+        )
+    }
+    
+    public func embeddingUIView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?, content: @escaping (_ phase: ComponentPhase) -> UIView) -> UIView {
+        return EmbeddingUIView(
+            experimentId: id,
+            config: self.config.initFrom(onEvent: onEvent),
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            fallback: content
+        )
+    }
+    
+    public func remoteConfig(id: String) {
+        
+    }
+    
+    public func remoteConfigAsView(id: String) {
+        
     }
 }
 

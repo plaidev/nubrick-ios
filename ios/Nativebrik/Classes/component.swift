@@ -66,7 +66,6 @@ public enum ComponentPhase {
 }
 
 class ComponentUIView: UIView {
-    private let componentId: String
     private let config: Config
     private let repositories: Repositories
     private let fallback: ((_ phase: ComponentPhase) -> UIView)
@@ -80,12 +79,10 @@ class ComponentUIView: UIView {
         self.fallback = { (_ phase) in
             return UIProgressView()
         }
-        self.componentId = ""
         super.init(coder: coder)
     }
 
     init(
-        componentId: String,
         config: Config,
         repositories: Repositories,
         modalViewController: ModalComponentViewController?,
@@ -100,7 +97,6 @@ class ComponentUIView: UIView {
                 return UIProgressView()
             }
         }
-        self.componentId = componentId
         self.repositories = repositories
         self.modalViewController = modalViewController
         super.init(frame: .zero)
@@ -114,8 +110,6 @@ class ComponentUIView: UIView {
         let fallbackView = self.fallback(.loading)
         self.addSubview(fallbackView)
         self.fallbackView = fallbackView
-
-        self.loadAndTransition(componentId: componentId)
     }
 
     override func layoutSubviews() {
@@ -123,10 +117,10 @@ class ComponentUIView: UIView {
         self.yoga.applyLayout(preservingOrigin: true)
     }
 
-    private func loadAndTransition(componentId: String) {
+    func loadAndTransition(experimentId: String, componentId: String) {
         DispatchQueue.global().async { [weak self] in
             Task {
-                self?.repositories.component.fetch(id: componentId) { entry in
+                self?.repositories.component.fetch(experimentId: experimentId, id: componentId) { entry in
                     DispatchQueue.main.async { [weak self] in
                         if self == nil {
                             return
@@ -154,7 +148,7 @@ class ComponentUIView: UIView {
         }
     }
 
-    private func renderFallback(phase: ComponentPhase) {
+    func renderFallback(phase: ComponentPhase) {
         let view = self.fallback(phase)
         UIView.transition(
             from: self.fallbackView,
@@ -169,15 +163,21 @@ class ComponentUIView: UIView {
 class ComponentSwiftViewModel: ObservableObject {
     @Published var phase: AsyncComponentPhase = .loading
 
-    init(id: String, config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
+    func fetchComponentAndUpdatePhase(
+        experimentId: String,
+        componentId: String,
+        config: Config,
+        repositories: Repositories,
+        modalViewController: ModalComponentViewController?
+    ) {
         DispatchQueue.global().async {
             Task {
-                repositories.component.fetch(id: id, callback: { entry in
-                    DispatchQueue.main.sync {
+                repositories.component.fetch(experimentId: experimentId, id: componentId, callback: { entry in
+                    DispatchQueue.main.sync { [weak self] in
                         if let view = entry.value?.view {
                             switch view {
                             case .EUIRootBlock(let root):
-                                self.phase = .completed(
+                                self?.phase = .completed(
                                     ComponentView(content: RootViewRepresentable(
                                         root: root,
                                         config: config,
@@ -186,10 +186,10 @@ class ComponentSwiftViewModel: ObservableObject {
                                     ))
                                 )
                             default:
-                                self.phase = .failure
+                                self?.phase = .failure
                             }
                         } else {
-                            self.phase = .failure
+                            self?.phase = .failure
                         }
                     }
                 })
@@ -199,7 +199,7 @@ class ComponentSwiftViewModel: ObservableObject {
 }
 
 public struct ComponentView: View {
-    fileprivate let content: RootViewRepresentable
+    let content: RootViewRepresentable
     public var body: some View {
         self.content
     }
@@ -210,24 +210,16 @@ public enum AsyncComponentPhase {
     case failure
 }
 struct ComponentSwiftView: View {
-    private let componentId: String
-    private let config: Config
-    private let repositories: Repositories
-    private let modalViewController: ModalComponentViewController?
     @ViewBuilder private let content: ((_ phase: AsyncComponentPhase) -> AnyView)
     @ObservedObject private var data: ComponentSwiftViewModel
 
-
     init(
+        experimentId: String,
         componentId: String,
         config: Config,
         repositories: Repositories,
-        modalViewController: ModalComponentViewController?
+        modalViewController: ModalComponentViewController
     ) {
-        self.componentId = componentId
-        self.config = config
-        self.repositories = repositories
-        self.modalViewController = modalViewController
         self.content = { phase in
             switch phase {
             case .completed(let component):
@@ -236,48 +228,32 @@ struct ComponentSwiftView: View {
                 return AnyView(ProgressView())
             }
         }
-        self.data = ComponentSwiftViewModel(
-            id: self.componentId,
-            config: self.config,
-            repositories: self.repositories,
-            modalViewController: self.modalViewController
-        )
+        self.data = ComponentSwiftViewModel()
     }
 
     init<V: View>(
+        experimentId: String,
         componentId: String,
         config: Config,
         repositories: Repositories,
-        modalViewController: ModalComponentViewController?,
+        modalViewController: ModalComponentViewController,
         content: @escaping ((_ phase: AsyncComponentPhase) -> V)
     ) {
-        self.componentId = componentId
-        self.config = config
-        self.repositories = repositories
-        self.modalViewController = modalViewController
         self.content = { phase in
             AnyView(content(phase))
         }
-        self.data = ComponentSwiftViewModel(
-            id: self.componentId,
-            config: self.config,
-            repositories: self.repositories,
-            modalViewController: self.modalViewController
-        )
+        self.data = ComponentSwiftViewModel()
     }
 
     init<I: View, P: View>(
+        experimentId: String,
         componentId: String,
         config: Config,
         repositories: Repositories,
-        modalViewController: ModalComponentViewController?,
+        modalViewController: ModalComponentViewController,
         content: @escaping ((_ component: any View) -> I),
         placeholder: @escaping (() -> P)
     ) {
-        self.componentId = componentId
-        self.config = config
-        self.repositories = repositories
-        self.modalViewController = modalViewController
         self.content = { phase in
             switch phase {
             case .completed(let component):
@@ -286,15 +262,10 @@ struct ComponentSwiftView: View {
                 return AnyView(placeholder())
             }
         }
-        self.data = ComponentSwiftViewModel(
-            id: self.componentId,
-            config: self.config,
-            repositories: self.repositories,
-            modalViewController: self.modalViewController
-        )
+        self.data = ComponentSwiftViewModel()
     }
 
-    var body: some View {
+    public var body: some View {
         self.content(data.phase)
     }
 }

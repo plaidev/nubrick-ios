@@ -47,11 +47,35 @@ class TriggerViewController: UIViewController {
     func dispatch(event: TriggerEvent) {
         DispatchQueue.global().async {
             Task {
-                await self.repositories.trigger.fetch(event: event) { entry in
+
+                await self.repositories.experiment.trigger(event: event) { entry in
                     guard let value = entry.value else {
                         return
                     }
-                    self.repositories.component.fetch(id: value.componentId) { entry in
+                    let experimentConfigs = value.value
+                    guard let extractedConfig = extractExperimentConfigMatchedToProperties(configs: experimentConfigs, properties: event.properties ?? []) else {
+                        return
+                    }
+                    guard let experimentId = extractedConfig.id else {
+                        return
+                    }
+                    if extractedConfig.kind != .POPUP {
+                        return
+                    }
+                    guard let extractedVariant = extractExperimentVariant(config: extractedConfig, normalizedUsrRnd: 1.0) else {
+                        return
+                    }
+                    guard let variantConfig = extractedVariant.configs?[0] else {
+                        return
+                    }
+                    guard let componentId = variantConfig.value else {
+                        return
+                    }
+
+                    self.repositories.component.fetch(
+                        experimentId: experimentId,
+                        id: componentId
+                    ) { entry in
                         DispatchQueue.main.sync {
                             guard let view = entry.value?.view else {
                                 return
@@ -66,19 +90,21 @@ class TriggerViewController: UIViewController {
                                     root: root,
                                     config: self.config,
                                     repositories: self.repositories,
-                                    modalViewController: self.modalViewController)
+                                    modalViewController: self.modalViewController
+                                )
                                 self.addChild(rootController)
                                 self.currentVC = rootController
-
                             default:
                                 return
                             }
                         }
+
                     }
+                    
                 }
+
             }
         }
-
     }
 }
 

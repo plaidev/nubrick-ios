@@ -77,7 +77,7 @@ struct ExperimentCondition: Decodable {
 struct ExperimentConfig: Decodable {
   var id: ID?
   var kind: ExperimentKind?
-  var destribution: [ExperimentCondition]?
+  var distribution: [ExperimentCondition]?
   var baseline: ExperimentVariant?
   var variants: [ExperimentVariant]?
   var seed: Int?
