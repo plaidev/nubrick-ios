@@ -30,6 +30,10 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
         return baseline
     }
     
+    if variants.count == 0 {
+        return baseline
+    }
+    
     let baselineWeight = baseline.weight ?? 1
     var weights = [baselineWeight]
     var weightSum = baselineWeight
@@ -40,15 +44,16 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     }
     
     // here is calculation of the picking from the probability.
-    // X is selected when p_X(x) < F_X(x)
+    // X is selected when p_X(x) >= F_X(x)
     // where F_X(x) := Integral p_X(t)dt, the definition of comulative distribution function
     var comulativeDistributionValue: Double = 0.0
     var selectedVariantIndex: Int = 0
     for (index, weight) in weights.enumerated() {
         let probability: Double = Double(weight) / Double(weightSum)
         comulativeDistributionValue += probability
+        print(comulativeDistributionValue, index)
         
-        if comulativeDistributionValue < normalizedUsrRnd {
+        if comulativeDistributionValue >= normalizedUsrRnd {
             selectedVariantIndex = index
             break
         }
@@ -61,7 +66,7 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     return variants[selectedVariantIndex - 1]
 }
 
-func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: [EventProperty]) -> ExperimentConfig? {
+func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: (_ seed: Int) -> [EventProperty]) -> ExperimentConfig? {
     guard let configs = configs.configs else {
         return nil
     }
@@ -72,7 +77,7 @@ func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, prop
         guard let distribution = config.distribution else {
             return true
         }
-        return isInDistribution(distribution: distribution, properties: properties)
+        return isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
     }
 }
 

@@ -229,6 +229,7 @@ struct ComponentSwiftView: View {
             }
         }
         self.data = ComponentSwiftViewModel()
+        self.data.fetchComponentAndUpdatePhase(experimentId: experimentId, componentId: componentId, config: config, repositories: repositories, modalViewController: modalViewController)
     }
 
     init<V: View>(
@@ -243,6 +244,7 @@ struct ComponentSwiftView: View {
             AnyView(content(phase))
         }
         self.data = ComponentSwiftViewModel()
+        self.data.fetchComponentAndUpdatePhase(experimentId: experimentId, componentId: componentId, config: config, repositories: repositories, modalViewController: modalViewController)
     }
 
     init<I: View, P: View>(
@@ -263,9 +265,10 @@ struct ComponentSwiftView: View {
             }
         }
         self.data = ComponentSwiftViewModel()
+        self.data.fetchComponentAndUpdatePhase(experimentId: experimentId, componentId: componentId, config: config, repositories: repositories, modalViewController: modalViewController)
     }
 
-    public var body: some View {
+    var body: some View {
         self.content(data.phase)
     }
 }

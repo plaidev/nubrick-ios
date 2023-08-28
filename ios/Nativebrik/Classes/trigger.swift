@@ -14,18 +14,21 @@ enum UserDefaultsKeys: String {
 }
 
 class TriggerViewController: UIViewController {
+    private let user: NativebrikUser
     private let config: Config
     private let repositories: Repositories
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: UIViewController? = nil
 
     required init?(coder: NSCoder) {
+        self.user = NativebrikUser()
         self.config = Config()
         self.repositories = Repositories(config: config)
         super.init(coder: coder)
     }
 
-    init(config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
+    init(user: NativebrikUser, config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
+        self.user = user
         self.config = config
         self.repositories = repositories
         self.modalViewController = modalViewController
@@ -53,7 +56,9 @@ class TriggerViewController: UIViewController {
                         return
                     }
                     let experimentConfigs = value.value
-                    guard let extractedConfig = extractExperimentConfigMatchedToProperties(configs: experimentConfigs, properties: event.properties ?? []) else {
+                    guard let extractedConfig = extractExperimentConfigMatchedToProperties(configs: experimentConfigs, properties: { seed in
+                        return self.user.toEventProperties(seed: seed)
+                    }) else {
                         return
                     }
                     guard let experimentId = extractedConfig.id else {
@@ -62,7 +67,8 @@ class TriggerViewController: UIViewController {
                     if extractedConfig.kind != .POPUP {
                         return
                     }
-                    guard let extractedVariant = extractExperimentVariant(config: extractedConfig, normalizedUsrRnd: 1.0) else {
+                    let normalizedUsrRnd = self.user.getSeededNormalizedUserRnd(seed: extractedConfig.seed ?? 0)
+                    guard let extractedVariant = extractExperimentVariant(config: extractedConfig, normalizedUsrRnd: normalizedUsrRnd) else {
                         return
                     }
                     guard let variantConfig = extractedVariant.configs?[0] else {

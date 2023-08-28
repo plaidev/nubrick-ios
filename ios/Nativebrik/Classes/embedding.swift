@@ -12,16 +12,20 @@ import YogaKit
 
 
 class EmbeddingUIView: ComponentUIView {
+    private let user: NativebrikUser
     required init?(coder: NSCoder) {
+        self.user = NativebrikUser()
         super.init(coder: coder)
     }
     init(
         experimentId: String,
+        user: NativebrikUser,
         config: Config,
         repositories: Repositories,
         modalViewController: ModalComponentViewController?,
         fallback: ((_ phase: ComponentPhase) -> UIView)?
     ) {
+        self.user = user
         super.init(
             config: config,
             repositories: repositories,
@@ -36,7 +40,9 @@ class EmbeddingUIView: ComponentUIView {
                             self?.renderFallback(phase: .failure)
                             return
                         }
-                        guard let config = extractExperimentConfigMatchedToProperties(configs: configs, properties: []) else {
+                        guard let config = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
+                            return self?.user.toEventProperties(seed: seed) ?? []
+                        }) else {
                             self?.renderFallback(phase: .failure)
                             return
                         }
@@ -44,7 +50,8 @@ class EmbeddingUIView: ComponentUIView {
                             self?.renderFallback(phase: .failure)
                             return
                         }
-                        guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: 1.0) else {
+                        let normalizedUsrRnd = self?.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0) ?? 0.0
+                        guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUsrRnd) else {
                             self?.renderFallback(phase: .failure)
                             return
                         }
@@ -61,6 +68,10 @@ class EmbeddingUIView: ComponentUIView {
 }
 
 class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
+    private let user: NativebrikUser
+    init(user: NativebrikUser) {
+        self.user = user
+    }
     func fetchAndUpdatePhase(
         experimentId: String,
         config: Config,
@@ -75,7 +86,9 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                             self?.phase = .failure
                             return
                         }
-                        guard let experimentConfig = extractExperimentConfigMatchedToProperties(configs: configs, properties: []) else {
+                        guard let experimentConfig = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
+                            return self?.user.toEventProperties(seed: seed) ?? []
+                        }) else {
                             self?.phase = .failure
                             return
                         }
@@ -83,7 +96,8 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                             self?.phase = .failure
                             return
                         }
-                        guard let variant = extractExperimentVariant(config: experimentConfig, normalizedUsrRnd: 1.0) else {
+                        let normalizedUsrRnd = self?.user.getSeededNormalizedUserRnd(seed: experimentConfig.seed ?? 0) ?? 0.0
+                        guard let variant = extractExperimentVariant(config: experimentConfig, normalizedUsrRnd: normalizedUsrRnd) else {
                             self?.phase = .failure
                             return
                         }
@@ -112,6 +126,7 @@ struct EmbeddingSwiftView: View {
 
     init(
         experimentId: String,
+        user: NativebrikUser,
         config: Config,
         repositories: Repositories,
         modalViewController: ModalComponentViewController?
@@ -124,7 +139,7 @@ struct EmbeddingSwiftView: View {
                 return AnyView(ProgressView())
             }
         }
-        self.data = EmbeddingSwiftViewModel()
+        self.data = EmbeddingSwiftViewModel(user: user)
         self.data.fetchAndUpdatePhase(
             experimentId: experimentId,
             config: config,
@@ -135,6 +150,7 @@ struct EmbeddingSwiftView: View {
 
     init<V: View>(
         experimentId: String,
+        user: NativebrikUser,
         config: Config,
         repositories: Repositories,
         modalViewController: ModalComponentViewController?,
@@ -143,7 +159,7 @@ struct EmbeddingSwiftView: View {
         self.content = { phase in
             AnyView(content(phase))
         }
-        self.data = EmbeddingSwiftViewModel()
+        self.data = EmbeddingSwiftViewModel(user: user)
         self.data.fetchAndUpdatePhase(
             experimentId: experimentId,
             config: config,
@@ -154,6 +170,7 @@ struct EmbeddingSwiftView: View {
 
     init<I: View, P: View>(
         experimentId: String,
+        user: NativebrikUser,
         config: Config,
         repositories: Repositories,
         modalViewController: ModalComponentViewController?,
@@ -168,7 +185,7 @@ struct EmbeddingSwiftView: View {
                 return AnyView(placeholder())
             }
         }
-        self.data = EmbeddingSwiftViewModel()
+        self.data = EmbeddingSwiftViewModel(user: user)
         self.data.fetchAndUpdatePhase(
             experimentId: experimentId,
             config: config,

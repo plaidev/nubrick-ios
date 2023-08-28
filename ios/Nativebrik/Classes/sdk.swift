@@ -130,37 +130,41 @@ public class Nativebrik: ObservableObject {
     private let repositories: Repositories
     private let overlayVC: OverlayViewController
     public final let experiment: NativebrikExperiment
+    public final let user: NativebrikUser
 
     public init(projectId: String) {
+        self.user = NativebrikUser()
         self.config = Config(
             projectId: projectId
         )
         self.repositories = Repositories(config: config)
-        self.overlayVC = OverlayViewController(config: config, repositories: repositories)
-        self.experiment = NativebrikExperiment(config: config, repositories: repositories, overlay: self.overlayVC)
+        self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
+        self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }
 
     public init(
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)?
     ) {
+        self.user = NativebrikUser()
         self.config = Config(
             projectId: projectId,
             onEvent: onEvent
         )
         self.repositories = Repositories(config: config)
-        self.overlayVC = OverlayViewController(config: config, repositories: repositories)
-        self.experiment = NativebrikExperiment(config: config, repositories: repositories, overlay: self.overlayVC)
+        self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
+        self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }
 
     public init(projectId: String, environment: String) {
+        self.user = NativebrikUser()
         self.config = Config(
             projectId: projectId,
             url: environment
         )
         self.repositories = Repositories(config: config)
-        self.overlayVC = OverlayViewController(config: config, repositories: repositories)
-        self.experiment = NativebrikExperiment(config: config, repositories: repositories, overlay: self.overlayVC)
+        self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
+        self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }
     
     public func overlayViewController() -> UIViewController {
@@ -177,11 +181,13 @@ public class Nativebrik: ObservableObject {
 }
 
 public class NativebrikExperiment {
+    private let user: NativebrikUser
     private let config: Config
     private let repositories: Repositories
     private let overlayVC: OverlayViewController
 
-    fileprivate init(config: Config, repositories: Repositories, overlay: OverlayViewController) {
+    fileprivate init(user: NativebrikUser, config: Config, repositories: Repositories, overlay: OverlayViewController) {
+        self.user = user
         self.config = config
         self.repositories = repositories
         self.overlayVC = overlay
@@ -190,6 +196,7 @@ public class NativebrikExperiment {
     public func embedding(id: String) -> some View {
         return EmbeddingSwiftView(
             experimentId: id,
+            user: self.user,
             config: self.config,
             repositories: self.repositories,
             modalViewController: self.overlayVC.modalViewController
@@ -203,6 +210,7 @@ public class NativebrikExperiment {
     ) -> some View {
         return EmbeddingSwiftView.init<V>(
             experimentId: id,
+            user: self.user,
             config: self.config.initFrom(onEvent: onEvent),
             repositories: self.repositories,
             modalViewController: self.overlayVC.modalViewController,
@@ -218,6 +226,7 @@ public class NativebrikExperiment {
     ) -> some View {
         return EmbeddingSwiftView.init<I, P>(
             experimentId: id,
+            user: self.user,
             config: self.config.initFrom(onEvent: onEvent),
             repositories: self.repositories,
             modalViewController: self.overlayVC.modalViewController,
@@ -229,6 +238,7 @@ public class NativebrikExperiment {
     public func embeddingUIView(id: String) -> UIView {
         return EmbeddingUIView(
             experimentId: id,
+            user: self.user,
             config: self.config,
             repositories: self.repositories,
             modalViewController: self.overlayVC.modalViewController,
@@ -239,6 +249,7 @@ public class NativebrikExperiment {
     public func embeddingUIView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> UIView {
         return EmbeddingUIView(
             experimentId: id,
+            user: self.user,
             config: self.config.initFrom(onEvent: onEvent),
             repositories: self.repositories,
             modalViewController: self.overlayVC.modalViewController,
@@ -249,6 +260,7 @@ public class NativebrikExperiment {
     public func embeddingUIView(id: String, onEvent: ((_ event: ComponentEvent) -> Void)?, content: @escaping (_ phase: ComponentPhase) -> UIView) -> UIView {
         return EmbeddingUIView(
             experimentId: id,
+            user: self.user,
             config: self.config.initFrom(onEvent: onEvent),
             repositories: self.repositories,
             modalViewController: self.overlayVC.modalViewController,
@@ -256,12 +268,29 @@ public class NativebrikExperiment {
         )
     }
     
-    public func remoteConfig(id: String) {
-        
+    public func remoteConfig(id: String, phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)) -> RemoteConfig {
+        return RemoteConfig(
+            user: self.user,
+            experimentId: id,
+            repositories: self.repositories,
+            config: self.config,
+            modalViewController: self.overlayVC.modalViewController,
+            phase: phase
+        )
     }
     
-    public func remoteConfigAsView(id: String) {
-        
+    public func remoteConfigAsView<V: View>(
+        id: String,
+        @ViewBuilder phase: @escaping ((_ phase: RemoteConfigPhase) -> V)
+    ) -> some View {
+        return RemoteConfigAsView(
+            user: self.user,
+            experimentId: id,
+            config: self.config,
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController,
+            content: phase
+        )
     }
 }
 
