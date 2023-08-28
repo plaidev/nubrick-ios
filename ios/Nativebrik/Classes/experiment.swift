@@ -51,7 +51,6 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     for (index, weight) in weights.enumerated() {
         let probability: Double = Double(weight) / Double(weightSum)
         comulativeDistributionValue += probability
-        print(comulativeDistributionValue, index)
         
         if comulativeDistributionValue >= normalizedUsrRnd {
             selectedVariantIndex = index

@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import UIKit
 
-public class RemoteConfigVariant: NSObject {
+public class RemoteConfigVariant {
     public let experimentId: String
     public let variantId: String
     private let configs: [VariantConfig]
@@ -55,7 +55,7 @@ public class RemoteConfigVariant: NSObject {
         return Int(value) ?? 0
     }
     
-    public func getAsDouble(_ key: String) -> Float? {
+    public func getAsFloat(_ key: String) -> Float? {
         guard let value = self.get(key) else {
             return nil
         }
