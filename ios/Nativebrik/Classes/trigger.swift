@@ -19,6 +19,7 @@ class TriggerViewController: UIViewController {
     private let repositories: Repositories?
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: UIViewController? = nil
+    private var didLoaded = false
 
     required init?(coder: NSCoder) {
         self.user = NativebrikUser()
@@ -35,19 +36,65 @@ class TriggerViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    func dispatchInitialized() {
-        self.dispatch(event: TriggerEventFactory.sdkInitialized())
-    }
+    func ininitialLoad() {
+        self.didLoaded = true
 
-    func dispatchUserFirstVisit() {
+        // dispatch an event when the user is only booted
+        self.dispatch(event: TriggerEvent(TriggerEventNameDefs.USER_BOOT_APP.rawValue))
+
+        // dispatch user enter the app firtly
         let count = UserDefaults.standard.object(forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue) as? Int ?? 0
         UserDefaults.standard.set(count + 1, forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue)
         if count == 0 {
-            self.dispatch(event: TriggerEventFactory.userFirstVisit())
+            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
+        }
+
+        // dispatch retention event
+        self.callWhenUserComeBack()
+
+        // dipatch retention event when user come back to foreground
+        NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+    }
+
+    @objc func willEnterForeground() {
+        self.dispatch(event: TriggerEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue))
+        self.callWhenUserComeBack()
+    }
+
+    func callWhenUserComeBack() {
+        self.user.comeBack()
+        
+        // dispatch the event when every time the user is activated
+        self.dispatch(event: TriggerEvent(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue))
+
+        let retention = self.user.retention
+        if retention == 1 {
+            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_1.rawValue))
+        } else if 1 < retention && retention <= 3 {
+            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_2_3.rawValue))
+        } else if 3 < retention && retention <= 7 {
+            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_4_7.rawValue))
+        } else if 7 < retention && retention <= 14 {
+            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_8_14.rawValue))
+        } else if 14 < retention {
+            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_15.rawValue))
         }
     }
 
     func dispatch(event: TriggerEvent) {
+        DispatchQueue.global().async {
+            Task {
+                if event.name.isEmpty {
+                    return
+                }
+                self.repositories?.track.trackEvent(TrackUserEvent(name: event.name))
+            }
+        }
+
+        if !self.didLoaded {
+            print("nativebrik.dispatch should be called after nativebrik.overlay did load")
+            return
+        }
         DispatchQueue.global().async {
             Task {
                 await self.repositories?.experiment.trigger(event: event) { entry in
