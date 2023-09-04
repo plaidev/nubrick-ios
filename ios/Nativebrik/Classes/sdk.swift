@@ -107,19 +107,8 @@ public struct ComponentEvent {
 
 public struct TriggerEvent {
     public let name: String
-}
-
-public struct TriggerEventFactory {
-    public static func sdkInitialized() -> TriggerEvent {
-        return TriggerEvent(name: TriggerEventNameDefs.nativebrikSdkInitialized.rawValue)
-    }
-
-    public static func userFirstVisit() -> TriggerEvent {
-        return TriggerEvent(name: TriggerEventNameDefs.nativebrikSdkUserFirstInitialized.rawValue)
-    }
-
-    public static func custom(_ name: String) -> TriggerEvent {
-        return TriggerEvent(name: name)
+    init(_ name: String) {
+        self.name = name
     }
 }
 
