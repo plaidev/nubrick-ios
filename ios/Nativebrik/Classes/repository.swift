@@ -332,7 +332,7 @@ class TrackRespository {
             // here, use async not sync. main.sync will break the app.
             DispatchQueue.main.async {
                 self.timer?.invalidate()
-                self.timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false, block: { _ in
+                self.timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true, block: { _ in
                     Task(priority: .low) {
                         try await self.sendAndFlush()
                     }
