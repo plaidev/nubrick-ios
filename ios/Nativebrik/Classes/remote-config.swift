@@ -189,6 +189,13 @@ public class RemoteConfig {
                             phase(.failure)
                             return
                         }
+                        
+                        self.repositories.track.trackExperimentEvent(
+                            TrackExperimentEvent(
+                                experimentId: self.experimentId,
+                                variantId: variantId
+                            )
+                        )
 
                         phase(.completed(RemoteConfigVariant(
                             experimentId: experimentId,

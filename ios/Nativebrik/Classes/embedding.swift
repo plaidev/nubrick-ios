@@ -55,10 +55,22 @@ class EmbeddingUIView: ComponentUIView {
                             self?.renderFallback(phase: .failure)
                             return
                         }
+                        guard let variantId = variant.id else {
+                            self?.renderFallback(phase: .failure)
+                            return
+                        }
                         guard let componentId = extractComponentId(variant: variant) else {
                             self?.renderFallback(phase: .failure)
                             return
                         }
+                        
+                        repositories.track.trackExperimentEvent(
+                            TrackExperimentEvent(
+                                experimentId: experimentId,
+                                variantId: variantId
+                            )
+                        )
+                        
                         self?.loadAndTransition(experimentId: experimentId, componentId: componentId)
                     }
                 }
@@ -101,10 +113,22 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                             self?.phase = .failure
                             return
                         }
+                        guard let variantId = variant.id else {
+                            self?.phase = .failure
+                            return
+                        }
                         guard let componentId = extractComponentId(variant: variant) else {
                             self?.phase = .failure
                             return
                         }
+                        
+                        repositories.track.trackExperimentEvent(
+                            TrackExperimentEvent(
+                                experimentId: experimentId,
+                                variantId: variantId
+                            )
+                        )
+                        
                         self?.fetchComponentAndUpdatePhase(
                             experimentId: experimentId,
                             componentId: componentId,

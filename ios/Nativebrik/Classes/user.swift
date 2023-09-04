@@ -39,6 +39,12 @@ public class NativebrikUser {
         self.properties[BuiltinUserProperty.userRnd.rawValue] = String(userRnd)
     }
     
+    public var id: String {
+        get {
+            return self.properties[BuiltinUserProperty.userId.rawValue] ?? ""
+        }
+    }
+
     public func set(properties: [String: String]) {
         for (key, value) in properties {
             self.properties[key] = value

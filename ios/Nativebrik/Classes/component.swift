@@ -67,7 +67,7 @@ public enum ComponentPhase {
 
 class ComponentUIView: UIView {
     private let config: Config
-    private let repositories: Repositories
+    private let repositories: Repositories?
     private let fallback: ((_ phase: ComponentPhase) -> UIView)
     private var fallbackView: UIView = UIView()
 
@@ -75,7 +75,7 @@ class ComponentUIView: UIView {
 
     required init?(coder: NSCoder) {
         self.config = Config()
-        self.repositories = Repositories(config: self.config)
+        self.repositories = nil
         self.fallback = { (_ phase) in
             return UIProgressView()
         }
@@ -120,7 +120,7 @@ class ComponentUIView: UIView {
     func loadAndTransition(experimentId: String, componentId: String) {
         DispatchQueue.global().async { [weak self] in
             Task {
-                self?.repositories.component.fetch(experimentId: experimentId, id: componentId) { entry in
+                self?.repositories?.component.fetch(experimentId: experimentId, id: componentId) { entry in
                     DispatchQueue.main.async { [weak self] in
                         if self == nil {
                             return
@@ -134,7 +134,7 @@ class ComponentUIView: UIView {
                                 let rootView = RootView(
                                     root: root,
                                     config: self!.config,
-                                    repositories: self!.repositories,
+                                    repositories: self!.repositories!,
                                     modalViewController: self?.modalViewController
                                 )
                                 self?.renderFallback(phase: .completed(rootView))

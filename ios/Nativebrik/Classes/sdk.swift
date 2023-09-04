@@ -12,6 +12,7 @@ import Combine
 class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
+    var trackUrl: String = "https://track.nativebrik.com/track/v1"
     var cdnUrl: String = "https://cdn.nativebrik.com"
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
 
@@ -137,7 +138,7 @@ public class Nativebrik: ObservableObject {
         self.config = Config(
             projectId: projectId
         )
-        self.repositories = Repositories(config: config)
+        self.repositories = Repositories(config: config, user: self.user)
         self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
         self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }
@@ -151,7 +152,7 @@ public class Nativebrik: ObservableObject {
             projectId: projectId,
             onEvent: onEvent
         )
-        self.repositories = Repositories(config: config)
+        self.repositories = Repositories(config: config, user: self.user)
         self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
         self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }
@@ -162,7 +163,7 @@ public class Nativebrik: ObservableObject {
             projectId: projectId,
             url: environment
         )
-        self.repositories = Repositories(config: config)
+        self.repositories = Repositories(config: config, user: self.user)
         self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
         self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }

@@ -16,14 +16,14 @@ enum UserDefaultsKeys: String {
 class TriggerViewController: UIViewController {
     private let user: NativebrikUser
     private let config: Config
-    private let repositories: Repositories
+    private let repositories: Repositories?
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: UIViewController? = nil
 
     required init?(coder: NSCoder) {
         self.user = NativebrikUser()
         self.config = Config()
-        self.repositories = Repositories(config: config)
+        self.repositories = nil
         super.init(coder: coder)
     }
 
@@ -50,8 +50,7 @@ class TriggerViewController: UIViewController {
     func dispatch(event: TriggerEvent) {
         DispatchQueue.global().async {
             Task {
-
-                await self.repositories.experiment.trigger(event: event) { entry in
+                await self.repositories?.experiment.trigger(event: event) { entry in
                     guard let value = entry.value else {
                         return
                     }
@@ -74,11 +73,21 @@ class TriggerViewController: UIViewController {
                     guard let variantConfig = extractedVariant.configs?[0] else {
                         return
                     }
+                    guard let variantId = extractedVariant.id else {
+                        return
+                    }
                     guard let componentId = variantConfig.value else {
                         return
                     }
 
-                    self.repositories.component.fetch(
+                    self.repositories?.track.trackExperimentEvent(
+                        TrackExperimentEvent(
+                            experimentId: experimentId,
+                            variantId: variantId
+                        )
+                    )
+
+                    self.repositories?.component.fetch(
                         experimentId: experimentId,
                         id: componentId
                     ) { entry in
@@ -95,7 +104,7 @@ class TriggerViewController: UIViewController {
                                 let rootController = ModalRootViewController(
                                     root: root,
                                     config: self.config,
-                                    repositories: self.repositories,
+                                    repositories: self.repositories!,
                                     modalViewController: self.modalViewController
                                 )
                                 self.addChild(rootController)
@@ -106,7 +115,7 @@ class TriggerViewController: UIViewController {
                         }
 
                     }
-                    
+
                 }
 
             }

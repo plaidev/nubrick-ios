@@ -90,7 +90,7 @@ class PageView: UIView {
     fileprivate let page: UIPageBlock?
     private let props: [Property]?
     private let config: Config
-    private let repositories: Repositories
+    private let repositories: Repositories?
     private var data: JSON? = nil
     private var event: UIBlockEventManager? = nil
     private var fullScreenInitialNavItemVisibility = false
@@ -103,7 +103,7 @@ class PageView: UIView {
         self.page = nil
         self.props = nil
         self.config = Config()
-        self.repositories = Repositories(config: self.config)
+        self.repositories = nil
         super.init(coder: coder)
     }
 
@@ -112,7 +112,7 @@ class PageView: UIView {
         props: [Property]?,
         event: UIBlockEventManager?,
         config: Config,
-        repositories: Repositories,
+        repositories: Repositories?,
         modalViewController: ModalComponentViewController?
     ) {
         self.page = page
@@ -160,7 +160,7 @@ class PageView: UIView {
 
         DispatchQueue.global().async {
             Task {
-                await self.repositories.queryData.fetch(query: query, placeholder: placeholderInput) { entry in
+                await self.repositories?.queryData.fetch(query: query, placeholder: placeholderInput) { entry in
                     DispatchQueue.main.async {
                         if let data = entry.value?.data {
                             self.data = data

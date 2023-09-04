@@ -13,7 +13,7 @@ import SwiftUI
 class ModalRootViewController: UIViewController {
     private let pages: [UIPageBlock]!
     private let config: Config
-    private let repositories: Repositories
+    private let repositories: Repositories?
     private let modalViewController: ModalComponentViewController?
     private var event: UIBlockEventManager? = nil
 
@@ -45,7 +45,7 @@ class ModalRootViewController: UIViewController {
     required init?(coder: NSCoder) {
         self.pages = []
         self.config = Config()
-        self.repositories = Repositories(config: self.config)
+        self.repositories = nil
         self.modalViewController = nil
         super.init(coder: coder)
     }
@@ -118,7 +118,7 @@ class RootView: UIView {
     private let id: String!
     private let pages: [UIPageBlock]!
     private let config: Config
-    private let repositories: Repositories
+    private let repositories: Repositories?
     private var event: UIBlockEventManager? = nil
     private var currentEmbeddedPageId: String = ""
     private var view: UIView? = nil
@@ -128,12 +128,12 @@ class RootView: UIView {
         self.id = ""
         self.pages = []
         self.config = Config()
-        self.repositories = Repositories(config: self.config)
+        self.repositories = nil
         self.view = UIView()
         super.init(coder: coder)
     }
 
-    init(root: UIRootBlock?, config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
+    init(root: UIRootBlock?, config: Config, repositories: Repositories?, modalViewController: ModalComponentViewController?) {
         self.id = root?.id ?? ""
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in

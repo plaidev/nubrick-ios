@@ -42,8 +42,9 @@ class Repositories {
     let queryData: QueryDataRepository
     let trigger: TriggerRepository
     let experiment: ExperimentConfigsRepository
+    let track: TrackRespository
 
-    init(config: Config) {
+    init(config: Config, user: NativebrikUser) {
         self.image = ImageRepository(
             cacheStrategy: CacheStrategy()
         )
@@ -51,6 +52,7 @@ class Repositories {
         self.queryData = QueryDataRepository(cache: CacheStrategy(), config: config)
         self.trigger = TriggerRepository(config: config, cacheStrategy: CacheStrategy())
         self.experiment = ExperimentConfigsRepository(config: config, cacheStrategy: CacheStrategy())
+        self.track = TrackRespository(config: config, user: user)
     }
 }
 
@@ -310,6 +312,130 @@ class ExperimentConfigsRepository {
             }
         }
         task.resume()
+    }
+}
+
+struct TrackRequest: Encodable {
+    var projectId: String
+    var userId: String
+    var timestamp: DateTime
+    var events: [TrackEvent]
+}
+
+struct TrackEvent: Encodable {
+    enum Typename: String, Encodable {
+        case Event = "event"
+        case Experiment = "experiment"
+    }
+    var typename: Typename
+    var experimentId: String?
+    var variantId: String?
+    var name: String?
+    var timestamp: DateTime
+}
+
+struct TrackUserEvent {
+    var name: String
+}
+
+struct TrackExperimentEvent {
+    var experimentId: String
+    var variantId: String
+}
+
+class TrackRespository {
+    private let maxQueueSize: Int
+    private let maxBatchSize: Int
+    private let config: Config
+    private let user: NativebrikUser
+    private let queueLock: NSLock
+    private var timer: Timer?
+    private var buffer: [TrackEvent]
+    init(config: Config, user: NativebrikUser) {
+        self.maxQueueSize = 300
+        self.maxBatchSize = 50
+        self.config = config
+        self.user = user
+        self.queueLock = NSLock()
+        self.buffer = []
+        self.timer = nil
+    }
+    
+    deinit {
+        print("deinit")
+        self.timer?.invalidate()
+    }
+    
+    func trackExperimentEvent(_ event: TrackExperimentEvent) {
+        self.pushToQueue(TrackEvent(
+            typename: .Experiment,
+            experimentId: event.experimentId,
+            variantId: event.variantId,
+            timestamp: Date.now.ISO8601Format()
+        ))
+    }
+    
+    func trackEvent(_ event: TrackUserEvent) {
+        self.pushToQueue(TrackEvent(
+            typename: .Event,
+            name: event.name,
+            timestamp: Date.now.ISO8601Format()
+        ))
+    }
+    
+    private func pushToQueue(_ event: TrackEvent) {
+        self.queueLock.lock()
+        if self.timer == nil {
+            DispatchQueue.main.async {
+                self.timer?.invalidate()
+                self.timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true, block: { _ in
+                    Task(priority: .low) {
+                        try await self.sendAndFlush()
+                    }
+                })
+            }
+        }
+
+        if self.buffer.count >= self.maxBatchSize {
+            Task(priority: .low) {
+                try await self.sendAndFlush()
+            }
+        }
+        self.buffer.append(event)
+        if self.buffer.count >= self.maxQueueSize {
+            self.buffer.removeFirst(self.maxQueueSize - self.buffer.count)
+        }
+        
+        self.queueLock.unlock()
+    }
+    
+    private func sendAndFlush() async throws {
+        if self.buffer.count == 0 {
+            return
+        }
+        let events = self.buffer
+        self.buffer = []
+        let trackRequest = TrackRequest(
+            projectId: self.config.projectId,
+            userId: self.user.id,
+            timestamp: Date.now.ISO8601Format(),
+            events: events
+        )
+        
+        do {
+            let url = URL(string: config.trackUrl)!
+            let jsonData = try JSONEncoder().encode(trackRequest)
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.httpBody = jsonData
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let _ = try await URLSession.shared.data(for: request)
+            
+            self.timer?.invalidate()
+            self.timer = nil
+        } catch {
+            self.buffer.append(contentsOf: events)
+        }
     }
 }
 
