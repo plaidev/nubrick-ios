@@ -26,10 +26,9 @@ class OverlayViewController: UIViewController {
     }
     
     override func viewDidLoad() {
-        self.triggerViewController.dispatchInitialized()
-        self.triggerViewController.dispatchUserFirstVisit()
+        self.triggerViewController.ininitialLoad()
     }
-    
+        
     required init?(coder: NSCoder) {
         self.triggerViewController = TriggerViewController(coder: coder)!
         super.init(coder: coder)
