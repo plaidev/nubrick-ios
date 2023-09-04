@@ -362,7 +362,6 @@ class TrackRespository {
     }
     
     deinit {
-        print("deinit")
         self.timer?.invalidate()
     }
     
