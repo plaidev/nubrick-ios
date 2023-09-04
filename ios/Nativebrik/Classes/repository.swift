@@ -40,7 +40,6 @@ class Repositories {
     let image: ImageRepository
     let component: ComponentRepository
     let queryData: QueryDataRepository
-    let trigger: TriggerRepository
     let experiment: ExperimentConfigsRepository
     let track: TrackRespository
 
@@ -50,7 +49,6 @@ class Repositories {
         )
         self.component = ComponentRepository(config: config, cacheStrategy: CacheStrategy())
         self.queryData = QueryDataRepository(cache: CacheStrategy(), config: config)
-        self.trigger = TriggerRepository(config: config, cacheStrategy: CacheStrategy())
         self.experiment = ExperimentConfigsRepository(config: config, cacheStrategy: CacheStrategy())
         self.track = TrackRespository(config: config, user: user)
     }
@@ -185,60 +183,6 @@ class ComponentRepository {
             }
         }
         task.resume()
-    }
-}
-
-class TriggerData: NSObject {
-    let componentId: String
-    init(id: String) {
-        self.componentId = id
-    }
-}
-
-class TriggerRepository {
-    private let cache: CacheStrategy<TriggerData>
-    private let config: Config
-
-    init(config: Config, cacheStrategy: CacheStrategy<TriggerData>) {
-        self.config = config
-        self.cache = cacheStrategy
-    }
-
-    func fetch(event: TriggerEvent, callback: @escaping (_ entry: Entry<TriggerData>) -> Void) async {
-        let key = event.name
-
-        if let entry = self.cache.get(key: key) {
-            callback(entry)
-            return
-        }
-
-        do {
-            let propertyInputs: [PropertyInput] = []
-            let triggerEventInput = TriggerEventInput(name: event.name, properties: propertyInputs)
-            let data = try await getComponentByTrigger(
-                query: getComponentByTriggerQuery(event: triggerEventInput),
-                projectId: self.config.projectId,
-                url: self.config.url
-            )
-
-            if let componentId = data.data?.trigger??.id {
-                let entry = Entry<TriggerData>(
-                    value: TriggerData(id: componentId)
-                )
-                callback(entry)
-                self.cache.set(entry: entry, forKey: key)
-                return
-            } else {
-                let entry = Entry<TriggerData>()
-                callback(entry)
-                self.cache.set(entry: entry, forKey: key)
-                return
-            }
-        } catch {
-            let entry = Entry<TriggerData>()
-            callback(entry)
-            self.cache.set(entry: entry, forKey: key)
-        }
     }
 }
 
@@ -385,9 +329,10 @@ class TrackRespository {
     private func pushToQueue(_ event: TrackEvent) {
         self.queueLock.lock()
         if self.timer == nil {
+            // here, use async not sync. main.sync will break the app.
             DispatchQueue.main.async {
                 self.timer?.invalidate()
-                self.timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true, block: { _ in
+                self.timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false, block: { _ in
                     Task(priority: .low) {
                         try await self.sendAndFlush()
                     }
