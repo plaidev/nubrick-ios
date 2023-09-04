@@ -9,6 +9,8 @@ import Foundation
 import SwiftUI
 import Combine
 
+public let nativebrikSdkVersion = "0.1.5"
+
 class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
@@ -105,7 +107,6 @@ public struct ComponentEvent {
 
 public struct TriggerEvent {
     public let name: String
-    public var properties: [EventProperty]? = nil
 }
 
 public struct TriggerEventFactory {
@@ -117,12 +118,8 @@ public struct TriggerEventFactory {
         return TriggerEvent(name: TriggerEventNameDefs.nativebrikSdkUserFirstInitialized.rawValue)
     }
 
-    public static func custom(name: String) -> TriggerEvent {
+    public static func custom(_ name: String) -> TriggerEvent {
         return TriggerEvent(name: name)
-    }
-    
-    public static func custom(name: String, properties: [EventProperty]) -> TriggerEvent {
-        return TriggerEvent(name: name, properties: properties)
     }
 }
 
