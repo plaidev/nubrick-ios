@@ -242,9 +242,15 @@ struct TriggerEventInput: Encodable {
   var properties: [PropertyInput]?
 }
 enum TriggerEventNameDefs: String, Decodable, Encodable {
-  case nativebrikSdkInitialized = "nativebrikSdkInitialized"
-  case nativebrikSdkUserFirstInitialized = "nativebrikSdkUserFirstInitialized"
-  case NATIVEBRIK_NO_TRIGGER = "NATIVEBRIK_NO_TRIGGER"
+  case RETENTION_1 = "RETENTION_1"
+  case RETENTION_2_3 = "RETENTION_2_3"
+  case RETENTION_4_7 = "RETENTION_4_7"
+  case RETENTION_8_14 = "RETENTION_8_14"
+  case RETENTION_15 = "RETENTION_15"
+  case USER_BOOT_APP = "USER_BOOT_APP"
+  case USER_ENTER_TO_APP = "USER_ENTER_TO_APP"
+  case USER_ENTER_TO_APP_FIRSTLY = "USER_ENTER_TO_APP_FIRSTLY"
+  case USER_ENTER_TO_FOREGROUND = "USER_ENTER_TO_FOREGROUND"
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try TriggerEventNameDefs(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
