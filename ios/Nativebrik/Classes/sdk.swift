@@ -36,17 +36,14 @@ class Config {
         }
     }
 
-    // for internal use
-    init(projectId: String, url: String) {
-        self.projectId = projectId
-        self.url = url
-    }
-
     func initFrom(onEvent: ((_ event: ComponentEvent) -> Void)?) -> Config {
         let config = Config(
-            projectId: self.projectId,
-            url: self.url
+            projectId: self.projectId
         )
+        
+        for listener in eventListeners {
+            config.eventListeners.append(listener)
+        }
 
         if let onEvent = onEvent {
             config.eventListeners.append(onEvent)
@@ -137,17 +134,6 @@ public class Nativebrik: ObservableObject {
         self.config = Config(
             projectId: projectId,
             onEvent: onEvent
-        )
-        self.repositories = Repositories(config: config, user: self.user)
-        self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
-        self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
-    }
-
-    public init(projectId: String, environment: String) {
-        self.user = NativebrikUser()
-        self.config = Config(
-            projectId: projectId,
-            url: environment
         )
         self.repositories = Repositories(config: config, user: self.user)
         self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
