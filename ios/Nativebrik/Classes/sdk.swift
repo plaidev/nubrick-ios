@@ -11,11 +11,26 @@ import Combine
 
 public let nativebrikSdkVersion = "0.1.5"
 
+func openLink(_ event: ComponentEvent) -> Void {
+    guard let link = event.deepLink else {
+        return
+    }
+    let url = URL(string: link)!
+    if UIApplication.shared.canOpenURL(url) {
+        if #available(iOS 10.0, *) {
+            UIApplication.shared.open(url, options: [:])
+        } else {
+            UIApplication.shared.openURL(url)
+        }
+    }
+}
+
 class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
     var trackUrl: String = "https://track.nativebrik.com/track/v1"
     var cdnUrl: String = "https://cdn.nativebrik.com"
+    static let defaultListeners: [((_ event: ComponentEvent) -> Void)] = [openLink]
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
 
     init() {
@@ -77,6 +92,9 @@ class Config {
             })
         )
         for listener in eventListeners {
+            listener(e)
+        }
+        for listener in Config.defaultListeners {
             listener(e)
         }
     }
