@@ -131,20 +131,8 @@ Morondava is a charming coastal town located on the western coast of Madagascar.
             ScrollView(.vertical) {
                 nativebrik
                     .experiment
-                    .embedding("cjjei1223akg00bptlh0")
+                    .embedding("TOP_COMPONENT")
                     .frame(width: nil, height: 270)
-                nativebrik
-                    .experiment
-                    .remoteConfigAsView("cjm5piq23akg008u0km0") { phase in
-                        switch phase {
-                        case .failure:
-                            Text("error")
-                        case .loading:
-                            Text("loading")
-                        case .completed(let variant):
-                            Text(variant.getAsString("text") ?? "Not Found")
-                        }
-                    }
                 ForEach(self.items, id: \.title) { item in
                     item.padding()
                 }

@@ -189,16 +189,20 @@ public class RemoteConfig {
                             phase(.failure)
                             return
                         }
+                        guard let experimentConfigId = config.id else {
+                            phase(.failure)
+                            return
+                        }
                         
                         self.repositories.track.trackExperimentEvent(
                             TrackExperimentEvent(
-                                experimentId: self.experimentId,
+                                experimentId: experimentConfigId,
                                 variantId: variantId
                             )
                         )
 
                         phase(.completed(RemoteConfigVariant(
-                            experimentId: experimentId,
+                            experimentId: experimentConfigId,
                             variantId: variantId,
                             configs: variantConfigs,
                             config: self.config,

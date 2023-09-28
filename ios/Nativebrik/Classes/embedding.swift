@@ -63,15 +63,19 @@ class EmbeddingUIView: ComponentUIView {
                             self?.renderFallback(phase: .failure)
                             return
                         }
+                        guard let experimentConfigId = config.id else {
+                            self?.renderFallback(phase: .failure)
+                            return
+                        }
                         
                         repositories.track.trackExperimentEvent(
                             TrackExperimentEvent(
-                                experimentId: experimentId,
+                                experimentId: experimentConfigId,
                                 variantId: variantId
                             )
                         )
                         
-                        self?.loadAndTransition(experimentId: experimentId, componentId: componentId)
+                        self?.loadAndTransition(experimentId: experimentConfigId, componentId: componentId)
                     }
                 }
             }
@@ -98,6 +102,7 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                             self?.phase = .failure
                             return
                         }
+                        print("hello", experimentId, configs)
                         guard let experimentConfig = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
                             return self?.user.toEventProperties(seed: seed) ?? []
                         }) else {
@@ -121,16 +126,20 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                             self?.phase = .failure
                             return
                         }
+                        guard let experimentConfigId = experimentConfig.id else {
+                            self?.phase = .failure
+                            return
+                        }
                         
                         repositories.track.trackExperimentEvent(
                             TrackExperimentEvent(
-                                experimentId: experimentId,
+                                experimentId: experimentConfigId,
                                 variantId: variantId
                             )
                         )
                         
                         self?.fetchComponentAndUpdatePhase(
-                            experimentId: experimentId,
+                            experimentId: experimentConfigId,
                             componentId: componentId,
                             config: config,
                             repositories: repositories,
