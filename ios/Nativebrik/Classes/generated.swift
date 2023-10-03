@@ -52,9 +52,6 @@ struct Color: Decodable {
   var blue: Float?
   var alpha: Float?
 }
-struct Component: Decodable {
-  var id: ID?
-}
 enum ConditionOperator: String, Decodable, Encodable {
   case Equal = "Equal"
   case NotEqual = "NotEqual"
@@ -232,7 +229,6 @@ enum PropertyType: String, Decodable, Encodable {
 }
 struct Query: Decodable {
   var data: JSON?
-  var trigger: Component?
 }
 struct TriggerEventDef: Decodable {
   var name: String?
@@ -436,50 +432,6 @@ struct GraphqlError: Decodable {}
 enum GraphqlQueryError: Error {
   case Network
 }
-func getComponentByTrigger(query: getComponentByTriggerQuery, projectId: String, url: String) async throws -> getComponentByTriggerQueryResult {
-  let urlComponents = URLComponents(string: url)!
-  let document = getComponentByTriggerQuery.__document__
-  struct BodyData: Encodable {
-    var operationName = "getComponentByTrigger"
-    var query: String
-    var variables: getComponentByTriggerQuery
-  }
-  let body = BodyData(query: document, variables: query)
-  let jsonData = try JSONEncoder().encode(body)
-  var request = URLRequest(url: urlComponents.url!)
-  request.httpBody = jsonData
-  request.httpMethod = "POST"
-  request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-  request.setValue(projectId, forHTTPHeaderField: "X-Project-Id")
-  let (data, response) = try await URLSession.shared.data(for: request)
-  guard let httpResponse = response as? HTTPURLResponse,
-  httpResponse.statusCode == 200 else {
-    throw GraphqlQueryError.Network
-  }
-  let decoder = JSONDecoder()
-  let result = try decoder.decode(getComponentByTriggerQueryResult.self, from: data)
-  return result
-}
-struct getComponentByTriggerQueryResult: Decodable {
-  var data: ResultData?
-  var errors: [GraphqlError]?
-  struct ResultData: Decodable {
-    var trigger: Component??
-  }
-}
-struct getComponentByTriggerQuery: Encodable {
-  var event: TriggerEventInput?
-  enum CodingKeys: String, CodingKey {
-    case event
-  }
-  static let __document__ = """
-query getComponentByTrigger ($event: TriggerEventInput!) {
-  trigger(event: $event) {
-    __typename
-    id
-  }
-}
-"""}
 func getData(query: getDataQuery, projectId: String, url: String) async throws -> getDataQueryResult {
   let urlComponents = URLComponents(string: url)!
   let document = getDataQuery.__document__
