@@ -161,9 +161,6 @@ struct FrameData: Decodable {
 }
 enum FrequencyUnit: String, Decodable, Encodable {
   case DAY = "DAY"
-  case WEEK = "WEEK"
-  case MONTH = "MONTH"
-  case YEAR = "YEAR"
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try FrequencyUnit(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
