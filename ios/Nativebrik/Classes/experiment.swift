@@ -65,7 +65,7 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     return variants[selectedVariantIndex - 1]
 }
 
-func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: (_ seed: Int) -> [EventProperty]) -> ExperimentConfig? {
+func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: (_ seed: Int) -> [EventProperty], records: (_ experimentId: String) -> [ExperimentHistoryRecord]) -> ExperimentConfig? {
     guard let configs = configs.configs else {
         return nil
     }
@@ -76,7 +76,8 @@ func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, prop
         guard let distribution = config.distribution else {
             return true
         }
-        return isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
+        let experimentId = config.id ?? ""
+        return isInFrequency(experimentId: experimentId, frequency: config.frequency, records: records(experimentId)) && isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
     }
 }
 
@@ -100,6 +101,31 @@ func isInDistribution(distribution: [ExperimentCondition], properties: [EventPro
         return !comparePropWithConditionValue(prop: prop, value: conditionValue, op: ConditionOperator(rawValue: op) ?? .Equal)
     }
     return foundNotMatched == nil
+}
+
+func isInFrequency(experimentId: String, frequency: ExperimentFrequency?, records: [ExperimentHistoryRecord]) -> Bool {
+    guard let frequency = frequency else {
+        return true
+    }
+    let time = frequency.times ?? 1
+    guard let period = frequency.period else {
+        return records.count < time
+    }
+    let unit = frequency.unit ?? .DAY
+    switch unit {
+    case .DAY, .unknown:
+        let today = getToday()
+        let from = today.timeIntervalSince1970 - Double((period - 1) * 24 * 60 * 60)
+        var count = 0
+        for timestamp in records {
+            if timestamp > from {
+                count += 1
+            } else {
+                break
+            }
+        }
+        return count < time
+    }
 }
 
 func comparePropWithConditionValue(prop: EventProperty, value: String, op: ConditionOperator) -> Bool {
