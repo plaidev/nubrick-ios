@@ -7,6 +7,8 @@
 
 import Foundation
 
+typealias ExperimentHistoryRecord = TimeInterval
+
 enum NativebrikUserDefaultsKeys: String {
     case USER_ID = "NATIVEBRIK_SDK_USER_ID"
     case USER_RND = "NATIVEBRIK_SDK_USER_RND"
@@ -39,17 +41,20 @@ func nativebrikUserPropType(key: BuiltinUserProperty) -> EventPropertyType {
 public class NativebrikUser {
     private var properties: [String: String]
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
+    private var userDB: UserDefaults
+    
     init() {
+        self.userDB = UserDefaults(suiteName: "nativebrik-user-database") ?? UserDefaults.standard
         self.properties = [:]
         
         // userId := uuid by default
-        let userId = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue) as? String ?? UUID().uuidString
-        UserDefaults.standard.set(userId, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
+        let userId = self.userDB.object(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue) as? String ?? UUID().uuidString
+        self.userDB.set(userId, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
         self.properties[BuiltinUserProperty.userId.rawValue] = userId
         
         // userRnd := n in [0,100)
-        let userRnd = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.USER_RND.rawValue) as? Int ?? Int.random(in: 0..<100)
-        UserDefaults.standard.set(userRnd, forKey: NativebrikUserDefaultsKeys.USER_RND.rawValue)
+        let userRnd = self.userDB.object(forKey: NativebrikUserDefaultsKeys.USER_RND.rawValue) as? Int ?? Int.random(in: 0..<100)
+        self.userDB.set(userRnd, forKey: NativebrikUserDefaultsKeys.USER_RND.rawValue)
         self.properties[BuiltinUserProperty.userRnd.rawValue] = String(userRnd)
         
         let languageCode = getLanguageCode()
@@ -58,8 +63,8 @@ public class NativebrikUser {
         let regionCode = getRegionCode()
         self.properties[BuiltinUserProperty.regionCode.rawValue] = regionCode
 
-        let firstBootTime = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue) as? String ?? formatToISO8601(getCurrentDate())
-        UserDefaults.standard.set(firstBootTime, forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue)
+        let firstBootTime = self.userDB.object(forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue) as? String ?? formatToISO8601(getCurrentDate())
+        self.userDB.set(firstBootTime, forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue)
         self.properties[BuiltinUserProperty.firstBootTime.rawValue] = firstBootTime
         
         self.properties[BuiltinUserProperty.sdkVersion.rawValue] = nativebrikSdkVersion
@@ -115,8 +120,8 @@ public class NativebrikUser {
         self.properties[BuiltinUserProperty.lastBootTime.rawValue] = formatToISO8601(lastBootTime)
         self.lastBootTime = lastBootTime.timeIntervalSince1970
         
-        let retentionTimestamp = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue) as? Int ?? Int(now.timeIntervalSince1970)
-        let retentionCount = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue) as? Int ?? 0
+        let retentionTimestamp = self.userDB.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue) as? Int ?? Int(now.timeIntervalSince1970)
+        let retentionCount = self.userDB.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue) as? Int ?? 0
         self.properties[BuiltinUserProperty.retentionPeriod.rawValue] = String(retentionCount)
         
         // 1 day is equal to 86400 seconds
@@ -124,21 +129,47 @@ public class NativebrikUser {
         let daysSince1970 = Int(now.timeIntervalSince1970 / (86400))
         if lastDaysSince1970 == daysSince1970 - 1 {
             // count up retention. because user is returned in 1 day
-            UserDefaults.standard.set(Int(now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
+            self.userDB.set(Int(now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
             let countedUp = retentionCount + 1
-            UserDefaults.standard.set(countedUp, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
+            self.userDB.set(countedUp, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
             self.properties[BuiltinUserProperty.retentionPeriod.rawValue] = String(countedUp)
         } else if lastDaysSince1970 == daysSince1970 {
             // save the initial count
-            UserDefaults.standard.set(retentionTimestamp, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
-            UserDefaults.standard.set(retentionCount, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
+            self.userDB.set(retentionTimestamp, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
+            self.userDB.set(retentionCount, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
         } else if lastDaysSince1970 < daysSince1970 - 1 {
             // reset retention. because user won't be returned in 1 day
-            UserDefaults.standard.set(Int(now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
+            self.userDB.set(Int(now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
             let reseted = 0
-            UserDefaults.standard.set(reseted, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
+            self.userDB.set(reseted, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
             self.properties[BuiltinUserProperty.retentionPeriod.rawValue] = String(reseted)
         }
+    }
+    
+    func getExperimentHistoryRecord(experimentId: String) -> [ExperimentHistoryRecord] {
+        let key = "NATIVEBRIK_EXPERIMENTET_RECORDS_\(experimentId)"
+        let records = self.userDB.object(forKey: key) as? [ExperimentHistoryRecord]
+        return records ?? []
+    }
+    
+    func addExperimentHistoryRecord(experimentId: String) {
+        let now = getCurrentDate().timeIntervalSince1970
+        var records = self.getExperimentHistoryRecord(experimentId: experimentId)
+        let key = "NATIVEBRIK_EXPERIMENTET_RECORDS_\(experimentId)"
+        records.insert(ExperimentHistoryRecord(getCurrentDate().timeIntervalSince1970), at: 0)
+        
+        let threeMonthsAgo = now - 3 * 28 * 24 * 60 * 60
+        records.removeAll { timestamp in
+            if timestamp < threeMonthsAgo {
+                return true
+            } else {
+                return false
+            }
+        }
+        if records.count > 500 {
+            records.removeLast()
+        }
+        self.userDB.set(records, forKey: key)
     }
     
     // returns [0, 100)
@@ -150,6 +181,7 @@ public class NativebrikUser {
         return (rnd + Int(seededRand)) % 100
     }
     
+    // returns [0, 1)
     func getSeededNormalizedUserRnd(seed: Int) -> Double {
         let seededRnd = getSeededUserRnd(seed: seed)
         return Double(seededRnd) / 100.0
@@ -211,8 +243,6 @@ public class NativebrikUser {
                 type: .INTEGER
             ),
         ])
-        
-        
         
         for (key, value) in self.properties {
             if key == BuiltinUserProperty.userRnd.rawValue {
