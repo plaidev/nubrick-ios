@@ -32,6 +32,13 @@ enum BuiltinUserProperty: String, Decodable, Encodable {
   case osName = "osName"
   case appVersion = "appVersion"
   case cfBundleVersion = "cfBundleVersion"
+  case localYear = "localYear"
+  case localMonth = "localMonth"
+  case localWeekday = "localWeekday"
+  case localDay = "localDay"
+  case localHour = "localHour"
+  case localMinute = "localMinute"
+  case localSecond = "localSecond"
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try BuiltinUserProperty(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
@@ -61,6 +68,7 @@ enum ConditionOperator: String, Decodable, Encodable {
   case LessThanOrEqual = "LessThanOrEqual"
   case In = "In"
   case NotIn = "NotIn"
+  case Between = "Between"
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try ConditionOperator(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
@@ -78,11 +86,17 @@ struct ExperimentConfig: Decodable {
   var baseline: ExperimentVariant?
   var variants: [ExperimentVariant]?
   var seed: Int?
+  var frequency: ExperimentFrequency?
   var startedAt: DateTime?
   var endedAt: DateTime?
 }
 struct ExperimentConfigs: Decodable {
   var configs: [ExperimentConfig]?
+}
+struct ExperimentFrequency: Decodable {
+  var times: Int?
+  var period: Int?
+  var unit: FrequencyUnit?
 }
 enum ExperimentKind: String, Decodable, Encodable {
   case EMBED = "EMBED"
@@ -144,6 +158,16 @@ struct FrameData: Decodable {
   var background: Color?
   var backgroundSrc: String?
   var shadow: BoxShadow?
+}
+enum FrequencyUnit: String, Decodable, Encodable {
+  case DAY = "DAY"
+  case WEEK = "WEEK"
+  case MONTH = "MONTH"
+  case YEAR = "YEAR"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try FrequencyUnit(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
 }
 enum ImageContentMode: String, Decodable, Encodable {
   case FIT = "FIT"
@@ -425,6 +449,19 @@ enum VariantConfigKind: String, Decodable, Encodable {
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try VariantConfigKind(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
+enum Weekdays: String, Decodable, Encodable {
+  case SUNDAY = "SUNDAY"
+  case MONDAY = "MONDAY"
+  case TUESDAY = "TUESDAY"
+  case WEDNESDAY = "WEDNESDAY"
+  case THURSDAY = "THURSDAY"
+  case FRIDAY = "FRIDAY"
+  case SATURDAY = "SATURDAY"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try Weekdays(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
 import Foundation
