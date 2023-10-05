@@ -225,7 +225,7 @@ struct ComponentSwiftView: View {
             case .completed(let component):
                 return AnyView(component)
             default:
-                if #available(iOS 14.0, *) {
+                if #available(iOS 14, *) {
                     return AnyView(ProgressView())
                 } else {
                     return AnyView(EmptyView())
