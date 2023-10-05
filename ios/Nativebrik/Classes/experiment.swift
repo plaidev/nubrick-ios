@@ -168,6 +168,11 @@ func compareInteger(a: Int, b: [Int], op: ConditionOperator) -> Bool {
         return !b.contains { value in
             return value == a
         }
+    case .Between:
+        if b.count != 2 {
+            return false
+        }
+        return b[0] <= a && a <= b[1]
     default:
         if b.count == 0 {
             return false
@@ -216,6 +221,11 @@ func compareDouble(a: Double, b: [Double], op: ConditionOperator) -> Bool {
         return !b.contains { value in
             return value == a
         }
+    case .Between:
+        if b.count != 2 {
+            return false
+        }
+        return b[0] <= a && a <= b[1]
     default:
         if b.count == 0 {
             return false
@@ -264,6 +274,11 @@ func compareString(a: String, b: [String], op: ConditionOperator) -> Bool {
         return !b.contains { value in
             return value == a
         }
+    case .Between:
+        if b.count != 2 {
+            return false
+        }
+        return b[0] <= a && a <= b[1]
     default:
         if b.count == 0 {
             return false
