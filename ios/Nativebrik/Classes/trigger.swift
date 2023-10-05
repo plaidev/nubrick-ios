@@ -36,7 +36,7 @@ class TriggerViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    func ininitialLoad() {
+    func initialLoad() {
         self.didLoaded = true
 
         // dispatch an event when the user is only booted
