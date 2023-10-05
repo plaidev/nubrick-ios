@@ -38,7 +38,7 @@ func nativebrikUserPropType(key: BuiltinUserProperty) -> EventPropertyType {
 
 public class NativebrikUser {
     private var properties: [String: String]
-    private var lastBootTime: Double = Date.now.timeIntervalSince1970
+    private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
     init() {
         self.properties = [:]
         
@@ -52,13 +52,13 @@ public class NativebrikUser {
         UserDefaults.standard.set(userRnd, forKey: NativebrikUserDefaultsKeys.USER_RND.rawValue)
         self.properties[BuiltinUserProperty.userRnd.rawValue] = String(userRnd)
         
-        let languageCode = Locale.current.language.languageCode?.identifier ?? "en"
+        let languageCode = getLanguageCode()
         self.properties[BuiltinUserProperty.languageCode.rawValue] = languageCode
         
-        let regionCode = Locale.current.region?.identifier ?? "US"
+        let regionCode = getRegionCode()
         self.properties[BuiltinUserProperty.regionCode.rawValue] = regionCode
 
-        let firstBootTime = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue) as? String ?? Date.now.ISO8601Format()
+        let firstBootTime = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue) as? String ?? formatToISO8601(getCurrentDate())
         UserDefaults.standard.set(firstBootTime, forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue)
         self.properties[BuiltinUserProperty.firstBootTime.rawValue] = firstBootTime
         
@@ -110,20 +110,21 @@ public class NativebrikUser {
      This function expects to be called when your app back to foreground from background.
      */
     public func comeBack() {
-        let lastBootTime = Date.now
-        self.properties[BuiltinUserProperty.lastBootTime.rawValue] = lastBootTime.ISO8601Format()
+        let now = getCurrentDate()
+        let lastBootTime = getCurrentDate()
+        self.properties[BuiltinUserProperty.lastBootTime.rawValue] = formatToISO8601(lastBootTime)
         self.lastBootTime = lastBootTime.timeIntervalSince1970
         
-        let retentionTimestamp = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue) as? Int ?? Int(Date.now.timeIntervalSince1970)
+        let retentionTimestamp = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue) as? Int ?? Int(now.timeIntervalSince1970)
         let retentionCount = UserDefaults.standard.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue) as? Int ?? 0
         self.properties[BuiltinUserProperty.retentionPeriod.rawValue] = String(retentionCount)
         
         // 1 day is equal to 86400 seconds
         let lastDaysSince1970 = Int(retentionTimestamp / (86400))
-        let daysSince1970 = Int(Date.now.timeIntervalSince1970 / (86400))
+        let daysSince1970 = Int(now.timeIntervalSince1970 / (86400))
         if lastDaysSince1970 == daysSince1970 - 1 {
             // count up retention. because user is returned in 1 day
-            UserDefaults.standard.set(Int(Date.now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
+            UserDefaults.standard.set(Int(now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
             let countedUp = retentionCount + 1
             UserDefaults.standard.set(countedUp, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
             self.properties[BuiltinUserProperty.retentionPeriod.rawValue] = String(countedUp)
@@ -133,7 +134,7 @@ public class NativebrikUser {
             UserDefaults.standard.set(retentionCount, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
         } else if lastDaysSince1970 < daysSince1970 - 1 {
             // reset retention. because user won't be returned in 1 day
-            UserDefaults.standard.set(Int(Date.now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
+            UserDefaults.standard.set(Int(now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
             let reseted = 0
             UserDefaults.standard.set(reseted, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
             self.properties[BuiltinUserProperty.retentionPeriod.rawValue] = String(reseted)
@@ -155,20 +156,63 @@ public class NativebrikUser {
     }
     
     func toEventProperties(seed: Int) -> [EventProperty] {
+        let now = getCurrentDate()
         var eventProps: [EventProperty] = []
         
+        // set properties that depend on current time.
         eventProps.append(EventProperty(
             name: BuiltinUserProperty.currentTime.rawValue,
-            value: Date.now.ISO8601Format(),
+            value: formatToISO8601(now),
             type: .TIMESTAMPZ
         ))
         
-        let bootingTime = Date.now.timeIntervalSince1970 - self.lastBootTime
+        let bootingTime = now.timeIntervalSince1970 - self.lastBootTime
         eventProps.append(EventProperty(
             name: BuiltinUserProperty.bootingTime.rawValue,
             value: String(Int(bootingTime)),
             type: .INTEGER
         ))
+        
+        let localDates = getLocalDateComponent(now)
+        eventProps.append(contentsOf: [
+            EventProperty(
+                name: BuiltinUserProperty.localYear.rawValue,
+                value: String(localDates.year),
+                type: .INTEGER
+            ),
+            EventProperty(
+                name: BuiltinUserProperty.localMonth.rawValue,
+                value: String(localDates.month),
+                type: .INTEGER
+            ),
+            EventProperty(
+                name: BuiltinUserProperty.localDay.rawValue,
+                value: String(localDates.day),
+                type: .INTEGER
+            ),
+            EventProperty(
+                name: BuiltinUserProperty.localHour.rawValue,
+                value: String(localDates.hour),
+                type: .INTEGER
+            ),
+            EventProperty(
+                name: BuiltinUserProperty.localMinute.rawValue,
+                value: String(localDates.minute),
+                type: .INTEGER
+            ),
+            EventProperty(
+                name: BuiltinUserProperty.localSecond.rawValue,
+                value: String(localDates.second),
+                type: .INTEGER
+            ),
+            EventProperty(
+                name: BuiltinUserProperty.localWeekday.rawValue,
+                value: localDates.weekday.rawValue,
+                type: .INTEGER
+            ),
+        ])
+        
+        
         
         for (key, value) in self.properties {
             if key == BuiltinUserProperty.userRnd.rawValue {
