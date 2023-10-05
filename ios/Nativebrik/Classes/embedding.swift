@@ -42,6 +42,8 @@ class EmbeddingUIView: ComponentUIView {
                         }
                         guard let config = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
                             return self?.user.toEventProperties(seed: seed) ?? []
+                        }, records: { experimentId in
+                            return self?.user.getExperimentHistoryRecord(experimentId: experimentId) ?? []
                         }) else {
                             self?.renderFallback(phase: .failure)
                             return
@@ -67,6 +69,8 @@ class EmbeddingUIView: ComponentUIView {
                             self?.renderFallback(phase: .failure)
                             return
                         }
+                        
+                        self?.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
                         
                         repositories.track.trackExperimentEvent(
                             TrackExperimentEvent(
@@ -105,6 +109,8 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                         print("hello", experimentId, configs)
                         guard let experimentConfig = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
                             return self?.user.toEventProperties(seed: seed) ?? []
+                        }, records: { experimentId in
+                            return self?.user.getExperimentHistoryRecord(experimentId: experimentId) ?? []
                         }) else {
                             self?.phase = .failure
                             return
@@ -130,6 +136,8 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                             self?.phase = .failure
                             return
                         }
+                        
+                        self?.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
                         
                         repositories.track.trackExperimentEvent(
                             TrackExperimentEvent(

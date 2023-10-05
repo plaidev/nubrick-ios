@@ -172,6 +172,8 @@ public class RemoteConfig {
                         }
                         guard let config = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
                             return self.user.toEventProperties(seed: seed)
+                        }, records: { experimentId in
+                            return self.user.getExperimentHistoryRecord(experimentId: experimentId)
                         }) else {
                             phase(.failure)
                             return
@@ -193,6 +195,8 @@ public class RemoteConfig {
                             phase(.failure)
                             return
                         }
+                        
+                        self.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
                         
                         self.repositories.track.trackExperimentEvent(
                             TrackExperimentEvent(

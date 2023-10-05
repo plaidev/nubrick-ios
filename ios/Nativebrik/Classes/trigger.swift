@@ -104,6 +104,8 @@ class TriggerViewController: UIViewController {
                     let experimentConfigs = value.value
                     guard let extractedConfig = extractExperimentConfigMatchedToProperties(configs: experimentConfigs, properties: { seed in
                         return self.user.toEventProperties(seed: seed)
+                    }, records: { experimentId in
+                        return self.user.getExperimentHistoryRecord(experimentId: experimentId)
                     }) else {
                         return
                     }
@@ -126,6 +128,8 @@ class TriggerViewController: UIViewController {
                     guard let componentId = variantConfig.value else {
                         return
                     }
+                    
+                    self.user.addExperimentHistoryRecord(experimentId: experimentId)
 
                     self.repositories?.track.trackExperimentEvent(
                         TrackExperimentEvent(
