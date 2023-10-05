@@ -15,6 +15,17 @@ func getCurrentDate() -> Date {
     }
 }
 
+func getToday() -> Date {
+    let now = getCurrentDate()
+    let calendar = Calendar(identifier: .gregorian)
+    var dateComponents = calendar.dateComponents(Set([.year, .month, .day, .hour, .minute, .second]), from: now)
+    dateComponents.hour = 0
+    dateComponents.minute = 0
+    dateComponents.second = 0
+    dateComponents.nanosecond = 0
+    return calendar.date(from: dateComponents) ?? now
+}
+
 struct LocalDateComponent {
     var year: Int
     var month: Int
