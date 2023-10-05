@@ -159,14 +159,11 @@ class TriggerViewController: UIViewController {
                             default:
                                 return
                             }
-                        }
-
-                    }
-
-                }
-
-            }
-        }
-    }
+                        } // END DispatchQueue.main.sync
+                    } // END self.repositories?.component.fetch
+                } // END self.repositories?.experiment.trigger
+            } // END Task
+        } // END DispatchQueue.global().async {
+    } // END dispatch
 }
 
