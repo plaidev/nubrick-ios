@@ -314,7 +314,7 @@ class TrackRespository {
             typename: .Experiment,
             experimentId: event.experimentId,
             variantId: event.variantId,
-            timestamp: Date.now.ISO8601Format()
+            timestamp: formatToISO8601(getCurrentDate())
         ))
     }
     
@@ -322,7 +322,7 @@ class TrackRespository {
         self.pushToQueue(TrackEvent(
             typename: .Event,
             name: event.name,
-            timestamp: Date.now.ISO8601Format()
+            timestamp: formatToISO8601(getCurrentDate())
         ))
     }
     
@@ -362,7 +362,7 @@ class TrackRespository {
         let trackRequest = TrackRequest(
             projectId: self.config.projectId,
             userId: self.user.id,
-            timestamp: Date.now.ISO8601Format(),
+            timestamp: formatToISO8601(getCurrentDate()),
             events: events
         )
         
