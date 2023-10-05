@@ -281,7 +281,6 @@ func configureBorder(view: UIView, frame: FrameData?) {
 }
 
 func configureShadow(view: UIView, shadow: BoxShadow?) {
-    let uiview = UIView()
     if let shadow = shadow {
         view.layer.shadowColor = parseColorToCGColor(shadow.color)
         view.layer.shadowOffset = CGSize(width: shadow.offsetX ?? 0, height: shadow.offsetY ?? 0)
