@@ -1,6 +1,6 @@
 use_frameworks!
 
-platform :ios, '16.4'
+platform :ios, '15.0'
 
 project 'Nativebrik_Example/Nativebrik_Example.xcodeproj'
 

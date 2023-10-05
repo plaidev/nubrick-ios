@@ -12,10 +12,10 @@ Nativebrik SDK for iOS.
   s.source           = { :git => 'https://github.com/plaidev/nativebrik-sdk.git', :tag => 'v' + s.version.to_s }
 
   s.swift_version = '5'
-  s.ios.deployment_target = '16.2'
+  s.ios.deployment_target = '13.4'
 
   s.source_files = 'ios/Nativebrik/Classes/**/*'
 
   s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine'
-  s.dependency 'YogaKit', '~> 1.18'
+  s.dependency 'YogaKit', '~> 2.0.0'
 end
