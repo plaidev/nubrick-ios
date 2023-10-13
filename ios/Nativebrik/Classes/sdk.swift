@@ -127,7 +127,7 @@ public struct TriggerEvent {
     }
 }
 
-public class Nativebrik: ObservableObject {
+public class NativebrikClient: ObservableObject {
     private let config: Config
     private let repositories: Repositories
     private let overlayVC: OverlayViewController
@@ -287,9 +287,9 @@ public class NativebrikExperiment {
 
 public struct NativebrikProvider<Content: View>: View {
     private let _content: Content
-    private let context: Nativebrik
+    private let context: NativebrikClient
 
-    public init(client: Nativebrik, @ViewBuilder content: () -> Content) {
+    public init(client: NativebrikClient, @ViewBuilder content: () -> Content) {
         self._content = content()
         self.context = client
     }
