@@ -124,7 +124,7 @@ Los Angeles, often referred to as LA, is a vibrant and diverse city located on t
 Morondava is a charming coastal town located on the western coast of Madagascar. Situated in the Menabe region, Morondava is known for its breathtaking natural beauty, unique baobab trees, and laid-back atmosphere. It offers visitors a chance to experience the rich culture, stunning landscapes, and warm hospitality of Madagascar.
 """)
     ]
-    @EnvironmentObject var nativebrik: Nativebrik
+    @EnvironmentObject var nativebrik: NativebrikClient
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Header()
@@ -143,7 +143,7 @@ Morondava is a charming coastal town located on the western coast of Madagascar.
 
 struct ContentView: View {
     var body: some View {
-        NativebrikProvider(client: Nativebrik(projectId: "cgv3p3223akg00fod19g")) {
+        NativebrikProvider(client: NativebrikClient(projectId: "cgv3p3223akg00fod19g")) {
             AppView()
         }
     }
