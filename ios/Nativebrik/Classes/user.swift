@@ -44,7 +44,8 @@ public class NativebrikUser {
     private var userDB: UserDefaults
     
     init() {
-        self.userDB = UserDefaults(suiteName: "nativebrik-user-database") ?? UserDefaults.standard
+        let suiteName = "\(Bundle.main.bundleIdentifier ?? "app").nativebrik.com"
+        self.userDB = UserDefaults(suiteName: suiteName) ?? UserDefaults.standard
         self.properties = [:]
         
         // userId := uuid by default
@@ -157,16 +158,7 @@ public class NativebrikUser {
         var records = self.getExperimentHistoryRecord(experimentId: experimentId)
         let key = "NATIVEBRIK_EXPERIMENTET_RECORDS_\(experimentId)"
         records.insert(ExperimentHistoryRecord(getCurrentDate().timeIntervalSince1970), at: 0)
-        
-        let threeMonthsAgo = now - 3 * 28 * 24 * 60 * 60
-        records.removeAll { timestamp in
-            if timestamp < threeMonthsAgo {
-                return true
-            } else {
-                return false
-            }
-        }
-        if records.count > 500 {
+        if records.count > 365 {
             records.removeLast()
         }
         self.userDB.set(records, forKey: key)
