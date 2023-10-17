@@ -97,15 +97,15 @@ class TriggerViewController: UIViewController {
         }
         DispatchQueue.global().async {
             Task {
-                await self.repositories?.experiment.trigger(event: event) { entry in
+                await self.repositories?.experiment.trigger(event: event) { [weak self] entry in
                     guard let value = entry.value else {
                         return
                     }
                     let experimentConfigs = value.value
                     guard let extractedConfig = extractExperimentConfigMatchedToProperties(configs: experimentConfigs, properties: { seed in
-                        return self.user.toEventProperties(seed: seed)
+                        return self?.user.toEventProperties(seed: seed) ?? []
                     }, records: { experimentId in
-                        return self.user.getExperimentHistoryRecord(experimentId: experimentId)
+                        return self?.user.getExperimentHistoryRecord(experimentId: experimentId) ?? []
                     }) else {
                         return
                     }
@@ -115,7 +115,9 @@ class TriggerViewController: UIViewController {
                     if extractedConfig.kind != .POPUP {
                         return
                     }
-                    let normalizedUsrRnd = self.user.getSeededNormalizedUserRnd(seed: extractedConfig.seed ?? 0)
+                    guard let normalizedUsrRnd = self?.user.getSeededNormalizedUserRnd(seed: extractedConfig.seed ?? 0) else {
+                        return
+                    }
                     guard let extractedVariant = extractExperimentVariant(config: extractedConfig, normalizedUsrRnd: normalizedUsrRnd) else {
                         return
                     }
@@ -129,16 +131,16 @@ class TriggerViewController: UIViewController {
                         return
                     }
                     
-                    self.user.addExperimentHistoryRecord(experimentId: experimentId)
+                    self?.user.addExperimentHistoryRecord(experimentId: experimentId)
 
-                    self.repositories?.track.trackExperimentEvent(
+                    self?.repositories?.track.trackExperimentEvent(
                         TrackExperimentEvent(
                             experimentId: experimentId,
                             variantId: variantId
                         )
                     )
 
-                    self.repositories?.component.fetch(
+                    self?.repositories?.component.fetch(
                         experimentId: experimentId,
                         id: componentId
                     ) { entry in
@@ -148,18 +150,24 @@ class TriggerViewController: UIViewController {
                             }
                             switch view {
                             case .EUIRootBlock(let root):
-                                if let currentVC = self.currentVC {
+                                if let currentVC = self?.currentVC {
                                     currentVC.dismiss(animated: true)
                                     currentVC.removeFromParent()
                                 }
+                                guard let config = self?.config else {
+                                    return
+                                }
+                                guard let repositories = self?.repositories else {
+                                    return
+                                }
                                 let rootController = ModalRootViewController(
                                     root: root,
-                                    config: self.config,
-                                    repositories: self.repositories!,
-                                    modalViewController: self.modalViewController
+                                    config: config,
+                                    repositories: repositories,
+                                    modalViewController: self?.modalViewController
                                 )
-                                self.addChild(rootController)
-                                self.currentVC = rootController
+                                self?.addChild(rootController)
+                                self?.currentVC = rootController
                             default:
                                 return
                             }
