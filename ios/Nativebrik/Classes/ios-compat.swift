@@ -39,24 +39,27 @@ func getLocalDateComponent(_ date: Date) -> LocalDateComponent {
     let calendar = Calendar(identifier: .gregorian)
     let dateComponents = calendar.dateComponents(Set([.year, .month, .day, .hour, .minute, .second, .weekday]), from: date)
     
-    let weekdayIdentifier = switch (dateComponents.weekday ?? 1) {
-    case 1:
-        Weekdays.SUNDAY
-    case 2:
-        Weekdays.MONDAY
-    case 3:
-        Weekdays.TUESDAY
-    case 4:
-        Weekdays.WEDNESDAY
-    case 5:
-        Weekdays.THURSDAY
-    case 6:
-        Weekdays.FRIDAY
-    case 7:
-        Weekdays.SATURDAY
-    default:
-        Weekdays.SUNDAY
-    }
+    // swift version compat
+    let weekdayIdentifier: Weekdays = {
+        switch (dateComponents.weekday ?? 1) {
+        case 1:
+            return Weekdays.SUNDAY
+        case 2:
+            return Weekdays.MONDAY
+        case 3:
+            return Weekdays.TUESDAY
+        case 4:
+            return Weekdays.WEDNESDAY
+        case 5:
+            return Weekdays.THURSDAY
+        case 6:
+            return Weekdays.FRIDAY
+        case 7:
+            return Weekdays.SATURDAY
+        default:
+            return Weekdays.SUNDAY
+        }
+    }()
     
     return LocalDateComponent(
         year: dateComponents.year ?? 2000,
