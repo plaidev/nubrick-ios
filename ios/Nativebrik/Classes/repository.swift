@@ -7,6 +7,13 @@
 
 import Foundation
 
+let nativebrikSession: URLSession = {
+    let sessionConfig = URLSessionConfiguration.default
+    sessionConfig.timeoutIntervalForRequest = 10.0
+    sessionConfig.timeoutIntervalForResource = 30.0
+    return URLSession(configuration: sessionConfig)
+}()
+
 class CacheStrategy<V: NSObject> {
     private let cache = NSCache<NSString, Entry<V>>()
 
@@ -80,7 +87,7 @@ class ImageRepository {
             callback(entry)
             return
         }
-        let task = URLSession.shared.dataTask(with: requestUrl) { (data, response, error) in
+        let task = nativebrikSession.dataTask(with: requestUrl) { (data, response, error) in
             if error != nil {
                 let entry = Entry<ImageData>()
                 callback(entry)
@@ -148,7 +155,7 @@ class ComponentRepository {
         guard let requestUrl = URL(string: url) else {
             return
         }
-        let task = URLSession.shared.dataTask(with: requestUrl) { (data, response, error) in
+        let task = nativebrikSession.dataTask(with: requestUrl) { (data, response, error) in
             if error != nil {
                 let entry = Entry<ComponentData>()
                 callback(entry)
@@ -222,7 +229,7 @@ class ExperimentConfigsRepository {
             return
         }
 
-        let task = URLSession.shared.dataTask(with: requestUrl) { (data, response, error) in
+        let task = nativebrikSession.dataTask(with: requestUrl) { (data, response, error) in
             if error != nil {
                 let entry = Entry<ExperimentConfigsData>()
                 callback(entry)
@@ -332,7 +339,7 @@ class TrackRespository {
             // here, use async not sync. main.sync will break the app.
             DispatchQueue.main.async {
                 self.timer?.invalidate()
-                self.timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true, block: { _ in
+                self.timer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true, block: { _ in
                     Task(priority: .low) {
                         try await self.sendAndFlush()
                     }
@@ -373,7 +380,7 @@ class TrackRespository {
             request.httpMethod = "POST"
             request.httpBody = jsonData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            let _ = try await URLSession.shared.data(for: request)
+            let _ = try await nativebrikSession.data(for: request)
             
             self.timer?.invalidate()
             self.timer = nil
