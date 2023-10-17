@@ -14,8 +14,8 @@ func extractComponentId(variant: ExperimentVariant) -> String? {
     if configs.count == 0 {
         return nil
     }
-    let id = configs[0]
-    return id.value
+    let id = configs.first
+    return id?.value
 }
 
 /**
@@ -62,7 +62,10 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
         return baseline
     }
 
-    return variants[selectedVariantIndex - 1]
+    if variants.count > selectedVariantIndex - 1 {
+        return variants[selectedVariantIndex - 1]
+    }
+    return nil
 }
 
 func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: (_ seed: Int) -> [EventProperty], records: (_ experimentId: String) -> [ExperimentHistoryRecord]) -> ExperimentConfig? {
