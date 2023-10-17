@@ -106,7 +106,6 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                             self?.phase = .failure
                             return
                         }
-                        print("hello", experimentId, configs)
                         guard let experimentConfig = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
                             return self?.user.toEventProperties(seed: seed) ?? []
                         }, records: { experimentId in
