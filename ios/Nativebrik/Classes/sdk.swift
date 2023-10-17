@@ -55,7 +55,7 @@ class Config {
         let config = Config(
             projectId: self.projectId
         )
-        
+
         for listener in eventListeners {
             config.eventListeners.append(listener)
         }
@@ -157,7 +157,7 @@ public class NativebrikClient: ObservableObject {
         self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
         self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }
-    
+
     public func overlayViewController() -> UIViewController {
         return self.overlayVC
     }
@@ -183,7 +183,7 @@ public class NativebrikExperiment {
         self.repositories = repositories
         self.overlayVC = overlay
     }
-    
+
     public func embedding(_ id: String) -> some View {
         return EmbeddingSwiftView(
             experimentId: id,
@@ -193,7 +193,7 @@ public class NativebrikExperiment {
             modalViewController: self.overlayVC.modalViewController
         )
     }
-    
+
     public func embedding<V: View>(
         _ id: String,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
@@ -208,7 +208,7 @@ public class NativebrikExperiment {
             content: content
         )
     }
-    
+
     public func embedding<I: View, P: View>(
         _ id: String,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
@@ -225,7 +225,7 @@ public class NativebrikExperiment {
             placeholder: placeholder
         )
     }
-    
+
     public func embeddingUIView(_ id: String) -> UIView {
         return EmbeddingUIView(
             experimentId: id,
@@ -236,7 +236,7 @@ public class NativebrikExperiment {
             fallback: nil
         )
     }
-    
+
     public func embeddingUIView(_ id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> UIView {
         return EmbeddingUIView(
             experimentId: id,
@@ -247,7 +247,7 @@ public class NativebrikExperiment {
             fallback: nil
         )
     }
-    
+
     public func embeddingUIView(_ id: String, onEvent: ((_ event: ComponentEvent) -> Void)?, content: @escaping (_ phase: ComponentPhase) -> UIView) -> UIView {
         return EmbeddingUIView(
             experimentId: id,
@@ -258,7 +258,7 @@ public class NativebrikExperiment {
             fallback: content
         )
     }
-    
+
     public func remoteConfig(_ id: String, phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)) -> RemoteConfig {
         return RemoteConfig(
             user: self.user,
@@ -269,7 +269,7 @@ public class NativebrikExperiment {
             phase: phase
         )
     }
-    
+
     public func remoteConfigAsView<V: View>(
         _ id: String,
         @ViewBuilder phase: @escaping ((_ phase: RemoteConfigPhase) -> V)
