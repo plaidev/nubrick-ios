@@ -39,7 +39,9 @@ build-cocoapods:
 		IPHONEOS_DEPLOYMENT_TARGET="$(IPHONEOS_DEPLOYMENT_TARGET)" \
 		BUILD_LIBRARY_FOR_DISTRIBUTION=YES
 
-build-xcframework: build-cocoapods
+build-xcframeworks: build-cocoapods
+	@rm -rf ./ios/xcframeworks
+
 	@xcodebuild -create-xcframework \
 		-framework $(PODS_ROOT)/$(PODS_ROOT)/Build/Release-iphonesimulator/Yoga/yoga.framework \
 		-framework $(PODS_ROOT)/$(PODS_ROOT)/Build/Release-iphoneos/Yoga/yoga.framework \
@@ -49,3 +51,11 @@ build-xcframework: build-cocoapods
 		-framework $(PODS_ROOT)/$(PODS_ROOT)/Build/Release-iphonesimulator/YogaKit/YogaKit.framework \
 		-framework $(PODS_ROOT)/$(PODS_ROOT)/Build/Release-iphoneos/YogaKit/YogaKit.framework \
 		-output ./ios/xcframeworks/YogaKit.xcframework
+
+build-xcframework-archives: build-xcframeworks
+	@cd ./ios/xcframeworks && zip -r yoga.xcframework.zip yoga.xcframework
+	@cd ./ios/xcframeworks && zip -r YogaKit.xcframework.zip YogaKit.xcframework
+	@rm -rf ./ios/xcframeworks/yoga.xcframework
+	@rm -rf ./ios/xcframeworks/YogaKit.xcframework
+	@swift package compute-checksum ./ios/xcframeworks/yoga.xcframework.zip > ./ios/xcframeworks/yoga.xcframework.zip.checksum
+	@swift package compute-checksum ./ios/xcframeworks/YogaKit.xcframework.zip > ./ios/xcframeworks/YogaKit.xcframework.zip.checksum
