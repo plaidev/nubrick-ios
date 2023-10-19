@@ -163,7 +163,7 @@ public class NativebrikClient: ObservableObject {
     }
 
     public func overlay() -> some View {
-        return OverlayViewControllerRepresentable(overlayVC: self.overlayVC)
+        return OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0)
     }
 
     public func dispatch(event: TriggerEvent) throws {
@@ -296,7 +296,7 @@ public struct NativebrikProvider<Content: View>: View {
 
     public var body: some View {
         ZStack(alignment: .top) {
-            self.context.overlay().frame(width: 0, height: 0)
+            self.context.overlay()
             _content.environmentObject(self.context)
         }
     }
