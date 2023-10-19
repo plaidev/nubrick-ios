@@ -94,7 +94,7 @@ public class NativebrikUser {
         }
     }
 
-    public func set(properties: [String: String]) {
+    public func set(_ properties: [String: String]) {
         for (key, value) in properties {
             self.properties[key] = value
         }
