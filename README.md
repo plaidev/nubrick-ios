@@ -1,26 +1,5 @@
 # nativebrik sdk
 
-## Installations
+documentations
 
-### ios
-
-#### Swift package
-
-#### Cocoapods
-
-```ruby
-pod 'Nativebrik'
-```
-
-### android
-
-## examples
-
-ios
-
-```
-open ./ios/Example/Nativebrik_Example.xcworkspace
-```
-
-android
-
+https://nativebrik.com/intl/en/docs
