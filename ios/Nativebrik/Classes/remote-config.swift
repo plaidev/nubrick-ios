@@ -139,7 +139,7 @@ public enum RemoteConfigPhase {
     case failure
 }
 
-public class RemoteConfig {
+class RemoteConfig {
     private let user: NativebrikUser
     private let experimentId: String
     private let repositories: Repositories
