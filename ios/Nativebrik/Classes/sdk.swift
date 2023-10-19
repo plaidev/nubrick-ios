@@ -193,6 +193,16 @@ public class NativebrikExperiment {
             modalViewController: self.overlayVC.modalViewController
         )
     }
+    
+    public func embedding(_ id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> some View {
+        return EmbeddingSwiftView(
+            experimentId: id,
+            user: self.user,
+            config: self.config,
+            repositories: self.repositories,
+            modalViewController: self.overlayVC.modalViewController
+        )
+    }
 
     public func embedding<V: View>(
         _ id: String,
@@ -259,8 +269,8 @@ public class NativebrikExperiment {
         )
     }
 
-    public func remoteConfig(_ id: String, phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)) -> RemoteConfig {
-        return RemoteConfig(
+    public func remoteConfig(_ id: String, phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)) {
+        let _ = RemoteConfig(
             user: self.user,
             experimentId: id,
             repositories: self.repositories,
