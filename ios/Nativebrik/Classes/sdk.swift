@@ -139,7 +139,7 @@ public class NativebrikClient: ObservableObject {
         self.config = Config(
             projectId: projectId
         )
-        self.repositories = Repositories(config: config, user: self.user)
+        self.repositories = Repositories(config: config, user: self.user, interceptor: nil)
         self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
         self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }
@@ -153,7 +153,22 @@ public class NativebrikClient: ObservableObject {
             projectId: projectId,
             onEvent: onEvent
         )
-        self.repositories = Repositories(config: config, user: self.user)
+        self.repositories = Repositories(config: config, user: self.user, interceptor: nil)
+        self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
+        self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
+    }
+    
+    public init(
+        projectId: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        httpRequestInterceptor: NativebrikHttpRequestInterceptor?
+    ) {
+        self.user = NativebrikUser()
+        self.config = Config(
+            projectId: projectId,
+            onEvent: onEvent
+        )
+        self.repositories = Repositories(config: config, user: self.user, interceptor: httpRequestInterceptor)
         self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
         self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }

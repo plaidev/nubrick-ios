@@ -46,18 +46,18 @@ class Entry<V: NSObject> {
 class Repositories {
     let image: ImageRepository
     let component: ComponentRepository
-    let queryData: QueryDataRepository
     let experiment: ExperimentConfigsRepository
     let track: TrackRespository
+    let httpRequest: ApiHttpRequestRepository
 
-    init(config: Config, user: NativebrikUser) {
+    init(config: Config, user: NativebrikUser, interceptor: NativebrikHttpRequestInterceptor?) {
         self.image = ImageRepository(
             cacheStrategy: CacheStrategy()
         )
         self.component = ComponentRepository(config: config, cacheStrategy: CacheStrategy())
-        self.queryData = QueryDataRepository(cache: CacheStrategy(), config: config)
         self.experiment = ExperimentConfigsRepository(config: config, cacheStrategy: CacheStrategy())
         self.track = TrackRespository(config: config, user: user)
+        self.httpRequest = ApiHttpRequestRepository(config: config, interceptor: interceptor)
     }
 }
 
@@ -390,64 +390,92 @@ class TrackRespository {
     }
 }
 
+public typealias NativebrikHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
+class ApiHttpRequestRepository {
+    private let config: Config
+    private let requestInterceptor: NativebrikHttpRequestInterceptor
+    
+    init(config: Config, interceptor: NativebrikHttpRequestInterceptor?) {
+        self.config = config
+        self.requestInterceptor = interceptor ?? { request in
+            return request
+        }
+    }
+    
+    func fetch(request: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, propeties: [Property]?, callback: @escaping (_ entry: Entry<JSONData>) -> Void) {
+        guard let requestUrl = URL(string: request.url ?? "") else {
+            return
+        }
+        var urlRequest = URLRequest(url: requestUrl)
+        urlRequest.httpMethod = request.method?.rawValue ?? "GET"
+        if request.method == .POST && (propeties?.count ?? 0) > 0 {
+            do {
+                let body = ["properties": propeties]
+                let jsonBodyData = try JSONSerialization.data(withJSONObject: body)
+                urlRequest.httpBody = jsonBodyData
+            } catch {
+                
+            }
+        }
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.hearders?.forEach({ header in
+            guard let name = header.name else {
+                return
+            }
+            let value = header.value ?? ""
+            urlRequest.setValue(value, forHTTPHeaderField: name)
+        })
+        
+        let task = nativebrikSession.dataTask(with: self.requestInterceptor(urlRequest)) { (data, response, error) in
+            
+            // assertion
+            if let expectedStatusCodes = assertion?.statusCodes {
+                if let response = response as? HTTPURLResponse {
+                    let matched = expectedStatusCodes.first { expectedStatusCode in
+                        return expectedStatusCode == response.statusCode
+                    }
+                    // if it's not expeted, then callback empty entry.
+                    if matched == nil {
+                        let entry = Entry<JSONData>()
+                        callback(entry)
+                        return
+                    }
+                }
+            }
+
+            if error != nil {
+                let entry = Entry<JSONData>()
+                callback(entry)
+                return
+            }
+
+            if let viewData = data {
+                do {
+                    let decoder = JSONDecoder()
+                    let result = try decoder.decode(JSON.self, from: viewData)
+                    let entry = Entry<JSONData>(
+                        value: JSONData(data: result)
+                    )
+                    callback(entry)
+                    return
+                } catch {
+                    let entry = Entry<JSONData>()
+                    callback(entry)
+                    return
+                }
+            } else {
+                let entry = Entry<JSONData>()
+                callback(entry)
+                return
+            }
+        }
+        task.resume()
+    }
+}
+
 class JSONData: NSObject {
     let data: JSON?
     init(data: JSON?) {
         self.data = data
     }
 }
-class QueryDataRepository {
-    private let cache: CacheStrategy<JSONData>
-    private let config: Config
-
-    init(cache: CacheStrategy<JSONData>, config: Config) {
-        self.cache = cache
-        self.config = config
-    }
-
-    func fetch(query: String, placeholder: PlaceholderInput, callback: @escaping (_ entry: Entry<JSONData>) -> Void) async {
-        let key = query + ":" + placeholderInputToString(input: placeholder)
-
-        if let entry = self.cache.get(key: key) {
-            callback(entry)
-            return
-        }
-
-        do {
-            let data = try await getData(
-                query: getDataQuery(query: query, placeholder: placeholder),
-                projectId: self.config.projectId,
-                url: self.config.url
-            )
-            if let data = data.data?.data {
-                let entry = Entry<JSONData>(
-                    value: JSONData(data: data)
-                )
-                callback(entry)
-                self.cache.set(entry: entry, forKey: key)
-                return
-            } else {
-                let entry = Entry<JSONData>()
-                callback(entry)
-                self.cache.set(entry: entry, forKey: key)
-                return
-            }
-        } catch {
-            let entry = Entry<JSONData>()
-            callback(entry)
-            self.cache.set(entry: entry, forKey: key)
-        }
-    }
-}
-
-func placeholderInputToString(input: PlaceholderInput) -> String {
-    guard let properties = input.properties else {
-        return ""
-    }
-    var query = ""
-    properties.forEach({ property in
-        query += property.name + property.value
-    })
-    return query
-}
-

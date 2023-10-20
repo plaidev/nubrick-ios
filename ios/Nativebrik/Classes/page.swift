@@ -131,42 +131,39 @@ class PageView: UIView {
     }
 
     func loadDataAndTransition() {
-        let query = self.page?.data?.query ?? ""
-        if query == "" {
+        guard let httpRequest = self.page?.data?.httpRequest else {
             self.loading = false
             self.renderView()
             return
         }
 
-        // when it has query, render loading view, and then
+        // when it has http request, render loading view, and then
         self.loading = true
-        
         self.renderView()
 
         // build placeholder input
-        let properties: [PropertyInput] = self.page?.data?.props?.enumerated().map { (index, property) in
+        let properties: [Property] = self.page?.data?.props?.enumerated().map { (index, property) in
             let propIndexInEvent = self.props?.firstIndex(where: { prop in
                 return property.name == prop.name
             }) ?? -1
             let propInEvent = propIndexInEvent >= 0 ? self.props![propIndexInEvent] : nil
 
-            return PropertyInput(
+            return Property(
                 name: property.name ?? "",
                 value: propInEvent?.value ?? property.value ?? "",
                 ptype: property.ptype ?? PropertyType.STRING
             )
         } ?? []
-        let placeholderInput = PlaceholderInput(properties: properties)
 
         DispatchQueue.global().async {
-            Task {
-                await self.repositories?.queryData.fetch(query: query, placeholder: placeholderInput) { entry in
-                    DispatchQueue.main.async {
+            Task { [weak self] in
+                self?.repositories?.httpRequest.fetch(request: httpRequest, assertion: nil, propeties: properties) { entry in
+                    DispatchQueue.main.async { [weak self] in
                         if let data = entry.value?.data {
-                            self.data = data
+                            self?.data = data
                         }
-                        self.loading = false
-                        self.renderView()
+                        self?.loading = false
+                        self?.renderView()
                     }
                 }
             }
