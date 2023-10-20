@@ -11,6 +11,32 @@ enum AlignItems: String, Decodable, Encodable {
     self = try AlignItems(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+struct ApiHttpHeader: Decodable {
+  var name: String?
+  var value: String?
+}
+struct ApiHttpRequest: Decodable {
+  var url: String?
+  var method: ApiHttpRequestMethod?
+  var hearders: [ApiHttpHeader]?
+  var body: String?
+}
+enum ApiHttpRequestMethod: String, Decodable, Encodable {
+  case GET = "GET"
+  case POST = "POST"
+  case PUT = "PUT"
+  case DELETE = "DELETE"
+  case PATCH = "PATCH"
+  case HEAD = "HEAD"
+  case TRACE = "TRACE"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try ApiHttpRequestMethod(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
+struct ApiHttpResponseAssertion: Decodable {
+  var statusCodes: [Int]?
+}
 struct BoxShadow: Decodable {
   var color: Color?
   var offsetX: Int?
@@ -218,6 +244,7 @@ enum Overflow: String, Decodable, Encodable {
 enum PageKind: String, Decodable, Encodable {
   case COMPONENT = "COMPONENT"
   case MODAL = "MODAL"
+  case WEBVIEW_MODAL = "WEBVIEW_MODAL"
   case TRIGGER = "TRIGGER"
   case LOAD_BALANCER = "LOAD_BALANCER"
   case DISMISSED = "DISMISSED"
@@ -336,6 +363,8 @@ struct UIBlockEventDispatcher: Decodable {
   var destinationPageId: String?
   var deepLink: String?
   var payload: [Property]?
+  var httpRequest: ApiHttpRequest?
+  var httpResponseAssertion: ApiHttpResponseAssertion?
 }
 struct UICarouselBlock: Decodable {
   var id: ID?
@@ -366,7 +395,6 @@ struct UICollectionBlockData: Decodable {
 struct UIFlexContainerBlock: Decodable {
   var id: ID?
   var data: UIFlexContainerBlockData?
-  var root: UIFlexContainerRoot?
 }
 struct UIFlexContainerBlockData: Decodable {
   var children: [UIBlock]?
@@ -377,10 +405,6 @@ struct UIFlexContainerBlockData: Decodable {
   var frame: FrameData?
   var overflow: Overflow?
   var onClick: UIBlockEventDispatcher?
-}
-struct UIFlexContainerRoot: Decodable {
-  var x: Int?
-  var y: Int?
 }
 struct UIImageBlock: Decodable {
   var id: ID?
@@ -401,9 +425,11 @@ struct UIPageBlockData: Decodable {
   var modalPresentationStyle: ModalPresentationStyle?
   var modalScreenSize: ModalScreenSize?
   var modalNavigationBackButton: NavigationBackButton?
+  var webviewUrl: String?
   var triggerSetting: TriggerSetting?
   var renderAs: UIBlock?
   var position: UIPageBlockPosition?
+  var httpRequest: ApiHttpRequest?
   var props: [Property]?
   var query: String?
 }
