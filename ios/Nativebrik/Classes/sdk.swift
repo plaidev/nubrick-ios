@@ -120,7 +120,7 @@ public struct ComponentEvent {
     public let payload: [EventProperty]?
 }
 
-public struct TriggerEvent {
+public struct NativebrikEvent {
     public let name: String
     public init(_ name: String) {
         self.name = name
@@ -166,7 +166,7 @@ public class NativebrikClient: ObservableObject {
         return OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0)
     }
 
-    public func dispatch(event: TriggerEvent) {
+    public func dispatch(event: NativebrikEvent) {
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
 }

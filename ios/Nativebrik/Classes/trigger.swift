@@ -40,13 +40,13 @@ class TriggerViewController: UIViewController {
         self.didLoaded = true
 
         // dispatch an event when the user is only booted
-        self.dispatch(event: TriggerEvent(TriggerEventNameDefs.USER_BOOT_APP.rawValue))
+        self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_BOOT_APP.rawValue))
 
         // dispatch user enter the app firtly
         let count = UserDefaults.standard.object(forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue) as? Int ?? 0
         UserDefaults.standard.set(count + 1, forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue)
         if count == 0 {
-            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
+            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
         }
 
         // dispatch retention event
@@ -57,7 +57,7 @@ class TriggerViewController: UIViewController {
     }
 
     @objc func willEnterForeground() {
-        self.dispatch(event: TriggerEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue))
+        self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue))
         self.callWhenUserComeBack()
     }
 
@@ -65,23 +65,23 @@ class TriggerViewController: UIViewController {
         self.user.comeBack()
         
         // dispatch the event when every time the user is activated
-        self.dispatch(event: TriggerEvent(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue))
+        self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue))
 
         let retention = self.user.retention
         if retention == 1 {
-            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_1.rawValue))
+            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_1.rawValue))
         } else if 1 < retention && retention <= 3 {
-            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_2_3.rawValue))
+            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_2_3.rawValue))
         } else if 3 < retention && retention <= 7 {
-            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_4_7.rawValue))
+            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_4_7.rawValue))
         } else if 7 < retention && retention <= 14 {
-            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_8_14.rawValue))
+            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_8_14.rawValue))
         } else if 14 < retention {
-            self.dispatch(event: TriggerEvent(TriggerEventNameDefs.RETENTION_15.rawValue))
+            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_15.rawValue))
         }
     }
 
-    func dispatch(event: TriggerEvent) {
+    func dispatch(event: NativebrikEvent) {
         DispatchQueue.global().async {
             Task {
                 if event.name.isEmpty {

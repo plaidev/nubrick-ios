@@ -209,7 +209,7 @@ class ExperimentConfigsRepository {
         self.cache = cacheStrategy
     }
 
-    func trigger(event: TriggerEvent, callback: @escaping (_ entry: Entry<ExperimentConfigsData>) -> Void) async {
+    func trigger(event: NativebrikEvent, callback: @escaping (_ entry: Entry<ExperimentConfigsData>) -> Void) async {
         let url = self.config.cdnUrl + "/projects/" + self.config.projectId + "/experiments/trigger/" + event.name
         await self._fetch(key: event.name, url: url, callback: callback)
     }
