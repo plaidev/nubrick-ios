@@ -104,6 +104,7 @@ public enum EventPropertyType {
     case INTEGER
     case STRING
     case TIMESTAMPZ
+    case SEMVER
     case UNKNOWN
 }
 

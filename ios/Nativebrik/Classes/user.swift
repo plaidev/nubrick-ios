@@ -34,6 +34,14 @@ func nativebrikUserPropType(key: BuiltinUserProperty) -> EventPropertyType {
         return .INTEGER
     case .retentionPeriod:
         return .INTEGER
+    case .osVersion:
+        return .SEMVER
+    case .sdkVersion:
+        return .SEMVER
+    case .appVersion:
+        return .SEMVER
+    case .cfBundleVersion:
+        return .SEMVER
     default:
         return .STRING
     }
@@ -155,7 +163,6 @@ public class NativebrikUser {
     }
     
     func addExperimentHistoryRecord(experimentId: String) {
-        let now = getCurrentDate().timeIntervalSince1970
         var records = self.getExperimentHistoryRecord(experimentId: experimentId)
         let key = "NATIVEBRIK_EXPERIMENTET_RECORDS_\(experimentId)"
         records.insert(ExperimentHistoryRecord(getCurrentDate().timeIntervalSince1970), at: 0)
