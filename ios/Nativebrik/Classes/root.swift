@@ -187,10 +187,12 @@ class RootView: UIView {
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
             self.modalViewController?.dismissModal()
-//            if let previous = self.currentComponent {
-//                previous.view.removeFromSuperview()
-//                previous.removeFromParent()
-//            }
+            return
+        }
+        
+        // when it's webview modal
+        if page?.data?.kind == PageKind.WEBVIEW_MODAL {
+            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl ?? "https://nativebrik.com/intl/en/docs/reference/ios")
             return
         }
 

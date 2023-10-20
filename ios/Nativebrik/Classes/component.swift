@@ -9,9 +9,18 @@ import Foundation
 import UIKit
 import SwiftUI
 import YogaKit
+import SafariServices
 
 class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
+    
+    func presentWebview(url: String) {
+        guard let urlObj = URL(string: url) else {
+            return
+        }
+        let safariVC = SFSafariViewController(url: urlObj)
+        self.presentToTop(safariVC)
+    }
 
     func presentNavigation(
         pageView: PageView,
