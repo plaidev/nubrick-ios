@@ -145,6 +145,11 @@ func comparePropWithConditionValue(prop: EventProperty, value: String, op: Condi
             return String(value)
         }
         return compareString(a: prop.value, b: strings, op: op)
+    case .SEMVER:
+        let strings: [String] = values.map { value in
+            return String(value)
+        }
+        return compareSemver(a: prop.value, b: strings, op: op)
     case .TIMESTAMPZ:
         let dateFormatter = DateFormatter()
         let propValue = dateFormatter.date(from: prop.value)?.timeIntervalSince1970 ?? 0
@@ -313,5 +318,84 @@ func compareString(a: String, b: [String], op: ConditionOperator) -> Bool {
             return false
         }
         return a == b[0]
+    }
+}
+
+func compareSemver(a: String, b: [String], op: ConditionOperator) -> Bool {
+    switch op {
+    case .Equal:
+        if b.count == 0 {
+            return false
+        }
+        return compareSemverAsComparisonResult(a, b[0]) == .orderedSame
+    case .NotEqual:
+        if b.count == 0 {
+            return false
+        }
+        return compareSemverAsComparisonResult(a, b[0]) != .orderedSame
+    case .GreaterThan:
+        if b.count == 0 {
+            return false
+        }
+        return compareSemverAsComparisonResult(a, b[0]) == .orderedDescending
+    case .GreaterThanOrEqual:
+        if b.count == 0 {
+            return false
+        }
+        return compareSemverAsComparisonResult(a, b[0]) != .orderedAscending
+    case .LessThan:
+        if b.count == 0 {
+            return false
+        }
+        return compareSemverAsComparisonResult(a, b[0]) == .orderedAscending
+    case .LessThanOrEqual:
+        if b.count == 0 {
+            return false
+        }
+        return compareSemverAsComparisonResult(a, b[0]) != .orderedDescending
+    case .In:
+        return b.contains { value in
+            return compareSemverAsComparisonResult(a, b[0]) == .orderedSame
+        }
+    case .NotIn:
+        return !b.contains { value in
+            return compareSemverAsComparisonResult(a, b[0]) == .orderedSame
+        }
+    case .Between:
+        if b.count != 2 {
+            return false
+        }
+        let left = compareSemverAsComparisonResult(a, b[0])
+        let right = compareSemverAsComparisonResult(a, b[1])
+        return left != .orderedAscending && right != .orderedDescending
+    default:
+        if b.count == 0 {
+            return false
+        }
+        return compareSemverAsComparisonResult(a, b[0]) == .orderedSame
+    }
+}
+
+func compareSemverAsComparisonResult(_ lhs: String, _ rhs: String) -> ComparisonResult {
+    let versionDelimiter = "."
+
+    var lhsComponents = lhs.components(separatedBy: versionDelimiter)
+    var rhsComponents = rhs.components(separatedBy: versionDelimiter)
+
+    let zeroDiff = lhsComponents.count - rhs.count
+
+    if zeroDiff == 0 {
+        // Same format, compare normally
+        return lhs.compare(rhs, options: .numeric)
+    } else {
+        // append zeros to suffix to compare with the same format v'x' -> v'x.0.0'
+        let zeros = Array(repeating: "0", count: abs(zeroDiff))
+        if zeroDiff > 0 {
+            rhsComponents.append(contentsOf: zeros)
+        } else {
+            lhsComponents.append(contentsOf: zeros)
+        }
+        return lhsComponents.joined(separator: versionDelimiter)
+            .compare(rhsComponents.joined(separator: versionDelimiter), options: .numeric)
     }
 }
