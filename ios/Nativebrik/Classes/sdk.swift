@@ -104,7 +104,6 @@ public enum EventPropertyType {
     case INTEGER
     case STRING
     case TIMESTAMPZ
-    case SEMVER
     case UNKNOWN
 }
 
@@ -123,7 +122,7 @@ public struct ComponentEvent {
 
 public struct TriggerEvent {
     public let name: String
-    init(_ name: String) {
+    public init(_ name: String) {
         self.name = name
     }
 }

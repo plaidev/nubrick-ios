@@ -68,7 +68,7 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     return nil
 }
 
-func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: (_ seed: Int) -> [EventProperty], records: (_ experimentId: String) -> [ExperimentHistoryRecord]) -> ExperimentConfig? {
+func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: (_ seed: Int) -> [UserProperty], records: (_ experimentId: String) -> [ExperimentHistoryRecord]) -> ExperimentConfig? {
     guard let configs = configs.configs else {
         return nil
     }
@@ -84,7 +84,7 @@ func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, prop
     }
 }
 
-func isInDistribution(distribution: [ExperimentCondition], properties: [EventProperty]) -> Bool {
+func isInDistribution(distribution: [ExperimentCondition], properties: [UserProperty]) -> Bool {
     let props = Dictionary(uniqueKeysWithValues: properties.map({ property in
         return (property.name, property)
     }))
@@ -131,7 +131,7 @@ func isInFrequency(experimentId: String, frequency: ExperimentFrequency?, record
     }
 }
 
-func comparePropWithConditionValue(prop: EventProperty, value: String, op: ConditionOperator) -> Bool {
+func comparePropWithConditionValue(prop: UserProperty, value: String, op: ConditionOperator) -> Bool {
     let values = value.split(separator: ",")
     switch prop.type {
     case .INTEGER:

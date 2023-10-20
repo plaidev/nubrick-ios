@@ -10,6 +10,21 @@ import UIKit
 
 typealias ExperimentHistoryRecord = TimeInterval
 
+enum UserPropertyType {
+    case INTEGER
+    case STRING
+    case TIMESTAMPZ
+    case SEMVER
+    case UNKNOWN
+}
+
+struct UserProperty {
+    public let name: String
+    public let value: String
+    public let type: UserPropertyType
+}
+
+
 enum NativebrikUserDefaultsKeys: String {
     case USER_ID = "NATIVEBRIK_SDK_USER_ID"
     case USER_RND = "NATIVEBRIK_SDK_USER_RND"
@@ -18,7 +33,7 @@ enum NativebrikUserDefaultsKeys: String {
     case RETENTION_PERIOD_COUNT = "NATIVEBRIK_RETENTION_PERIOD_COUNT"
 }
 
-func nativebrikUserPropType(key: BuiltinUserProperty) -> EventPropertyType {
+func nativebrikUserPropType(key: BuiltinUserProperty) -> UserPropertyType {
     switch key {
     case .userId:
         return .STRING
@@ -187,19 +202,19 @@ public class NativebrikUser {
         return Double(seededRnd) / 100.0
     }
     
-    func toEventProperties(seed: Int) -> [EventProperty] {
+    func toEventProperties(seed: Int) -> [UserProperty] {
         let now = getCurrentDate()
-        var eventProps: [EventProperty] = []
+        var eventProps: [UserProperty] = []
         
         // set properties that depend on current time.
-        eventProps.append(EventProperty(
+        eventProps.append(UserProperty(
             name: BuiltinUserProperty.currentTime.rawValue,
             value: formatToISO8601(now),
             type: .TIMESTAMPZ
         ))
         
         let bootingTime = now.timeIntervalSince1970 - self.lastBootTime
-        eventProps.append(EventProperty(
+        eventProps.append(UserProperty(
             name: BuiltinUserProperty.bootingTime.rawValue,
             value: String(Int(bootingTime)),
             type: .INTEGER
@@ -207,37 +222,37 @@ public class NativebrikUser {
         
         let localDates = getLocalDateComponent(now)
         eventProps.append(contentsOf: [
-            EventProperty(
+            UserProperty(
                 name: BuiltinUserProperty.localYear.rawValue,
                 value: String(localDates.year),
                 type: .INTEGER
             ),
-            EventProperty(
+            UserProperty(
                 name: BuiltinUserProperty.localMonth.rawValue,
                 value: String(localDates.month),
                 type: .INTEGER
             ),
-            EventProperty(
+            UserProperty(
                 name: BuiltinUserProperty.localDay.rawValue,
                 value: String(localDates.day),
                 type: .INTEGER
             ),
-            EventProperty(
+            UserProperty(
                 name: BuiltinUserProperty.localHour.rawValue,
                 value: String(localDates.hour),
                 type: .INTEGER
             ),
-            EventProperty(
+            UserProperty(
                 name: BuiltinUserProperty.localMinute.rawValue,
                 value: String(localDates.minute),
                 type: .INTEGER
             ),
-            EventProperty(
+            UserProperty(
                 name: BuiltinUserProperty.localSecond.rawValue,
                 value: String(localDates.second),
                 type: .INTEGER
             ),
-            EventProperty(
+            UserProperty(
                 name: BuiltinUserProperty.localWeekday.rawValue,
                 value: localDates.weekday.rawValue,
                 type: .INTEGER
@@ -246,14 +261,14 @@ public class NativebrikUser {
         
         for (key, value) in self.properties {
             if key == BuiltinUserProperty.userRnd.rawValue {
-                let eventProp = EventProperty(
+                let eventProp = UserProperty(
                     name: key,
                     value: String(getSeededUserRnd(seed: seed)),
                     type: nativebrikUserPropType(key: BuiltinUserProperty(rawValue: key) ?? .unknown)
                 )
                 eventProps.append(eventProp)
             } else {
-                let eventProp = EventProperty(name: key, value: value, type: nativebrikUserPropType(key: BuiltinUserProperty(rawValue: key) ?? .unknown))
+                let eventProp = UserProperty(name: key, value: value, type: nativebrikUserPropType(key: BuiltinUserProperty(rawValue: key) ?? .unknown))
                 eventProps.append(eventProp)
             }
         }
