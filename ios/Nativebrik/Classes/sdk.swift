@@ -166,7 +166,7 @@ public class NativebrikClient: ObservableObject {
         return OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0)
     }
 
-    public func dispatch(event: TriggerEvent) throws {
+    public func dispatch(event: TriggerEvent) {
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
 }
