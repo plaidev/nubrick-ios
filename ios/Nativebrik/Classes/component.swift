@@ -19,7 +19,18 @@ class ModalComponentViewController: UIViewController {
             return
         }
         let safariVC = SFSafariViewController(url: urlObj)
-        self.presentToTop(safariVC)
+        if let modal = self.currentModal {
+            if !isPresenting(presented: self.presentedViewController, vc: modal) {
+                self.currentModal?.dismiss(animated: false)
+                self.currentModal = nil
+            }
+        }
+        
+        if let modal = self.currentModal {
+            modal.present(safariVC, animated: true)
+        } else {
+            self.presentToTop(safariVC)
+        }
     }
 
     func presentNavigation(

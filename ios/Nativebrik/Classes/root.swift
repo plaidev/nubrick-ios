@@ -72,6 +72,11 @@ class ModalRootViewController: UIViewController {
             self.modalViewController?.dismissModal()
             return
         }
+        
+        if page?.data?.kind == PageKind.WEBVIEW_MODAL {
+            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl ?? "https://nativebrik.com/intl/en/docs/reference/ios")
+            return
+        }
 
         let pageView = PageView(
             page: page,
