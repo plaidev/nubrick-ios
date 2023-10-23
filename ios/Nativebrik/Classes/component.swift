@@ -14,7 +14,10 @@ import SafariServices
 class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
     
-    func presentWebview(url: String) {
+    func presentWebview(url: String?) {
+        guard let url = url else {
+            return
+        }
         guard let urlObj = URL(string: url) else {
             return
         }

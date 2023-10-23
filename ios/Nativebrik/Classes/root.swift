@@ -73,8 +73,9 @@ class ModalRootViewController: UIViewController {
             return
         }
         
+        // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
-            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl ?? "https://nativebrik.com/intl/en/docs/reference/ios")
+            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
             return
         }
 
@@ -197,7 +198,7 @@ class RootView: UIView {
         
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
-            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl ?? "https://nativebrik.com/intl/en/docs/reference/ios")
+            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
             return
         }
 
