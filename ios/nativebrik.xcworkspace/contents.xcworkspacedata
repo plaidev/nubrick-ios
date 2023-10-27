@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:Nativebrik/Nativebrik.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Nativebrik/../Example/Example.xcodeproj">
+   </FileRef>
+</Workspace>

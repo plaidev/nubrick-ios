@@ -55,7 +55,5 @@ build-xcframeworks: build-cocoapods
 build-xcframework-archives: build-xcframeworks
 	@cd ./ios/xcframeworks && zip -r yoga.xcframework.zip yoga.xcframework
 	@cd ./ios/xcframeworks && zip -r YogaKit.xcframework.zip YogaKit.xcframework
-	@rm -rf ./ios/xcframeworks/yoga.xcframework
-	@rm -rf ./ios/xcframeworks/YogaKit.xcframework
 	@swift package compute-checksum ./ios/xcframeworks/yoga.xcframework.zip > ./ios/xcframeworks/yoga.xcframework.zip.checksum
 	@swift package compute-checksum ./ios/xcframeworks/YogaKit.xcframework.zip > ./ios/xcframeworks/YogaKit.xcframework.zip.checksum

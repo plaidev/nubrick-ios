@@ -17,7 +17,7 @@ let package = Package(
     targets: [
         .target(
             name: "Nativebrik",
-            path: "ios/Nativebrik/Classes"
+            path: "ios/Nativebrik/Nativebrik"
         ),
         .binaryTarget(
             name: "Yoga",
