@@ -80,7 +80,7 @@ func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, prop
             return true
         }
         let experimentId = config.id ?? ""
-        return isInFrequency(experimentId: experimentId, frequency: config.frequency, records: records(experimentId)) && isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
+        return isNotInFrequency(frequency: config.frequency, records: records(experimentId)) && isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
     }
 }
 
@@ -106,7 +106,7 @@ func isInDistribution(distribution: [ExperimentCondition], properties: [UserProp
     return foundNotMatched == nil
 }
 
-func isInFrequency(experimentId: String, frequency: ExperimentFrequency?, records: [ExperimentHistoryRecord]) -> Bool {
+func isNotInFrequency(frequency: ExperimentFrequency?, records: [ExperimentHistoryRecord]) -> Bool {
     guard let frequency = frequency else {
         return true
     }
@@ -382,7 +382,7 @@ func compareSemverAsComparisonResult(_ lhs: String, _ rhs: String) -> Comparison
     var lhsComponents = lhs.components(separatedBy: versionDelimiter)
     var rhsComponents = rhs.components(separatedBy: versionDelimiter)
 
-    let zeroDiff = lhsComponents.count - rhs.count
+    let zeroDiff = lhsComponents.count - rhsComponents.count
 
     if zeroDiff == 0 {
         // Same format, compare normally
