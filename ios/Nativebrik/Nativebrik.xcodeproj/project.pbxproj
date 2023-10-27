@@ -42,6 +42,7 @@
 		C13634512AEB7D5800B9F437 /* yoga.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C136344F2AEB7D5800B9F437 /* yoga.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C13634532AEB7D6600B9F437 /* YogaKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13634522AEB7D6600B9F437 /* YogaKit.xcframework */; };
 		C13634542AEB7D6600B9F437 /* YogaKit.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C13634522AEB7D6600B9F437 /* YogaKit.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C13634562AEB81EC00B9F437 /* experiment-test.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634552AEB81EC00B9F437 /* experiment-test.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,6 +105,7 @@
 		C13634322AEB7AA100B9F437 /* remote-config.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "remote-config.swift"; sourceTree = "<group>"; };
 		C136344F2AEB7D5800B9F437 /* yoga.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = yoga.xcframework; path = ../xcframeworks/yoga.xcframework; sourceTree = "<group>"; };
 		C13634522AEB7D6600B9F437 /* YogaKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = YogaKit.xcframework; path = ../xcframeworks/YogaKit.xcframework; sourceTree = "<group>"; };
+		C13634552AEB81EC00B9F437 /* experiment-test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "experiment-test.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -186,6 +188,7 @@
 			isa = PBXGroup;
 			children = (
 				C13633AA2AEB769800B9F437 /* NativebrikTests.swift */,
+				C13634552AEB81EC00B9F437 /* experiment-test.swift */,
 			);
 			path = NativebrikTests;
 			sourceTree = "<group>";
@@ -345,6 +348,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C13634562AEB81EC00B9F437 /* experiment-test.swift in Sources */,
 				C13633AB2AEB769800B9F437 /* NativebrikTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
