@@ -32,55 +32,56 @@ class EmbeddingUIView: ComponentUIView {
             modalViewController: modalViewController,
             fallback: fallback
         )
-        DispatchQueue.global().async { [weak self] in
-            Task {
-                await repositories.experiment.fetch(id: experimentId) { entry in
-                    DispatchQueue.main.async { [weak self] in
-                        guard let configs = entry.value?.value else {
-                            self?.renderFallback(phase: .failure)
-                            return
-                        }
-                        guard let config = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
-                            return self?.user.toEventProperties(seed: seed) ?? []
-                        }, records: { experimentId in
-                            return self?.user.getExperimentHistoryRecord(experimentId: experimentId) ?? []
-                        }) else {
-                            self?.renderFallback(phase: .failure)
-                            return
-                        }
-                        if config.kind != .EMBED {
-                            self?.renderFallback(phase: .failure)
-                            return
-                        }
-                        let normalizedUsrRnd = self?.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0) ?? 0.0
-                        guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUsrRnd) else {
-                            self?.renderFallback(phase: .failure)
-                            return
-                        }
-                        guard let variantId = variant.id else {
-                            self?.renderFallback(phase: .failure)
-                            return
-                        }
-                        guard let componentId = extractComponentId(variant: variant) else {
-                            self?.renderFallback(phase: .failure)
-                            return
-                        }
-                        guard let experimentConfigId = config.id else {
-                            self?.renderFallback(phase: .failure)
-                            return
-                        }
-                        
-                        self?.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
-                        
-                        repositories.track.trackExperimentEvent(
-                            TrackExperimentEvent(
-                                experimentId: experimentConfigId,
-                                variantId: variantId
-                            )
-                        )
-                        
-                        self?.loadAndTransition(experimentId: experimentConfigId, componentId: componentId)
+        
+        Task(priority: .userInitiated) {
+            await repositories.experiment.fetch(id: experimentId) { entry in
+                DispatchQueue.main.async { [weak self] in
+                    guard let configs = entry.value?.value else {
+                        self?.renderFallback(phase: .failure)
+                        return
                     }
+                    guard let config = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
+                        return self?.user.toEventProperties(seed: seed) ?? []
+                    }, records: { experimentId in
+                        return self?.user.getExperimentHistoryRecord(experimentId: experimentId) ?? []
+                    }) else {
+                        self?.renderFallback(phase: .failure)
+                        return
+                    }
+                    
+                    if config.kind != .EMBED {
+                        self?.renderFallback(phase: .failure)
+                        return
+                    }
+                    
+                    let normalizedUsrRnd = self?.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0) ?? 0.0
+                    guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUsrRnd) else {
+                        self?.renderFallback(phase: .failure)
+                        return
+                    }
+                    guard let variantId = variant.id else {
+                        self?.renderFallback(phase: .failure)
+                        return
+                    }
+                    guard let componentId = extractComponentId(variant: variant) else {
+                        self?.renderFallback(phase: .failure)
+                        return
+                    }
+                    guard let experimentConfigId = config.id else {
+                        self?.renderFallback(phase: .failure)
+                        return
+                    }
+                    
+                    self?.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
+                    
+                    repositories.track.trackExperimentEvent(
+                        TrackExperimentEvent(
+                            experimentId: experimentConfigId,
+                            variantId: variantId
+                        )
+                    )
+                    
+                    self?.loadAndTransition(experimentId: experimentConfigId, componentId: componentId)
                 }
             }
         }
@@ -98,61 +99,59 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
         repositories: Repositories,
         modalViewController: ModalComponentViewController?
     ) {
-        DispatchQueue.global().async {
-            Task {
-                await repositories.experiment.fetch(id: experimentId) { entry in
-                    DispatchQueue.main.async { [weak self] in
-                        guard let configs = entry.value?.value else {
-                            self?.phase = .failure
-                            return
-                        }
-                        guard let experimentConfig = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
-                            return self?.user.toEventProperties(seed: seed) ?? []
-                        }, records: { experimentId in
-                            return self?.user.getExperimentHistoryRecord(experimentId: experimentId) ?? []
-                        }) else {
-                            self?.phase = .failure
-                            return
-                        }
-                        if experimentConfig.kind != .EMBED {
-                            self?.phase = .failure
-                            return
-                        }
-                        let normalizedUsrRnd = self?.user.getSeededNormalizedUserRnd(seed: experimentConfig.seed ?? 0) ?? 0.0
-                        guard let variant = extractExperimentVariant(config: experimentConfig, normalizedUsrRnd: normalizedUsrRnd) else {
-                            self?.phase = .failure
-                            return
-                        }
-                        guard let variantId = variant.id else {
-                            self?.phase = .failure
-                            return
-                        }
-                        guard let componentId = extractComponentId(variant: variant) else {
-                            self?.phase = .failure
-                            return
-                        }
-                        guard let experimentConfigId = experimentConfig.id else {
-                            self?.phase = .failure
-                            return
-                        }
-                        
-                        self?.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
-                        
-                        repositories.track.trackExperimentEvent(
-                            TrackExperimentEvent(
-                                experimentId: experimentConfigId,
-                                variantId: variantId
-                            )
-                        )
-                        
-                        self?.fetchComponentAndUpdatePhase(
-                            experimentId: experimentConfigId,
-                            componentId: componentId,
-                            config: config,
-                            repositories: repositories,
-                            modalViewController: modalViewController
-                        )
+        Task(priority: .userInitiated) {
+            await repositories.experiment.fetch(id: experimentId) { entry in
+                DispatchQueue.main.async { [weak self] in
+                    guard let configs = entry.value?.value else {
+                        self?.phase = .failure
+                        return
                     }
+                    guard let experimentConfig = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
+                        return self?.user.toEventProperties(seed: seed) ?? []
+                    }, records: { experimentId in
+                        return self?.user.getExperimentHistoryRecord(experimentId: experimentId) ?? []
+                    }) else {
+                        self?.phase = .failure
+                        return
+                    }
+                    if experimentConfig.kind != .EMBED {
+                        self?.phase = .failure
+                        return
+                    }
+                    let normalizedUsrRnd = self?.user.getSeededNormalizedUserRnd(seed: experimentConfig.seed ?? 0) ?? 0.0
+                    guard let variant = extractExperimentVariant(config: experimentConfig, normalizedUsrRnd: normalizedUsrRnd) else {
+                        self?.phase = .failure
+                        return
+                    }
+                    guard let variantId = variant.id else {
+                        self?.phase = .failure
+                        return
+                    }
+                    guard let componentId = extractComponentId(variant: variant) else {
+                        self?.phase = .failure
+                        return
+                    }
+                    guard let experimentConfigId = experimentConfig.id else {
+                        self?.phase = .failure
+                        return
+                    }
+                    
+                    self?.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
+                    
+                    repositories.track.trackExperimentEvent(
+                        TrackExperimentEvent(
+                            experimentId: experimentConfigId,
+                            variantId: variantId
+                        )
+                    )
+                    
+                    self?.fetchComponentAndUpdatePhase(
+                        experimentId: experimentConfigId,
+                        componentId: componentId,
+                        config: config,
+                        repositories: repositories,
+                        modalViewController: modalViewController
+                    )
                 }
             }
         }

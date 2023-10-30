@@ -140,12 +140,6 @@ public enum RemoteConfigPhase {
 }
 
 class RemoteConfig {
-    private let user: NativebrikUser
-    private let experimentId: String
-    private let repositories: Repositories
-    private let config: Config
-    private let modalViewController: ModalComponentViewController
-
     init(
         user: NativebrikUser,
         experimentId: String,
@@ -154,68 +148,60 @@ class RemoteConfig {
         modalViewController: ModalComponentViewController,
         phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
     ) {
-        self.user = user
-        self.experimentId = experimentId
-        self.repositories = repositories
-        self.config = config
-        self.modalViewController = modalViewController
         phase(.loading)
-
-        DispatchQueue.global().async {
-            Task {
-                await self.repositories.experiment.fetch(
-                    id: self.experimentId,
-                    callback: { entry in
-                        guard let configs = entry.value?.value else {
-                            phase(.failure)
-                            return
-                        }
-                        guard let config = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
-                            return self.user.toEventProperties(seed: seed)
-                        }, records: { experimentId in
-                            return self.user.getExperimentHistoryRecord(experimentId: experimentId)
-                        }) else {
-                            phase(.failure)
-                            return
-                        }
-                        let normalizedUsrRnd = self.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0)
-                        guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUsrRnd) else {
-                            phase(.failure)
-                            return
-                        }
-                        guard let variantId = variant.id else {
-                            phase(.failure)
-                            return
-                        }
-                        guard let variantConfigs = variant.configs else {
-                            phase(.failure)
-                            return
-                        }
-                        guard let experimentConfigId = config.id else {
-                            phase(.failure)
-                            return
-                        }
-                        
-                        self.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
-                        
-                        self.repositories.track.trackExperimentEvent(
-                            TrackExperimentEvent(
-                                experimentId: experimentConfigId,
-                                variantId: variantId
-                            )
-                        )
-
-                        phase(.completed(RemoteConfigVariant(
-                            experimentId: experimentConfigId,
-                            variantId: variantId,
-                            configs: variantConfigs,
-                            config: self.config,
-                            repositories: self.repositories,
-                            modalViewController: self.modalViewController
-                        )))
+        Task(priority: .userInitiated) {
+            await repositories.experiment.fetch(
+                id: experimentId,
+                callback: { entry in
+                    guard let configs = entry.value?.value else {
+                        phase(.failure)
+                        return
                     }
-                )
-            }
+                    guard let matchedConfig = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
+                        return user.toEventProperties(seed: seed)
+                    }, records: { experimentId in
+                        return user.getExperimentHistoryRecord(experimentId: experimentId)
+                    }) else {
+                        phase(.failure)
+                        return
+                    }
+                    let normalizedUsrRnd = user.getSeededNormalizedUserRnd(seed: matchedConfig.seed ?? 0)
+                    guard let variant = extractExperimentVariant(config: matchedConfig, normalizedUsrRnd: normalizedUsrRnd) else {
+                        phase(.failure)
+                        return
+                    }
+                    guard let variantId = variant.id else {
+                        phase(.failure)
+                        return
+                    }
+                    guard let variantConfigs = variant.configs else {
+                        phase(.failure)
+                        return
+                    }
+                    guard let experimentConfigId = matchedConfig.id else {
+                        phase(.failure)
+                        return
+                    }
+                    
+                    user.addExperimentHistoryRecord(experimentId: experimentConfigId)
+                    
+                    repositories.track.trackExperimentEvent(
+                        TrackExperimentEvent(
+                            experimentId: experimentConfigId,
+                            variantId: variantId
+                        )
+                    )
+
+                    phase(.completed(RemoteConfigVariant(
+                        experimentId: experimentConfigId,
+                        variantId: variantId,
+                        configs: variantConfigs,
+                        config: config,
+                        repositories: repositories,
+                        modalViewController: modalViewController
+                    )))
+                }
+            )
         }
     }
 }
@@ -237,7 +223,13 @@ class RemoteConfigSwiftViewModel: ObservableObject {
             config: config,
             modalViewController: modalViewController) { phase in
                 DispatchQueue.main.async { [weak self] in
-                    self?.phase = phase
+                    switch phase {
+                    case .loading:
+                        return
+                    default:
+                        self?.phase = phase
+                        return
+                    }
                 }
             }
     }
@@ -247,6 +239,7 @@ class RemoteConfigSwiftViewModel: ObservableObject {
 struct RemoteConfigAsView: View {
     @ViewBuilder private let content: ((_ phase: RemoteConfigPhase) -> AnyView)
     @ObservedObject private var data: RemoteConfigSwiftViewModel
+    
     init<V: View>(
         user: NativebrikUser,
         experimentId: String,

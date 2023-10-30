@@ -193,30 +193,28 @@ class ComponentSwiftViewModel: ObservableObject {
         repositories: Repositories,
         modalViewController: ModalComponentViewController?
     ) {
-        DispatchQueue.global().async {
-            Task {
-                repositories.component.fetch(experimentId: experimentId, id: componentId, callback: { entry in
-                    DispatchQueue.main.sync { [weak self] in
-                        if let view = entry.value?.view {
-                            switch view {
-                            case .EUIRootBlock(let root):
-                                self?.phase = .completed(
-                                    ComponentView(content: RootViewRepresentable(
-                                        root: root,
-                                        config: config,
-                                        repositories: repositories,
-                                        modalViewController: modalViewController
-                                    ))
-                                )
-                            default:
-                                self?.phase = .failure
-                            }
-                        } else {
+        Task(priority: .userInitiated) {
+            repositories.component.fetch(experimentId: experimentId, id: componentId, callback: { entry in
+                DispatchQueue.main.sync { [weak self] in
+                    if let view = entry.value?.view {
+                        switch view {
+                        case .EUIRootBlock(let root):
+                            self?.phase = .completed(
+                                ComponentView(content: RootViewRepresentable(
+                                    root: root,
+                                    config: config,
+                                    repositories: repositories,
+                                    modalViewController: modalViewController
+                                ))
+                            )
+                        default:
                             self?.phase = .failure
                         }
+                    } else {
+                        self?.phase = .failure
                     }
-                })
-            }
+                }
+            })
         }
     }
 }
@@ -296,6 +294,6 @@ struct ComponentSwiftView: View {
     }
 
     var body: some View {
-        self.content(data.phase)
+        return self.content(data.phase)
     }
 }
