@@ -1,40 +1,30 @@
-//
-//  remote-config.swift
-//  NativebrikTests
-//
-//  Created by Ryosuke Suzuki on 2023/10/27.
-//
-
 import XCTest
 @testable import Nativebrik
+import SwiftUI
 
-// https://nativebrik.com/experiments/result?projectId=ckto7v223akg00ag3jsg
-let PROJECT_ID_FOR_TEST = "ckto7v223akg00ag3jsg"
-// https://nativebrik.com/experiments/result?projectId=ckto7v223akg00ag3jsg&id=ckto9eq23akg00ag3jt0
-let REMOTE_CONFIG_ID_1_FOR_TEST = "REMOTE_CONFIG_1"
-let REMOTE_CONFIG_1_FOR_TEST_MESSAGE = "hello"
-let UNKNOWN_EXPERIMENT_ID = "UNKNOWN_ID_XXXXXX"
+let EMBEDDING_ID_1_FOR_TEST = "EMBEDDING_1"
 
-final class RemoteConfigTests: XCTestCase {
-    func testRemoteConfigShouldFetch() {
-        let expectation = expectation(description: "Fetch remote config for test")
+final class EmbeddingUIViewTests: XCTestCase {
+    func testEmbeddingShouldFetch() {
+        let expectation = expectation(description: "Fetch an embedding for test")
         
         var didLoadingPhaseCome = false
         let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
-        client.experiment.remoteConfig(REMOTE_CONFIG_ID_1_FOR_TEST) { phase in
+        let view = client.experiment.embeddingUIView(EMBEDDING_ID_1_FOR_TEST, onEvent: nil) { phase in
             switch phase {
-            case .completed(let variant):
-                let message = variant.getAsString("message")
-                XCTAssertEqual(message, REMOTE_CONFIG_1_FOR_TEST_MESSAGE)
+            case .completed:
                 expectation.fulfill()
+                return UIView()
             case .loading:
                 didLoadingPhaseCome = true
+                return UIView()
             case .failure:
                 XCTFail("should found the remote config")
-                expectation.fulfill()
+                return UIView()
             }
         }
-        
+        // because internally we use [weak self] and if it is `let _ =`, weak self will be nil.
+        print("it must be `let view = client` to pass the test.", view.frame)
         waitForExpectations(timeout: 5) { error in
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
@@ -43,22 +33,26 @@ final class RemoteConfigTests: XCTestCase {
         }
     }
     
-    func testRemoteConfigShouldNotFetch() {
-        let expectation = expectation(description: "Fetch non-exist remote config for test")
+    func testEmbeddingShouldNotFetch() {
+        let expectation = expectation(description: "Fetch an embedding for test")
         
         var didLoadingPhaseCome = false
         let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
-        client.experiment.remoteConfig(UNKNOWN_EXPERIMENT_ID) { phase in
+        let view = client.experiment.embeddingUIView(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
             switch phase {
             case .completed:
                 XCTFail("should found the remote config")
+                return UIView()
             case .loading:
                 didLoadingPhaseCome = true
+                return UIView()
             case .failure:
                 expectation.fulfill()
+                return UIView()
             }
         }
-        
+        // because internally we use [weak self] and if it is `let _ =`, weak self will be nil.
+        print("it must be `let view = client` to pass the test.", view.frame)
         waitForExpectations(timeout: 5) { error in
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
