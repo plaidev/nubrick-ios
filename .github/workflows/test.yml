@@ -4,7 +4,7 @@ on:
 
 jobs:
   release:
-    runs-on: macOS-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v2
       - name: XCTest
