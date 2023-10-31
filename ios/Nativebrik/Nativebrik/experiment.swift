@@ -270,6 +270,11 @@ func compareDouble(a: Double, b: [Double], op: ConditionOperator) -> Bool {
 
 func compareString(a: String, b: [String], op: ConditionOperator) -> Bool {
     switch op {
+    case .Regex:
+        if b.count == 0 {
+            return false
+        }
+        return containsPattern(a, b[0])
     case .Equal:
         if b.count == 0 {
             return false
@@ -397,5 +402,24 @@ func compareSemverAsComparisonResult(_ lhs: String, _ rhs: String) -> Comparison
         }
         return lhsComponents.joined(separator: versionDelimiter)
             .compare(rhsComponents.joined(separator: versionDelimiter), options: .numeric)
+    }
+}
+
+func containsPattern(_ input: String, _ pattern: String) -> Bool {
+    if #available(iOS 16.0, *) {
+        do {
+            let regex = try Regex(pattern)
+            return input.contains(regex)
+        } catch {
+            return false
+        }
+    } else {
+        do {
+            let regex = try NSRegularExpression(pattern: pattern)
+            let count = regex.numberOfMatches(in: input, range: NSRange(location: 0, length: input.utf16.count))
+            return count > 0
+        } catch {
+            return false
+        }
     }
 }

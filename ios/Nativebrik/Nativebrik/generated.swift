@@ -86,6 +86,7 @@ struct Color: Decodable {
   var alpha: Float?
 }
 enum ConditionOperator: String, Decodable, Encodable {
+  case Regex = "Regex"
   case Equal = "Equal"
   case NotEqual = "NotEqual"
   case GreaterThan = "GreaterThan"

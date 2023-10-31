@@ -321,6 +321,15 @@ final class CompareTests: XCTestCase {
         XCTAssertFalse(compareString(a: "a", b: ["a", "b"], op: .NotIn))
     }
     
+    func testCompareStringWithRegex() throws {
+        XCTAssertTrue(compareString(a: "hello-world_11", b: ["[a-zA-Z0-9-_]+"], op: .Regex))
+        XCTAssertFalse(compareString(a: "hello", b: ["[^a-zA-Z-_]"], op: .Regex))
+    }
+    
+    func testCompareStringWithRegexShouldBeFalseWhenThePatternIsWrong() throws {
+        XCTAssertFalse(compareString(a: "+", b: ["+"], op: .Regex))
+    }
+    
     func testCompareDouble() throws {
         // equal
         XCTAssertTrue(compareDouble(a: 0, b: [0], op: .Equal))
