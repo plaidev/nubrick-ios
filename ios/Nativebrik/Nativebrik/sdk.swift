@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-public let nativebrikSdkVersion = "0.2.10"
+public let nativebrikSdkVersion = "0.2.11"
 
 func openLink(_ event: ComponentEvent) -> Void {
     guard let link = event.deepLink else {
@@ -157,7 +157,7 @@ public class NativebrikClient: ObservableObject {
         self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
         self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }
-    
+
     public init(
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
@@ -208,7 +208,7 @@ public class NativebrikExperiment {
             modalViewController: self.overlayVC.modalViewController
         )
     }
-    
+
     public func embedding(_ id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> some View {
         return EmbeddingSwiftView(
             experimentId: id,
