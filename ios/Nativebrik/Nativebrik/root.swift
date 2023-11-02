@@ -27,14 +27,32 @@ class ModalRootViewController: UIViewController {
         self.modalViewController = modalViewController
         super.init(nibName: nil, bundle: nil)
 
-        self.event = UIBlockEventManager(on: { event in
-            if let destPageId = event.destinationPageId {
-                self.presentPage(
-                    pageId: destPageId,
-                    props: event.payload
-                )
+        self.event = UIBlockEventManager(on: { [weak self] event in
+            let assertion = event.httpResponseAssertion
+            let handleEvent = { () -> () in
+                DispatchQueue.main.async { [weak self] in
+                    if let destPageId = event.destinationPageId {
+                        self?.presentPage(
+                            pageId: destPageId,
+                            props: event.payload
+                        )
+                    }
+                    self?.config.dispatchUIBlockEvent(event: event)
+                }
             }
-            self.config.dispatchUIBlockEvent(event: event)
+            
+            if let httpRequest = event.httpRequest {
+                Task {
+                    self?.repositories?.httpRequest.fetch(request: httpRequest, assertion: assertion, propeties: nil, callback: { entry in
+                        if entry.state == .EXPECTED {
+                            handleEvent()
+                        }
+                    })
+                }
+            } else {
+                handleEvent()
+            }
+
         })
 
         if let destId = trigger?.data?.triggerSetting?.onTrigger?.destinationPageId {
@@ -154,14 +172,31 @@ class RootView: UIView {
             layout.isEnabled = true
         }
 
-        self.event = UIBlockEventManager(on: { event in
-            if let destPageId = event.destinationPageId {
-                self.presentPage(
-                    pageId: destPageId,
-                    props: event.payload
-                )
+        self.event = UIBlockEventManager(on: { [weak self] event in
+            let assertion = event.httpResponseAssertion
+            let handleEvent = { () -> () in
+                DispatchQueue.main.async { [weak self] in
+                    if let destPageId = event.destinationPageId {
+                        self?.presentPage(
+                            pageId: destPageId,
+                            props: event.payload
+                        )
+                    }
+                    self?.config.dispatchUIBlockEvent(event: event)
+                }
             }
-            self.config.dispatchUIBlockEvent(event: event)
+
+            if let httpRequest = event.httpRequest {
+                Task {
+                    self?.repositories?.httpRequest.fetch(request: httpRequest, assertion: assertion, propeties: nil, callback: { entry in
+                        if entry.state == .EXPECTED {
+                            handleEvent()
+                        }
+                    })
+                }
+            } else {
+                handleEvent()
+            }
         })
 
         if let destId = trigger?.data?.triggerSetting?.onTrigger?.destinationPageId {
