@@ -57,7 +57,7 @@ class Repositories {
         self.component = ComponentRepository(config: config, cacheStrategy: CacheStrategy())
         self.experiment = ExperimentConfigsRepository(config: config, cacheStrategy: CacheStrategy())
         self.track = TrackRespository(config: config, user: user)
-        self.httpRequest = ApiHttpRequestRepository(config: config, interceptor: interceptor)
+        self.httpRequest = ApiHttpRequestRepository(interceptor: interceptor)
     }
 }
 
@@ -390,19 +390,34 @@ class TrackRespository {
     }
 }
 
+enum HttpEntryState {
+    case EXPECTED
+    case UNEXPECTED
+}
+class HttpEntry<V: NSObject> {
+    let state: HttpEntryState
+    let value: V?
+    init(value: V, state: HttpEntryState) {
+        self.state = state
+        self.value = value
+    }
+    init(state: HttpEntryState) {
+        self.state = state
+        self.value = nil
+    }
+}
+
 public typealias NativebrikHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
 class ApiHttpRequestRepository {
-    private let config: Config
     private let requestInterceptor: NativebrikHttpRequestInterceptor
     
-    init(config: Config, interceptor: NativebrikHttpRequestInterceptor?) {
-        self.config = config
+    init(interceptor: NativebrikHttpRequestInterceptor?) {
         self.requestInterceptor = interceptor ?? { request in
             return request
         }
     }
     
-    func fetch(request: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, propeties: [Property]?, callback: @escaping (_ entry: Entry<JSONData>) -> Void) {
+    func fetch(request: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, propeties: [Property]?, callback: @escaping (_ entry: HttpEntry<JSONData>) -> Void) {
         guard let requestUrl = URL(string: request.url ?? "") else {
             return
         }
@@ -427,7 +442,9 @@ class ApiHttpRequestRepository {
         })
         
         let task = nativebrikSession.dataTask(with: self.requestInterceptor(urlRequest)) { (data, response, error) in
-            
+            // when it's error and it's expected, then this should be updated to .expected.
+            var httpStatusWhenError: HttpEntryState = .UNEXPECTED
+
             // assertion
             if let expectedStatusCodes = assertion?.statusCodes {
                 if let response = response as? HTTPURLResponse {
@@ -436,15 +453,17 @@ class ApiHttpRequestRepository {
                     }
                     // if it's not expeted, then callback empty entry.
                     if matched == nil {
-                        let entry = Entry<JSONData>()
+                        let entry = HttpEntry<JSONData>(state: .UNEXPECTED)
                         callback(entry)
                         return
+                    } else {
+                        httpStatusWhenError = .EXPECTED
                     }
                 }
             }
 
             if error != nil {
-                let entry = Entry<JSONData>()
+                let entry = HttpEntry<JSONData>(state: httpStatusWhenError)
                 callback(entry)
                 return
             }
@@ -453,18 +472,19 @@ class ApiHttpRequestRepository {
                 do {
                     let decoder = JSONDecoder()
                     let result = try decoder.decode(JSON.self, from: viewData)
-                    let entry = Entry<JSONData>(
-                        value: JSONData(data: result)
+                    let entry = HttpEntry<JSONData>(
+                        value: JSONData(data: result),
+                        state: .EXPECTED
                     )
                     callback(entry)
                     return
                 } catch {
-                    let entry = Entry<JSONData>()
+                    let entry = HttpEntry<JSONData>(state: .EXPECTED)
                     callback(entry)
                     return
                 }
             } else {
-                let entry = Entry<JSONData>()
+                let entry = HttpEntry<JSONData>(state: .EXPECTED)
                 callback(entry)
                 return
             }
@@ -477,5 +497,9 @@ class JSONData: NSObject {
     let data: JSON?
     init(data: JSON?) {
         self.data = data
+    }
+    
+    init(expected: Bool) {
+        self.data = nil
     }
 }
