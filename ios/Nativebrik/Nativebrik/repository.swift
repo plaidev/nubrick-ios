@@ -443,7 +443,7 @@ class ApiHttpRequestRepository {
         }
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.setValue(self.projectId, forHTTPHeaderField: "X-Project-Id")
-        request.hearders?.forEach({ header in
+        request.headers?.forEach({ header in
             guard let name = header.name else {
                 return
             }

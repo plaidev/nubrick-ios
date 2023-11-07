@@ -18,7 +18,7 @@ struct ApiHttpHeader: Decodable {
 struct ApiHttpRequest: Decodable {
   var url: String?
   var method: ApiHttpRequestMethod?
-  var hearders: [ApiHttpHeader]?
+  var headers: [ApiHttpHeader]?
   var body: String?
 }
 enum ApiHttpRequestMethod: String, Decodable, Encodable {
