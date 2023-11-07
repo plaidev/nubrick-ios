@@ -57,7 +57,7 @@ class Repositories {
         self.component = ComponentRepository(config: config, cacheStrategy: CacheStrategy())
         self.experiment = ExperimentConfigsRepository(config: config, cacheStrategy: CacheStrategy())
         self.track = TrackRespository(config: config, user: user)
-        self.httpRequest = ApiHttpRequestRepository(interceptor: interceptor)
+        self.httpRequest = ApiHttpRequestRepository(projectId: config.projectId, interceptor: interceptor)
     }
 }
 
@@ -409,9 +409,18 @@ class HttpEntry<V: NSObject> {
 
 public typealias NativebrikHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
 class ApiHttpRequestRepository {
+    private let projectId: String
     private let requestInterceptor: NativebrikHttpRequestInterceptor
     
+    init(projectId: String, interceptor: NativebrikHttpRequestInterceptor?) {
+        self.projectId = projectId
+        self.requestInterceptor = interceptor ?? { request in
+            return request
+        }
+    }
+    
     init(interceptor: NativebrikHttpRequestInterceptor?) {
+        self.projectId = ""
         self.requestInterceptor = interceptor ?? { request in
             return request
         }
@@ -433,6 +442,7 @@ class ApiHttpRequestRepository {
             }
         }
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue(self.projectId, forHTTPHeaderField: "X-Project-Id")
         request.hearders?.forEach({ header in
             guard let name = header.name else {
                 return
