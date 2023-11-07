@@ -254,18 +254,10 @@ enum PageKind: String, Decodable, Encodable {
     self = try PageKind(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
-struct PlaceholderInput: Encodable {
-  var properties: [PropertyInput]?
-}
 struct Property: Decodable {
   var name: String?
   var value: String?
   var ptype: PropertyType?
-}
-struct PropertyInput: Encodable {
-  var name: String
-  var value: String
-  var ptype: PropertyType
 }
 enum PropertyType: String, Decodable, Encodable {
   case INTEGER = "INTEGER"
@@ -276,15 +268,8 @@ enum PropertyType: String, Decodable, Encodable {
     self = try PropertyType(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
-struct Query: Decodable {
-  var data: JSON?
-}
 struct TriggerEventDef: Decodable {
   var name: String?
-}
-struct TriggerEventInput: Encodable {
-  var name: String
-  var properties: [PropertyInput]?
 }
 enum TriggerEventNameDefs: String, Decodable, Encodable {
   case RETENTION_1 = "RETENTION_1"
@@ -488,51 +473,3 @@ enum Weekdays: String, Decodable, Encodable {
     self = try Weekdays(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
-import Foundation
-struct GraphqlError: Decodable {}
-enum GraphqlQueryError: Error {
-  case Network
-}
-func getData(query: getDataQuery, projectId: String, url: String) async throws -> getDataQueryResult {
-  let urlComponents = URLComponents(string: url)!
-  let document = getDataQuery.__document__
-  struct BodyData: Encodable {
-    var operationName = "getData"
-    var query: String
-    var variables: getDataQuery
-  }
-  let body = BodyData(query: document, variables: query)
-  let jsonData = try JSONEncoder().encode(body)
-  var request = URLRequest(url: urlComponents.url!)
-  request.httpBody = jsonData
-  request.httpMethod = "POST"
-  request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-  request.setValue(projectId, forHTTPHeaderField: "X-Project-Id")
-  let (data, response) = try await URLSession.shared.data(for: request)
-  guard let httpResponse = response as? HTTPURLResponse,
-  httpResponse.statusCode == 200 else {
-    throw GraphqlQueryError.Network
-  }
-  let decoder = JSONDecoder()
-  let result = try decoder.decode(getDataQueryResult.self, from: data)
-  return result
-}
-struct getDataQueryResult: Decodable {
-  var data: ResultData?
-  var errors: [GraphqlError]?
-  struct ResultData: Decodable {
-    var data: JSON??
-  }
-}
-struct getDataQuery: Encodable {
-  var query: String?
-  var placeholder: PlaceholderInput?
-  enum CodingKeys: String, CodingKey {
-    case query
-    case placeholder
-  }
-  static let __document__ = """
-query getData ($query: String!, $placeholder: PlaceholderInput) {
-  data(query: $query, placeholder: $placeholder)
-}
-"""}
