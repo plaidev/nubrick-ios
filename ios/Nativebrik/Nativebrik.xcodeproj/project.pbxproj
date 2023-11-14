@@ -49,6 +49,7 @@
 		C13634642AEF92F700B9F437 /* embedding.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634632AEF92F700B9F437 /* embedding.swift */; };
 		C13634662AF242B100B9F437 /* decode.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634652AF242B100B9F437 /* decode.swift */; };
 		C13634682AF36D7600B9F437 /* repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634672AF36D7600B9F437 /* repository.swift */; };
+		C13634892B036E5D00B9F437 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -117,6 +118,7 @@
 		C13634632AEF92F700B9F437 /* embedding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = embedding.swift; sourceTree = "<group>"; };
 		C13634652AF242B100B9F437 /* decode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = decode.swift; sourceTree = "<group>"; };
 		C13634672AF36D7600B9F437 /* repository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = repository.swift; sourceTree = "<group>"; };
+		C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Nativebrik/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +146,7 @@
 		C13633932AEB769800B9F437 = {
 			isa = PBXGroup;
 			children = (
+				C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */,
 				C136339F2AEB769800B9F437 /* Nativebrik */,
 				C13633A92AEB769800B9F437 /* NativebrikTests */,
 				C136339E2AEB769800B9F437 /* Products */,
@@ -321,6 +324,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C13634892B036E5D00B9F437 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
