@@ -17,7 +17,10 @@ let package = Package(
     targets: [
         .target(
             name: "Nativebrik",
-            path: "ios/Nativebrik/Nativebrik"
+            path: "ios/Nativebrik/Nativebrik",
+            resources: [
+                .copy("PrivacyInfo.xcprivacy")
+            ]
         ),
         .binaryTarget(
             name: "Yoga",
