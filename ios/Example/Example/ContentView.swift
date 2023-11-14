@@ -125,14 +125,21 @@ Morondava is a charming coastal town located on the western coast of Madagascar.
 """)
     ]
     @EnvironmentObject var nativebrik: NativebrikClient
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Header()
             ScrollView(.vertical) {
                 nativebrik
                     .experiment
-                    .embedding("TOP_COMPONENT")
-                    .frame(width: nil, height: 270)
+                    .embedding("TOP_COMPONENT", onEvent: nil) { phase in
+                        switch phase {
+                        case .completed(let view):
+                            view.frame(width: nil, height: 270)
+                        default:
+                            EmptyView().frame(width: nil, height: 0)
+                        }
+                    }
 
                 ForEach(self.items, id: \.title) { item in
                     item.padding()
