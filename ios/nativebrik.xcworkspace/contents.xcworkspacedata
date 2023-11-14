@@ -7,4 +7,7 @@
    <FileRef
       location = "group:Nativebrik/../Example/Example.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:E2E/E2E.xcodeproj">
+   </FileRef>
 </Workspace>
