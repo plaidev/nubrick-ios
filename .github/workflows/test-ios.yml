@@ -20,7 +20,7 @@ jobs:
       run: zip -r .dist/E2E.app.zip ./.dist/Build/Products/Release-iphonesimulator/E2E.app
     - name: Uploade to magicpod
       run: |
-        curl -L -X POST -F 'file=@.dist/E2E.app.zip' -H "Authorization: Token ${MAGICPOD_API_TOKEN}" "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik/upload-file/"
+        curl -L -X POST -F 'file=@.dist/E2E.app.zip' -H 'Authorization: Token $MAGICPOD_API_TOKEN' "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik/upload-file/"
       env:
         MAGICPOD_API_TOKEN: ${{ secrets.MAGICPOD_API_TOKEN }}
 
