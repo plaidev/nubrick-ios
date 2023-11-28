@@ -5,6 +5,9 @@
       location = "group:Nativebrik/Nativebrik.xcodeproj">
    </FileRef>
    <FileRef
+      location = "group:Example-UIKit/Example-UIKit.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:Nativebrik/../Example/Example.xcodeproj">
    </FileRef>
    <FileRef

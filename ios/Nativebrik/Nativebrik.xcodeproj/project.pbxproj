@@ -60,6 +60,13 @@
 			remoteGlobalIDString = C136339C2AEB769800B9F437;
 			remoteInfo = Nativebrik;
 		};
+		C1FFFD512B15AA4D00ACD132 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1FFFD4D2B15AA4D00ACD132 /* Example-UIKit.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C1FFFD362B15AA2F00ACD132;
+			remoteInfo = "Example-UIKit";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -119,6 +126,7 @@
 		C13634652AF242B100B9F437 /* decode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = decode.swift; sourceTree = "<group>"; };
 		C13634672AF36D7600B9F437 /* repository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = repository.swift; sourceTree = "<group>"; };
 		C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Nativebrik/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C1FFFD4D2B15AA4D00ACD132 /* Example-UIKit.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = "Example-UIKit.xcodeproj"; path = "../Example-UIKit/Example-UIKit.xcodeproj"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +154,7 @@
 		C13633932AEB769800B9F437 = {
 			isa = PBXGroup;
 			children = (
+				C1FFFD4D2B15AA4D00ACD132 /* Example-UIKit.xcodeproj */,
 				C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */,
 				C136339F2AEB769800B9F437 /* Nativebrik */,
 				C13633A92AEB769800B9F437 /* NativebrikTests */,
@@ -220,6 +229,14 @@
 				C136344F2AEB7D5800B9F437 /* yoga.xcframework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C1FFFD4E2B15AA4D00ACD132 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C1FFFD522B15AA4D00ACD132 /* Example-UIKit.app */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -311,6 +328,12 @@
 			);
 			productRefGroup = C136339E2AEB769800B9F437 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = C1FFFD4E2B15AA4D00ACD132 /* Products */;
+					ProjectRef = C1FFFD4D2B15AA4D00ACD132 /* Example-UIKit.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				C136339C2AEB769800B9F437 /* Nativebrik */,
@@ -318,6 +341,16 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		C1FFFD522B15AA4D00ACD132 /* Example-UIKit.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = "Example-UIKit.app";
+			remoteRef = C1FFFD512B15AA4D00ACD132 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		C136339B2AEB769800B9F437 /* Resources */ = {
