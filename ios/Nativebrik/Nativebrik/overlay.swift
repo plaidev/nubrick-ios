@@ -21,6 +21,7 @@ class OverlayViewController: UIViewController {
         self.addChild(self.modalForTriggerViewController)
         self.addChild(self.triggerViewController)
         
+        self.view.frame = .zero
         self.view.addSubview(self.modalViewController.view)
         self.view.addSubview(self.modalForTriggerViewController.view)
     }
