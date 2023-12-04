@@ -12,7 +12,9 @@ import Nativebrik
 struct ExampleApp: App {
     var body: some Scene {
         WindowGroup {
-            NativebrikProvider(client: NativebrikClient(projectId: "cgv3p3223akg00fod19g")) {
+            NativebrikProvider(
+                client: NativebrikClient(projectId: "cgv3p3223akg00fod19g")
+            ) {
                 ContentView()
             }
         }
