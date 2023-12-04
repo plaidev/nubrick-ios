@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-public let nativebrikSdkVersion = "0.2.12"
+public let nativebrikSdkVersion = "0.2.13"
 
 func openLink(_ event: ComponentEvent) -> Void {
     guard let link = event.deepLink else {
