@@ -432,13 +432,24 @@ class ApiHttpRequestRepository {
         }
         var urlRequest = URLRequest(url: requestUrl)
         urlRequest.httpMethod = request.method?.rawValue ?? "GET"
-        if request.method == .POST && (propeties?.count ?? 0) > 0 {
+        if request.method != .GET && request.method != .TRACE {
             do {
-                let body = ["properties": propeties]
-                let jsonBodyData = try JSONSerialization.data(withJSONObject: body)
-                urlRequest.httpBody = jsonBodyData
+                var body: [String: Any] = [:]
+                if (propeties?.count ?? 0) > 0 {
+                    body["properties"] = propeties as Any
+                }
+                if let bodyData = request.body?.data(using: .utf8) {
+                    // json string to dictionary
+                    let json = try JSONSerialization.jsonObject(with: bodyData) as? [String: Any]
+                    json?.forEach({ (key: String, value: Any) in
+                        body[key] = value
+                    })
+                }
+                if !body.isEmpty {
+                    let jsonBodyData = try JSONSerialization.data(withJSONObject: body)
+                    urlRequest.httpBody = jsonBodyData
+                }
             } catch {
-                
             }
         }
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
