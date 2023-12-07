@@ -15,7 +15,16 @@ struct ContentView: View {
         VStack {
             nativebrik
                 .experiment
-                .embedding("EMBEDDING_FOR_E2E")
+                .embedding("EMBEDDING_FOR_E2E", onEvent: nil, content: { phase in
+                    switch phase {
+                    case .completed(let view):
+                        view
+                    case .failure:
+                        Text("EMBED IS FAILED")
+                    default:
+                        ProgressView()
+                    }
+                })
                 .frame(height: 240)
             nativebrik
                 .experiment
@@ -23,6 +32,8 @@ struct ContentView: View {
                     switch phase {
                     case .completed(let config):
                         Text(config.getAsString("message") ?? "")
+                    case .failure:
+                        Text("CONFIG IS FAILED")
                     default:
                         ProgressView()
                     }

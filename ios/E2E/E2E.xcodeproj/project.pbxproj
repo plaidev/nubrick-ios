@@ -13,6 +13,10 @@
 		C136347D2B03394300B9F437 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C136347C2B03394300B9F437 /* Preview Assets.xcassets */; };
 		C13634852B03396E00B9F437 /* Nativebrik.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13634842B03396E00B9F437 /* Nativebrik.framework */; };
 		C13634862B03396E00B9F437 /* Nativebrik.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C13634842B03396E00B9F437 /* Nativebrik.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1FFFD722B21BEA200ACD132 /* yoga.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1FFFD702B21BEA200ACD132 /* yoga.xcframework */; };
+		C1FFFD732B21BEA200ACD132 /* yoga.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1FFFD702B21BEA200ACD132 /* yoga.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1FFFD742B21BEA200ACD132 /* YogaKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1FFFD712B21BEA200ACD132 /* YogaKit.xcframework */; };
+		C1FFFD752B21BEA200ACD132 /* YogaKit.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1FFFD712B21BEA200ACD132 /* YogaKit.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -23,6 +27,8 @@
 			dstSubfolderSpec = 10;
 			files = (
 				C13634862B03396E00B9F437 /* Nativebrik.framework in Embed Frameworks */,
+				C1FFFD752B21BEA200ACD132 /* YogaKit.xcframework in Embed Frameworks */,
+				C1FFFD732B21BEA200ACD132 /* yoga.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -36,6 +42,8 @@
 		C13634792B03394300B9F437 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C136347C2B03394300B9F437 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		C13634842B03396E00B9F437 /* Nativebrik.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Nativebrik.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1FFFD702B21BEA200ACD132 /* yoga.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = yoga.xcframework; path = "/Users/ryosuke.suzuki/Projects/nativebrik-sdk/ios/Nativebrik/../xcframeworks/yoga.xcframework"; sourceTree = "<absolute>"; };
+		C1FFFD712B21BEA200ACD132 /* YogaKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = YogaKit.xcframework; path = "/Users/ryosuke.suzuki/Projects/nativebrik-sdk/ios/Nativebrik/../xcframeworks/YogaKit.xcframework"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +52,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				C13634852B03396E00B9F437 /* Nativebrik.framework in Frameworks */,
+				C1FFFD742B21BEA200ACD132 /* YogaKit.xcframework in Frameworks */,
+				C1FFFD722B21BEA200ACD132 /* yoga.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,6 +99,8 @@
 		C13634832B03396E00B9F437 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C1FFFD702B21BEA200ACD132 /* yoga.xcframework */,
+				C1FFFD712B21BEA200ACD132 /* YogaKit.xcframework */,
 				C13634842B03396E00B9F437 /* Nativebrik.framework */,
 			);
 			name = Frameworks;
