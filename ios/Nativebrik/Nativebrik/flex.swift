@@ -13,10 +13,18 @@ class FlexView: AnimatedUIControl {
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
-
+    
     init(block: UIFlexContainerBlock, context: UIBlockContext) {
         super.init(frame: .zero)
+        initialize(block: block, context: context, childFlexShrink: nil)
+    }
+    
+    init(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
+        super.init(frame: .zero)
+        initialize(block: block, context: context, childFlexShrink: childFlexShrink)
+    }
 
+    func initialize(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
         let direction = parseDirection(block.data?.direction)
         self.configureLayout { layout in
             layout.isEnabled = true
@@ -65,6 +73,14 @@ class FlexView: AnimatedUIControl {
                         layout.marginBottom = parseInt((block.data?.frame?.paddingTop ?? 0) +  (block.data?.frame?.paddingBottom ?? 0))
                     }
                 }
+                
+                // when it's wraped by FlexOverflow, set the minimum size not to shrink
+                if let childFlexShrink = childFlexShrink {
+                    layout.isEnabled = true
+                    layout.flexShrink = CGFloat(childFlexShrink)
+                    layout.minWidth = layout.width
+                    layout.minHeight = layout.height
+                }
             }
 
             self.addSubview(child)
@@ -108,7 +124,7 @@ class FlexOverflowView: UIScrollView {
         self.isScrollEnabled = (block.data?.overflow == Overflow.SCROLL) ? true : false
 
         let _ = configureOnClickGesture(target: self, action: #selector(onClicked(sender:)), context: context, event: block.data?.onClick)
-        let flexView = FlexView(block: block, context: context)
+        let flexView = FlexView(block: block, context: context, childFlexShrink: 0) // set child's size to shrink 0.
         flexView.configureLayout { layout in
             if direction == .column {
                 layout.width = .init(value: 100, unit: .percent)
@@ -122,6 +138,7 @@ class FlexOverflowView: UIScrollView {
                 layout.minWidth = YGValueUndefined
             }
             layout.flexShrink = 0
+            layout.flexWrap = .noWrap
         }
         flexView.layer.borderColor = .init(gray: 0, alpha: 0)
         flexView.layer.backgroundColor = .init(gray: 0, alpha: 0)
