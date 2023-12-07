@@ -68,6 +68,12 @@ public class NativebrikUser {
     private var userDB: UserDefaults
     
     init() {
+        if !isNativebrikAvailable {
+            self.properties = [:]
+            self.userDB = UserDefaults.standard
+            return
+        }
+        
         let suiteName = "\(Bundle.main.bundleIdentifier ?? "app").nativebrik.com"
         self.userDB = UserDefaults(suiteName: suiteName) ?? UserDefaults.standard
         self.properties = [:]

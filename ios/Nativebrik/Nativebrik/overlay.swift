@@ -17,6 +17,10 @@ class OverlayViewController: UIViewController {
         self.triggerViewController = TriggerViewController(user: user, config: config, repositories: repositories, modalViewController: self.modalForTriggerViewController)
         super.init(nibName: nil, bundle: nil)
         
+        if !isNativebrikAvailable {
+            return
+        }
+        
         self.addChild(self.modalViewController)
         self.addChild(self.modalForTriggerViewController)
         self.addChild(self.triggerViewController)
@@ -27,6 +31,10 @@ class OverlayViewController: UIViewController {
     }
     
     override func viewDidLoad() {
+        if !isNativebrikAvailable {
+            return
+        }
+
         self.triggerViewController.initialLoad()
     }
         
