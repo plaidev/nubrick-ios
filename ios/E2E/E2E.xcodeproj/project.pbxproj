@@ -42,8 +42,8 @@
 		C13634792B03394300B9F437 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C136347C2B03394300B9F437 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		C13634842B03396E00B9F437 /* Nativebrik.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Nativebrik.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C1FFFD702B21BEA200ACD132 /* yoga.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = yoga.xcframework; path = "/Users/ryosuke.suzuki/Projects/nativebrik-sdk/ios/Nativebrik/../xcframeworks/yoga.xcframework"; sourceTree = "<absolute>"; };
-		C1FFFD712B21BEA200ACD132 /* YogaKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = YogaKit.xcframework; path = "/Users/ryosuke.suzuki/Projects/nativebrik-sdk/ios/Nativebrik/../xcframeworks/YogaKit.xcframework"; sourceTree = "<absolute>"; };
+		C1FFFD702B21BEA200ACD132 /* yoga.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = yoga.xcframework; path = ../xcframeworks/yoga.xcframework; sourceTree = SOURCE_ROOT; };
+		C1FFFD712B21BEA200ACD132 /* YogaKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = YogaKit.xcframework; path = ../xcframeworks/YogaKit.xcframework; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

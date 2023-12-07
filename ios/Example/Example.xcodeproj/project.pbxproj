@@ -67,8 +67,8 @@
 		C13633DC2AEB777900B9F437 /* ExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleUITests.swift; sourceTree = "<group>"; };
 		C13633DE2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		C1FFFD642B1DB57500ACD132 /* Nativebrik.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Nativebrik.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C1FFFD682B1DB79800ACD132 /* yoga.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = yoga.xcframework; path = "/Users/ryosuke.suzuki/Projects/nativebrik-sdk/ios/Nativebrik/../xcframeworks/yoga.xcframework"; sourceTree = "<absolute>"; };
-		C1FFFD692B1DB79800ACD132 /* YogaKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = YogaKit.xcframework; path = "/Users/ryosuke.suzuki/Projects/nativebrik-sdk/ios/Nativebrik/../xcframeworks/YogaKit.xcframework"; sourceTree = "<absolute>"; };
+		C1FFFD682B1DB79800ACD132 /* yoga.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = yoga.xcframework; path = ../xcframeworks/yoga.xcframework; sourceTree = SOURCE_ROOT; };
+		C1FFFD692B1DB79800ACD132 /* YogaKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = YogaKit.xcframework; path = ../xcframeworks/YogaKit.xcframework; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
