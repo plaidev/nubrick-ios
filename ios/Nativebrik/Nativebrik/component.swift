@@ -116,6 +116,8 @@ class ComponentUIView: UIView {
             switch phase {
             case .completed(let view):
                 return view
+            case .failure:
+                return UIView()
             default:
                 return UIProgressView()
             }
