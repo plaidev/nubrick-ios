@@ -56,7 +56,7 @@
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
-				<string>CA92.1: Store and access to user&apos;s privacy-protected identity, timestamps, and counts from same app to calculate matching in SDK</string>
+				<string>CA92.1</string>
 			</array>
 		</dict>
 	</array>
