@@ -38,8 +38,6 @@
 		C136344C2AEB7AA100B9F437 /* navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634302AEB7AA100B9F437 /* navigation.swift */; };
 		C136344D2AEB7AA100B9F437 /* repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634312AEB7AA100B9F437 /* repository.swift */; };
 		C136344E2AEB7AA100B9F437 /* remote-config.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634322AEB7AA100B9F437 /* remote-config.swift */; };
-		C13634502AEB7D5800B9F437 /* yoga.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C136344F2AEB7D5800B9F437 /* yoga.xcframework */; };
-		C13634532AEB7D6600B9F437 /* YogaKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13634522AEB7D6600B9F437 /* YogaKit.xcframework */; };
 		C13634562AEB81EC00B9F437 /* experiment-test.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634552AEB81EC00B9F437 /* experiment-test.swift */; };
 		C136345E2AEBB15200B9F437 /* ViewInspector in Frameworks */ = {isa = PBXBuildFile; productRef = C136345D2AEBB15200B9F437 /* ViewInspector */; };
 		C13634602AEBB49900B9F437 /* user.swift in Sources */ = {isa = PBXBuildFile; fileRef = C136345F2AEBB49900B9F437 /* user.swift */; };
@@ -48,6 +46,8 @@
 		C13634662AF242B100B9F437 /* decode.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634652AF242B100B9F437 /* decode.swift */; };
 		C13634682AF36D7600B9F437 /* repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634672AF36D7600B9F437 /* repository.swift */; };
 		C13634892B036E5D00B9F437 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */; };
+		C1FFFD7A2B22E98B00ACD132 /* yoga.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C136344F2AEB7D5800B9F437 /* yoga.xcframework */; };
+		C1FFFD7D2B22E98C00ACD132 /* YogaKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13634522AEB7D6600B9F437 /* YogaKit.xcframework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -109,8 +109,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C13634532AEB7D6600B9F437 /* YogaKit.xcframework in Frameworks */,
-				C13634502AEB7D5800B9F437 /* yoga.xcframework in Frameworks */,
+				C1FFFD7D2B22E98C00ACD132 /* YogaKit.xcframework in Frameworks */,
+				C1FFFD7A2B22E98B00ACD132 /* yoga.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -510,6 +510,7 @@
 		C13633B02AEB769800B9F437 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -519,6 +520,7 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_MODULE_VERIFIER = YES;
+				EXCLUDED_ARCHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -531,6 +533,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.nativebrik.Nativebrik;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -547,6 +550,7 @@
 		C13633B12AEB769800B9F437 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -556,6 +560,7 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_MODULE_VERIFIER = YES;
+				EXCLUDED_ARCHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -568,6 +573,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.nativebrik.Nativebrik;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
