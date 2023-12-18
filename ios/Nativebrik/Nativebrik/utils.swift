@@ -134,24 +134,16 @@ func parseFontDesign(_ data: FontDesign?) -> UIFontDescriptor.SystemDesign {
     }
 }
 
-func parseTextBlockDataToUIFont(_ data: UITextBlockData?) -> UIFont {
-    switch data {
-    case .none:
-        return UIFont.systemFont(
-            ofSize: 16,
-            weight: parseFontWeight(nil)
-        )
-    case .some(let text):
-        let size = CGFloat(text.size ?? 16)
-        let systemFont = UIFont.systemFont(ofSize: size, weight: parseFontWeight(data?.weight))
-        let font: UIFont
-        if let descriptor = systemFont.fontDescriptor.withDesign(parseFontDesign(data?.design)) {
-            font = UIFont(descriptor: descriptor, size: size)
-        } else {
-            font = systemFont
-        }
-        return font
+func parseTextBlockDataToUIFont(_ size: Int?, _ weight: FontWeight?, _ design: FontDesign?) -> UIFont {
+    let size = CGFloat(size ?? 16)
+    let systemFont = UIFont.systemFont(ofSize: size, weight: parseFontWeight(weight))
+    let font: UIFont
+    if let descriptor = systemFont.fontDescriptor.withDesign(parseFontDesign(design)) {
+        font = UIFont(descriptor: descriptor, size: size)
+    } else {
+        font = systemFont
     }
+    return font
 }
 
 func parseFrameDataToUIKitUIEdgeInsets(_ data: FrameData?) -> UIEdgeInsets {
@@ -181,6 +173,38 @@ func parseModalScreenSize(_ data: ModalScreenSize?) -> [UISheetPresentationContr
         return [.large()]
     default:
         return [.medium(), .large()]
+    }
+}
+
+func parseTextAlign(_ data: TextAlign?) -> NSTextAlignment {
+    switch data {
+    case .LEFT:
+        return .left
+    case .CENTER:
+        return .center
+    case .RIGHT:
+        return .right
+    default:
+        return .natural
+    }
+}
+
+func parserKeyboardType(_ data: UITextInputKeyboardType?) -> UIKeyboardType {
+    switch data {
+    case .ALPHABET:
+        return .alphabet
+    case .ASCII:
+        return .asciiCapable
+    case .DECIMAL:
+        return .decimalPad
+    case .NUMBER:
+        return .numberPad
+    case .URI:
+        return .URL
+    case .EMAIL:
+        return .emailAddress
+    default:
+        return .default
     }
 }
 
