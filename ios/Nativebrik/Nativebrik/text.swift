@@ -28,7 +28,7 @@ class TextView: AnimatedUIControl {
         } else {
             label.textColor = .label
         }
-        label.font = parseTextBlockDataToUIFont(block.data)
+        label.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
         let text = compileTemplate(template: block.data?.value ?? "") { placeholder in
             return context.getByReferenceKey(key: placeholder)
         }
