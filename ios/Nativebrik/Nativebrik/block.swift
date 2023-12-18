@@ -34,6 +34,8 @@ func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
         return ImageView(block: image, context: context)
     case .EUITextBlock(let text):
         return TextView(block: text, context: context)
+    case .EUITextInputBlock(let input):
+        return TextInputView(block: input)
     default:
         return UIView(frame: .zero)
     }
