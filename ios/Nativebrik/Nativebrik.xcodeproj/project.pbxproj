@@ -46,6 +46,7 @@
 		C13634662AF242B100B9F437 /* decode.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634652AF242B100B9F437 /* decode.swift */; };
 		C13634682AF36D7600B9F437 /* repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634672AF36D7600B9F437 /* repository.swift */; };
 		C13634892B036E5D00B9F437 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */; };
+		C13FAF122B2ABF56007CCA46 /* forms.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13FAF112B2ABF56007CCA46 /* forms.swift */; };
 		C1FFFD7A2B22E98B00ACD132 /* yoga.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C136344F2AEB7D5800B9F437 /* yoga.xcframework */; };
 		C1FFFD7D2B22E98C00ACD132 /* YogaKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13634522AEB7D6600B9F437 /* YogaKit.xcframework */; };
 /* End PBXBuildFile section */
@@ -102,6 +103,7 @@
 		C13634652AF242B100B9F437 /* decode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = decode.swift; sourceTree = "<group>"; };
 		C13634672AF36D7600B9F437 /* repository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = repository.swift; sourceTree = "<group>"; };
 		C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Nativebrik/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C13FAF112B2ABF56007CCA46 /* forms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = forms.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,6 +176,7 @@
 				C136342C2AEB7AA100B9F437 /* scalars.swift */,
 				C136341F2AEB7AA100B9F437 /* sdk.swift */,
 				C136341B2AEB7AA000B9F437 /* text.swift */,
+				C13FAF112B2ABF56007CCA46 /* forms.swift */,
 				C13634262AEB7AA100B9F437 /* trigger.swift */,
 				C13634192AEB7AA000B9F437 /* user.swift */,
 				C136341E2AEB7AA100B9F437 /* utils.swift */,
@@ -329,6 +332,7 @@
 				C13634402AEB7AA100B9F437 /* ios-compat.swift in Sources */,
 				C136343E2AEB7AA100B9F437 /* root.swift in Sources */,
 				C136343D2AEB7AA100B9F437 /* context.swift in Sources */,
+				C13FAF122B2ABF56007CCA46 /* forms.swift in Sources */,
 				C136343B2AEB7AA100B9F437 /* sdk.swift in Sources */,
 				C13634482AEB7AA100B9F437 /* scalars.swift in Sources */,
 				C13634412AEB7AA100B9F437 /* grid.swift in Sources */,
