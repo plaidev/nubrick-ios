@@ -113,6 +113,8 @@ extension UIBlock: Hashable {
       value = block.id ?? ""
     case .EUITextBlock(let block):
       value = block.id ?? ""
+    case .EUITextInputBlock(let block):
+        value = block.id ?? ""
     case .unknown:
       value = "unknown"
     }

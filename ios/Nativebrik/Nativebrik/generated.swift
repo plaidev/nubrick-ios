@@ -268,6 +268,16 @@ enum PropertyType: String, Decodable, Encodable {
     self = try PropertyType(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
 }
+enum TextAlign: String, Decodable, Encodable {
+  case NATURAL = "NATURAL"
+  case LEFT = "LEFT"
+  case CENTER = "CENTER"
+  case RIGHT = "RIGHT"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try TextAlign(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+}
 struct TriggerEventDef: Decodable {
   var name: String?
 }
@@ -298,6 +308,7 @@ indirect enum UIBlock: Decodable {
   case EUIImageBlock(UIImageBlock)
   case EUICollectionBlock(UICollectionBlock)
   case EUICarouselBlock(UICarouselBlock)
+  case EUITextInputBlock(UITextInputBlock)
   case unknown
 
   enum CodingKeys: String, CodingKey {
@@ -311,6 +322,7 @@ indirect enum UIBlock: Decodable {
     case __UIImageBlock = "UIImageBlock"
     case __UICollectionBlock = "UICollectionBlock"
     case __UICarouselBlock = "UICarouselBlock"
+    case __UITextInputBlock = "UITextInputBlock"
     case unknown
   }
   init(from decoder: Decoder) throws {
@@ -339,6 +351,9 @@ indirect enum UIBlock: Decodable {
     case .__UICarouselBlock:
       let data = try associateContainer.decode(UICarouselBlock.self)
       self = .EUICarouselBlock(data)
+    case .__UITextInputBlock:
+      let data = try associateContainer.decode(UITextInputBlock.self)
+      self = .EUITextInputBlock(data)
     default:
       self = .unknown
     }
@@ -443,6 +458,36 @@ struct UITextBlockData: Decodable {
   var weight: FontWeight?
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
+}
+struct UITextInputBlock: Decodable {
+  var id: ID?
+  var data: UITextInputBlockData?
+}
+struct UITextInputBlockData: Decodable {
+  var value: String?
+  var placeholder: String?
+  var keyboardType: UITextInputKeyboardType?
+  var secure: Boolean?
+  var autocorrect: Boolean?
+  var size: Int?
+  var color: Color?
+  var design: FontDesign?
+  var weight: FontWeight?
+  var textAlign: TextAlign?
+  var frame: FrameData?
+}
+enum UITextInputKeyboardType: String, Decodable, Encodable {
+  case DEFAULT = "DEFAULT"
+  case ASCII = "ASCII"
+  case EMAIL = "EMAIL"
+  case DECIMAL = "DECIMAL"
+  case NUMBER = "NUMBER"
+  case URI = "URI"
+  case ALPHABET = "ALPHABET"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try UITextInputKeyboardType(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
 }
 struct VariantConfig: Decodable {
   var key: String?
