@@ -466,6 +466,8 @@ struct UITextInputBlock: Decodable {
 struct UITextInputBlockData: Decodable {
   var value: String?
   var placeholder: String?
+  var regex: String?
+  var errorMessage: UITooltipMessage?
   var keyboardType: UITextInputKeyboardType?
   var secure: Boolean?
   var autocorrect: Boolean?
@@ -488,6 +490,9 @@ enum UITextInputKeyboardType: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try UITextInputKeyboardType(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+}
+struct UITooltipMessage: Decodable {
+  var title: String?
 }
 struct VariantConfig: Decodable {
   var key: String?
