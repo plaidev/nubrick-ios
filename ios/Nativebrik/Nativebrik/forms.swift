@@ -37,8 +37,10 @@ class TooltipViewController: UIViewController, UIPopoverPresentationControllerDe
         self.view.addSubview(label)
         
         let labelHeight = label.intrinsicContentSize.height
+        let labelWidth = label.intrinsicContentSize.width
         label.frame.size.height = labelHeight
-        self.preferredContentSize = CGSize(width: 400, height: 32 + labelHeight)
+        label.frame.size.width = labelWidth
+        self.preferredContentSize = CGSize(width: 32 + labelWidth, height: 32 + labelHeight)
     }
         
     // UIPopoverPresentationControllerDelegate
@@ -180,6 +182,7 @@ class TextInputView: UIView, UITextFieldDelegate {
         if let secure = block.data?.secure {
             textInput.isSecureTextEntry = secure
         }
+        textInput.autocapitalizationType = .none
         textInput.keyboardType = parserKeyboardType(block.data?.keyboardType)
 
         self.addSubview(textInput)
