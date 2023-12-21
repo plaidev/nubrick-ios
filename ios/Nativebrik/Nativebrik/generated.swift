@@ -309,6 +309,7 @@ indirect enum UIBlock: Decodable {
   case EUICollectionBlock(UICollectionBlock)
   case EUICarouselBlock(UICarouselBlock)
   case EUITextInputBlock(UITextInputBlock)
+  case EUISelectInputBlock(UISelectInputBlock)
   case unknown
 
   enum CodingKeys: String, CodingKey {
@@ -323,6 +324,7 @@ indirect enum UIBlock: Decodable {
     case __UICollectionBlock = "UICollectionBlock"
     case __UICarouselBlock = "UICarouselBlock"
     case __UITextInputBlock = "UITextInputBlock"
+    case __UISelectInputBlock = "UISelectInputBlock"
     case unknown
   }
   init(from decoder: Decoder) throws {
@@ -354,6 +356,9 @@ indirect enum UIBlock: Decodable {
     case .__UITextInputBlock:
       let data = try associateContainer.decode(UITextInputBlock.self)
       self = .EUITextInputBlock(data)
+    case .__UISelectInputBlock:
+      let data = try associateContainer.decode(UISelectInputBlock.self)
+      self = .EUISelectInputBlock(data)
     default:
       self = .unknown
     }
@@ -445,6 +450,24 @@ struct UIRootBlock: Decodable {
 struct UIRootBlockData: Decodable {
   var pages: [UIPageBlock]?
   var currentPageId: ID?
+}
+struct UISelectInputBlock: Decodable {
+  var id: ID?
+  var data: UISelectInputBlockData?
+}
+struct UISelectInputBlockData: Decodable {
+  var options: [UISelectInputOption]?
+  var value: String?
+  var size: Int?
+  var color: Color?
+  var design: FontDesign?
+  var weight: FontWeight?
+  var textAlign: TextAlign?
+  var frame: FrameData?
+}
+struct UISelectInputOption: Decodable {
+  var value: String?
+  var label: String?
 }
 struct UITextBlock: Decodable {
   var id: ID?
