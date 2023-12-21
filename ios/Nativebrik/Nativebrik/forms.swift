@@ -10,6 +10,68 @@ import UIKit
 import YogaKit
 import TipKit
 
+class SelectPickerViewController: UIViewController, UIPopoverPresentationControllerDelegate, UIPickerViewDelegate, UIPickerViewDataSource {
+    var options: [UISelectInputOption] = []
+    var onSelected: (_ option: UISelectInputOption) -> Void = { _ in }
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+    
+    init(options: [UISelectInputOption]?, onSelected: @escaping (_ option: UISelectInputOption) -> Void, source: UIView) {
+        super.init(nibName: nil, bundle: nil)
+        self.options = options ?? []
+        self.onSelected = onSelected
+        self.preferredContentSize = CGSize(width: 200, height: 130)
+        self.modalPresentationStyle = .popover
+        self.popoverPresentationController?.sourceView = source
+        self.popoverPresentationController?.delegate = self
+        self.popoverPresentationController?.permittedArrowDirections = UIPopoverArrowDirection([.up, .down])
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.view.backgroundColor = .systemBackground
+        let picker = UIPickerView(frame: CGRect(x: 0, y: 0, width: 200, height: 130))
+        picker.delegate = self
+        picker.dataSource = self
+        
+        self.view.addSubview(picker)
+    }
+    
+    // UIPopoverPresentationControllerDelegate
+    func adaptivePresentationStyle(for controller: UIPresentationController, traitCollection: UITraitCollection) -> UIModalPresentationStyle {
+        return .none
+    }
+    
+    // UIPickerViewDelegate
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return options.count
+    }
+    
+    // UIPickerViewDataSource
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        if options.count < row {
+            return "None"
+        }
+        let option = options[row]
+        return option.label ?? option.value
+    }
+    // when a option is selected
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        if options.count < row {
+            let option = UISelectInputOption(value: "None", label: nil)
+            self.onSelected(option)
+            return
+        }
+        let option = options[row]
+        self.onSelected(option)
+    }
+}
+
 class TooltipViewController: UIViewController, UIPopoverPresentationControllerDelegate {
     var message: String? = ""
     init(message: String, source: UIView) {
@@ -218,5 +280,78 @@ class TextInputView: UIView, UITextFieldDelegate {
     // UITextFieldDelegate
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
+    }
+}
+
+class SelectInputView: UIControl, UIPickerViewDataSource {
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+    
+    init(block: UISelectInputBlock) {
+        super.init(frame: .zero)
+        
+        // wrap layout
+        self.configureLayout { layout in
+            layout.isEnabled = true
+            layout.width = YGValueUndefined
+            layout.width = .init(value: 100.0, unit: .percent)
+            configurePadding(layout: layout, frame: block.data?.frame)
+            layout.flexShrink = 1
+        }
+        configureBorder(view: self, frame: block.data?.frame)
+        
+        // input layout
+        let picker = UIPickerView(frame: .zero)
+        picker.configureLayout { layout in
+            layout.isEnabled = true
+            layout.width = .init(value: 100.0, unit: .percent)
+            configurePadding(layout: layout, frame: block.data?.frame)
+        }
+        picker.dataSource = self
+        
+        // text input layout
+        let label = UILabel(frame: .zero)
+        label.text = block.data?.value ?? "None"
+        label.configureLayout { layout in
+            layout.isEnabled = true
+        }
+        if let color = block.data?.color {
+            label.textColor = parseColor(color)
+        } else {
+            label.textColor = .label
+        }
+        label.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
+        label.numberOfLines = 0
+        
+        if #available(iOS 14.0, *) {
+            self.addAction(.init { _ in
+                let picker = SelectPickerViewController(options: block.data?.options, onSelected: { option in
+                    label.text = option.label ?? option.value
+                }, source: self)
+                self.window?.rootViewController?.present(picker, animated: true)
+            }, for: .touchDown)
+        }
+        
+        self.addSubview(label)
+    }
+    
+    deinit {
+        if self.window?.rootViewController?.presentedViewController is SelectPickerViewController {
+            self.window?.rootViewController?.dismiss(animated: true)
+        }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+    }
+    
+    // UIPickerViewDataSource
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return component
     }
 }
