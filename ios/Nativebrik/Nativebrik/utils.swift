@@ -189,6 +189,19 @@ func parseTextAlign(_ data: TextAlign?) -> NSTextAlignment {
     }
 }
 
+func parseTextAlignToHorizontalAlignment(_ data: TextAlign?) -> UIControl.ContentHorizontalAlignment {
+    switch data {
+    case .LEFT:
+        return .left
+    case .CENTER:
+        return .center
+    case .RIGHT:
+        return .right
+    default:
+        return .left
+    }
+}
+
 func parserKeyboardType(_ data: UITextInputKeyboardType?) -> UIKeyboardType {
     switch data {
     case .ALPHABET:
