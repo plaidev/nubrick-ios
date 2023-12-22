@@ -276,6 +276,7 @@ class SelectInputView: UIControl {
         if #available(iOS 14.0, *) {
             let handleSelect = { (action: UIAction) in
                 // TODO: do something
+                button.setTitle(action.title, for: .application)
             }
             let actions: [UIAction] = block.data?.options?.map({ option in
                 return UIAction(title: option.label ?? option.value ?? "None", state: .on, handler: handleSelect)
