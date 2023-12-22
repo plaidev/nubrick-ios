@@ -269,6 +269,7 @@ class SelectInputView: UIControl {
                     .foregroundColor: foregroundColor
                 ])
             })
+            config.baseForegroundColor = foregroundColor
             button.configuration = config
         }
         
