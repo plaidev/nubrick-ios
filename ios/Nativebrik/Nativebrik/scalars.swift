@@ -117,6 +117,8 @@ extension UIBlock: Hashable {
         value = block.id ?? ""
     case .EUISelectInputBlock(let block):
         value = block.id ?? ""
+    case .EUIMultiSelectInputBlock(let block):
+        value = block.id ?? ""
     case .unknown:
       value = "unknown"
     }
