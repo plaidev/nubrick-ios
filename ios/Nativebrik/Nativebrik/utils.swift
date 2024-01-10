@@ -7,6 +7,18 @@
 
 import Foundation
 import YogaKit
+import UIKit
+
+func presentOnTop(window: UIWindow?, modal: UIViewController) {
+    guard let root = window?.rootViewController else {
+        return
+    }
+    guard let presented = root.presentedViewController else {
+        root.present(modal, animated: true)
+        return
+    }
+    presented.present(modal, animated: true)
+}
 
 func parseInt(_ data: Int?) -> YGValue {
     if let integer = data {
