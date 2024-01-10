@@ -310,6 +310,7 @@ indirect enum UIBlock: Decodable {
   case EUICarouselBlock(UICarouselBlock)
   case EUITextInputBlock(UITextInputBlock)
   case EUISelectInputBlock(UISelectInputBlock)
+  case EUIMultiSelectInputBlock(UIMultiSelectInputBlock)
   case unknown
 
   enum CodingKeys: String, CodingKey {
@@ -325,6 +326,7 @@ indirect enum UIBlock: Decodable {
     case __UICarouselBlock = "UICarouselBlock"
     case __UITextInputBlock = "UITextInputBlock"
     case __UISelectInputBlock = "UISelectInputBlock"
+    case __UIMultiSelectInputBlock = "UIMultiSelectInputBlock"
     case unknown
   }
   init(from decoder: Decoder) throws {
@@ -359,6 +361,9 @@ indirect enum UIBlock: Decodable {
     case .__UISelectInputBlock:
       let data = try associateContainer.decode(UISelectInputBlock.self)
       self = .EUISelectInputBlock(data)
+    case .__UIMultiSelectInputBlock:
+      let data = try associateContainer.decode(UIMultiSelectInputBlock.self)
+      self = .EUIMultiSelectInputBlock(data)
     default:
       self = .unknown
     }
@@ -421,6 +426,21 @@ struct UIImageBlockData: Decodable {
   var contentMode: ImageContentMode?
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
+}
+struct UIMultiSelectInputBlock: Decodable {
+  var id: ID?
+  var data: UIMultiSelectInputBlockData?
+}
+struct UIMultiSelectInputBlockData: Decodable {
+  var options: [UISelectInputOption]?
+  var value: [String]?
+  var placeholder: String?
+  var size: Int?
+  var color: Color?
+  var design: FontDesign?
+  var weight: FontWeight?
+  var textAlign: TextAlign?
+  var frame: FrameData?
 }
 struct UIPageBlock: Decodable {
   var id: ID?
