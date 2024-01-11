@@ -311,6 +311,7 @@ indirect enum UIBlock: Decodable {
   case EUITextInputBlock(UITextInputBlock)
   case EUISelectInputBlock(UISelectInputBlock)
   case EUIMultiSelectInputBlock(UIMultiSelectInputBlock)
+  case EUISwitchInputBlock(UISwitchInputBlock)
   case unknown
 
   enum CodingKeys: String, CodingKey {
@@ -327,6 +328,7 @@ indirect enum UIBlock: Decodable {
     case __UITextInputBlock = "UITextInputBlock"
     case __UISelectInputBlock = "UISelectInputBlock"
     case __UIMultiSelectInputBlock = "UIMultiSelectInputBlock"
+    case __UISwitchInputBlock = "UISwitchInputBlock"
     case unknown
   }
   init(from decoder: Decoder) throws {
@@ -364,6 +366,9 @@ indirect enum UIBlock: Decodable {
     case .__UIMultiSelectInputBlock:
       let data = try associateContainer.decode(UIMultiSelectInputBlock.self)
       self = .EUIMultiSelectInputBlock(data)
+    case .__UISwitchInputBlock:
+      let data = try associateContainer.decode(UISwitchInputBlock.self)
+      self = .EUISwitchInputBlock(data)
     default:
       self = .unknown
     }
@@ -488,6 +493,15 @@ struct UISelectInputBlockData: Decodable {
 struct UISelectInputOption: Decodable {
   var value: String?
   var label: String?
+}
+struct UISwitchInputBlock: Decodable {
+  var id: ID?
+  var data: UISwitchInputBlockData?
+}
+struct UISwitchInputBlockData: Decodable {
+  var key: String?
+  var value: Boolean?
+  var checkedColor: Color?
 }
 struct UITextBlock: Decodable {
   var id: ID?
