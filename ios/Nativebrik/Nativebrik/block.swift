@@ -40,6 +40,8 @@ func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
         return SelectInputView(block: input)
     case .EUIMultiSelectInputBlock(let block):
         return MultiSelectInputView(block: block)
+    case .EUISwitchInputBlock(let block):
+        return SwitchInputView(block: block)
     default:
         return UIView(frame: .zero)
     }

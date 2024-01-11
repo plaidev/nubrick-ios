@@ -269,7 +269,7 @@ class SelectInputView: UIControl {
                     .foregroundColor: foregroundColor
                 ])
             })
-            config.baseForegroundColor = foregroundColor
+            config.baseForegroundColor = .tertiaryLabel
             button.configuration = config
         }
         
@@ -308,7 +308,7 @@ func getMultiSelectText(_ values: [String]?) -> String? {
     case 1:
         return values?[0] ?? nil
     default:
-        return "\(values?.count ?? 0) selected"
+        return "\(values?.count ?? 0)"
     }
 }
 
@@ -460,17 +460,18 @@ class MultiSelectInputView: UIControl {
         label.text = getMultiSelectText(block.data?.value) ?? block.data?.placeholder ?? "None"
         label.numberOfLines = 0
         label.textAlignment = parseTextAlign(block.data?.textAlign)
-        
-        let iconView = UIImageView(image: UIImage(systemName: "chevron.right"))
+
+        let iconView = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: UIImage.SymbolConfiguration(weight: .semibold)))
         iconView.configureLayout { layout in
             layout.isEnabled = true
             layout.alignItems = .center
             layout.justifyContent = .center
-            layout.width = .init(integerLiteral: 10)
-            layout.height = .init(integerLiteral: 12)
-            layout.marginLeft = .init(integerLiteral: paddingRight ?? 4)
+            layout.width = .init(integerLiteral: 9)
+            layout.height = .init(integerLiteral: 11)
+            layout.marginRight = .init(integerLiteral: 4)
+            layout.marginLeft = .init(integerLiteral: 4)
         }
-        iconView.tintColor = .secondaryLabel
+        iconView.tintColor = .tertiaryLabel
         
         self.addSubview(label)
         self.addSubview(iconView)
@@ -491,5 +492,44 @@ class MultiSelectInputView: UIControl {
                 presentOnTop(window: self.window, modal: tableView)
             }, for: .touchDown)
         }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+    }
+}
+
+class SwitchInputView: UIControl {
+    var checked: Bool = false
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+    
+    init(block: UISwitchInputBlock) {
+        super.init(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
+        let toggle = UISwitch(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
+        self.checked = block.data?.value ?? false
+        toggle.isOn = self.checked
+        if #available(iOS 14.0, *) {
+            toggle.addAction(.init(handler: { _ in
+                self.checked = toggle.isOn
+            }), for: .valueChanged)
+        } else {
+            toggle.addTarget(self, action: #selector(self.handleValueChange(_:)), for: .valueChanged)
+        }
+        self.configureLayout { layout in
+            layout.isEnabled = true
+            layout.width = YGValueUndefined
+            layout.height = YGValueUndefined
+        }
+        self.addSubview(toggle)
+    }
+    
+    @objc func handleValueChange(_ sender:UISwitch!) {
+        self.checked = sender.isOn
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
     }
 }
