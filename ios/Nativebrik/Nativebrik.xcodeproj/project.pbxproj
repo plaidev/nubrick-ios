@@ -47,6 +47,7 @@
 		C13634682AF36D7600B9F437 /* repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634672AF36D7600B9F437 /* repository.swift */; };
 		C13634892B036E5D00B9F437 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */; };
 		C13FAF122B2ABF56007CCA46 /* forms.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13FAF112B2ABF56007CCA46 /* forms.swift */; };
+		C1F488CC2B5521FC009D7DAD /* placeholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F488CB2B5521FC009D7DAD /* placeholder.swift */; };
 		C1FFFD7A2B22E98B00ACD132 /* yoga.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C136344F2AEB7D5800B9F437 /* yoga.xcframework */; };
 		C1FFFD7D2B22E98C00ACD132 /* YogaKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13634522AEB7D6600B9F437 /* YogaKit.xcframework */; };
 /* End PBXBuildFile section */
@@ -104,6 +105,7 @@
 		C13634672AF36D7600B9F437 /* repository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = repository.swift; sourceTree = "<group>"; };
 		C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Nativebrik/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C13FAF112B2ABF56007CCA46 /* forms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = forms.swift; sourceTree = "<group>"; };
+		C1F488CB2B5521FC009D7DAD /* placeholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = placeholder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -195,6 +197,7 @@
 				C13634632AEF92F700B9F437 /* embedding.swift */,
 				C13634652AF242B100B9F437 /* decode.swift */,
 				C13634672AF36D7600B9F437 /* repository.swift */,
+				C1F488CB2B5521FC009D7DAD /* placeholder.swift */,
 			);
 			path = NativebrikTests;
 			sourceTree = "<group>";
@@ -370,6 +373,7 @@
 				C13634682AF36D7600B9F437 /* repository.swift in Sources */,
 				C13634602AEBB49900B9F437 /* user.swift in Sources */,
 				C13634662AF242B100B9F437 /* decode.swift in Sources */,
+				C1F488CC2B5521FC009D7DAD /* placeholder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
