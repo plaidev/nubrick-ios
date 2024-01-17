@@ -437,6 +437,7 @@ struct UIMultiSelectInputBlock: Decodable {
   var data: UIMultiSelectInputBlockData?
 }
 struct UIMultiSelectInputBlockData: Decodable {
+  var key: String?
   var options: [UISelectInputOption]?
   var value: [String]?
   var placeholder: String?
@@ -481,6 +482,7 @@ struct UISelectInputBlock: Decodable {
   var data: UISelectInputBlockData?
 }
 struct UISelectInputBlockData: Decodable {
+  var key: String?
   var options: [UISelectInputOption]?
   var value: String?
   var size: Int?
@@ -521,6 +523,7 @@ struct UITextInputBlock: Decodable {
   var data: UITextInputBlockData?
 }
 struct UITextInputBlockData: Decodable {
+  var key: String?
   var value: String?
   var placeholder: String?
   var regex: String?
