@@ -16,7 +16,9 @@ final class HttpRequestReposotiryTests: XCTestCase {
     func testShouldCallApiHttpRequest() throws {
         let expectation = expectation(description: "Request should be expected.")
         let repository = ApiHttpRequestRepository(interceptor: nil)
-        repository.fetch(request: ApiHttpRequest(url: HEALTH_CHECK_URL), assertion: nil, propeties: nil) { entry in
+        repository.fetch(request: ApiHttpRequest(url: HEALTH_CHECK_URL), assertion: nil, placeholderReplacer: { _ in
+            return ""
+        }) { entry in
             XCTAssertEqual(entry.state, .EXPECTED)
             expectation.fulfill()
         }
@@ -27,7 +29,9 @@ final class HttpRequestReposotiryTests: XCTestCase {
     func testShouldAssertHttpRequest() throws {
         let expectation = expectation(description: "Request should be unexpected.")
         let repository = ApiHttpRequestRepository(interceptor: nil)
-        repository.fetch(request: ApiHttpRequest(url: HEALTH_CHECK_URL), assertion: ApiHttpResponseAssertion(statusCodes: [300]), propeties: nil) { entry in
+        repository.fetch(request: ApiHttpRequest(url: HEALTH_CHECK_URL), assertion: ApiHttpResponseAssertion(statusCodes: [300]), placeholderReplacer: { _ in
+            return ""
+        }) { entry in
             XCTAssertEqual(entry.state, .UNEXPECTED)
             expectation.fulfill()
         }
