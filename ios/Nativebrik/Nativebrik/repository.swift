@@ -426,33 +426,23 @@ class ApiHttpRequestRepository {
         }
     }
     
-    func fetch(request: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, propeties: [Property]?, callback: @escaping (_ entry: HttpEntry<JSONData>) -> Void) {
+    func fetch(request: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, placeholderReplacer: @escaping (String) -> Any?, callback: @escaping (_ entry: HttpEntry<JSONData>) -> Void) {
         guard let requestUrl = URL(string: request.url ?? "") else {
             return
         }
         var urlRequest = URLRequest(url: requestUrl)
         urlRequest.httpMethod = request.method?.rawValue ?? "GET"
         if request.method != .GET && request.method != .TRACE {
-            do {
-                var body: [String: Any] = [:]
-                if (propeties?.count ?? 0) > 0 {
-                    body["properties"] = propeties as Any
-                }
-                if let bodyData = request.body?.data(using: .utf8) {
-                    // json string to dictionary
-                    let json = try JSONSerialization.jsonObject(with: bodyData) as? [String: Any]
-                    json?.forEach({ (key: String, value: Any) in
-                        body[key] = value
-                    })
-                }
-                if !body.isEmpty {
-                    let jsonBodyData = try JSONSerialization.data(withJSONObject: body)
-                    urlRequest.httpBody = jsonBodyData
-                }
-            } catch {
+            var body: Data? = nil
+            if let reqBody = request.body {
+                let bodyStr = compileTemplate(template: reqBody, getByPath: placeholderReplacer)
+                body = bodyStr.data(using: .utf8)
+            }
+            if let body = body {
+                urlRequest.httpBody = body
+                urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
             }
         }
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.setValue(self.projectId, forHTTPHeaderField: "X-Project-Id")
         request.headers?.forEach({ header in
             guard let name = header.name else {
