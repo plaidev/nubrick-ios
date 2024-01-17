@@ -12,9 +12,7 @@ import YogaKit
 
 
 class EmbeddingUIView: ComponentUIView {
-    private let user: NativebrikUser
     required init?(coder: NSCoder) {
-        self.user = NativebrikUser()
         super.init(coder: coder)
     }
     init(
@@ -25,9 +23,9 @@ class EmbeddingUIView: ComponentUIView {
         modalViewController: ModalComponentViewController?,
         fallback: ((_ phase: ComponentPhase) -> UIView)?
     ) {
-        self.user = user
         super.init(
             config: config,
+            user: user,
             repositories: repositories,
             modalViewController: modalViewController,
             fallback: fallback
@@ -41,9 +39,9 @@ class EmbeddingUIView: ComponentUIView {
                         return
                     }
                     guard let config = extractExperimentConfigMatchedToProperties(configs: configs, properties: { seed in
-                        return self?.user.toEventProperties(seed: seed) ?? []
+                        return self?.user?.toEventProperties(seed: seed) ?? []
                     }, records: { experimentId in
-                        return self?.user.getExperimentHistoryRecord(experimentId: experimentId) ?? []
+                        return self?.user?.getExperimentHistoryRecord(experimentId: experimentId) ?? []
                     }) else {
                         self?.renderFallback(phase: .failure)
                         return
@@ -54,7 +52,7 @@ class EmbeddingUIView: ComponentUIView {
                         return
                     }
                     
-                    let normalizedUsrRnd = self?.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0) ?? 0.0
+                    let normalizedUsrRnd = self?.user?.getSeededNormalizedUserRnd(seed: config.seed ?? 0) ?? 0.0
                     guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUsrRnd) else {
                         self?.renderFallback(phase: .failure)
                         return
@@ -72,7 +70,7 @@ class EmbeddingUIView: ComponentUIView {
                         return
                     }
                     
-                    self?.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
+                    self?.user?.addExperimentHistoryRecord(experimentId: experimentConfigId)
                     
                     repositories.track.trackExperimentEvent(
                         TrackExperimentEvent(
@@ -149,6 +147,7 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                         experimentId: experimentConfigId,
                         componentId: componentId,
                         config: config,
+                        user: self?.user,
                         repositories: repositories,
                         modalViewController: modalViewController
                     )

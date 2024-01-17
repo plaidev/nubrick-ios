@@ -11,6 +11,7 @@ import SwiftUI
 import YogaKit
 import SafariServices
 
+// vc for navigation view
 class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
     
@@ -90,6 +91,7 @@ public enum ComponentPhase {
 
 class ComponentUIView: UIView {
     private let config: Config
+    let user: NativebrikUser?
     private let repositories: Repositories?
     private let fallback: ((_ phase: ComponentPhase) -> UIView)
     private var fallbackView: UIView = UIView()
@@ -98,6 +100,7 @@ class ComponentUIView: UIView {
 
     required init?(coder: NSCoder) {
         self.config = Config()
+        self.user = nil
         self.repositories = nil
         self.fallback = { (_ phase) in
             return UIProgressView()
@@ -107,11 +110,13 @@ class ComponentUIView: UIView {
 
     init(
         config: Config,
+        user: NativebrikUser,
         repositories: Repositories,
         modalViewController: ModalComponentViewController?,
         fallback: ((_ phase: ComponentPhase) -> UIView)?
     ) {
         self.config = config
+        self.user = user
         self.fallback = fallback ?? { (_ phase) in
             switch phase {
             case .completed(let view):
@@ -158,6 +163,7 @@ class ComponentUIView: UIView {
                             case .EUIRootBlock(let root):
                                 let rootView = RootView(
                                     root: root,
+                                    user: self?.user,
                                     config: self!.config,
                                     repositories: self!.repositories!,
                                     modalViewController: self?.modalViewController
@@ -192,6 +198,7 @@ class ComponentSwiftViewModel: ObservableObject {
         experimentId: String,
         componentId: String,
         config: Config,
+        user: NativebrikUser?,
         repositories: Repositories,
         modalViewController: ModalComponentViewController?
     ) {
@@ -204,6 +211,7 @@ class ComponentSwiftViewModel: ObservableObject {
                             self?.phase = .completed(
                                 ComponentView(content: RootViewRepresentable(
                                     root: root,
+                                    user: user,
                                     config: config,
                                     repositories: repositories,
                                     modalViewController: modalViewController
@@ -240,6 +248,7 @@ struct ComponentSwiftView: View {
         experimentId: String,
         componentId: String,
         config: Config,
+        user: NativebrikUser,
         repositories: Repositories,
         modalViewController: ModalComponentViewController
     ) {
@@ -256,13 +265,14 @@ struct ComponentSwiftView: View {
             }
         }
         self.data = ComponentSwiftViewModel()
-        self.data.fetchComponentAndUpdatePhase(experimentId: experimentId, componentId: componentId, config: config, repositories: repositories, modalViewController: modalViewController)
+        self.data.fetchComponentAndUpdatePhase(experimentId: experimentId, componentId: componentId, config: config, user: user, repositories: repositories, modalViewController: modalViewController)
     }
 
     init<V: View>(
         experimentId: String,
         componentId: String,
         config: Config,
+        user: NativebrikUser,
         repositories: Repositories,
         modalViewController: ModalComponentViewController,
         content: @escaping ((_ phase: AsyncComponentPhase) -> V)
@@ -271,13 +281,14 @@ struct ComponentSwiftView: View {
             AnyView(content(phase))
         }
         self.data = ComponentSwiftViewModel()
-        self.data.fetchComponentAndUpdatePhase(experimentId: experimentId, componentId: componentId, config: config, repositories: repositories, modalViewController: modalViewController)
+        self.data.fetchComponentAndUpdatePhase(experimentId: experimentId, componentId: componentId, config: config, user: user, repositories: repositories, modalViewController: modalViewController)
     }
 
     init<I: View, P: View>(
         experimentId: String,
         componentId: String,
         config: Config,
+        user: NativebrikUser,
         repositories: Repositories,
         modalViewController: ModalComponentViewController,
         content: @escaping ((_ component: any View) -> I),
@@ -292,7 +303,7 @@ struct ComponentSwiftView: View {
             }
         }
         self.data = ComponentSwiftViewModel()
-        self.data.fetchComponentAndUpdatePhase(experimentId: experimentId, componentId: componentId, config: config, repositories: repositories, modalViewController: modalViewController)
+        self.data.fetchComponentAndUpdatePhase(experimentId: experimentId, componentId: componentId, config: config, user: user, repositories: repositories, modalViewController: modalViewController)
     }
 
     var body: some View {

@@ -14,14 +14,16 @@ public class RemoteConfigVariant {
     public let variantId: String
     private let configs: [VariantConfig]
     private let config: Config
+    private let user: NativebrikUser
     private let repositories: Repositories
     private let modalViewController: ModalComponentViewController
 
-    init(experimentId: String, variantId: String, configs: [VariantConfig], config: Config, repositories: Repositories, modalViewController: ModalComponentViewController) {
+    init(experimentId: String, variantId: String, configs: [VariantConfig], config: Config, user: NativebrikUser, repositories: Repositories, modalViewController: ModalComponentViewController) {
         self.experimentId = experimentId
         self.variantId = variantId
         self.configs = configs
         self.config = config
+        self.user = user
         self.repositories = repositories
         self.modalViewController = modalViewController
     }
@@ -83,6 +85,7 @@ public class RemoteConfigVariant {
             experimentId: self.experimentId,
             componentId: componentId ?? "",
             config: self.config,
+            user: self.user,
             repositories: self.repositories,
             modalViewController: self.modalViewController
         )
@@ -98,6 +101,7 @@ public class RemoteConfigVariant {
             experimentId: self.experimentId,
             componentId: componentId ?? "",
             config: self.config.initFrom(onEvent: onEvent),
+            user: self.user,
             repositories: self.repositories,
             modalViewController: self.modalViewController,
             content: content
@@ -110,6 +114,7 @@ public class RemoteConfigVariant {
         }
         let uiview =  ComponentUIView(
             config: self.config,
+            user: self.user,
             repositories: self.repositories,
             modalViewController: self.modalViewController,
             fallback: nil
@@ -124,6 +129,7 @@ public class RemoteConfigVariant {
         }
         let uiview =  ComponentUIView(
             config: self.config.initFrom(onEvent: onEvent),
+            user: self.user,
             repositories: self.repositories,
             modalViewController: self.modalViewController,
             fallback: content
@@ -197,6 +203,7 @@ class RemoteConfig {
                         variantId: variantId,
                         configs: variantConfigs,
                         config: config,
+                        user: user,
                         repositories: repositories,
                         modalViewController: modalViewController
                     )))

@@ -162,6 +162,7 @@ class TriggerViewController: UIViewController {
                                 }
                                 let rootController = ModalRootViewController(
                                     root: root,
+                                    user: self?.user,
                                     config: config,
                                     repositories: repositories,
                                     modalViewController: self?.modalViewController
