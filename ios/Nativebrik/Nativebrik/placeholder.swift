@@ -7,20 +7,20 @@
 
 import Foundation
 
-struct TemplatePlaceholder {
+fileprivate struct TemplatePlaceholder {
     let path: String
     let formatter: String
 }
 
-func getPlaceholderRegex() -> NSRegularExpression? {
+fileprivate func getPlaceholderRegex() -> NSRegularExpression? {
     return try? NSRegularExpression(pattern: "\\{\\{[a-zA-Z0-9_\\.-| ]{1,300}\\}\\}", options: .dotMatchesLineSeparators)
 }
 
-func isPlaceholder(value: String) -> Bool {
+fileprivate func isPlaceholder(value: String) -> Bool {
     return getPlaceholderRegex()?.firstMatch(in: value, options: [], range: NSRange(location: 0, length: value.utf16.count)) != nil
 }
 
-func getPlaceholder(placeholder: String) -> TemplatePlaceholder? {
+fileprivate func getPlaceholder(placeholder: String) -> TemplatePlaceholder? {
     guard isPlaceholder(value: placeholder) else {
         return nil
     }
@@ -39,11 +39,11 @@ func getPlaceholder(placeholder: String) -> TemplatePlaceholder? {
     return TemplatePlaceholder(path: path, formatter: formatter)
 }
 
-func defaultFormatter(_ value: Any?) -> String {
+fileprivate func defaultFormatter(_ value: Any?) -> String {
     return value.flatMap({ String.init(describing: $0 )}) ?? ""
 }
 
-func jsonFormatter(_ value: Any?) -> String {
+fileprivate func jsonFormatter(_ value: Any?) -> String {
     do {
         guard let value = value else {
             return ""
@@ -55,12 +55,12 @@ func jsonFormatter(_ value: Any?) -> String {
     }
 }
 
-func uppercaseFormatter(_ value: Any?) -> String {
+fileprivate func uppercaseFormatter(_ value: Any?) -> String {
     let str = defaultFormatter(value)
     return str.uppercased()
 }
 
-func lowercaseFormatter(_ value: Any?) -> String {
+fileprivate func lowercaseFormatter(_ value: Any?) -> String {
     let str = defaultFormatter(value)
     return str.lowercased()
 }
@@ -115,3 +115,43 @@ func compileTemplate(template: String, getByPath: (String) -> Any?) -> String {
     return result as String
 }
 
+struct CreateDataForTemplateOption {
+    var data: Any? = nil
+    var properties: [Property]? = nil
+    var user: NativebrikUser? = nil
+    var form: [String:Any]? = nil
+}
+func createDataForTemplate(_ option: CreateDataForTemplateOption) -> Any {
+    let userData: [String:Any] = (option.user != nil) ? [
+        "id": option.user?.id ?? "",
+    ] : [:]
+    let formData: [String:Any]? = option.form
+    var propertiesData: [String:Any] = [:]
+    if let properties = option.properties {
+        properties.forEach { prop in
+            guard let key = prop.name else {
+                return
+            }
+            propertiesData[key] = prop.value
+        }
+    }
+    return [
+        "user": (userData.isEmpty ? nil : userData) as Any,
+        "props": (propertiesData.isEmpty ? nil : propertiesData) as Any,
+        "form": (formData?.isEmpty == true ? nil : formData) as Any,
+        "data": option.data as Any
+    ]
+}
+func createDataForTemplateFrom(base: Any?, _ option: CreateDataForTemplateOption) -> Any {
+    guard let base = base as? [String:Any] else {
+        return createDataForTemplate(option)
+    }
+    let overlay = createDataForTemplate(option) as? [String:Any]
+    let data: [String:Any] = [
+        "user": overlay?["user"] ?? base["user"] as Any,
+        "props": overlay?["props"] ?? base["props"] as Any,
+        "form": overlay?["form"] ?? base["form"] as Any,
+        "data": overlay?["data"] ?? base["data"] as Any,
+    ]
+    return data
+}
