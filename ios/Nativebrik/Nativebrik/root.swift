@@ -16,8 +16,10 @@ class ModalRootViewController: UIViewController {
     private let repositories: Repositories?
     private let modalViewController: ModalComponentViewController?
     private var event: UIBlockEventManager? = nil
+    private let form: UIBlockFormManager?
+    private let user: NativebrikUser?
 
-    init(root: UIRootBlock?, config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
+    init(root: UIRootBlock?, user: NativebrikUser?, config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
             return page.data?.kind == PageKind.TRIGGER
@@ -25,34 +27,18 @@ class ModalRootViewController: UIViewController {
         self.config = config
         self.repositories = repositories
         self.modalViewController = modalViewController
+        self.user = user
+        self.form = nil
         super.init(nibName: nil, bundle: nil)
 
         self.event = UIBlockEventManager(on: { [weak self] event in
-            let assertion = event.httpResponseAssertion
-            let handleEvent = { () -> () in
-                DispatchQueue.main.async { [weak self] in
-                    if let destPageId = event.destinationPageId {
-                        self?.presentPage(
-                            pageId: destPageId,
-                            props: event.payload
-                        )
-                    }
-                    self?.config.dispatchUIBlockEvent(event: event)
-                }
+            if let destPageId = event.destinationPageId {
+                self?.presentPage(
+                    pageId: destPageId,
+                    props: event.payload
+                )
             }
-            
-            if let httpRequest = event.httpRequest {
-                Task {
-                    self?.repositories?.httpRequest.fetch(request: httpRequest, assertion: assertion, propeties: nil, callback: { entry in
-                        if entry.state == .EXPECTED {
-                            handleEvent()
-                        }
-                    })
-                }
-            } else {
-                handleEvent()
-            }
-
+            self?.config.dispatchUIBlockEvent(event: event)
         })
 
         if let destId = trigger?.data?.triggerSetting?.onTrigger?.destinationPageId {
@@ -65,6 +51,8 @@ class ModalRootViewController: UIViewController {
         self.config = Config()
         self.repositories = nil
         self.modalViewController = nil
+        self.user = nil
+        self.form = nil
         super.init(coder: coder)
     }
 
@@ -101,6 +89,8 @@ class ModalRootViewController: UIViewController {
             page: page,
             props: props,
             event: self.event,
+            form: self.form,
+            user: self.user,
             config: self.config,
             repositories: self.repositories,
             modalViewController: self.modalViewController
@@ -124,12 +114,13 @@ class ModalRootViewController: UIViewController {
 struct RootViewRepresentable: UIViewRepresentable {
     typealias UIViewType = RootView
     let root: UIRootBlock?
+    let user: NativebrikUser?
     let config: Config
     let repositories: Repositories
     let modalViewController: ModalComponentViewController?
 
     func makeUIView(context: Self.Context) -> Self.UIViewType {
-        return RootView(root: root, config: config, repositories: repositories, modalViewController: modalViewController)
+        return RootView(root: root, user: user, config: config, repositories: repositories, modalViewController: modalViewController)
     }
 
     // データの更新に応じてラップしている UIView を更新する
@@ -143,7 +134,10 @@ class RootView: UIView {
     private let pages: [UIPageBlock]!
     private let config: Config
     private let repositories: Repositories?
+    // use var instead of let, because to refer weak self.
     private var event: UIBlockEventManager? = nil
+    private let form: UIBlockFormManager?
+    private let user: NativebrikUser?
     private var currentEmbeddedPageId: String = ""
     private var view: UIView? = nil
     private var modalViewController: ModalComponentViewController? = nil
@@ -154,10 +148,12 @@ class RootView: UIView {
         self.config = Config()
         self.repositories = nil
         self.view = UIView()
+        self.user = nil
+        self.form = nil
         super.init(coder: coder)
     }
 
-    init(root: UIRootBlock?, config: Config, repositories: Repositories?, modalViewController: ModalComponentViewController?) {
+    init(root: UIRootBlock?, user: NativebrikUser?, config: Config, repositories: Repositories?, modalViewController: ModalComponentViewController?) {
         self.id = root?.id ?? ""
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
@@ -166,6 +162,9 @@ class RootView: UIView {
         self.config = config
         self.repositories = repositories
         self.modalViewController = modalViewController
+        self.user = user
+        self.form = UIBlockFormManager()
+        
         super.init(frame: .zero)
 
         self.configureLayout { layout in
@@ -173,30 +172,13 @@ class RootView: UIView {
         }
 
         self.event = UIBlockEventManager(on: { [weak self] event in
-            let assertion = event.httpResponseAssertion
-            let handleEvent = { () -> () in
-                DispatchQueue.main.async { [weak self] in
-                    if let destPageId = event.destinationPageId {
-                        self?.presentPage(
-                            pageId: destPageId,
-                            props: event.payload
-                        )
-                    }
-                    self?.config.dispatchUIBlockEvent(event: event)
-                }
+            if let destPageId = event.destinationPageId {
+                self?.presentPage(
+                    pageId: destPageId,
+                    props: event.payload
+                )
             }
-
-            if let httpRequest = event.httpRequest {
-                Task {
-                    self?.repositories?.httpRequest.fetch(request: httpRequest, assertion: assertion, propeties: nil, callback: { entry in
-                        if entry.state == .EXPECTED {
-                            handleEvent()
-                        }
-                    })
-                }
-            } else {
-                handleEvent()
-            }
+            self?.config.dispatchUIBlockEvent(event: event)
         })
 
         if let destId = trigger?.data?.triggerSetting?.onTrigger?.destinationPageId {
@@ -241,6 +223,8 @@ class RootView: UIView {
             page: page,
             props: props,
             event: self.event,
+            form: self.form,
+            user: self.user,
             config: self.config,
             repositories: self.repositories,
             modalViewController: self.modalViewController
