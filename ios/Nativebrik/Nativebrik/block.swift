@@ -35,13 +35,13 @@ func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
     case .EUITextBlock(let text):
         return TextView(block: text, context: context)
     case .EUITextInputBlock(let input):
-        return TextInputView(block: input)
+        return TextInputView(block: input, context: context)
     case .EUISelectInputBlock(let input):
-        return SelectInputView(block: input)
+        return SelectInputView(block: input, context: context)
     case .EUIMultiSelectInputBlock(let block):
-        return MultiSelectInputView(block: block)
+        return MultiSelectInputView(block: block, context: context)
     case .EUISwitchInputBlock(let block):
-        return SwitchInputView(block: block)
+        return SwitchInputView(block: block, context: context)
     default:
         return UIView(frame: .zero)
     }

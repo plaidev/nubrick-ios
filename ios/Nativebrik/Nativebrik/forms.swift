@@ -105,6 +105,9 @@ class InputIconView: UIControl {
 }
 
 class TextInputView: UIView, UITextFieldDelegate {
+    let formKey: String?
+    let context: UIBlockContext?
+    
     var textInput: UITextField? = nil
     var validateRegex: String? = nil
     var fontSize: Int? = nil
@@ -112,16 +115,27 @@ class TextInputView: UIView, UITextFieldDelegate {
     var errorMessage: UITooltipMessage? = nil
     
     required init?(coder: NSCoder) {
+        self.formKey = nil
+        self.context = nil
         super.init(coder: coder)
     }
     
-    init(block: UITextInputBlock) {
+    init(block: UITextInputBlock, context: UIBlockContext) {
+        self.formKey = block.data?.key
+        self.context = context
         super.init(frame: .zero)
         
         self.fontSize = block.data?.size
         self.paddingRight = block.data?.frame?.paddingRight
         self.errorMessage = block.data?.errorMessage
         self.validateRegex = block.data?.regex
+        
+        var initialValue = block.data?.value
+        if let formKey = self.formKey {
+            if let value = self.context?.getFormValueByKey(key: formKey) as? String {
+                initialValue = value
+            }
+        }
         
         // wrap layout
         self.configureLayout { layout in
@@ -142,6 +156,7 @@ class TextInputView: UIView, UITextFieldDelegate {
         // input layout
         let textInput = UITextField()
         self.textInput = textInput
+        textInput.text = initialValue
         textInput.addTarget(self, action: #selector(onEditingChanged(sender: )), for: .editingChanged)
         textInput.textAlignment = parseTextAlign(block.data?.textAlign)
         textInput.inputAccessoryView = toolbar
@@ -197,20 +212,34 @@ class TextInputView: UIView, UITextFieldDelegate {
     }
     
     @objc func onEditingChanged(sender: UITextField) {
-        guard let regexPattern = self.validateRegex else {
-            return
-        }
         guard let text = sender.text else {
             return
         }
+        guard let regexPattern = self.validateRegex else {
+            // when it doesnt have validation
+            if let formKey = self.formKey {
+                self.context?.writeToForm(key: formKey, value: text)
+            }
+            return
+        }
         if containsPattern(text, regexPattern) {
+            // when its valid
             let view = InputIconView(systemName: "checkmark.circle", message: nil, color: .systemBlue, size: self.fontSize, padding: self.paddingRight)
             sender.rightView = view
             sender.rightViewMode = .always
+            
+            if let formKey = self.formKey {
+                self.context?.writeToForm(key: formKey, value: text)
+            }
         } else {
+            // when its not vali
             let view = InputIconView(systemName: "info.circle.fill", message: self.errorMessage?.title, color: .systemRed, size: self.fontSize, padding: self.paddingRight)
             sender.rightView = view
             sender.rightViewMode = .always
+            
+            if let formKey = self.formKey {
+                self.context?.writeToForm(key: formKey, value: "")
+            }
         }
         return
     }
@@ -222,11 +251,17 @@ class TextInputView: UIView, UITextFieldDelegate {
 }
 
 class SelectInputView: UIControl {
+    let formKey: String?
+    let context: UIBlockContext?
     required init?(coder: NSCoder) {
+        self.formKey = nil
+        self.context = nil
         super.init(coder: coder)
     }
     
-    init(block: UISelectInputBlock) {
+    init(block: UISelectInputBlock, context: UIBlockContext) {
+        self.formKey = block.data?.key
+        self.context = context
         super.init(frame: .zero)
         
         // wrap layout
@@ -238,8 +273,29 @@ class SelectInputView: UIControl {
         }
         configureBorder(view: self, frame: block.data?.frame)
         
+        var initialValue = block.data?.options?.first(where: { option in
+            if option.value == block.data?.value {
+                return true
+            } else {
+                return false
+            }
+        })
+        if let formKey = self.formKey {
+            if let value = self.context?.getFormValueByKey(key: formKey) as? String {
+                let found = block.data?.options?.first(where: { option in
+                    if option.value == value {
+                        return true
+                    } else {
+                        return false
+                    }
+                })
+                if let found = found {
+                    initialValue = found
+                }
+            }
+        }
+        
         let button = UIButton(frame: .zero)
-        button.setTitle(block.data?.value ?? "None", for: .application)
         button.configureLayout { layout in
             layout.isEnabled = true
         }
@@ -275,11 +331,19 @@ class SelectInputView: UIControl {
         
         if #available(iOS 14.0, *) {
             let handleSelect = { (action: UIAction) in
-                // TODO: do something
                 button.setTitle(action.title, for: .application)
+                if let formKey = self.formKey {
+                    let identifer = action.identifier.rawValue
+                    self.context?.writeToForm(key: formKey, value: identifer)
+                }
             }
             let actions: [UIAction] = block.data?.options?.map({ option in
-                return UIAction(title: option.label ?? option.value ?? "None", state: .on, handler: handleSelect)
+                return UIAction(
+                    title: option.label ?? option.value ?? "None",
+                    identifier: UIAction.Identifier(option.value ?? "None"),
+                    state: option.value == initialValue?.value ? .on : .off,
+                    handler: handleSelect
+                )
             }) ?? []
             button.menu = UIMenu(children: actions)
             button.showsMenuAsPrimaryAction = true
@@ -420,20 +484,30 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
 }
 
 class MultiSelectInputView: UIControl {
+    let formKey: String?
+    let context: UIBlockContext?
     var values: [String] = []
     var label: UILabel?
 
     required init?(coder: NSCoder) {
+        self.formKey = nil
+        self.context = nil
         super.init(coder: coder)
     }
     
-    init(block: UIMultiSelectInputBlock) {
+    init(block: UIMultiSelectInputBlock, context: UIBlockContext) {
+        self.formKey = block.data?.key
+        self.context = context
         super.init(frame: .zero)
         
         self.values = block.data?.value ?? []
+        if let formKey = self.formKey {
+            if let value = self.context?.getFormValueByKey(key: formKey) as? [String] {
+                self.values = value
+            }
+        }
         
         // wrap layout
-        let paddingRight = block.data?.frame?.paddingRight
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.height = YGValueUndefined
@@ -457,7 +531,7 @@ class MultiSelectInputView: UIControl {
         }
         label.textColor = textColor
         label.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
-        label.text = getMultiSelectText(block.data?.value) ?? block.data?.placeholder ?? "None"
+        label.text = getMultiSelectText(self.values) ?? block.data?.placeholder ?? "None"
         label.numberOfLines = 0
         label.textAlignment = parseTextAlign(block.data?.textAlign)
 
@@ -488,6 +562,10 @@ class MultiSelectInputView: UIControl {
                     }
                     self?.values = values
                     self?.label?.text = getMultiSelectText(self?.values) ?? block.data?.placeholder ?? "None"
+                    
+                    if let formKey = self?.formKey {
+                        self?.context?.writeToForm(key: formKey, value: values)
+                    }
                 }
                 presentOnTop(window: self.window, modal: tableView)
             }, for: .touchDown)
@@ -500,19 +578,30 @@ class MultiSelectInputView: UIControl {
 }
 
 class SwitchInputView: UIControl {
-    var checked: Bool = false
+    let formKey: String?
+    let context: UIBlockContext?
     required init?(coder: NSCoder) {
+        self.context = nil
+        self.formKey = nil
         super.init(coder: coder)
     }
     
-    init(block: UISwitchInputBlock) {
+    init(block: UISwitchInputBlock, context: UIBlockContext) {
+        self.formKey = block.data?.key
+        self.context = context
         super.init(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
         let toggle = UISwitch(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
-        self.checked = block.data?.value ?? false
-        toggle.isOn = self.checked
+        toggle.isOn = block.data?.value ?? false
+        
+        if let formKey = self.formKey {
+            if let value = self.context?.getFormValueByKey(key: formKey) as? Bool {
+                toggle.isOn = value
+            }
+        }
+        
         if #available(iOS 14.0, *) {
             toggle.addAction(.init(handler: { _ in
-                self.checked = toggle.isOn
+                self.handleValueChange(toggle)
             }), for: .valueChanged)
         } else {
             toggle.addTarget(self, action: #selector(self.handleValueChange(_:)), for: .valueChanged)
@@ -526,7 +615,9 @@ class SwitchInputView: UIControl {
     }
     
     @objc func handleValueChange(_ sender:UISwitch!) {
-        self.checked = sender.isOn
+        if let formKey = self.formKey {
+            self.context?.writeToForm(key: formKey, value: sender.isOn)
+        }
     }
     
     override func layoutSubviews() {
