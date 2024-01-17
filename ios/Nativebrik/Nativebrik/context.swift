@@ -18,41 +18,57 @@ class UIBlockEventManager {
     }
 }
 
+class UIBlockFormManager {
+    var formValues: [String:Any] = [:]
+    func write(key: String, value: Any) {
+        formValues[key] = value
+    }
+    func getByKey(key: String) -> Any? {
+        return formValues[key]
+    }
+}
+
+struct UIBlockContextInit {
+    var data: Any? = nil
+    var properties: [Property]? = nil
+    var event: UIBlockEventManager? = nil
+    var form: UIBlockFormManager? = nil
+    var parentClickListener: ClickListener? = nil
+    var parentDirection: FlexDirection? = nil
+    var loading: Bool? = false
+}
+
 class UIBlockContext {
-    private let data: JSON?
+    // data that page fetched with http request
+    private let data: Any?
+    // page properties
+    private let properties: [Property]?
     private let event: UIBlockEventManager?
+    private let form: UIBlockFormManager?
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
     private var loading: Bool = false
-
-    init(
-        data: JSON?,
-        event: UIBlockEventManager?,
-        parentClickListener: ClickListener?,
-        parentDirection: FlexDirection?,
-        loading: Bool?
-    ) {
-        self.data = data
-        self.event = event
-        self.parentClickListener = parentClickListener
-        self.parentDirection = parentDirection
-        self.loading = loading ?? false
+    
+    init(_ args: UIBlockContextInit) {
+        self.data = args.data
+        self.properties = args.properties
+        self.event = args.event
+        self.form = args.form
+        self.parentClickListener = args.parentClickListener
+        self.parentDirection = args.parentDirection
+        self.loading = args.loading ?? false
     }
 
-    func instanciateFrom(
-        data: JSON?,
-        event: UIBlockEventManager?,
-        parentClickListener: ClickListener?,
-        parentDirection: FlexDirection?,
-        loading: Bool?
-    ) -> UIBlockContext {
-        return UIBlockContext(
-            data: data ?? self.data,
-            event: event ?? self.event,
-            parentClickListener: parentClickListener ?? self.parentClickListener,
-            parentDirection: parentDirection ?? self.parentDirection,
-            loading: loading ?? self.loading
-        )
+    func instanciateFrom(_ args: UIBlockContextInit) -> UIBlockContext {
+        return UIBlockContext(UIBlockContextInit(
+            data: args.data ?? self.data,
+            properties: args.properties ?? self.properties,
+            event: args.event ?? self.event,
+            form: args.form ?? self.form,
+            parentClickListener: args.parentClickListener ?? self.parentClickListener,
+            parentDirection: args.parentDirection ?? self.parentDirection,
+            loading: args.loading ?? self.loading
+        ))
     }
 
     func isLoading() -> Bool {
@@ -69,6 +85,14 @@ class UIBlockContext {
 
     func dipatch(event: UIBlockEventDispatcher) {
         self.event?.dispatch(event: event)
+    }
+    
+    func writeToForm(key: String, value: Any) {
+        self.form?.write(key: key, value: value)
+    }
+    
+    func getFormValueByKey(key: String) -> Any? {
+        self.form?.getByKey(key: key)
     }
 
     /**
@@ -91,7 +115,7 @@ class UIBlockContext {
             }
             if let data = data {
                 let keys = key.split(separator: ".")
-                var current: Any? = data.value
+                var current: Any? = data
                 for key in keys {
                     if current == nil {
                         return nil
