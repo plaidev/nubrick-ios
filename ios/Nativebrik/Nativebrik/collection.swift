@@ -90,13 +90,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     private var gesture: ClickListener? = nil
     required init?(coder aDecoder: NSCoder) {
         self.block = nil
-        self.context = UIBlockContext(
-            data: nil,
-            event: nil,
-            parentClickListener: nil,
-            parentDirection: nil,
-            loading: nil
-        )
+        self.context = UIBlockContext(UIBlockContextInit())
         self.childrenCount = 0
         self.isReferenced = false
         self.data = nil
@@ -173,11 +167,17 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                 let childView = UIViewBlock(
                     data: child,
                     context: self.context.instanciateFrom(
-                        data: JSON(value: childData),
-                        event: nil,
-                        parentClickListener: self.gesture,
-                        parentDirection: self.block?.data?.direction,
-                        loading: nil
+                        UIBlockContextInit(
+                            data: createDataForTemplate(
+                                CreateDataForTemplateOption(
+                                    data: childData,
+                                    properties: nil,
+                                    user: nil
+                                )
+                            ),
+                            parentClickListener: self.gesture,
+                            parentDirection: self.block?.data?.direction
+                        )
                     )
                 )
                 cell.setView(view: childView)
@@ -188,11 +188,10 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                 let childView = UIViewBlock(
                     data: child,
                     context: self.context.instanciateFrom(
-                        data: nil,
-                        event: nil,
-                        parentClickListener: self.gesture,
-                        parentDirection: self.block?.data?.direction,
-                        loading: nil
+                        UIBlockContextInit(
+                            parentClickListener: self.gesture,
+                            parentDirection: self.block?.data?.direction
+                        )
                     )
                 )
                 cell.setView(view: childView)
