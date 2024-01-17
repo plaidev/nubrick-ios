@@ -41,11 +41,10 @@ class FlexView: AnimatedUIControl {
         let gesture = configureOnClickGesture(target: self, action: #selector(onClicked(sender:)), context: context, event: block.data?.onClick)
         let children = block.data?.children?.map {
             uiblockToUIView(data: $0, context: context.instanciateFrom(
-                data: nil,
-                event: nil,
-                parentClickListener: gesture,
-                parentDirection: block.data?.direction,
-                loading: nil
+                UIBlockContextInit(
+                    parentClickListener: gesture,
+                    parentDirection: block.data?.direction
+                )
             ))
         } ?? []
         // somehow, a container.padding won't work when the container size is 100%.
