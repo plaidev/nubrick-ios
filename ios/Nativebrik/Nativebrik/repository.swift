@@ -427,7 +427,7 @@ class ApiHttpRequestRepository {
     }
     
     func fetch(request: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, placeholderReplacer: @escaping (String) -> Any?, callback: @escaping (_ entry: HttpEntry<JSONData>) -> Void) {
-        guard let requestUrl = URL(string: request.url ?? "") else {
+        guard let requestUrl = URL(string: compileTemplate(template: request.url ?? "", getByPath: placeholderReplacer)) else {
             return
         }
         var urlRequest = URLRequest(url: requestUrl)
@@ -448,7 +448,7 @@ class ApiHttpRequestRepository {
             guard let name = header.name else {
                 return
             }
-            let value = header.value ?? ""
+            let value = compileTemplate(template: header.value ?? "", getByPath: placeholderReplacer)
             urlRequest.setValue(value, forHTTPHeaderField: name)
         })
         
