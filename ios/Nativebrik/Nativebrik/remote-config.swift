@@ -93,7 +93,7 @@ public class RemoteConfigVariant {
 
     public func getAsView<V: View>(
         _ key: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncComponentPhase) -> V)
     ) -> some View {
         let componentId = self.get(key)
@@ -123,7 +123,11 @@ public class RemoteConfigVariant {
         return uiview
     }
 
-    public func getAsUIView(_ key: String, onEvent: ((_ event: ComponentEvent) -> Void)?, content: @escaping (_ phase: ComponentPhase) -> UIView) -> UIView? {
+    public func getAsUIView(
+        _ key: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        content: @escaping (_ phase: ComponentPhase) -> UIView
+    ) -> UIView? {
         guard let componentId = self.get(key) else {
             return nil
         }

@@ -44,13 +44,9 @@ class Config {
         self.projectId = ""
     }
 
-    init(projectId: String) {
-        self.projectId = projectId
-    }
-
     init(
         projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) {
         self.projectId = projectId
         if let onEvent = onEvent {
@@ -141,34 +137,10 @@ public class NativebrikClient: ObservableObject {
     public final let experiment: NativebrikExperiment
     public final let user: NativebrikUser
 
-    public init(projectId: String) {
-        self.user = NativebrikUser()
-        self.config = Config(
-            projectId: projectId
-        )
-        self.repositories = Repositories(config: config, user: self.user, interceptor: nil)
-        self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
-        self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
-    }
-
     public init(
         projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?
-    ) {
-        self.user = NativebrikUser()
-        self.config = Config(
-            projectId: projectId,
-            onEvent: onEvent
-        )
-        self.repositories = Repositories(config: config, user: self.user, interceptor: nil)
-        self.overlayVC = OverlayViewController(user: self.user, config: config, repositories: repositories)
-        self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
-    }
-
-    public init(
-        projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?,
-        httpRequestInterceptor: NativebrikHttpRequestInterceptor?
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        httpRequestInterceptor: NativebrikHttpRequestInterceptor? = nil
     ) {
         self.user = NativebrikUser()
         self.config = Config(
@@ -214,27 +186,17 @@ public class NativebrikExperiment {
         self.overlayVC = overlay
     }
 
-    public func embedding(_ id: String) -> some View {
+    public func embedding(
+        _ id: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+    ) -> some View {
         if !isNativebrikAvailable {
             return AnyView(EmptyView())
         }
         return AnyView(EmbeddingSwiftView(
             experimentId: id,
             user: self.user,
-            config: self.config,
-            repositories: self.repositories,
-            modalViewController: self.overlayVC.modalViewController
-        ))
-    }
-
-    public func embedding(_ id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> some View {
-        if !isNativebrikAvailable {
-            return AnyView(EmptyView())
-        }
-        return AnyView(EmbeddingSwiftView(
-            experimentId: id,
-            user: self.user,
-            config: self.config,
+            config: self.config.initFrom(onEvent: onEvent),
             repositories: self.repositories,
             modalViewController: self.overlayVC.modalViewController
         ))
@@ -242,7 +204,7 @@ public class NativebrikExperiment {
 
     public func embedding<V: View>(
         _ id: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncComponentPhase) -> V)
     ) -> some View {
         if !isNativebrikAvailable {
@@ -260,7 +222,7 @@ public class NativebrikExperiment {
 
     public func embedding<I: View, P: View>(
         _ id: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ component: any View) -> I),
         @ViewBuilder placeholder: (@escaping () -> P)
     ) -> some View {
@@ -278,21 +240,10 @@ public class NativebrikExperiment {
         ))
     }
 
-    public func embeddingUIView(_ id: String) -> UIView {
-        if !isNativebrikAvailable {
-            return UIView()
-        }
-        return EmbeddingUIView(
-            experimentId: id,
-            user: self.user,
-            config: self.config,
-            repositories: self.repositories,
-            modalViewController: self.overlayVC.modalViewController,
-            fallback: nil
-        )
-    }
-
-    public func embeddingUIView(_ id: String, onEvent: ((_ event: ComponentEvent) -> Void)?) -> UIView {
+    public func embeddingUIView(
+        _ id: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+    ) -> UIView {
         if !isNativebrikAvailable {
             return UIView()
         }
@@ -306,7 +257,11 @@ public class NativebrikExperiment {
         )
     }
 
-    public func embeddingUIView(_ id: String, onEvent: ((_ event: ComponentEvent) -> Void)?, content: @escaping (_ phase: ComponentPhase) -> UIView) -> UIView {
+    public func embeddingUIView(
+        _ id: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        content: @escaping (_ phase: ComponentPhase) -> UIView
+    ) -> UIView {
         if !isNativebrikAvailable {
             return content(.failure)
         }
@@ -320,7 +275,10 @@ public class NativebrikExperiment {
         )
     }
 
-    public func remoteConfig(_ id: String, phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)) {
+    public func remoteConfig(
+        _ id: String,
+        phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
+    ) {
         if !isNativebrikAvailable {
             phase(.failure)
             return
