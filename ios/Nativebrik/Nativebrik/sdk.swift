@@ -188,6 +188,7 @@ public class NativebrikExperiment {
 
     public func embedding(
         _ id: String,
+        arguments: [String:Any?]? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
         if !isNativebrikAvailable {
@@ -204,6 +205,7 @@ public class NativebrikExperiment {
 
     public func embedding<V: View>(
         _ id: String,
+        arguments: [String:Any?]? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncComponentPhase) -> V)
     ) -> some View {
@@ -222,6 +224,7 @@ public class NativebrikExperiment {
 
     public func embedding<I: View, P: View>(
         _ id: String,
+        arguments: [String:Any?]? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ component: any View) -> I),
         @ViewBuilder placeholder: (@escaping () -> P)
@@ -242,6 +245,7 @@ public class NativebrikExperiment {
 
     public func embeddingUIView(
         _ id: String,
+        arguments: [String:Any?]? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView {
         if !isNativebrikAvailable {
@@ -259,6 +263,7 @@ public class NativebrikExperiment {
 
     public func embeddingUIView(
         _ id: String,
+        arguments: [String:Any?]? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: ComponentPhase) -> UIView
     ) -> UIView {

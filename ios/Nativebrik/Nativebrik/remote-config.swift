@@ -79,12 +79,16 @@ public class RemoteConfigVariant {
         return data
     }
 
-    public func getAsView(_ key: String) -> some View {
+    public func getAsView(
+        _ key: String,
+        arguments: [String:Any?]? = nil,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+    ) -> some View {
         let componentId = self.get(key)
         return ComponentSwiftView(
             experimentId: self.experimentId,
             componentId: componentId ?? "",
-            config: self.config,
+            config: self.config.initFrom(onEvent: onEvent),
             user: self.user,
             repositories: self.repositories,
             modalViewController: self.modalViewController
@@ -93,6 +97,7 @@ public class RemoteConfigVariant {
 
     public func getAsView<V: View>(
         _ key: String,
+        arguments: [String:Any?]? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncComponentPhase) -> V)
     ) -> some View {
@@ -108,12 +113,16 @@ public class RemoteConfigVariant {
         )
     }
 
-    public func getAsUIView(_ key: String) -> UIView? {
+    public func getAsUIView(
+        _ key: String,
+        arguments: [String:Any?]? = nil,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+    ) -> UIView? {
         guard let componentId = self.get(key) else {
             return nil
         }
-        let uiview =  ComponentUIView(
-            config: self.config,
+        let uiview = ComponentUIView(
+            config: self.config.initFrom(onEvent: onEvent),
             user: self.user,
             repositories: self.repositories,
             modalViewController: self.modalViewController,
@@ -125,13 +134,14 @@ public class RemoteConfigVariant {
 
     public func getAsUIView(
         _ key: String,
+        arguments: [String:Any?]? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: ComponentPhase) -> UIView
     ) -> UIView? {
         guard let componentId = self.get(key) else {
             return nil
         }
-        let uiview =  ComponentUIView(
+        let uiview = ComponentUIView(
             config: self.config.initFrom(onEvent: onEvent),
             user: self.user,
             repositories: self.repositories,
