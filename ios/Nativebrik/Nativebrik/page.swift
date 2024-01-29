@@ -163,6 +163,22 @@ class PageView: UIView {
             let assertion = dispatchedEvent.httpResponseAssertion
             let handleEvent = { () -> () in
                 DispatchQueue.main.async {
+                    let event = UIBlockEventDispatcher(
+                        name: dispatchedEvent.name,
+                        destinationPageId: dispatchedEvent.destinationPageId,
+                        deepLink: dispatchedEvent.deepLink,
+                        payload: dispatchedEvent.payload?.map({ prop in
+                            return Property(
+                                name: prop.name ?? "",
+                                value: compileTemplate(template: prop.value ?? "", getByPath: { key in
+                                    return context.getByReferenceKey(key: key)
+                                }),
+                                ptype: prop.ptype ?? PropertyType.STRING
+                            )
+                        }),
+                        httpRequest: dispatchedEvent.httpRequest,
+                        httpResponseAssertion: dispatchedEvent.httpResponseAssertion
+                    )
                     parentEventManager?.dispatch(event: dispatchedEvent)
                 }
             }
