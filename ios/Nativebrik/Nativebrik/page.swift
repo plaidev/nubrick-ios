@@ -179,7 +179,7 @@ class PageView: UIView {
                         httpRequest: dispatchedEvent.httpRequest,
                         httpResponseAssertion: dispatchedEvent.httpResponseAssertion
                     )
-                    parentEventManager?.dispatch(event: dispatchedEvent)
+                    parentEventManager?.dispatch(event: event)
                 }
             }
             if let httpRequest = dispatchedEvent.httpRequest {
