@@ -12,6 +12,7 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "nativebrik-android"
-include ':app'
-include ':nativebrik'
+
+rootProject.name = "Nativebrik android"
+include(":app")
+include(":nativebrik")
