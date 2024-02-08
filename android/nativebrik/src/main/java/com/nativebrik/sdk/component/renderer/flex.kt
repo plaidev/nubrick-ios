@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.nativebrik.sdk.component.provider.event.eventDiaptcherModifier
 import com.nativebrik.sdk.schema.AlignItems
 import com.nativebrik.sdk.schema.FlexDirection
 import com.nativebrik.sdk.schema.FrameData
@@ -143,10 +144,15 @@ fun parseVerticalJustifyContent(gap: Int?, justifyContent: JustifyContent?): Arr
 }
 
 @Composable
-fun Flex(block: UIFlexContainerBlock, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun Flex(
+    block: UIFlexContainerBlock,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     val direction: FlexDirection = block.data?.direction ?: FlexDirection.ROW
     var modifier = framedModifier(modifier, block.data?.frame)
     modifier = overflowModifier(modifier, direction, block.data?.overflow)
+    modifier = eventDiaptcherModifier(modifier, block.data?.onClick)
     val gap = block.data?.gap
     val justifyContent = block.data?.justifyContent
     val alignItems = block.data?.alignItems

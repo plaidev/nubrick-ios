@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.nativebrik.sdk.component.provider.event.eventDiaptcherModifier
 import com.nativebrik.sdk.schema.ImageContentMode
 import com.nativebrik.sdk.schema.UIImageBlock
 import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
@@ -41,7 +42,8 @@ fun parseContentModeToContentScale(contentMode: ImageContentMode?): ContentScale
 
 @Composable
 fun Image(block: UIImageBlock, modifier: Modifier = Modifier) {
-    val modifier = framedModifier(modifier, block.data?.frame)
+    var modifier = framedModifier(modifier, block.data?.frame)
+    modifier = eventDiaptcherModifier(modifier, block.data?.onClick)
 
     val src = block.data?.src ?: "https://example.com/image.jpg"
     val fallback = parseImageFallbackToBlurhash(src)

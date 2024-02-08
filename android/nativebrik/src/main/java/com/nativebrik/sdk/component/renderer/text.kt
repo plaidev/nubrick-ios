@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
+import com.nativebrik.sdk.component.provider.event.eventDiaptcherModifier
 import com.nativebrik.sdk.schema.Color
 import com.nativebrik.sdk.schema.FontDesign
 import com.nativebrik.sdk.schema.FontWeight
@@ -54,7 +55,8 @@ fun parseFontStyle(size: Int?, color: Color?, fontWeight: FontWeight?, fontDesig
 @Composable
 fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
     val value = block.data?.value ?: ""
-    val modifier = framedModifier(modifier, block.data?.frame)
+    var modifier = framedModifier(modifier, block.data?.frame)
+    modifier = eventDiaptcherModifier(modifier, block.data?.onClick)
     val fontStyle = parseFontStyle(
         size = block.data?.size,
         color = block.data?.color,
