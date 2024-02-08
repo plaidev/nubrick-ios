@@ -6,18 +6,19 @@ import com.nativebrik.sdk.data.extraction.extractComponentId
 import com.nativebrik.sdk.data.extraction.extractExperimentConfig
 import com.nativebrik.sdk.data.extraction.extractExperimentVariant
 import com.nativebrik.sdk.data.user.NativebrikUser
+import com.nativebrik.sdk.schema.ApiHttpRequest
 import com.nativebrik.sdk.schema.ExperimentConfigs
 import com.nativebrik.sdk.schema.ExperimentKind
 import com.nativebrik.sdk.schema.ExperimentVariant
 import com.nativebrik.sdk.schema.UIBlock
+import kotlinx.serialization.json.JsonElement
 
 class NotFoundException: Exception("Not found")
 class FailedToDecodeException: Exception("Failed to decode")
+class SkipHttpRequestException: Exception("Skip http request")
 
 interface Container {
-    val experimentRepository: ExperimentRepository
-    val componentRepository: ComponentRepository
-    val trackRepository: TrackRepository
+    suspend fun sendHttpRequest(req: ApiHttpRequest): Result<JsonElement>
 
     suspend fun fetchEmbedding(experimentId: String): Result<UIBlock>
     suspend fun fetchInAppMessage(trigger: String): Result<UIBlock>
@@ -25,14 +26,21 @@ interface Container {
 }
 
 class ContainerImpl(private val config: Config, private val user: NativebrikUser, private val context: Context): Container {
-    override val componentRepository: ComponentRepository by lazy {
+    private val componentRepository: ComponentRepository by lazy {
         ComponentRepositoryImpl(config)
     }
-    override val experimentRepository: ExperimentRepository by lazy {
+    private val experimentRepository: ExperimentRepository by lazy {
         ExperimentRepositoryImpl(config)
     }
-    override val trackRepository: TrackRepository by lazy {
+    private val trackRepository: TrackRepository by lazy {
         TrackRepositoryImpl(config)
+    }
+    private val httpRequestRepository: HttpRequestRepository by lazy {
+        HttpRequestRepositoryImpl()
+    }
+
+    override suspend fun sendHttpRequest(req: ApiHttpRequest): Result<JsonElement> {
+        return this.httpRequestRepository.request(req)
     }
 
     override suspend fun fetchEmbedding(experimentId: String): Result<UIBlock> {
