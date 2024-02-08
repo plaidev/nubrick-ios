@@ -30,7 +30,7 @@ class EmbeddingUIView: ComponentUIView {
             modalViewController: modalViewController,
             fallback: fallback
         )
-        
+
         Task(priority: .userInitiated) {
             await repositories.experiment.fetch(id: experimentId) { entry in
                 DispatchQueue.main.async { [weak self] in
@@ -46,12 +46,12 @@ class EmbeddingUIView: ComponentUIView {
                         self?.renderFallback(phase: .failure)
                         return
                     }
-                    
+
                     if config.kind != .EMBED {
                         self?.renderFallback(phase: .failure)
                         return
                     }
-                    
+
                     let normalizedUsrRnd = self?.user?.getSeededNormalizedUserRnd(seed: config.seed ?? 0) ?? 0.0
                     guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUsrRnd) else {
                         self?.renderFallback(phase: .failure)
@@ -69,16 +69,16 @@ class EmbeddingUIView: ComponentUIView {
                         self?.renderFallback(phase: .failure)
                         return
                     }
-                    
+
                     self?.user?.addExperimentHistoryRecord(experimentId: experimentConfigId)
-                    
+
                     repositories.track.trackExperimentEvent(
                         TrackExperimentEvent(
                             experimentId: experimentConfigId,
                             variantId: variantId
                         )
                     )
-                    
+
                     self?.loadAndTransition(experimentId: experimentConfigId, componentId: componentId)
                 }
             }
@@ -133,16 +133,16 @@ class EmbeddingSwiftViewModel: ComponentSwiftViewModel {
                         self?.phase = .failure
                         return
                     }
-                    
+
                     self?.user.addExperimentHistoryRecord(experimentId: experimentConfigId)
-                    
+
                     repositories.track.trackExperimentEvent(
                         TrackExperimentEvent(
                             experimentId: experimentConfigId,
                             variantId: variantId
                         )
                     )
-                    
+
                     self?.fetchComponentAndUpdatePhase(
                         experimentId: experimentConfigId,
                         componentId: componentId,
