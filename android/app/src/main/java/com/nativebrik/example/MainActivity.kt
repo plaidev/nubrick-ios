@@ -15,6 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nativebrik.example.ui.theme.NativebrikAndroidTheme
 import com.nativebrik.sdk.Config
+import com.nativebrik.sdk.Nativebrik
 import com.nativebrik.sdk.NativebrikClient
 import com.nativebrik.sdk.NativebrikProvider
 
@@ -35,8 +36,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         Column {
                             Greeting("Android")
-//                            nativebrik.experiment.embedding2("EMBEDDING_FOR_E2E")
-                            nativebrik.experiment.embedding2(
+                            Nativebrik.client.experiment.embedding(
                                 "SCROLLABLE_CONTENT",
                                 modifier = Modifier.height(300f.dp)
                             )
