@@ -5,7 +5,10 @@ import androidx.compose.ui.Modifier
 import com.nativebrik.sdk.schema.UIPageBlock
 
 @Composable
-fun Page(block: UIPageBlock, modifier: Modifier = Modifier) {
+fun Page(
+    block: UIPageBlock,
+    modifier: Modifier = Modifier,
+) {
     val renderAs = block.data?.renderAs ?: return Unit
     Block(block = renderAs, modifier)
 }
