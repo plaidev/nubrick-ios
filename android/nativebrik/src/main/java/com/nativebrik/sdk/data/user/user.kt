@@ -198,7 +198,7 @@ class NativebrikUser {
             UserProperty(
                 name = BuiltinUserProperty.localWeekday.toString(),
                 value = now.dayOfWeek.toString(),
-                type = UserPropertyType.INTEGER,
+                type = UserPropertyType.STRING,
             )
         ))
 
