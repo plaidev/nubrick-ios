@@ -32,7 +32,13 @@ fun rememberEmbeddingState(container: Container, experimentId: String): Embeddin
         container.fetchEmbedding(experimentId).onSuccess {
             when (it) {
                 is UIBlock.UnionUIRootBlock -> {
-                    loadingState = EmbeddingLoadingState.Completed { Root(root = it.data, Modifier.fillMaxHeight().fillMaxWidth()) }
+                    loadingState = EmbeddingLoadingState.Completed {
+                        Root(
+                            container = container,
+                            root = it.data,
+                            Modifier.fillMaxHeight().fillMaxWidth()
+                        )
+                    }
                 }
                 else -> {
                     loadingState = EmbeddingLoadingState.NotFound()
@@ -50,7 +56,12 @@ fun rememberEmbeddingState(container: Container, experimentId: String): Embeddin
 }
 
 @Composable
-fun Embedding(container: Container, experimentId: String, modifier: Modifier = Modifier, content: (@Composable() (state: EmbeddingLoadingState) -> Unit)?) {
+fun Embedding(
+    container: Container,
+    experimentId: String,
+    modifier: Modifier = Modifier,
+    content: (@Composable() (state: EmbeddingLoadingState) -> Unit)?
+) {
     val state = rememberEmbeddingState(container, experimentId)
     val render = content ?: { state ->
         when (state) {
