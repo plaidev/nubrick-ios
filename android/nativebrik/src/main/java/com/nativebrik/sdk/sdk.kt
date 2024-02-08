@@ -7,16 +7,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.nativebrik.sdk.component.Embedding
 import com.nativebrik.sdk.component.EmbeddingLoadingState
-import com.nativebrik.sdk.component.renderer.Flex
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.ContainerImpl
 import com.nativebrik.sdk.data.user.NativebrikUser
-import com.nativebrik.sdk.schema.UIFlexContainerBlock
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -28,8 +27,18 @@ data class Config(
     val endpoint: Endpoint = Endpoint()
 ) {}
 
-var LocalNativebrikClient = compositionLocalOf<NativebrikClient> {
+internal var LocalNativebrikClient = compositionLocalOf<NativebrikClient> {
     error("NativebrikClient is not found")
+}
+
+public object Nativebrik {
+    /**
+     * Retrieves the current [NativebrikClient] at the call site's position in the hierarchy.
+     */
+    val client: NativebrikClient
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalNativebrikClient.current
 }
 
 @Composable
@@ -72,17 +81,7 @@ public class NativebrikExperiment {
     }
 
     @Composable
-    public fun embedding() {
-        Flex(block = UIFlexContainerBlock(id = null, data = null)) {
-            BasicText(text = "ToToToToTo")
-            BasicText(text = "ToToToToTo")
-
-            BasicText(text = "ToToToToTo")
-        }
-    }
-
-    @Composable
-    public fun embedding2(id: String, modifier: Modifier = Modifier) {
+    public fun embedding(id: String, modifier: Modifier = Modifier) {
         Embedding(container = this.container, id, modifier) { state ->
             when (state) {
                 is EmbeddingLoadingState.Completed -> state.view()
