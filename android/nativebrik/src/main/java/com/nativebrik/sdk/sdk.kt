@@ -1,10 +1,15 @@
 package com.nativebrik.sdk
 
 import android.content.Context
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
@@ -56,7 +61,7 @@ public fun NativebrikProvider(
 
 public class NativebrikClient {
     private final val config: Config
-    private final val user: NativebrikUser
+    public final val user: NativebrikUser
     public final val experiment: NativebrikExperiment
 
     public constructor(config: Config, context: Context) {
@@ -80,28 +85,41 @@ public class NativebrikExperiment {
         )
     }
 
+    public fun dispatch(name: String) {}
+
     @Composable
     public fun embedding(id: String, modifier: Modifier = Modifier) {
         Embedding(container = this.container, id, modifier) { state ->
-            when (state) {
-                is EmbeddingLoadingState.Completed -> state.view()
-                is EmbeddingLoadingState.Loading -> Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BasicText(text = "Loading")
+            AnimatedContent(
+                targetState = state,
+                label = "",
+                transitionSpec = {
+                    fadeIn() togetherWith fadeOut()
                 }
-                else -> Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BasicText(text = "Not Found")
+            ) { state ->
+                when (state) {
+                    is EmbeddingLoadingState.Completed -> state.view()
+                    is EmbeddingLoadingState.Loading -> Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    else -> Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BasicText(text = "Not Found")
+                    }
                 }
             }
         }
     }
 
+    @Composable
     fun remoteConfig() {}
+
+    fun remoteConfigAsValue() {}
 }
