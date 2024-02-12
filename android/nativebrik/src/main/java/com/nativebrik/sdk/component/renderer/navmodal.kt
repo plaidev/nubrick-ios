@@ -1,45 +1,50 @@
 package com.nativebrik.sdk.component.renderer
 
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import android.os.Build
+import android.window.OnBackInvokedDispatcher
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalView
 import com.nativebrik.sdk.schema.UIPageBlock
-
 @Composable
-fun NavigationHeader() {
-    IconButton(onClick = { /*TODO*/ }) {
-        Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+fun ModalBottomSheetBackHandler(handler: () -> Unit) {
+    val view = rememberUpdatedState(LocalView.current)
+    DisposableEffect(handler) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            view.value.findOnBackInvokedDispatcher()?.registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_OVERLAY,
+                handler
+            )
+        }
+        onDispose {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                view.value.findOnBackInvokedDispatcher()?.unregisterOnBackInvokedCallback(handler)
+            }
+        }
     }
 }
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NavigatedModal(
-    block: UIPageBlock,
-    onDismiss: () -> Unit,
-    content: @Composable() () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState()
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        modifier = Modifier
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures { change, dragAmount ->
-
+fun NavigationHeader(index: Int, block: UIPageBlock, onClose: () -> Unit, onBack: () -> Unit) {
+    val visibility = block.data?.modalNavigationBackButton?.visible ?: true
+    Box {
+        if (visibility) {
+            if (index > 0) {
+                IconButton(onClick = { onBack() }) {
+                    Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                }
+            } else {
+                IconButton(onClick = { onClose() }) {
+                    Icon(imageVector = Icons.Outlined.Close, contentDescription = "Close")
                 }
             }
-    ) {
-        NavigationHeader()
-        content()
+        }
     }
 }
