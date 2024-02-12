@@ -168,6 +168,7 @@ public class NativebrikClient: ObservableObject {
         return AnyView(OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0))
     }
 
+    @available(*, deprecated, renamed: "NativebrikClient.experiment.dispatch", message: "use NativebrikClient.experiment.dispatch instead of NativebrikClient.dispatch")
     public func dispatch(event: NativebrikEvent) {
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
@@ -184,6 +185,10 @@ public class NativebrikExperiment {
         self.config = config
         self.repositories = repositories
         self.overlayVC = overlay
+    }
+    
+    public func dispatch(event: NativebrikEvent) {
+        self.overlayVC.triggerViewController.dispatch(event: event)
     }
 
     public func embedding(
