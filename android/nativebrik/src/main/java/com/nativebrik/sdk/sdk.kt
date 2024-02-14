@@ -88,7 +88,7 @@ public class NativebrikExperiment {
     public fun dispatch(name: String) {}
 
     @Composable
-    public fun embedding(id: String, modifier: Modifier = Modifier) {
+    public fun Embedding(id: String, modifier: Modifier = Modifier) {
         Embedding(container = this.container, id, modifier) { state ->
             AnimatedContent(
                 targetState = state,
@@ -119,7 +119,7 @@ public class NativebrikExperiment {
     }
 
     @Composable
-    fun remoteConfig() {}
+    public fun RemoteConfig() {}
 
-    fun remoteConfigAsValue() {}
+    public fun remoteConfig() {}
 }
