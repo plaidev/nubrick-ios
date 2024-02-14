@@ -6,6 +6,7 @@ package com.nativebrik.sdk.schema
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -197,7 +198,7 @@ class ApiHttpHeader (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -220,7 +221,7 @@ class ApiHttpRequest (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -283,7 +284,7 @@ class ApiHttpResponseAssertion (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -307,7 +308,7 @@ class BoxShadow (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -430,7 +431,7 @@ class Color (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -499,7 +500,7 @@ class ExperimentCondition (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -528,7 +529,7 @@ class ExperimentConfig (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -559,7 +560,7 @@ class ExperimentConfigs (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -582,7 +583,7 @@ class ExperimentFrequency (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -636,7 +637,7 @@ class ExperimentVariant (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -775,7 +776,7 @@ class FrameData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -956,7 +957,7 @@ class NavigationBackButton (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1047,7 +1048,7 @@ class Property (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1132,7 +1133,7 @@ class TriggerEventDef (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1195,7 +1196,7 @@ class TriggerSetting (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1223,6 +1224,12 @@ sealed class UIBlock {
 	companion object {
 		fun decode(element: JsonElement?): UIBlock? {
 			if (element == null) {
+				return null
+			}
+			if (element is JsonNull) {
+				return null
+			}
+			if (element !is JsonObject) {
 				return null
 			}
 			val typename = element.jsonObject["__typename"] ?: return null
@@ -1265,7 +1272,7 @@ class UIBlockEventDispatcher (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1292,7 +1299,7 @@ class UICarouselBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1315,7 +1322,7 @@ class UICarouselBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1340,7 +1347,7 @@ class UICollectionBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1369,7 +1376,7 @@ class UICollectionBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1400,7 +1407,7 @@ class UIFlexContainerBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1427,7 +1434,7 @@ class UIFlexContainerBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1456,7 +1463,7 @@ class UIImageBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1479,7 +1486,7 @@ class UIImageBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1502,7 +1509,7 @@ class UIMultiSelectInputBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1531,7 +1538,7 @@ class UIMultiSelectInputBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1564,7 +1571,7 @@ class UIPageBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1594,7 +1601,7 @@ class UIPageBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1626,7 +1633,7 @@ class UIPageBlockPosition (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1647,7 +1654,7 @@ class UIRootBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1668,7 +1675,7 @@ class UIRootBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1691,7 +1698,7 @@ class UISelectInputBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1719,7 +1726,7 @@ class UISelectInputBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1749,7 +1756,7 @@ class UISelectInputOption (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1770,7 +1777,7 @@ class UISwitchInputBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1792,7 +1799,7 @@ class UISwitchInputBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1814,7 +1821,7 @@ class UITextBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1840,7 +1847,7 @@ class UITextBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1866,7 +1873,7 @@ class UITextInputBlock (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1899,7 +1906,7 @@ class UITextInputBlockData (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1970,7 +1977,7 @@ class UITooltipMessage (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
@@ -1991,7 +1998,7 @@ class VariantConfig (
 			if (element == null) {
 				return null
 			}
-			if (element is JsonNull) {
+			if (element !is JsonObject) {
 				return null
 			}
 
