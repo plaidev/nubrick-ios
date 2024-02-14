@@ -6,11 +6,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-interface HttpRequestRepository {
+internal interface HttpRequestRepository {
     suspend fun request(req: ApiHttpRequest): Result<JsonElement>
 }
 
-class HttpRequestRepositoryImpl(): HttpRequestRepository {
+internal class HttpRequestRepositoryImpl(): HttpRequestRepository {
     override suspend fun request(req: ApiHttpRequest): Result<JsonElement> {
         return withContext(Dispatchers.IO) {
             val url = req.url ?: return@withContext Result.failure(SkipHttpRequestException())

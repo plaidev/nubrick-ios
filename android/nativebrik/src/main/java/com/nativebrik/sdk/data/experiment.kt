@@ -7,12 +7,12 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
-interface ExperimentRepository {
+internal interface ExperimentRepository {
     suspend fun fetchExperimentConfigs(id: String): Result<ExperimentConfigs>
     suspend fun fetchTriggerExperimentConfigs(name: String): Result<ExperimentConfigs>
 }
 
-class ExperimentRepositoryImpl(private val config: Config): ExperimentRepository {
+internal class ExperimentRepositoryImpl(private val config: Config): ExperimentRepository {
     override suspend fun fetchExperimentConfigs(
         id: String
     ): Result<ExperimentConfigs> {

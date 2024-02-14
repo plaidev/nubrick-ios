@@ -8,14 +8,14 @@ import com.nativebrik.sdk.schema.ExperimentConfigs
 import com.nativebrik.sdk.schema.ExperimentFrequency
 import com.nativebrik.sdk.schema.ExperimentVariant
 
-fun extractComponentId(variant: ExperimentVariant): String? {
+internal fun extractComponentId(variant: ExperimentVariant): String? {
     val configs = variant.configs?.let { it } ?: return null
     if (configs.isEmpty()) return null
     val id = configs.firstOrNull()
     return id?.value
 }
 
-fun extractExperimentVariant(config: ExperimentConfig, normalizedUserRnd: Double): ExperimentVariant? {
+internal fun extractExperimentVariant(config: ExperimentConfig, normalizedUserRnd: Double): ExperimentVariant? {
     val baseline = config.baseline?.let { it } ?: return null
     val variants = config.variants?.let { it } ?: return baseline
     if (variants.isEmpty()) return baseline
@@ -50,7 +50,7 @@ fun extractExperimentVariant(config: ExperimentConfig, normalizedUserRnd: Double
     return null
 }
 
-fun extractExperimentConfig(
+internal fun extractExperimentConfig(
     configs: ExperimentConfigs,
     properties: (seed: Int?) -> List<UserProperty>,
     records: (experimentId: String) -> List<Double>,
@@ -74,7 +74,7 @@ fun extractExperimentConfig(
     }
 }
 
-fun isInDistributionTarget(distribution: List<ExperimentCondition>?, properties: List<UserProperty>): Boolean {
+internal fun isInDistributionTarget(distribution: List<ExperimentCondition>?, properties: List<UserProperty>): Boolean {
     val props = properties.associateBy { property -> property.name }
     val foundNotMatched = distribution?.firstOrNull { condition ->
         val propKey = condition.property ?: return@firstOrNull true
@@ -90,7 +90,7 @@ fun isInDistributionTarget(distribution: List<ExperimentCondition>?, properties:
     return foundNotMatched == null
 }
 
-fun isNotInFrequency(frequency: ExperimentFrequency?, records: List<Double>): Boolean {
+internal fun isNotInFrequency(frequency: ExperimentFrequency?, records: List<Double>): Boolean {
     return true
 }
 

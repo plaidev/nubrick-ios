@@ -8,7 +8,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 
-fun createVariableForTemplate(
+internal fun createVariableForTemplate(
     user: NativebrikUser? = null,
     data: JsonElement? = null,
     properties: List<Property>? = null,
@@ -27,7 +27,7 @@ fun createVariableForTemplate(
 }
 
 @OptIn(ExperimentalSerializationApi::class)
-fun mergeVariableForTemplate(
+internal fun mergeVariableForTemplate(
     a: JsonElement,
     b: JsonElement
 ): JsonElement {

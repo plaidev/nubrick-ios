@@ -17,13 +17,13 @@ import com.nativebrik.sdk.template.compile
 import com.nativebrik.sdk.template.hasPlaceholder
 import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
 
-data class ImageFallback(
+internal data class ImageFallback(
     val blurhash: String,
     val width: Int,
     val height: Int,
 ){}
 
-fun parseImageFallbackToBlurhash(src: String): ImageFallback {
+internal fun parseImageFallbackToBlurhash(src: String): ImageFallback {
     val none = ImageFallback(blurhash = "", width = 0, height = 0)
     try {
         val uri = Uri.parse(src)
@@ -36,7 +36,7 @@ fun parseImageFallbackToBlurhash(src: String): ImageFallback {
     }
 }
 
-fun parseContentModeToContentScale(contentMode: ImageContentMode?): ContentScale {
+internal fun parseContentModeToContentScale(contentMode: ImageContentMode?): ContentScale {
     return when (contentMode) {
         ImageContentMode.FILL -> ContentScale.Crop
         ImageContentMode.FIT -> ContentScale.Fit
@@ -45,7 +45,7 @@ fun parseContentModeToContentScale(contentMode: ImageContentMode?): ContentScale
 }
 
 @Composable
-fun Image(block: UIImageBlock, modifier: Modifier = Modifier) {
+internal fun Image(block: UIImageBlock, modifier: Modifier = Modifier) {
     val data = DataContext.state
     val loading = data.loading
     var src = block.data?.src ?: ""

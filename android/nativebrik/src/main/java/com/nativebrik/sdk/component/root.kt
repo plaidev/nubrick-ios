@@ -35,7 +35,7 @@ import com.nativebrik.sdk.schema.UIRootBlock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-class RootViewModel: ViewModel {
+internal class RootViewModel: ViewModel {
     private val root: UIRootBlock
     private val pages: List<UIPageBlock>;
     val displayedPageBlock = mutableStateOf<UIPageBlock?>(null)
@@ -155,7 +155,7 @@ class RootViewModel: ViewModel {
 }
 
 @Composable
-fun ModalPage(
+internal fun ModalPage(
     container: Container,
     listener: (event: UIBlockEventDispatcher) -> Unit,
     block: UIPageBlock,
@@ -170,12 +170,12 @@ fun ModalPage(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Root(
+internal fun Root(
+    modifier: Modifier = Modifier,
     container: Container,
     root: UIRootBlock,
     embeddingVisibility: Boolean = true,
     onDismiss: ((root: UIRootBlock) -> Unit) = {},
-    modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()

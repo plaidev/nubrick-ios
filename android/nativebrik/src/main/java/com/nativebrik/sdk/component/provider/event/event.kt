@@ -26,8 +26,8 @@ internal var LocalEventListener = compositionLocalOf<EventListenerState> {
     error("LocalEventListener is not found")
 }
 
-data class EventListenerState(
-    private val listener: (event: UIBlockEventDispatcher) -> Unit
+internal data class EventListenerState(
+    internal val listener: (event: UIBlockEventDispatcher) -> Unit
 ) {
     fun dispatch(event: UIBlockEventDispatcher) {
         this.listener(event)
@@ -35,7 +35,7 @@ data class EventListenerState(
 }
 
 @Composable
-fun rememberEventListenerState(
+internal fun rememberEventListenerState(
     listener: (event: UIBlockEventDispatcher) -> Unit
 ): EventListenerState {
     var state: EventListenerState by remember {
@@ -47,7 +47,7 @@ fun rememberEventListenerState(
 }
 
 @Composable
-fun EventListenerProvider(
+internal fun EventListenerProvider(
     listener: (event: UIBlockEventDispatcher) -> Unit,
     content: @Composable() () -> Unit,
 ) {
@@ -60,7 +60,7 @@ fun EventListenerProvider(
 }
 
 @Composable
-fun Modifier.eventDispatcher(eventDispatcher: UIBlockEventDispatcher?): Modifier {
+internal fun Modifier.eventDispatcher(eventDispatcher: UIBlockEventDispatcher?): Modifier {
     return composed {
         val eventListener = LocalEventListener.current
         val eventDispatcher = eventDispatcher ?: return@composed this
@@ -71,7 +71,7 @@ fun Modifier.eventDispatcher(eventDispatcher: UIBlockEventDispatcher?): Modifier
 }
 
 @Composable
-fun Modifier.skeleton(enable: Boolean = false): Modifier {
+internal fun Modifier.skeleton(enable: Boolean = false): Modifier {
     return composed {
         if (!enable) return@composed this
 

@@ -14,7 +14,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalView
 import com.nativebrik.sdk.schema.UIPageBlock
 @Composable
-fun ModalBottomSheetBackHandler(handler: () -> Unit) {
+internal fun ModalBottomSheetBackHandler(handler: () -> Unit) {
     val view = rememberUpdatedState(LocalView.current)
     DisposableEffect(handler) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -32,7 +32,7 @@ fun ModalBottomSheetBackHandler(handler: () -> Unit) {
 }
 
 @Composable
-fun NavigationHeader(index: Int, block: UIPageBlock, onClose: () -> Unit, onBack: () -> Unit) {
+internal fun NavigationHeader(index: Int, block: UIPageBlock, onClose: () -> Unit, onBack: () -> Unit) {
     val visibility = block.data?.modalNavigationBackButton?.visible ?: true
     Box {
         if (visibility) {

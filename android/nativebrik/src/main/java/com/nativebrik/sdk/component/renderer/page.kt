@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import com.nativebrik.sdk.schema.UIPageBlock
 
 @Composable
-fun Page(
+internal fun Page(
     block: UIPageBlock,
     modifier: Modifier = Modifier,
 ) {

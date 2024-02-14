@@ -7,11 +7,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
-interface ComponentRepository {
+internal interface ComponentRepository {
     suspend fun fetchComponent(experimentId: String, id: String): Result<UIBlock>
 }
 
-class ComponentRepositoryImpl(private val config: Config): ComponentRepository {
+internal class ComponentRepositoryImpl(private val config: Config): ComponentRepository {
     override suspend fun fetchComponent(experimentId: String, id: String): Result<UIBlock> {
         return withContext(Dispatchers.IO) {
             val url = config.endpoint.cdn + "/projects/" + config.projectId + "/experiments/components/" + experimentId + "/" + id

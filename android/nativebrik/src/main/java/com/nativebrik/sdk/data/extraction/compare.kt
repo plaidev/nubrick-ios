@@ -8,7 +8,7 @@ import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 import kotlin.math.absoluteValue
 
-fun comparePropWithConditionValue(prop: UserProperty, value: String, op: ConditionOperator): Boolean {
+internal fun comparePropWithConditionValue(prop: UserProperty, value: String, op: ConditionOperator): Boolean {
     val values = value.split(",")
     return when (prop.type) {
         UserPropertyType.INTEGER -> {
@@ -38,7 +38,7 @@ fun comparePropWithConditionValue(prop: UserProperty, value: String, op: Conditi
     }
 }
 
-fun compareInteger(a: Int, b: List<Int>, op: ConditionOperator): Boolean {
+internal fun compareInteger(a: Int, b: List<Int>, op: ConditionOperator): Boolean {
     return when (op) {
         ConditionOperator.Equal -> {
             if (b.isEmpty()) {
@@ -98,7 +98,7 @@ fun compareInteger(a: Int, b: List<Int>, op: ConditionOperator): Boolean {
 }
 
 
-fun compareLong(a: Long, b: List<Long>, op: ConditionOperator): Boolean {
+internal fun compareLong(a: Long, b: List<Long>, op: ConditionOperator): Boolean {
     return when (op) {
         ConditionOperator.Equal -> {
             if (b.isEmpty()) {
@@ -158,7 +158,7 @@ fun compareLong(a: Long, b: List<Long>, op: ConditionOperator): Boolean {
 }
 
 
-fun compareString(a: String, b: List<String>, op: ConditionOperator): Boolean {
+internal fun compareString(a: String, b: List<String>, op: ConditionOperator): Boolean {
     return when (op) {
         ConditionOperator.Regex -> {
             if (b.isEmpty()) {
@@ -223,7 +223,7 @@ fun compareString(a: String, b: List<String>, op: ConditionOperator): Boolean {
     }
 }
 
-fun compareSemver(a: String, b: List<String>, op: ConditionOperator): Boolean {
+internal fun compareSemver(a: String, b: List<String>, op: ConditionOperator): Boolean {
     return when (op) {
         ConditionOperator.Equal -> {
             if (b.isEmpty()) {
@@ -289,7 +289,7 @@ fun compareSemver(a: String, b: List<String>, op: ConditionOperator): Boolean {
 }
 
 
-fun compareSemverAsComparisonResult(lhs: String, rhs: String): Int {
+internal fun compareSemverAsComparisonResult(lhs: String, rhs: String): Int {
     val versionDelimiter = "."
     var lhsComponents = lhs.split(versionDelimiter)
     var rhsComponents = rhs.split(versionDelimiter)
@@ -310,7 +310,7 @@ fun compareSemverAsComparisonResult(lhs: String, rhs: String): Int {
     }
 }
 
-fun containsPattern(input: String, pattern: String): Boolean {
+internal fun containsPattern(input: String, pattern: String): Boolean {
     return try {
         val regex = Pattern.compile(pattern)
         regex.matcher(input).find()

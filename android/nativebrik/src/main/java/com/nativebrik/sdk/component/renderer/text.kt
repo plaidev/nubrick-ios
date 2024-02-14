@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color as PrimitiveColor
 import androidx.compose.ui.text.font.FontFamily as PrimitiveFontFamily
 import androidx.compose.ui.text.font.FontWeight as PrimitiveFontWeight
 
-fun parseFontDesign(fontDesign: FontDesign?): PrimitiveFontFamily {
+internal fun parseFontDesign(fontDesign: FontDesign?): PrimitiveFontFamily {
     return when (fontDesign) {
         FontDesign.DEFAULT -> PrimitiveFontFamily.Default
         FontDesign.ROUNDED -> PrimitiveFontFamily.Cursive
@@ -29,7 +29,7 @@ fun parseFontDesign(fontDesign: FontDesign?): PrimitiveFontFamily {
 }
 
 
-fun parseFontWeight(fontWeight: FontWeight?): PrimitiveFontWeight {
+internal fun parseFontWeight(fontWeight: FontWeight?): PrimitiveFontWeight {
     return when (fontWeight) {
         FontWeight.ULTRA_LIGHT -> PrimitiveFontWeight.ExtraLight
         FontWeight.THIN -> PrimitiveFontWeight.Thin
@@ -44,7 +44,7 @@ fun parseFontWeight(fontWeight: FontWeight?): PrimitiveFontWeight {
     }
 }
 
-fun parseFontStyle(size: Int?, color: Color?, fontWeight: FontWeight?, fontDesign: FontDesign?, transparent: Boolean = false): TextStyle {
+internal fun parseFontStyle(size: Int?, color: Color?, fontWeight: FontWeight?, fontDesign: FontDesign?, transparent: Boolean = false): TextStyle {
     val textColor = parseColorForText(color) ?: PrimitiveColor.Black // get from theme
     return TextStyle.Default.copy(
         color = if (transparent) PrimitiveColor.Transparent else textColor,
@@ -55,7 +55,7 @@ fun parseFontStyle(size: Int?, color: Color?, fontWeight: FontWeight?, fontDesig
 }
 
 @Composable
-fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
+internal fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
     val data = DataContext.state
     val loading = data.loading
     var value = block.data?.value ?: ""

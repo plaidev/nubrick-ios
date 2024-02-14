@@ -18,11 +18,11 @@ fun getNativebrikUserSharedPreferences(context: Context): SharedPreferences? {
     )
 }
 
-fun getCurrentDate(): ZonedDateTime {
+internal fun getCurrentDate(): ZonedDateTime {
     return ZonedDateTime.now()
 }
 
-fun formatISO8601(time: ZonedDateTime): String {
+internal fun formatISO8601(time: ZonedDateTime): String {
     return time.format(DateTimeFormatter.ISO_INSTANT)
 }
 

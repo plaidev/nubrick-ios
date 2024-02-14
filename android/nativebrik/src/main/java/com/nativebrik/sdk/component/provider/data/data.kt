@@ -20,12 +20,12 @@ internal var LocalData = compositionLocalOf<DataState> {
     error("LocalData is not found")
 }
 
-data class DataState(
+internal data class DataState(
     val loading: Boolean,
     val data: JsonElement
 )
 
-object DataContext {
+internal object DataContext {
     /**
      * Retrieves the current [DataState] at the call site's position in the hierarchy.
      */
@@ -79,7 +79,7 @@ internal fun rememberNestedDataState(
 }
 
 @Composable
-fun NestedDataProvider(
+internal fun NestedDataProvider(
     data: JsonElement,
     content: @Composable() () -> Unit
 ) {
@@ -92,7 +92,7 @@ fun NestedDataProvider(
 }
 
 @Composable
-fun PageDataProvider(
+internal fun PageDataProvider(
     container: Container,
     request: ApiHttpRequest?,
     content: @Composable() () -> Unit

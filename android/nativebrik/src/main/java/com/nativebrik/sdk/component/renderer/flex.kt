@@ -29,7 +29,7 @@ import com.nativebrik.sdk.schema.Overflow
 import com.nativebrik.sdk.schema.UIFlexContainerBlock
 import com.nativebrik.sdk.schema.Color as SchemaColor
 
-fun framedModifier(modifier: Modifier, frame: FrameData?): Modifier {
+internal fun framedModifier(modifier: Modifier, frame: FrameData?): Modifier {
     var mod: Modifier = modifier
 
     // size should be set most lastly to make padding insets.
@@ -77,7 +77,7 @@ fun framedModifier(modifier: Modifier, frame: FrameData?): Modifier {
 }
 
 @Composable
-fun overflowModifier(modifier: Modifier, direction: FlexDirection, overflow: Overflow?): Modifier {
+internal fun overflowModifier(modifier: Modifier, direction: FlexDirection, overflow: Overflow?): Modifier {
     val overflow = overflow ?: return modifier
     if (overflow != Overflow.SCROLL) return modifier
     if (direction == FlexDirection.ROW) {
@@ -89,7 +89,7 @@ fun overflowModifier(modifier: Modifier, direction: FlexDirection, overflow: Ove
     }
 }
 
-fun parseColor(color: SchemaColor?): Color {
+internal fun parseColor(color: SchemaColor?): Color {
     return Color(
         red = color?.red ?: 0f,
         green = color?.green ?: 0f,
@@ -98,12 +98,12 @@ fun parseColor(color: SchemaColor?): Color {
     )
 }
 
-fun parseColorForText(color: SchemaColor?): Color? {
+internal fun parseColorForText(color: SchemaColor?): Color? {
     if (color?.red == null) return null
     return parseColor(color)
 }
 
-fun parseHorizontalAlignItems(alignItems: AlignItems?): Alignment.Horizontal {
+internal fun parseHorizontalAlignItems(alignItems: AlignItems?): Alignment.Horizontal {
     return when (alignItems) {
         AlignItems.START -> Alignment.Start
         AlignItems.CENTER -> Alignment.CenterHorizontally
@@ -112,7 +112,7 @@ fun parseHorizontalAlignItems(alignItems: AlignItems?): Alignment.Horizontal {
     }
 }
 
-fun parseVerticalAlignItems(alignItems: AlignItems?): Alignment.Vertical {
+internal fun parseVerticalAlignItems(alignItems: AlignItems?): Alignment.Vertical {
     return when (alignItems) {
         AlignItems.START -> Alignment.Top
         AlignItems.CENTER -> Alignment.CenterVertically
@@ -121,7 +121,7 @@ fun parseVerticalAlignItems(alignItems: AlignItems?): Alignment.Vertical {
     }
 }
 
-fun parseHorizontalJustifyContent(gap: Int?, justifyContent: JustifyContent?): Arrangement.Horizontal {
+internal fun parseHorizontalJustifyContent(gap: Int?, justifyContent: JustifyContent?): Arrangement.Horizontal {
     val gap = gap?.dp ?: 0.dp
     return when (justifyContent) {
         JustifyContent.START -> Arrangement.spacedBy(gap, Alignment.Start)
@@ -132,7 +132,7 @@ fun parseHorizontalJustifyContent(gap: Int?, justifyContent: JustifyContent?): A
     }
 }
 
-fun parseVerticalJustifyContent(gap: Int?, justifyContent: JustifyContent?): Arrangement.Vertical {
+internal fun parseVerticalJustifyContent(gap: Int?, justifyContent: JustifyContent?): Arrangement.Vertical {
     val gap = gap?.dp ?: 0.dp
     return when (justifyContent) {
         JustifyContent.START -> Arrangement.spacedBy(gap, Alignment.Top)
@@ -144,7 +144,7 @@ fun parseVerticalJustifyContent(gap: Int?, justifyContent: JustifyContent?): Arr
 }
 
 @Composable
-fun Flex(
+internal fun Flex(
     block: UIFlexContainerBlock,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,

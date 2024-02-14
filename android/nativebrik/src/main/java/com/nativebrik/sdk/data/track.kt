@@ -17,7 +17,7 @@ import java.util.Timer
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.fixedRateTimer
 
-data class TrackUserEvent(
+internal data class TrackUserEvent(
     val name: String,
     val timestamp: ZonedDateTime = getCurrentDate(),
 ) {
@@ -30,7 +30,7 @@ data class TrackUserEvent(
     }
 }
 
-data class TrackExperimentEvent(
+internal data class TrackExperimentEvent(
     val experimentId: String,
     val variantId: String,
     val timestamp: ZonedDateTime = getCurrentDate(),
@@ -45,7 +45,7 @@ data class TrackExperimentEvent(
     }
 }
 
-sealed class TrackEvent {
+internal sealed class TrackEvent {
     class UserEvent(val event: TrackUserEvent) : TrackEvent()
     class ExperimentEvent(val event: TrackExperimentEvent) : TrackEvent()
 
@@ -57,12 +57,12 @@ sealed class TrackEvent {
     }
 }
 
-interface TrackRepository {
+internal interface TrackRepository {
     fun trackExperimentEvent(event: TrackExperimentEvent)
     fun trackEvent(event: TrackUserEvent)
 }
 
-class TrackRepositoryImpl: TrackRepository {
+internal class TrackRepositoryImpl: TrackRepository {
     private val queueLock: ReentrantLock = ReentrantLock()
     private val config: Config
     private var timer: Timer? = null

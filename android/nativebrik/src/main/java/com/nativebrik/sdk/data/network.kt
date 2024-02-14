@@ -9,7 +9,7 @@ import java.net.URL
 const val CONNECT_TIMEOUT = 10 * 1000
 const val READ_TIMEOUT = 5 * 1000
 
-fun getRequest(endpoint: String): Result<String> {
+internal fun getRequest(endpoint: String): Result<String> {
     var connection: HttpURLConnection? = null
     try {
         val url = URL(endpoint)
@@ -44,7 +44,7 @@ fun getRequest(endpoint: String): Result<String> {
     }
 }
 
-fun postRequest(endpoint: String, data: String): Result<String> {
+internal fun postRequest(endpoint: String, data: String): Result<String> {
     var connection: HttpURLConnection? = null
     try {
         val url = URL(endpoint)
@@ -89,7 +89,7 @@ fun postRequest(endpoint: String, data: String): Result<String> {
     }
 }
 
-fun createHttpUrlConnection(url: String): Result<HttpURLConnection> {
+internal fun createHttpUrlConnection(url: String): Result<HttpURLConnection> {
     try {
         val url = URL(url)
         val connection = url.openConnection() as HttpURLConnection
@@ -99,7 +99,7 @@ fun createHttpUrlConnection(url: String): Result<HttpURLConnection> {
     }
 }
 
-fun setBody(connection: HttpURLConnection, body: String) {
+internal fun setBody(connection: HttpURLConnection, body: String) {
     connection.doOutput = true
     connection.useCaches = false
     connection.setRequestProperty("Content-Type", "application/json")
@@ -112,7 +112,7 @@ fun setBody(connection: HttpURLConnection, body: String) {
     outputStream.close()
 }
 
-fun connectAndGetResponse(connection: HttpURLConnection): Result<String> {
+internal fun connectAndGetResponse(connection: HttpURLConnection): Result<String> {
     try {
         connection.doInput = true
         connection.connect()

@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import com.nativebrik.sdk.schema.UIBlock
 
 @Composable
-fun Block(block: UIBlock, modifier: Modifier = Modifier) {
+internal fun Block(block: UIBlock, modifier: Modifier = Modifier) {
     return when (block) {
         is UIBlock.UnionUIFlexContainerBlock -> Flex(block = block.data, modifier) {
             block.data.data?.children?.map {

@@ -9,13 +9,15 @@ import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.schema.TriggerEventNameDefs
 import com.nativebrik.sdk.schema.UIBlock
 import com.nativebrik.sdk.schema.UIRootBlock
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-class TriggerViewModel(internal val container: Container) : ViewModel() {
+internal class TriggerViewModel(internal val container: Container) : ViewModel() {
     internal val modalStacks = mutableStateListOf<UIRootBlock>()
 
+    @OptIn(DelicateCoroutinesApi::class)
     fun dispatch(event: NativebrikEvent) {
         val self = this
         GlobalScope.launch(Dispatchers.IO) {
@@ -38,7 +40,7 @@ class TriggerViewModel(internal val container: Container) : ViewModel() {
 }
 
 @Composable
-fun Trigger(trigger: TriggerViewModel) {
+internal fun Trigger(trigger: TriggerViewModel) {
     LaunchedEffect("") {
         trigger.dispatch(NativebrikEvent(TriggerEventNameDefs.USER_BOOT_APP.name))
     }
