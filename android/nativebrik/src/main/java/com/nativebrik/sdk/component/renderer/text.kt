@@ -5,11 +5,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
-import com.nativebrik.sdk.component.provider.event.eventDiaptcherModifier
+import com.nativebrik.sdk.component.provider.data.DataContext
+import com.nativebrik.sdk.component.provider.event.eventDispatcher
+import com.nativebrik.sdk.component.provider.event.skeleton
 import com.nativebrik.sdk.schema.Color
 import com.nativebrik.sdk.schema.FontDesign
 import com.nativebrik.sdk.schema.FontWeight
 import com.nativebrik.sdk.schema.UITextBlock
+import com.nativebrik.sdk.template.compile
+import com.nativebrik.sdk.template.hasPlaceholder
 import androidx.compose.ui.graphics.Color as PrimitiveColor
 import androidx.compose.ui.text.font.FontFamily as PrimitiveFontFamily
 import androidx.compose.ui.text.font.FontWeight as PrimitiveFontWeight
@@ -40,29 +44,37 @@ fun parseFontWeight(fontWeight: FontWeight?): PrimitiveFontWeight {
     }
 }
 
-fun parseFontStyle(size: Int?, color: Color?, fontWeight: FontWeight?, fontDesign: FontDesign?): TextStyle {
+fun parseFontStyle(size: Int?, color: Color?, fontWeight: FontWeight?, fontDesign: FontDesign?, transparent: Boolean = false): TextStyle {
     val textColor = parseColorForText(color) ?: PrimitiveColor.Black // get from theme
     return TextStyle.Default.copy(
-        color = textColor,
+        color = if (transparent) PrimitiveColor.Transparent else textColor,
         fontSize = size?.sp ?: 16.sp,
         fontWeight = parseFontWeight(fontWeight = fontWeight),
         fontFamily = parseFontDesign(fontDesign = fontDesign),
     )
 }
 
-
-
 @Composable
 fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
-    val value = block.data?.value ?: ""
+    val data = DataContext.state
+    val loading = data.loading
+    var value = block.data?.value ?: ""
+    var skeleton = false
+    if (hasPlaceholder(block.data?.value ?: "")) {
+        skeleton = loading
+        value = if (loading) block.data?.value ?: "" else compile(block.data?.value ?: "", data.data)
+    }
+
     var modifier = framedModifier(modifier, block.data?.frame)
-    modifier = eventDiaptcherModifier(modifier, block.data?.onClick)
+    modifier = modifier.skeleton(skeleton).eventDispatcher(block.data?.onClick)
     val fontStyle = parseFontStyle(
         size = block.data?.size,
         color = block.data?.color,
         fontWeight = block.data?.weight,
         fontDesign = block.data?.design,
+        transparent = skeleton,
     )
+
     BasicText(
         text = value,
         modifier = modifier,

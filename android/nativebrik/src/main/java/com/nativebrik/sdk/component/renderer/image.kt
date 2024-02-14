@@ -8,9 +8,13 @@ import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-import com.nativebrik.sdk.component.provider.event.eventDiaptcherModifier
+import com.nativebrik.sdk.component.provider.data.DataContext
+import com.nativebrik.sdk.component.provider.event.eventDispatcher
+import com.nativebrik.sdk.component.provider.event.skeleton
 import com.nativebrik.sdk.schema.ImageContentMode
 import com.nativebrik.sdk.schema.UIImageBlock
+import com.nativebrik.sdk.template.compile
+import com.nativebrik.sdk.template.hasPlaceholder
 import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
 
 data class ImageFallback(
@@ -42,10 +46,18 @@ fun parseContentModeToContentScale(contentMode: ImageContentMode?): ContentScale
 
 @Composable
 fun Image(block: UIImageBlock, modifier: Modifier = Modifier) {
-    var modifier = framedModifier(modifier, block.data?.frame)
-    modifier = eventDiaptcherModifier(modifier, block.data?.onClick)
+    val data = DataContext.state
+    val loading = data.loading
+    var src = block.data?.src ?: ""
+    var skeleton = false
+    if (hasPlaceholder(block.data?.src ?: "")) {
+        skeleton = loading
+        src = if (loading) block.data?.src ?: "" else compile(block.data?.src ?: "", data.data)
+    }
 
-    val src = block.data?.src ?: "https://example.com/image.jpg"
+    var modifier = framedModifier(modifier, block.data?.frame)
+    modifier = modifier.eventDispatcher(block.data?.onClick).skeleton(skeleton)
+
     val fallback = parseImageFallbackToBlurhash(src)
     val decoded = BlurHashDecoder.decode(
         blurHash = fallback.blurhash,
