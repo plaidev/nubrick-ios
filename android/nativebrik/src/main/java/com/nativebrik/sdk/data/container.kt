@@ -20,16 +20,16 @@ class NotFoundException: Exception("Not found")
 class FailedToDecodeException: Exception("Failed to decode")
 class SkipHttpRequestException: Exception("Skip http request")
 
-interface Container {
+internal interface Container {
     fun createVariableForTemplate(data: JsonElement? = null, properties: List<Property>? = null): JsonElement
 
     suspend fun sendHttpRequest(req: ApiHttpRequest, data: JsonElement? = null): Result<JsonElement>
-    suspend fun fetchEmbedding(experimentId: String): Result<UIBlock>
+    suspend fun fetchEmbedding(experimentId: String, componentId: String? = null): Result<UIBlock>
     suspend fun fetchInAppMessage(trigger: String): Result<UIBlock>
-    suspend fun fetchRemoteConfig(experimentId: String): Result<String>
+    suspend fun fetchRemoteConfig(experimentId: String): Result<ExperimentVariant>
 }
 
-class ContainerImpl(
+internal class ContainerImpl(
     private val config: Config,
     private val user: NativebrikUser,
     private val context: Context,
@@ -67,7 +67,14 @@ class ContainerImpl(
         return this.httpRequestRepository.request(compiledReq)
     }
 
-    override suspend fun fetchEmbedding(experimentId: String): Result<UIBlock> {
+    override suspend fun fetchEmbedding(experimentId: String, componentId: String?): Result<UIBlock> {
+        if (componentId != null) {
+            val component = this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
+                return Result.failure(it)
+            }
+            return Result.success(component)
+        }
+
         val configs = this.experimentRepository.fetchExperimentConfigs(experimentId).getOrElse {
             return Result.failure(it)
         }
@@ -106,8 +113,19 @@ class ContainerImpl(
         return Result.success(component)
     }
 
-    override suspend fun fetchRemoteConfig(experimentId: String): Result<String> {
-        TODO("Not yet implemented")
+    override suspend fun fetchRemoteConfig(experimentId: String): Result<ExperimentVariant> {
+        val configs = this.experimentRepository.fetchExperimentConfigs(experimentId).getOrElse {
+            return Result.failure(it)
+        }
+        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.CONFIG).getOrElse {
+            return Result.failure(it)
+        }
+        val variantId = variant.id ?: return Result.failure(NotFoundException())
+        this.trackRepository.trackExperimentEvent(TrackExperimentEvent(
+            experimentId = experimentId,
+            variantId = variantId
+        ))
+        return Result.success(variant)
     }
 
     private fun extractVariant(
