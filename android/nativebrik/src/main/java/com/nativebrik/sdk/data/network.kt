@@ -83,7 +83,7 @@ fun postRequest(endpoint: String, data: String): Result<String> {
         }
 
     } catch (e: IOException) {
-        throw e
+        return Result.failure(e)
     } finally {
         connection?.disconnect()
     }
@@ -132,7 +132,7 @@ fun connectAndGetResponse(connection: HttpURLConnection): Result<String> {
             return Result.failure(Exception("Something happened: http status code = ${responseCode.toString()}"))
         }
     } catch (e: IOException) {
-        throw e
+        return Result.failure(e)
     } finally {
         connection?.disconnect()
     }
