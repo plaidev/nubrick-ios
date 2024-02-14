@@ -45,6 +45,11 @@ class NativebrikUser {
     private var preferences: SharedPreferences? = null
     private var lastBootTime: ZonedDateTime = getCurrentDate()
 
+    var id: String = ""
+        get() {
+            return this.properties[BuiltinUserProperty.userId.toString()] ?: ""
+        }
+
     constructor(context: Context) {
         this.preferences = getNativebrikUserSharedPreferences(context)
 
