@@ -20,7 +20,10 @@ sealed class RemoteConfigLoadingState {
 }
 
 @Composable
-internal fun rememberRemoteConfigState(container: Container, experimentId: String): RemoteConfigLoadingState {
+internal fun rememberRemoteConfigState(
+    container: Container,
+    experimentId: String
+): RemoteConfigLoadingState {
     var loadingState: RemoteConfigLoadingState by remember { mutableStateOf(RemoteConfigLoadingState.Loading()) }
     LaunchedEffect("key") {
         container.fetchRemoteConfig(experimentId).onSuccess {
@@ -43,7 +46,11 @@ internal fun rememberRemoteConfigState(container: Container, experimentId: Strin
     return loadingState
 }
 
-class RemoteConfigVariant internal constructor(private val container: Container, private val experimentId: String, private val variant: ExperimentVariant) {
+class RemoteConfigVariant internal constructor(
+    private val container: Container,
+    private val experimentId: String,
+    private val variant: ExperimentVariant
+) {
     fun get(key: String): String? {
         val config = this.variant.configs?.firstOrNull { config ->
             config.key == key
@@ -116,7 +123,10 @@ internal fun RemoteConfigView(
     content(state)
 }
 
-class RemoteConfig internal constructor(private val container: Container, private val experimentId: String) {
+class RemoteConfig internal constructor(
+    private val container: Container,
+    private val experimentId: String
+) {
     suspend fun fetch(): Result<RemoteConfigVariant> {
         val variant = this.container.fetchRemoteConfig(experimentId).getOrElse {
             return Result.failure(it)
