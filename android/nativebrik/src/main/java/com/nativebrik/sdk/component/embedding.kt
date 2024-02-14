@@ -36,7 +36,7 @@ fun rememberEmbeddingState(container: Container, experimentId: String): Embeddin
                         Root(
                             container = container,
                             root = it.data,
-                            Modifier.fillMaxHeight().fillMaxWidth()
+                            modifier = Modifier.fillMaxHeight().fillMaxWidth()
                         )
                     }
                 }

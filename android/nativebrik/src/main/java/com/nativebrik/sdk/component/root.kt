@@ -36,17 +36,26 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class RootViewModel: ViewModel {
+    private val root: UIRootBlock
     private val pages: List<UIPageBlock>;
     val displayedPageBlock = mutableStateOf<UIPageBlock?>(null)
     val modalStack = mutableStateOf<List<UIPageBlock>>(listOf())
     val displayedModalIndex = mutableIntStateOf(-1)
     val modalVisibility = mutableStateOf(false)
+    private val onDismiss: ((root: UIRootBlock) -> Unit)
     private val scope: CoroutineScope
     @OptIn(ExperimentalMaterial3Api::class)
     private val sheetState: SheetState
 
     @OptIn(ExperimentalMaterial3Api::class)
-    constructor(root: UIRootBlock, scope: CoroutineScope, sheetState: SheetState) {
+    constructor(
+        root: UIRootBlock,
+        scope: CoroutineScope,
+        sheetState: SheetState,
+        onDismiss: ((root: UIRootBlock) -> Unit) = {},
+    ) {
+        this.root = root
+        this.onDismiss = onDismiss
         this.scope = scope
         this.sheetState = sheetState
 
@@ -55,15 +64,27 @@ class RootViewModel: ViewModel {
 
         val trigger = pages.firstOrNull {
             it.data?.kind == PageKind.TRIGGER
-        } ?: return
-        val destId = trigger.data?.triggerSetting?.onTrigger?.destinationPageId ?: return
+        }
+        if (trigger == null) {
+            onDismiss(root)
+            return
+        }
+        val destId = trigger.data?.triggerSetting?.onTrigger?.destinationPageId
+        if (destId == null) {
+            onDismiss(root)
+            return
+        }
         this.render(destId)
     }
 
     fun render(destId: String) {
         val destBlock = this.pages.firstOrNull {
             it.id == destId
-        } ?: return
+        }
+        if (destBlock == null) {
+            this.dismiss()
+            return
+        }
 
         if (destBlock.data?.kind == PageKind.DISMISSED) {
             this.dismiss()
@@ -111,7 +132,7 @@ class RootViewModel: ViewModel {
     fun close() {
         this.displayedModalIndex.intValue = 0;
         val self = this
-        this.scope.launch { self.sheetState.hide() }.invokeOnCompletion { self.onModalDismiss() }
+        this.scope.launch { self.sheetState.hide() }.invokeOnCompletion { self.handleModalDismiss() }
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -121,14 +142,15 @@ class RootViewModel: ViewModel {
         if (self.sheetState.currentValue == SheetValue.Expanded && self.sheetState.hasPartiallyExpandedState) {
             this.scope.launch { self.sheetState.partialExpand() }
         } else { // Is expanded without collapsed state or is collapsed.
-            this.scope.launch { self.sheetState.hide() }.invokeOnCompletion { self.onModalDismiss() }
+            this.scope.launch { self.sheetState.hide() }.invokeOnCompletion { self.handleModalDismiss() }
         }
     }
 
-    fun onModalDismiss() {
+    fun handleModalDismiss() {
         this.modalStack.value = emptyList()
         this.displayedModalIndex.intValue = -1
         this.modalVisibility.value = false
+        this.onDismiss(this.root)
     }
 }
 
@@ -146,14 +168,19 @@ fun ModalPage(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Root(container: Container, root: UIRootBlock, modifier: Modifier = Modifier) {
+fun Root(
+    container: Container,
+    root: UIRootBlock,
+    embeddingVisibility: Boolean = true,
+    onDismiss: ((root: UIRootBlock) -> Unit) = {},
+    modifier: Modifier = Modifier,
+) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
-    val viewModel = remember(root, sheetState, scope) {
-        RootViewModel(root, scope, sheetState)
+    val viewModel = remember(root, sheetState, scope, onDismiss) {
+        RootViewModel(root, scope, sheetState, onDismiss)
     }
     val bottomSheetProps = remember {
         ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false)
@@ -171,7 +198,7 @@ fun Root(container: Container, root: UIRootBlock, modifier: Modifier = Modifier)
     val modalStack = viewModel.modalStack.value
 
     Box {
-        if (displayedPageBlock != null) {
+        if (embeddingVisibility && displayedPageBlock != null) {
             AnimatedContent(
                 targetState = displayedPageBlock,
                 transitionSpec = {
@@ -193,7 +220,7 @@ fun Root(container: Container, root: UIRootBlock, modifier: Modifier = Modifier)
             ModalBottomSheet(
                 sheetState = sheetState,
                 onDismissRequest = {
-                    viewModel.onModalDismiss()
+                    viewModel.handleModalDismiss()
                 },
                 properties = bottomSheetProps,
             ) {
@@ -213,7 +240,7 @@ fun Root(container: Container, root: UIRootBlock, modifier: Modifier = Modifier)
                         label = "Bottom Sheet"
                     ) {
                         val stack = modalStack[it]
-                        NavigationHeader(it, stack, onClose = { viewModel.close() } ,onBack = { viewModel.back() })
+                        NavigationHeader(it, stack, onClose = { viewModel.close() }, onBack = { viewModel.back() })
                         ModalPage(
                             container = container,
                             listener = listener,
