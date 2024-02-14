@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         Column {
                             Greeting("Android")
-                            Nativebrik.client.experiment.embedding(
+                            Nativebrik.client.experiment.Embedding(
                                 "SCROLLABLE_CONTENT",
                                 modifier = Modifier.height(300f.dp)
                             )
