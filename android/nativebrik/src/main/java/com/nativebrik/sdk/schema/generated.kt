@@ -14,10 +14,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.time.ZonedDateTime
 
 
-typealias ID = String
-typealias DateTime = ZonedDateTime
+internal typealias ID = String
+internal typealias DateTime = ZonedDateTime
 
-class StringDecoder {
+internal class StringDecoder {
 	companion object {
 		fun decode(element: JsonElement?): String? {
 			if (element == null) {
@@ -37,7 +37,7 @@ class StringDecoder {
 	}
 }
 
-class IntDecoder {
+internal class IntDecoder {
 	companion object {
 		fun decode(element: JsonElement?): Int? {
 			if (element == null) {
@@ -61,7 +61,7 @@ class IntDecoder {
 	}
 }
 
-class FloatDecoder {
+internal class FloatDecoder {
 	companion object {
 		fun decode(element: JsonElement?): Float? {
 			if (element == null) {
@@ -85,7 +85,7 @@ class FloatDecoder {
 	}
 }
 
-class BooleanDecoder {
+internal class BooleanDecoder {
 	companion object {
 		fun decode(element: JsonElement?): Boolean? {
 			if (element == null) {
@@ -109,7 +109,7 @@ class BooleanDecoder {
 	}
 }
 
-class ListDecoder {
+internal class ListDecoder {
 	companion object {
 		fun <T> decode(element: JsonElement?, decoder: (element: JsonElement?) -> T?): List<T>? {
 			if (element == null) {
@@ -133,7 +133,7 @@ class ListDecoder {
 	}
 }
 
-class DateTimeDecoder {
+internal class DateTimeDecoder {
 	companion object {
 		fun decode(element: JsonElement?): ZonedDateTime? {
 			if (element == null) {
@@ -158,7 +158,7 @@ class DateTimeDecoder {
 }
 
 
-enum class AlignItems {
+internal enum class AlignItems {
 	START,
 	CENTER,
 	END,
@@ -189,7 +189,7 @@ enum class AlignItems {
 }
 
 
-class ApiHttpHeader (
+internal class ApiHttpHeader (
 	val name: String? = null,
 	val value: String? = null,
 ) {
@@ -210,7 +210,7 @@ class ApiHttpHeader (
 	}
 }
 
-class ApiHttpRequest (
+internal class ApiHttpRequest (
 	val url: String? = null,
 	val method: ApiHttpRequestMethod? = null,
 	val headers: List<ApiHttpHeader>? = null,
@@ -237,7 +237,7 @@ class ApiHttpRequest (
 	}
 }
 
-enum class ApiHttpRequestMethod {
+internal enum class ApiHttpRequestMethod {
 	GET,
 	POST,
 	PUT,
@@ -276,7 +276,7 @@ enum class ApiHttpRequestMethod {
 }
 
 
-class ApiHttpResponseAssertion (
+internal class ApiHttpResponseAssertion (
 	val statusCodes: List<Int>? = null,
 ) {
 	companion object {
@@ -297,7 +297,7 @@ class ApiHttpResponseAssertion (
 	}
 }
 
-class BoxShadow (
+internal class BoxShadow (
 	val color: Color? = null,
 	val offsetX: Int? = null,
 	val offsetY: Int? = null,
@@ -322,7 +322,7 @@ class BoxShadow (
 	}
 }
 
-enum class BuiltinUserProperty {
+internal enum class BuiltinUserProperty {
 	userId,
 	userRnd,
 	languageCode,
@@ -389,7 +389,7 @@ enum class BuiltinUserProperty {
 }
 
 
-enum class CollectionKind {
+internal enum class CollectionKind {
 	CAROUSEL,
 	SCROLL,
 	GRID,
@@ -420,7 +420,7 @@ enum class CollectionKind {
 }
 
 
-class Color (
+internal class Color (
 	val red: Float? = null,
 	val green: Float? = null,
 	val blue: Float? = null,
@@ -445,7 +445,7 @@ class Color (
 	}
 }
 
-enum class ConditionOperator {
+internal enum class ConditionOperator {
 	Regex,
 	Equal,
 	NotEqual,
@@ -490,7 +490,7 @@ enum class ConditionOperator {
 }
 
 
-class ExperimentCondition (
+internal class ExperimentCondition (
 	val property: String? = null,
 	val operator: String? = null,
 	val value: String? = null,
@@ -513,7 +513,7 @@ class ExperimentCondition (
 	}
 }
 
-class ExperimentConfig (
+internal class ExperimentConfig (
 	val id: ID? = null,
 	val kind: ExperimentKind? = null,
 	val distribution: List<ExperimentCondition>? = null,
@@ -552,7 +552,7 @@ class ExperimentConfig (
 	}
 }
 
-class ExperimentConfigs (
+internal class ExperimentConfigs (
 	val configs: List<ExperimentConfig>? = null,
 ) {
 	companion object {
@@ -573,7 +573,7 @@ class ExperimentConfigs (
 	}
 }
 
-class ExperimentFrequency (
+internal class ExperimentFrequency (
 	val times: Int? = null,
 	val period: Int? = null,
 	val unit: FrequencyUnit? = null,
@@ -596,7 +596,7 @@ class ExperimentFrequency (
 	}
 }
 
-enum class ExperimentKind {
+internal enum class ExperimentKind {
 	EMBED,
 	POPUP,
 	CONFIG,
@@ -627,7 +627,7 @@ enum class ExperimentKind {
 }
 
 
-class ExperimentVariant (
+internal class ExperimentVariant (
 	val id: ID? = null,
 	val configs: List<VariantConfig>? = null,
 	val weight: Int? = null,
@@ -652,7 +652,7 @@ class ExperimentVariant (
 	}
 }
 
-enum class FlexDirection {
+internal enum class FlexDirection {
 	ROW,
 	COLUMN,
 	UNKNOWN,;
@@ -681,7 +681,7 @@ enum class FlexDirection {
 }
 
 
-enum class FontDesign {
+internal enum class FontDesign {
 	DEFAULT,
 	MONOSPACE,
 	ROUNDED,
@@ -714,7 +714,7 @@ enum class FontDesign {
 }
 
 
-enum class FontWeight {
+internal enum class FontWeight {
 	ULTRA_LIGHT,
 	THIN,
 	LIGHT,
@@ -757,7 +757,7 @@ enum class FontWeight {
 }
 
 
-class FrameData (
+internal class FrameData (
 	val width: Int? = null,
 	val height: Int? = null,
 	val paddingLeft: Int? = null,
@@ -798,7 +798,7 @@ class FrameData (
 	}
 }
 
-enum class FrequencyUnit {
+internal enum class FrequencyUnit {
 	DAY,
 	UNKNOWN,;
 
@@ -825,7 +825,7 @@ enum class FrequencyUnit {
 }
 
 
-enum class ImageContentMode {
+internal enum class ImageContentMode {
 	FIT,
 	FILL,
 	UNKNOWN,;
@@ -854,7 +854,7 @@ enum class ImageContentMode {
 }
 
 
-enum class JustifyContent {
+internal enum class JustifyContent {
 	START,
 	CENTER,
 	END,
@@ -887,7 +887,7 @@ enum class JustifyContent {
 }
 
 
-enum class ModalPresentationStyle {
+internal enum class ModalPresentationStyle {
 	DEPENDS_ON_CONTEXT_OR_FULL_SCREEN,
 	DEPENDS_ON_CONTEXT_OR_PAGE_SHEET,
 	UNKNOWN,;
@@ -916,7 +916,7 @@ enum class ModalPresentationStyle {
 }
 
 
-enum class ModalScreenSize {
+internal enum class ModalScreenSize {
 	MEDIUM,
 	LARGE,
 	MEDIUM_AND_LARGE,
@@ -947,7 +947,7 @@ enum class ModalScreenSize {
 }
 
 
-class NavigationBackButton (
+internal class NavigationBackButton (
 	val title: String? = null,
 	val color: Color? = null,
 	val visible: Boolean? = null,
@@ -970,7 +970,7 @@ class NavigationBackButton (
 	}
 }
 
-enum class Overflow {
+internal enum class Overflow {
 	VISIBLE,
 	HIDDEN,
 	SCROLL,
@@ -1001,7 +1001,7 @@ enum class Overflow {
 }
 
 
-enum class PageKind {
+internal enum class PageKind {
 	COMPONENT,
 	MODAL,
 	WEBVIEW_MODAL,
@@ -1038,7 +1038,7 @@ enum class PageKind {
 }
 
 
-class Property (
+internal class Property (
 	val name: String? = null,
 	val value: String? = null,
 	val ptype: PropertyType? = null,
@@ -1061,7 +1061,7 @@ class Property (
 	}
 }
 
-enum class PropertyType {
+internal enum class PropertyType {
 	INTEGER,
 	STRING,
 	TIMESTAMPZ,
@@ -1092,7 +1092,7 @@ enum class PropertyType {
 }
 
 
-enum class TextAlign {
+internal enum class TextAlign {
 	NATURAL,
 	LEFT,
 	CENTER,
@@ -1125,7 +1125,7 @@ enum class TextAlign {
 }
 
 
-class TriggerEventDef (
+internal class TriggerEventDef (
 	val name: String? = null,
 ) {
 	companion object {
@@ -1144,7 +1144,7 @@ class TriggerEventDef (
 	}
 }
 
-enum class TriggerEventNameDefs {
+internal enum class TriggerEventNameDefs {
 	RETENTION_1,
 	RETENTION_2_3,
 	RETENTION_4_7,
@@ -1187,7 +1187,7 @@ enum class TriggerEventNameDefs {
 }
 
 
-class TriggerSetting (
+internal class TriggerSetting (
 	val onTrigger: UIBlockEventDispatcher? = null,
 	val trigger: TriggerEventDef? = null,
 ) {
@@ -1208,7 +1208,7 @@ class TriggerSetting (
 	}
 }
 
-sealed class UIBlock {
+internal sealed class UIBlock {
 	class UnionUIRootBlock(var data: UIRootBlock): UIBlock()
 	class UnionUIPageBlock(var data: UIPageBlock): UIBlock()
 	class UnionUIFlexContainerBlock(var data: UIFlexContainerBlock): UIBlock()
@@ -1259,7 +1259,7 @@ sealed class UIBlock {
 }
 
 
-class UIBlockEventDispatcher (
+internal class UIBlockEventDispatcher (
 	val name: String? = null,
 	val destinationPageId: String? = null,
 	val deepLink: String? = null,
@@ -1290,7 +1290,7 @@ class UIBlockEventDispatcher (
 	}
 }
 
-class UICarouselBlock (
+internal class UICarouselBlock (
 	val id: ID? = null,
 	val data: UICarouselBlockData? = null,
 ) {
@@ -1311,7 +1311,7 @@ class UICarouselBlock (
 	}
 }
 
-class UICarouselBlockData (
+internal class UICarouselBlockData (
 	val children: List<UIBlock>? = null,
 	val frame: FrameData? = null,
 	val gap: Int? = null,
@@ -1338,7 +1338,7 @@ class UICarouselBlockData (
 	}
 }
 
-class UICollectionBlock (
+internal class UICollectionBlock (
 	val id: ID? = null,
 	val data: UICollectionBlockData? = null,
 ) {
@@ -1359,7 +1359,7 @@ class UICollectionBlock (
 	}
 }
 
-class UICollectionBlockData (
+internal class UICollectionBlockData (
 	val children: List<UIBlock>? = null,
 	val frame: FrameData? = null,
 	val gap: Int? = null,
@@ -1398,7 +1398,7 @@ class UICollectionBlockData (
 	}
 }
 
-class UIFlexContainerBlock (
+internal class UIFlexContainerBlock (
 	val id: ID? = null,
 	val data: UIFlexContainerBlockData? = null,
 ) {
@@ -1419,7 +1419,7 @@ class UIFlexContainerBlock (
 	}
 }
 
-class UIFlexContainerBlockData (
+internal class UIFlexContainerBlockData (
 	val children: List<UIBlock>? = null,
 	val direction: FlexDirection? = null,
 	val justifyContent: JustifyContent? = null,
@@ -1454,7 +1454,7 @@ class UIFlexContainerBlockData (
 	}
 }
 
-class UIImageBlock (
+internal class UIImageBlock (
 	val id: ID? = null,
 	val data: UIImageBlockData? = null,
 ) {
@@ -1475,7 +1475,7 @@ class UIImageBlock (
 	}
 }
 
-class UIImageBlockData (
+internal class UIImageBlockData (
 	val src: String? = null,
 	val contentMode: ImageContentMode? = null,
 	val frame: FrameData? = null,
@@ -1500,7 +1500,7 @@ class UIImageBlockData (
 	}
 }
 
-class UIMultiSelectInputBlock (
+internal class UIMultiSelectInputBlock (
 	val id: ID? = null,
 	val data: UIMultiSelectInputBlockData? = null,
 ) {
@@ -1521,7 +1521,7 @@ class UIMultiSelectInputBlock (
 	}
 }
 
-class UIMultiSelectInputBlockData (
+internal class UIMultiSelectInputBlockData (
 	val key: String? = null,
 	val options: List<UISelectInputOption>? = null,
 	val value: List<String>? = null,
@@ -1562,7 +1562,7 @@ class UIMultiSelectInputBlockData (
 	}
 }
 
-class UIPageBlock (
+internal class UIPageBlock (
 	val id: ID? = null,
 	val data: UIPageBlockData? = null,
 ) {
@@ -1583,7 +1583,7 @@ class UIPageBlock (
 	}
 }
 
-class UIPageBlockData (
+internal class UIPageBlockData (
 	val kind: PageKind? = null,
 	val modalPresentationStyle: ModalPresentationStyle? = null,
 	val modalScreenSize: ModalScreenSize? = null,
@@ -1624,7 +1624,7 @@ class UIPageBlockData (
 	}
 }
 
-class UIPageBlockPosition (
+internal class UIPageBlockPosition (
 	val x: Int? = null,
 	val y: Int? = null,
 ) {
@@ -1645,7 +1645,7 @@ class UIPageBlockPosition (
 	}
 }
 
-class UIRootBlock (
+internal class UIRootBlock (
 	val id: ID? = null,
 	val data: UIRootBlockData? = null,
 ) {
@@ -1666,7 +1666,7 @@ class UIRootBlock (
 	}
 }
 
-class UIRootBlockData (
+internal class UIRootBlockData (
 	val pages: List<UIPageBlock>? = null,
 	val currentPageId: ID? = null,
 ) {
@@ -1689,7 +1689,7 @@ class UIRootBlockData (
 	}
 }
 
-class UISelectInputBlock (
+internal class UISelectInputBlock (
 	val id: ID? = null,
 	val data: UISelectInputBlockData? = null,
 ) {
@@ -1710,7 +1710,7 @@ class UISelectInputBlock (
 	}
 }
 
-class UISelectInputBlockData (
+internal class UISelectInputBlockData (
 	val key: String? = null,
 	val options: List<UISelectInputOption>? = null,
 	val value: String? = null,
@@ -1747,7 +1747,7 @@ class UISelectInputBlockData (
 	}
 }
 
-class UISelectInputOption (
+internal class UISelectInputOption (
 	val value: String? = null,
 	val label: String? = null,
 ) {
@@ -1768,7 +1768,7 @@ class UISelectInputOption (
 	}
 }
 
-class UISwitchInputBlock (
+internal class UISwitchInputBlock (
 	val id: ID? = null,
 	val data: UISwitchInputBlockData? = null,
 ) {
@@ -1789,7 +1789,7 @@ class UISwitchInputBlock (
 	}
 }
 
-class UISwitchInputBlockData (
+internal class UISwitchInputBlockData (
 	val key: String? = null,
 	val value: Boolean? = null,
 	val checkedColor: Color? = null,
@@ -1812,7 +1812,7 @@ class UISwitchInputBlockData (
 	}
 }
 
-class UITextBlock (
+internal class UITextBlock (
 	val id: ID? = null,
 	val data: UITextBlockData? = null,
 ) {
@@ -1833,7 +1833,7 @@ class UITextBlock (
 	}
 }
 
-class UITextBlockData (
+internal class UITextBlockData (
 	val value: String? = null,
 	val size: Int? = null,
 	val color: Color? = null,
@@ -1864,7 +1864,7 @@ class UITextBlockData (
 	}
 }
 
-class UITextInputBlock (
+internal class UITextInputBlock (
 	val id: ID? = null,
 	val data: UITextInputBlockData? = null,
 ) {
@@ -1885,7 +1885,7 @@ class UITextInputBlock (
 	}
 }
 
-class UITextInputBlockData (
+internal class UITextInputBlockData (
 	val key: String? = null,
 	val value: String? = null,
 	val placeholder: String? = null,
@@ -1930,7 +1930,7 @@ class UITextInputBlockData (
 	}
 }
 
-enum class UITextInputKeyboardType {
+internal enum class UITextInputKeyboardType {
 	DEFAULT,
 	ASCII,
 	EMAIL,
@@ -1969,7 +1969,7 @@ enum class UITextInputKeyboardType {
 }
 
 
-class UITooltipMessage (
+internal class UITooltipMessage (
 	val title: String? = null,
 ) {
 	companion object {
@@ -1988,7 +1988,7 @@ class UITooltipMessage (
 	}
 }
 
-class VariantConfig (
+internal class VariantConfig (
 	val key: String? = null,
 	val kind: VariantConfigKind? = null,
 	val value: String? = null,
@@ -2011,7 +2011,7 @@ class VariantConfig (
 	}
 }
 
-enum class VariantConfigKind {
+internal enum class VariantConfigKind {
 	COMPONENT,
 	STRING,
 	NUMBER,
@@ -2046,7 +2046,7 @@ enum class VariantConfigKind {
 }
 
 
-enum class Weekdays {
+internal enum class Weekdays {
 	SUNDAY,
 	MONDAY,
 	TUESDAY,
