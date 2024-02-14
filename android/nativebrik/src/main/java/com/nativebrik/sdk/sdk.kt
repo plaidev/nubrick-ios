@@ -23,6 +23,7 @@ import com.nativebrik.sdk.component.TriggerViewModel
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.ContainerImpl
 import com.nativebrik.sdk.data.user.NativebrikUser
+import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -106,7 +107,7 @@ public class NativebrikExperiment {
 
     @Composable
     public fun Embedding(id: String, modifier: Modifier = Modifier) {
-        Embedding(container = this.container, id, modifier) { state ->
+        Embedding(container = this.container, id, modifier = modifier) { state ->
             AnimatedContent(
                 targetState = state,
                 label = "",
@@ -136,7 +137,13 @@ public class NativebrikExperiment {
     }
 
     @Composable
-    public fun RemoteConfig() {}
+    public fun RemoteConfig(id: String, content: @Composable (RemoteConfigLoadingState) -> Unit) {
+        return com.nativebrik.sdk.remoteconfig.RemoteConfig(
+            container = this.container,
+            experimentId = id,
+            content = content
+        )
+    }
 
     public fun remoteConfig() {}
 }
