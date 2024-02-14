@@ -107,11 +107,24 @@ class RemoteConfigVariant internal constructor(private val container: Container,
 }
 
 @Composable
-internal fun RemoteConfig(
+internal fun RemoteConfigView(
     container: Container,
     experimentId: String,
     content: @Composable() (state: RemoteConfigLoadingState) -> Unit
 ) {
     val state = rememberRemoteConfigState(container = container, experimentId = experimentId)
     content(state)
+}
+
+class RemoteConfig internal constructor(private val container: Container, private val experimentId: String) {
+    suspend fun fetch(): Result<RemoteConfigVariant> {
+        val variant = this.container.fetchRemoteConfig(experimentId).getOrElse {
+            return Result.failure(it)
+        }
+        return Result.success(RemoteConfigVariant(
+            container = this.container,
+            experimentId = this.experimentId,
+            variant = variant,
+        ))
+    }
 }
