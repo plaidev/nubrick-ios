@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
 
-var LocalEventListener = compositionLocalOf<EventListenerState> {
+internal var LocalEventListener = compositionLocalOf<EventListenerState> {
     error("LocalEventListener is not found")
 }
 
