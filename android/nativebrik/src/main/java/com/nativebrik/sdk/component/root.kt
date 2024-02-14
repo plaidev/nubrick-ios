@@ -2,6 +2,7 @@ package com.nativebrik.sdk.component
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -21,7 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
-import com.nativebrik.sdk.component.provider.data.DataProvider
+import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
 import com.nativebrik.sdk.component.renderer.ModalBottomSheetBackHandler
 import com.nativebrik.sdk.component.renderer.NavigationHeader
@@ -79,7 +80,7 @@ class RootViewModel: ViewModel {
             }
             if (index > 0) {
                 // if it's already in modal stack, jump to the target stack
-                this.displayedModalIndex.value = index
+                this.displayedModalIndex.intValue = index
                 return
             }
 
@@ -87,7 +88,7 @@ class RootViewModel: ViewModel {
             modalStack.addAll(this.modalStack.value)
             modalStack.add(destBlock)
             this.modalStack.value = modalStack
-            this.displayedModalIndex.value = modalStack.size - 1
+            this.displayedModalIndex.intValue = modalStack.size - 1
             this.modalVisibility.value = true
             return
         }
@@ -98,25 +99,24 @@ class RootViewModel: ViewModel {
 
     fun back() {
         // if the stack size is zero, just dismiss it
-        if (this.displayedModalIndex.value <= 0) {
+        if (this.displayedModalIndex.intValue <= 0) {
             this.dismiss()
             return
         }
         // pop the stack
-        this.displayedModalIndex.value--;
+        this.displayedModalIndex.intValue--;
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
     fun close() {
-        this.displayedModalIndex.value = 0;
+        this.displayedModalIndex.intValue = 0;
         val self = this
         this.scope.launch { self.sheetState.hide() }.invokeOnCompletion { self.onModalDismiss() }
     }
 
-
     @OptIn(ExperimentalMaterial3Api::class)
     private fun dismiss() {
-        this.displayedModalIndex.value = 0;
+        this.displayedModalIndex.intValue = 0;
         val self = this
         if (self.sheetState.currentValue == SheetValue.Expanded && self.sheetState.hasPartiallyExpandedState) {
             this.scope.launch { self.sheetState.partialExpand() }
@@ -127,7 +127,7 @@ class RootViewModel: ViewModel {
 
     fun onModalDismiss() {
         this.modalStack.value = emptyList()
-        this.displayedModalIndex.value = -1
+        this.displayedModalIndex.intValue = -1
         this.modalVisibility.value = false
     }
 }
@@ -139,7 +139,7 @@ fun ModalPage(
     block: UIPageBlock,
     modifier: Modifier = Modifier
 ) {
-    DataProvider(container = container, request = block.data?.httpRequest) {
+    PageDataProvider(container = container, request = block.data?.httpRequest) {
         EventListenerProvider(listener = listener) {
             Page(block = block, modifier)
         }
@@ -172,9 +172,17 @@ fun Root(container: Container, root: UIRootBlock, modifier: Modifier = Modifier)
 
     Box {
         if (displayedPageBlock != null) {
-            DataProvider(container = container, request = displayedPageBlock.data?.httpRequest) {
-                EventListenerProvider(listener = listener) {
-                    Page(block = displayedPageBlock, modifier)
+            AnimatedContent(
+                targetState = displayedPageBlock,
+                transitionSpec = {
+                    fadeIn() togetherWith fadeOut()
+                },
+                label = "Embedding",
+            ) {
+                PageDataProvider(container = container, request = it.data?.httpRequest) {
+                    EventListenerProvider(listener = listener) {
+                        Page(block = it, modifier)
+                    }
                 }
             }
         }
@@ -194,7 +202,7 @@ fun Root(container: Container, root: UIRootBlock, modifier: Modifier = Modifier)
                 }
                 Column {
                     AnimatedContent(
-                        targetState = viewModel.displayedModalIndex.value,
+                        targetState = viewModel.displayedModalIndex.intValue,
                         transitionSpec = {
                             if (targetState > initialState) {
                                 slideInHorizontally { it } togetherWith slideOutHorizontally { -it } + fadeOut()
@@ -202,7 +210,7 @@ fun Root(container: Container, root: UIRootBlock, modifier: Modifier = Modifier)
                                 slideInHorizontally { -it } togetherWith slideOutHorizontally { it } + fadeOut()
                             }
                         },
-                        label = ""
+                        label = "Bottom Sheet"
                     ) {
                         val stack = modalStack[it]
                         NavigationHeader(it, stack, onClose = { viewModel.close() } ,onBack = { viewModel.back() })
