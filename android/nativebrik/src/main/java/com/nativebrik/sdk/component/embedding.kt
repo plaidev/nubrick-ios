@@ -11,11 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.nativebrik.sdk.data.Container
+import com.nativebrik.sdk.data.NotFoundException
 import com.nativebrik.sdk.schema.UIBlock
-
-data class EmbeddingState(
-    val state: EmbeddingLoadingState,
-)
 
 sealed class EmbeddingLoadingState {
     class Loading(): EmbeddingLoadingState()
@@ -26,10 +23,10 @@ sealed class EmbeddingLoadingState {
 
 
 @Composable
-fun rememberEmbeddingState(container: Container, experimentId: String): EmbeddingState {
+internal fun rememberEmbeddingState(container: Container, experimentId: String, componentId: String?): EmbeddingLoadingState {
     var loadingState: EmbeddingLoadingState by remember { mutableStateOf(EmbeddingLoadingState.Loading()) }
     LaunchedEffect("key") {
-        container.fetchEmbedding(experimentId).onSuccess {
+        container.fetchEmbedding(experimentId, componentId).onSuccess {
             when (it) {
                 is UIBlock.UnionUIRootBlock -> {
                     loadingState = EmbeddingLoadingState.Completed {
@@ -45,24 +42,28 @@ fun rememberEmbeddingState(container: Container, experimentId: String): Embeddin
                 }
             }
         }.onFailure {
-            loadingState = EmbeddingLoadingState.Failed(it)
+            when (it) {
+                is NotFoundException -> {
+                    loadingState = EmbeddingLoadingState.NotFound()
+                }
+                else -> {
+                    loadingState = EmbeddingLoadingState.Failed(it)
+                }
+            }
         }
     }
-    return remember(loadingState) {
-        EmbeddingState(
-            state = loadingState,
-        )
-    }
+    return loadingState
 }
 
 @Composable
-fun Embedding(
+internal fun Embedding(
     container: Container,
     experimentId: String,
+    componentId: String? = null,
     modifier: Modifier = Modifier,
     content: (@Composable() (state: EmbeddingLoadingState) -> Unit)?
 ) {
-    val state = rememberEmbeddingState(container, experimentId)
+    val state = rememberEmbeddingState(container, experimentId, componentId)
     val render = content ?: { state ->
         when (state) {
             is EmbeddingLoadingState.Completed -> state.view()
@@ -71,6 +72,6 @@ fun Embedding(
     }
 
     Box(modifier = modifier) {
-        render(state.state)
+        render(state)
     }
 }
