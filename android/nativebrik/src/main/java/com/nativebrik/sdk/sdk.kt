@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.nativebrik.sdk.component.Embedding
 import com.nativebrik.sdk.component.EmbeddingLoadingState
+import com.nativebrik.sdk.component.Trigger
+import com.nativebrik.sdk.component.TriggerViewModel
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.ContainerImpl
 import com.nativebrik.sdk.data.user.NativebrikUser
@@ -25,12 +27,16 @@ import com.nativebrik.sdk.data.user.NativebrikUser
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
     val track: String = "https://track.nativebrik.com/track/v1",
-) {}
+)
 
 data class Config(
     val projectId: String,
     val endpoint: Endpoint = Endpoint()
-) {}
+)
+
+data class NativebrikEvent(
+    val name: String
+)
 
 internal var LocalNativebrikClient = compositionLocalOf<NativebrikClient> {
     error("NativebrikClient is not found")
@@ -54,6 +60,7 @@ public fun NativebrikProvider(
     CompositionLocalProvider(
         LocalNativebrikClient provides client
     ) {
+        client.experiment.Overlay()
         content()
     }
 }
@@ -77,15 +84,25 @@ public class NativebrikClient {
 
 public class NativebrikExperiment {
     private val container: Container
+    private val trigger: TriggerViewModel
+
     internal constructor(config: Config, user: NativebrikUser, context: Context) {
         this.container = ContainerImpl(
             config = config,
             user = user,
             context = context,
         )
+        this.trigger = TriggerViewModel(this.container)
     }
 
-    public fun dispatch(name: String) {}
+    public fun dispatch(event: NativebrikEvent) {
+        this.trigger.dispatch(event)
+    }
+
+    @Composable
+    public fun Overlay() {
+        Trigger(trigger = this.trigger)
+    }
 
     @Composable
     public fun Embedding(id: String, modifier: Modifier = Modifier) {
