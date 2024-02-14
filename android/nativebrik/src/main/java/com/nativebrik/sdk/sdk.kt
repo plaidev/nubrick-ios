@@ -138,12 +138,17 @@ public class NativebrikExperiment {
 
     @Composable
     public fun RemoteConfig(id: String, content: @Composable (RemoteConfigLoadingState) -> Unit) {
-        return com.nativebrik.sdk.remoteconfig.RemoteConfig(
+        return com.nativebrik.sdk.remoteconfig.RemoteConfigView(
             container = this.container,
             experimentId = id,
             content = content
         )
     }
 
-    public fun remoteConfig() {}
+    public fun remoteConfig(id: String): com.nativebrik.sdk.remoteconfig.RemoteConfig {
+        return com.nativebrik.sdk.remoteconfig.RemoteConfig(
+            container = this.container,
+            experimentId = id,
+        )
+    }
 }
