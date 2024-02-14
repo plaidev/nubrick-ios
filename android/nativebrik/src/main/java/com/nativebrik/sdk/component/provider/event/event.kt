@@ -27,7 +27,7 @@ var LocalEventListener = compositionLocalOf<EventListenerState> {
 }
 
 data class EventListenerState(
-    val listener: (event: UIBlockEventDispatcher) -> Unit
+    private val listener: (event: UIBlockEventDispatcher) -> Unit
 ) {
     fun dispatch(event: UIBlockEventDispatcher) {
         this.listener(event)
@@ -65,7 +65,7 @@ fun Modifier.eventDispatcher(eventDispatcher: UIBlockEventDispatcher?): Modifier
         val eventListener = LocalEventListener.current
         val eventDispatcher = eventDispatcher ?: return@composed this
         this.clickable(true) {
-            eventListener.listener(eventDispatcher)
+            eventListener.dispatch(eventDispatcher)
         }
     }
 }
