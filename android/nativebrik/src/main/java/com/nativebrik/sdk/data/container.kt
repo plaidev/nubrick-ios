@@ -6,11 +6,14 @@ import com.nativebrik.sdk.data.extraction.extractComponentId
 import com.nativebrik.sdk.data.extraction.extractExperimentConfig
 import com.nativebrik.sdk.data.extraction.extractExperimentVariant
 import com.nativebrik.sdk.data.user.NativebrikUser
+import com.nativebrik.sdk.schema.ApiHttpHeader
 import com.nativebrik.sdk.schema.ApiHttpRequest
 import com.nativebrik.sdk.schema.ExperimentConfigs
 import com.nativebrik.sdk.schema.ExperimentKind
 import com.nativebrik.sdk.schema.ExperimentVariant
+import com.nativebrik.sdk.schema.Property
 import com.nativebrik.sdk.schema.UIBlock
+import com.nativebrik.sdk.template.compile
 import kotlinx.serialization.json.JsonElement
 
 class NotFoundException: Exception("Not found")
@@ -18,14 +21,19 @@ class FailedToDecodeException: Exception("Failed to decode")
 class SkipHttpRequestException: Exception("Skip http request")
 
 interface Container {
-    suspend fun sendHttpRequest(req: ApiHttpRequest): Result<JsonElement>
+    fun createVariableForTemplate(data: JsonElement? = null, properties: List<Property>? = null): JsonElement
 
+    suspend fun sendHttpRequest(req: ApiHttpRequest, data: JsonElement? = null): Result<JsonElement>
     suspend fun fetchEmbedding(experimentId: String): Result<UIBlock>
     suspend fun fetchInAppMessage(trigger: String): Result<UIBlock>
     suspend fun fetchRemoteConfig(experimentId: String): Result<String>
 }
 
-class ContainerImpl(private val config: Config, private val user: NativebrikUser, private val context: Context): Container {
+class ContainerImpl(
+    private val config: Config,
+    private val user: NativebrikUser,
+    private val context: Context,
+): Container {
     private val componentRepository: ComponentRepository by lazy {
         ComponentRepositoryImpl(config)
     }
@@ -39,8 +47,24 @@ class ContainerImpl(private val config: Config, private val user: NativebrikUser
         HttpRequestRepositoryImpl()
     }
 
-    override suspend fun sendHttpRequest(req: ApiHttpRequest): Result<JsonElement> {
-        return this.httpRequestRepository.request(req)
+    override fun createVariableForTemplate(data: JsonElement?, properties: List<Property>?): JsonElement {
+        return createVariableForTemplate(
+            user = this.user,
+            data = data,
+            properties = properties,
+            form = null,
+        )
+    }
+
+    override suspend fun sendHttpRequest(req: ApiHttpRequest, data: JsonElement?): Result<JsonElement> {
+        val variable = this.createVariableForTemplate(data = data)
+        val compiledReq = ApiHttpRequest(
+            url = req.url?.let { compile(it, variable) },
+            method = req.method,
+            headers = req.headers?.map { ApiHttpHeader(compile(it.name ?: "", variable), compile(it.value ?: "", variable)) },
+            body = req.body?.let { compile(it, variable) },
+        )
+        return this.httpRequestRepository.request(compiledReq)
     }
 
     override suspend fun fetchEmbedding(experimentId: String): Result<UIBlock> {
