@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -74,6 +75,15 @@ internal fun framedModifier(modifier: Modifier, frame: FrameData?): Modifier {
     )
 
     return mod
+}
+
+internal fun parseFramePadding(frame: FrameData?): PaddingValues {
+    return PaddingValues(
+        start = frame?.paddingLeft?.dp ?: 0.dp,
+        top = frame?.paddingTop?.dp ?: 0.dp,
+        end = frame?.paddingRight?.dp ?: 0.dp,
+        bottom = frame?.paddingBottom?.dp ?: 0.dp,
+    )
 }
 
 @Composable
