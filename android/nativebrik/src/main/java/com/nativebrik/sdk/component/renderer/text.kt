@@ -11,12 +11,14 @@ import com.nativebrik.sdk.component.provider.event.skeleton
 import com.nativebrik.sdk.schema.Color
 import com.nativebrik.sdk.schema.FontDesign
 import com.nativebrik.sdk.schema.FontWeight
+import com.nativebrik.sdk.schema.TextAlign
 import com.nativebrik.sdk.schema.UITextBlock
 import com.nativebrik.sdk.template.compile
 import com.nativebrik.sdk.template.hasPlaceholder
 import androidx.compose.ui.graphics.Color as PrimitiveColor
 import androidx.compose.ui.text.font.FontFamily as PrimitiveFontFamily
 import androidx.compose.ui.text.font.FontWeight as PrimitiveFontWeight
+import androidx.compose.ui.text.style.TextAlign as PrimitiveTextAlign
 
 internal fun parseFontDesign(fontDesign: FontDesign?): PrimitiveFontFamily {
     return when (fontDesign) {
@@ -44,14 +46,24 @@ internal fun parseFontWeight(fontWeight: FontWeight?): PrimitiveFontWeight {
     }
 }
 
-internal fun parseFontStyle(size: Int?, color: Color?, fontWeight: FontWeight?, fontDesign: FontDesign?, transparent: Boolean = false): TextStyle {
+internal fun parseFontStyle(size: Int?, color: Color?, fontWeight: FontWeight?, fontDesign: FontDesign?, alignment: TextAlign?,  transparent: Boolean = false): TextStyle {
     val textColor = parseColorForText(color) ?: PrimitiveColor.Black // get from theme
     return TextStyle.Default.copy(
         color = if (transparent) PrimitiveColor.Transparent else textColor,
         fontSize = size?.sp ?: 16.sp,
         fontWeight = parseFontWeight(fontWeight = fontWeight),
         fontFamily = parseFontDesign(fontDesign = fontDesign),
+        textAlign = parseTextAlign(alignment = alignment),
     )
+}
+
+internal fun parseTextAlign(alignment: TextAlign?): PrimitiveTextAlign {
+    return when (alignment) {
+        TextAlign.CENTER -> PrimitiveTextAlign.Center
+        TextAlign.LEFT -> PrimitiveTextAlign.Left
+        TextAlign.RIGHT -> PrimitiveTextAlign.Right
+        else -> PrimitiveTextAlign.Unspecified
+    }
 }
 
 @Composable
@@ -72,6 +84,7 @@ internal fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
         color = block.data?.color,
         fontWeight = block.data?.weight,
         fontDesign = block.data?.design,
+        alignment = null,
         transparent = skeleton,
     )
 
