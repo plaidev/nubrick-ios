@@ -2,6 +2,8 @@ package com.nativebrik.sdk.component.renderer
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
@@ -31,7 +33,7 @@ internal fun Carousel(block: UICollectionBlock, modifier: Modifier = Modifier) {
             pageSpacing = gap,
             state = state,
             pageSize = PageSize.Fixed(size.width),
-            modifier = modifier
+            modifier = modifier.fillMaxWidth()
         ) {
             Box(Modifier.size(size)) {
                 Block(block = children[it])
@@ -43,7 +45,7 @@ internal fun Carousel(block: UICollectionBlock, modifier: Modifier = Modifier) {
             pageSpacing = gap,
             state = state,
             pageSize = PageSize.Fixed(size.height),
-            modifier = modifier
+            modifier = modifier.fillMaxHeight()
         ) {
             Box(Modifier.size(size)) {
                 Block(block = children[it])
