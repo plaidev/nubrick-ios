@@ -23,6 +23,8 @@ internal fun Block(block: UIBlock, modifier: Modifier = Modifier) {
                 else -> Grid(block = collection, modifier)
             }
         }
+        is UIBlock.UnionUISwitchInputBlock -> Switch(block = block.data, modifier)
+        is UIBlock.UnionUITextInputBlock -> TextInput(block = block.data, modifier)
         else -> Unit
     }
 }
