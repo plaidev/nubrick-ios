@@ -21,7 +21,6 @@ internal fun TextInput(block: UITextInputBlock, modifier: Modifier = Modifier) {
         fontWeight = block.data?.weight,
         fontDesign = block.data?.design,
         alignment = block.data?.textAlign,
-        transparent = false,
     )
     val modifier = framedModifier(modifier, block.data?.frame).fillMaxWidth()
 

@@ -46,7 +46,7 @@ internal fun parseFontWeight(fontWeight: FontWeight?): PrimitiveFontWeight {
     }
 }
 
-internal fun parseFontStyle(size: Int?, color: Color?, fontWeight: FontWeight?, fontDesign: FontDesign?, alignment: TextAlign?,  transparent: Boolean = false): TextStyle {
+internal fun parseFontStyle(size: Int? = null, color: Color? = null, fontWeight: FontWeight? = null, fontDesign: FontDesign? = null, alignment: TextAlign? = null, transparent: Boolean = false): TextStyle {
     val textColor = parseColorForText(color) ?: PrimitiveColor.Black // get from theme
     return TextStyle.Default.copy(
         color = if (transparent) PrimitiveColor.Transparent else textColor,
