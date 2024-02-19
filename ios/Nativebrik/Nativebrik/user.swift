@@ -12,6 +12,7 @@ typealias ExperimentHistoryRecord = TimeInterval
 
 enum UserPropertyType {
     case INTEGER
+    case DOUBLE
     case STRING
     case TIMESTAMPZ
     case SEMVER
@@ -36,8 +37,6 @@ func nativebrikUserPropType(key: BuiltinUserProperty) -> UserPropertyType {
     switch key {
     case .userId:
         return .STRING
-    case .userRnd:
-        return .INTEGER
     case .currentTime:
         return .TIMESTAMPZ
     case .firstBootTime:
@@ -61,6 +60,9 @@ func nativebrikUserPropType(key: BuiltinUserProperty) -> UserPropertyType {
     }
 }
 
+private let USER_SEED_KEY: String = "NATIVEBRIK_USER_SEED"
+private let USER_SEED_MAX: Int = 100000000
+
 public class NativebrikUser {
     private var properties: [String: String]
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
@@ -82,10 +84,10 @@ public class NativebrikUser {
         self.userDB.set(userId, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
         self.properties[BuiltinUserProperty.userId.rawValue] = userId
 
-        // userRnd := n in [0,100)
-        let userRnd = self.userDB.object(forKey: NativebrikUserDefaultsKeys.USER_RND.rawValue) as? Int ?? Int.random(in: 0..<100)
-        self.userDB.set(userRnd, forKey: NativebrikUserDefaultsKeys.USER_RND.rawValue)
-        self.properties[BuiltinUserProperty.userRnd.rawValue] = String(userRnd)
+        // USER_SEED_KEY := n in [USER_SEED_MAX)
+        let userSeed = self.userDB.object(forKey: USER_SEED_KEY) as? Int ?? Int.random(in: 0..<USER_SEED_MAX)
+        self.userDB.set(userSeed, forKey: USER_SEED_KEY)
+        self.properties[USER_SEED_KEY] = String(userSeed)
 
         let languageCode = getLanguageCode()
         self.properties[BuiltinUserProperty.languageCode.rawValue] = languageCode
@@ -192,19 +194,12 @@ public class NativebrikUser {
         self.userDB.set(records, forKey: key)
     }
 
-    // returns [0, 100)
-    func getSeededUserRnd(seed: Int) -> Int {
-        let rndStr = self.properties[BuiltinUserProperty.userRnd.rawValue] ?? "0"
-        let rnd = Int(rndStr) ?? 0
-        srand48(seed)
-        let seededRand = drand48() * 100.0
-        return (rnd + Int(seededRand)) % 100
-    }
-
     // returns [0, 1)
     func getSeededNormalizedUserRnd(seed: Int) -> Double {
-        let seededRnd = getSeededUserRnd(seed: seed)
-        return Double(seededRnd) / 100.0
+        let userSeedStr = self.properties[USER_SEED_KEY] ?? "0"
+        let userSeed = Int(userSeedStr) ?? 0
+        srand48(seed + userSeed)
+        return drand48()
     }
 
     func toEventProperties(seed: Int) -> [UserProperty] {
@@ -266,10 +261,14 @@ public class NativebrikUser {
 
         for (key, value) in self.properties {
             if key == BuiltinUserProperty.userRnd.rawValue {
+                // not to use userRnd prop. use USER_SEED_KEY instead.
+                continue
+            } else if key == USER_SEED_KEY {
+                // add userRnd when it's USER_SEED_KEY
                 let eventProp = UserProperty(
-                    name: key,
-                    value: String(getSeededUserRnd(seed: seed)),
-                    type: nativebrikUserPropType(key: BuiltinUserProperty(rawValue: key) ?? .unknown)
+                    name: BuiltinUserProperty.userRnd.rawValue,
+                    value: String(getSeededNormalizedUserRnd(seed: seed)),
+                    type: .DOUBLE
                 )
                 eventProps.append(eventProp)
             } else {

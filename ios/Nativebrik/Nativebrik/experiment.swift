@@ -140,6 +140,12 @@ func comparePropWithConditionValue(prop: UserProperty, value: String, op: Condit
             return Int(value) ?? 0
         }
         return compareInteger(a: propValue, b: conditionValues, op: op)
+    case .DOUBLE:
+        let propValue = Double(prop.value) ?? 0
+        let conditionValues = values.map { value in
+            return Double(value) ?? 0
+        }
+        return compareDouble(a: propValue, b: conditionValues, op: op)
     case .STRING:
         let strings: [String] = values.map { value in
             return String(value)
