@@ -25,6 +25,8 @@ internal fun Block(block: UIBlock, modifier: Modifier = Modifier) {
         }
         is UIBlock.UnionUISwitchInputBlock -> Switch(block = block.data, modifier)
         is UIBlock.UnionUITextInputBlock -> TextInput(block = block.data, modifier)
+        is UIBlock.UnionUISelectInputBlock -> Select(block = block.data, modifier)
+        is UIBlock.UnionUIMultiSelectInputBlock -> MultiSelect(block = block.data, modifier)
         else -> Unit
     }
 }
