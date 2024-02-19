@@ -16,6 +16,11 @@ internal fun comparePropWithConditionValue(prop: UserProperty, value: String, op
             val conditionValues = values.map { it.toIntOrNull() ?: 0 }
             compareInteger(a = propValue, b = conditionValues, op = op)
         }
+        UserPropertyType.DOUBLE -> {
+            val propValue: Double = prop.value.toDoubleOrNull() ?: 0.toDouble()
+            val conditionValues = values.map { it.toDoubleOrNull() ?: 0.toDouble() }
+            compareDouble(a = propValue, b = conditionValues, op = op)
+        }
         UserPropertyType.STRING -> {
             val strings = values.map { it }
             compareString(a = prop.value, b = strings, op = op)
@@ -99,6 +104,65 @@ internal fun compareInteger(a: Int, b: List<Int>, op: ConditionOperator): Boolea
 
 
 internal fun compareLong(a: Long, b: List<Long>, op: ConditionOperator): Boolean {
+    return when (op) {
+        ConditionOperator.Equal -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a == b[0]
+        }
+        ConditionOperator.NotEqual -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a != b[0]
+        }
+        ConditionOperator.GreaterThan -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a > b[0]
+        }
+        ConditionOperator.GreaterThanOrEqual -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a >= b[0]
+        }
+        ConditionOperator.LessThan -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a < b[0]
+        }
+        ConditionOperator.LessThanOrEqual -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a <= b[0]
+        }
+        ConditionOperator.In -> {
+            return b.contains(a)
+        }
+        ConditionOperator.NotIn -> {
+            return !b.contains(a)
+        }
+        ConditionOperator.Between -> {
+            if (b.count() != 2) {
+                return false
+            }
+            return b[0] <= a && a <= b[1]
+        }
+        else -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a == b[0]
+        }
+    }
+}
+
+internal fun compareDouble(a: Double, b: List<Double>, op: ConditionOperator): Boolean {
     return when (op) {
         ConditionOperator.Equal -> {
             if (b.isEmpty()) {

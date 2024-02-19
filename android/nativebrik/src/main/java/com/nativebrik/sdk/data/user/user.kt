@@ -18,6 +18,9 @@ fun getNativebrikUserSharedPreferences(context: Context): SharedPreferences? {
     )
 }
 
+internal const val USER_SEED_MAX = 100000000
+internal const val USER_SEED_KEY = "NATIVEBRIK_USER_SEED"
+
 internal fun getCurrentDate(): ZonedDateTime {
     return ZonedDateTime.now()
 }
@@ -28,6 +31,7 @@ internal fun formatISO8601(time: ZonedDateTime): String {
 
 enum class UserPropertyType {
     INTEGER,
+    DOUBLE,
     STRING,
     TIMESTAMPZ,
     SEMVER,
@@ -59,11 +63,10 @@ class NativebrikUser {
         this.preferences?.edit()?.putString(userIdKey, userId)?.apply()
         this.properties[userIdKey] = userId
 
-        // userRnd := n in [0,100)
-        val userRndKey = BuiltinUserProperty.userRnd.toString()
-        val userRnd: Int = this.preferences?.getInt(userRndKey, Random.nextInt(0, 100)) ?: Random.nextInt(0, 100)
-        this.preferences?.edit()?.putInt(userRndKey, userRnd)?.apply()
-        this.properties[userRndKey] = userRnd.toString()
+        // USER_SEED_KEY := n in [0,USER_SEED_MAX)
+        val userSeed: Int = this.preferences?.getInt(USER_SEED_KEY, Random.nextInt(0, USER_SEED_MAX)) ?: Random.nextInt(0, USER_SEED_MAX)
+        this.preferences?.edit()?.putInt(USER_SEED_KEY, userSeed)?.apply()
+        this.properties[USER_SEED_KEY] = userSeed.toString()
 
         val languageCode = Locale.getDefault().toLanguageTag()
         this.properties[BuiltinUserProperty.languageCode.toString()] = languageCode
@@ -140,15 +143,11 @@ class NativebrikUser {
         }
     }
 
-    fun getUserRnd(seed: Int?): Int {
-        val rndStr = this.properties[BuiltinUserProperty.userRnd.toString()] ?: "0"
-        val rnd = rndStr.toIntOrNull() ?: 0
-        val seededRand = Random(seed ?: 0).nextDouble() * 100.0
-        return (rnd + seededRand.toInt()) % 100
-    }
-
+    // n in [0,1)
     fun getNormalizedUserRnd(seed: Int?): Double {
-        return this.getUserRnd(seed).toDouble() / 100.0
+        val userSeedStr: String = this.properties[USER_SEED_KEY] ?: "0"
+        val userSeed: Int = userSeedStr.toIntOrNull() ?: 0
+        return Random((seed ?: 0 + userSeed)).nextDouble()
     }
 
     fun toUserProperties(seed: Int? = 0): List<UserProperty> {
@@ -209,10 +208,14 @@ class NativebrikUser {
 
         this.properties.forEach { (key, value) ->
             if (key == BuiltinUserProperty.userRnd.toString()) {
+                // not to use userRnd prop. use USER_SEED_KEY instead.
+                return@forEach
+            } else if (key == USER_SEED_KEY) {
+                // add userRnd when it's USER_SEED_KEY
                 val prop = UserProperty(
-                    name = key,
-                    value = this.getUserRnd(seed = seed).toString(),
-                    type = UserPropertyType.INTEGER
+                    name = BuiltinUserProperty.userRnd.toString(),
+                    value = this.getNormalizedUserRnd(seed = seed).toString(),
+                    type = UserPropertyType.DOUBLE
                 )
                 props.add(prop)
             } else {
