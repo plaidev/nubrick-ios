@@ -19,7 +19,7 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // add Nativebrik.overlay at first
-        let overlay = nativebrik.overlayViewController()
+        let overlay = nativebrik.experiment.overlayViewController()
         self.addChild(overlay)
         self.view.addSubview(overlay.view)
         

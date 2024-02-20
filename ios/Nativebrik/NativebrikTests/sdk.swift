@@ -14,12 +14,12 @@ import SwiftUI
 final class NativebrikClientTests: XCTestCase {
     func testInitializeNativebrikClientWithoutErrorThrows() throws {
         let client = NativebrikClient(projectId: "Nothing")
-        let _ = client.overlayViewController()
+        let _ = client.experiment.overlayViewController()
     }
     
     func testDispatchWithoutErrorThrows() throws {
         let client = NativebrikClient(projectId: "Nothing")
-        client.dispatch(event: NativebrikEvent("Hello"))
+        client.experiment.dispatch(event: NativebrikEvent("Hello"))
     }
 }
 
