@@ -6,8 +6,8 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 
-const val CONNECT_TIMEOUT = 10 * 1000
-const val READ_TIMEOUT = 5 * 1000
+internal const val CONNECT_TIMEOUT = 10 * 1000
+internal const val READ_TIMEOUT = 5 * 1000
 
 internal fun getRequest(endpoint: String): Result<String> {
     var connection: HttpURLConnection? = null

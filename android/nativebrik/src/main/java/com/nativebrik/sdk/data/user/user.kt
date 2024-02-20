@@ -11,7 +11,7 @@ import java.util.UUID
 import kotlin.random.Random
 
 
-fun getNativebrikUserSharedPreferences(context: Context): SharedPreferences? {
+internal fun getNativebrikUserSharedPreferences(context: Context): SharedPreferences? {
     return context.getSharedPreferences(
         context.packageName + ".nativebrik.com.user",
         Context.MODE_PRIVATE
@@ -29,32 +29,31 @@ internal fun formatISO8601(time: ZonedDateTime): String {
     return time.format(DateTimeFormatter.ISO_INSTANT)
 }
 
-enum class UserPropertyType {
+internal enum class UserPropertyType {
     INTEGER,
     DOUBLE,
     STRING,
     TIMESTAMPZ,
     SEMVER,
-    UNKNOWN,;
 }
 
-data class UserProperty(
+internal data class UserProperty(
     val name: String,
     val value: String,
     val type: UserPropertyType,
-) {}
+)
 
 class NativebrikUser {
     private var properties: MutableMap<String, String> = mutableMapOf()
     private var preferences: SharedPreferences? = null
     private var lastBootTime: ZonedDateTime = getCurrentDate()
 
-    var id: String = ""
+    val id: String
         get() {
             return this.properties[BuiltinUserProperty.userId.toString()] ?: ""
         }
 
-    constructor(context: Context) {
+    internal constructor(context: Context) {
         this.preferences = getNativebrikUserSharedPreferences(context)
 
         // userId := uuid by default
@@ -144,13 +143,13 @@ class NativebrikUser {
     }
 
     // n in [0,1)
-    fun getNormalizedUserRnd(seed: Int?): Double {
+    internal fun getNormalizedUserRnd(seed: Int?): Double {
         val userSeedStr: String = this.properties[USER_SEED_KEY] ?: "0"
         val userSeed: Int = userSeedStr.toIntOrNull() ?: 0
-        return Random((seed ?: 0 + userSeed)).nextDouble()
+        return Random((seed ?: 0) + userSeed).nextDouble()
     }
 
-    fun toUserProperties(seed: Int? = 0): List<UserProperty> {
+    internal fun toUserProperties(seed: Int? = 0): List<UserProperty> {
         val now = getCurrentDate()
         val props: MutableList<UserProperty> = mutableListOf()
 
