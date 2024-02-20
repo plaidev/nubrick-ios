@@ -152,6 +152,7 @@ public class NativebrikClient: ObservableObject {
         self.experiment = NativebrikExperiment(user: self.user, config: config, repositories: repositories, overlay: self.overlayVC)
     }
 
+    @available(*, deprecated, renamed: "NativebrikClient.experiment.overlayViewController", message: "use NativebrikClient.experiment.overlayViewController instead of NativebrikClient.overlayViewController")
     public func overlayViewController() -> UIViewController {
         if !isNativebrikAvailable {
             let vc = UIViewController()
@@ -161,6 +162,7 @@ public class NativebrikClient: ObservableObject {
         return self.overlayVC
     }
 
+    @available(*, deprecated, renamed: "NativebrikClient.experiment.overlay", message: "use NativebrikClient.experiment.overlay instead of NativebrikClient.overlay")
     public func overlay() -> some View {
         if !isNativebrikAvailable {
             return AnyView(EmptyView())
@@ -189,6 +191,22 @@ public class NativebrikExperiment {
     
     public func dispatch(event: NativebrikEvent) {
         self.overlayVC.triggerViewController.dispatch(event: event)
+    }
+    
+    public func overlayViewController() -> UIViewController {
+        if !isNativebrikAvailable {
+            let vc = UIViewController()
+            vc.view.frame = .zero
+            return vc
+        }
+        return self.overlayVC
+    }
+
+    public func overlay() -> some View {
+        if !isNativebrikAvailable {
+            return AnyView(EmptyView())
+        }
+        return AnyView(OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0))
     }
 
     public func embedding(
@@ -332,7 +350,7 @@ public struct NativebrikProvider<Content: View>: View {
 
     public var body: some View {
         ZStack(alignment: .top) {
-            self.context.overlay()
+            self.context.experiment.overlay()
             _content.environmentObject(self.context)
         }
     }
