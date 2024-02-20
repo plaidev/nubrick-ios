@@ -9,6 +9,9 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetDefaults
@@ -21,12 +24,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
 import com.nativebrik.sdk.component.renderer.ModalBottomSheetBackHandler
 import com.nativebrik.sdk.component.renderer.NavigationHeader
 import com.nativebrik.sdk.component.renderer.Page
+import com.nativebrik.sdk.component.renderer.WebViewPage
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.schema.PageKind
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
@@ -42,6 +47,7 @@ internal class RootViewModel: ViewModel {
     val modalStack = mutableStateOf<List<UIPageBlock>>(listOf())
     val displayedModalIndex = mutableIntStateOf(-1)
     val modalVisibility = mutableStateOf(false)
+    val webviewUrl = mutableStateOf("")
     private val onDismiss: ((root: UIRootBlock) -> Unit)
     private val scope: CoroutineScope
     @OptIn(ExperimentalMaterial3Api::class)
@@ -92,6 +98,7 @@ internal class RootViewModel: ViewModel {
         }
 
         if (destBlock.data?.kind == PageKind.WEBVIEW_MODAL) {
+            this.webviewUrl.value = destBlock.data?.webviewUrl ?: ""
             return
         }
 
@@ -147,10 +154,15 @@ internal class RootViewModel: ViewModel {
     }
 
     fun handleModalDismiss() {
+        this.webviewUrl.value = ""
         this.modalStack.value = emptyList()
         this.displayedModalIndex.intValue = -1
         this.modalVisibility.value = false
         this.onDismiss(this.root)
+    }
+
+    fun handleWebviewDismiss() {
+        this.webviewUrl.value = ""
     }
 }
 
@@ -177,6 +189,8 @@ internal fun Root(
     embeddingVisibility: Boolean = true,
     onDismiss: ((root: UIRootBlock) -> Unit) = {},
 ) {
+    val scrollState = rememberScrollState()
+    val webviewSheetState = rememberModalBottomSheetState()
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     val viewModel = remember(root, sheetState, scope, onDismiss) {
@@ -247,6 +261,19 @@ internal fun Root(
                             block = stack,
                         )
                     }
+                }
+            }
+        }
+        if (viewModel.webviewUrl.value.isNotEmpty()) {
+            ModalBottomSheet(
+                sheetState = webviewSheetState,
+                onDismissRequest = {
+                    viewModel.handleWebviewDismiss()
+                }) {
+                Box(
+                    Modifier.verticalScroll(scrollState, true)
+                ) {
+                    WebViewPage(url = viewModel.webviewUrl.value, modifier = Modifier.defaultMinSize(minHeight = 200f.dp))
                 }
             }
         }
