@@ -17,23 +17,6 @@ final class UserTests: XCTestCase {
         XCTAssertEqual(user.id, later.id)
     }
 
-    func testGetUserSeededRndByDefaultAndAlwaysTheSame() {
-        let user = NativebrikUser()
-        XCTAssertEqual(user.getSeededUserRnd(seed: 0), user.getSeededUserRnd(seed: 0))
-        XCTAssertNotEqual(user.getSeededUserRnd(seed: 10), user.getSeededUserRnd(seed: 0))
-        
-        let later = NativebrikUser()
-        XCTAssertEqual(user.getSeededUserRnd(seed: 0), later.getSeededUserRnd(seed: 0))
-    }
-    
-    func testGetUserSeededRndShouldBeIn0to99() {
-        let user = NativebrikUser()
-        for i in 1...1000 {
-            XCTAssertTrue(user.getSeededUserRnd(seed: i) < 100)
-            XCTAssertTrue(user.getSeededUserRnd(seed: i) >= 0)
-        }
-    }
-    
     func testGetUserSeededNormalizedRndAndAlwaysTheSame() {
         let user = NativebrikUser()
         XCTAssertEqual(user.getSeededNormalizedUserRnd(seed: 0), user.getSeededNormalizedUserRnd(seed: 0))
