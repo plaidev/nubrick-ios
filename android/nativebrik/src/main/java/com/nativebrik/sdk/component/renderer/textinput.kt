@@ -9,11 +9,27 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.nativebrik.sdk.component.provider.container.ContainerContext
+import com.nativebrik.sdk.data.FormValue
 import com.nativebrik.sdk.schema.UITextInputBlock
 
 @Composable
 internal fun TextInput(block: UITextInputBlock, modifier: Modifier = Modifier) {
-    var value by remember { mutableStateOf(block.data?.value ?: "") }
+    val container = ContainerContext.value
+    var value by remember {
+        var value = block.data?.value ?: ""
+        val key = block?.data?.key
+        if (key != null) {
+            when (val v = container.getFormValue(key)) {
+                is FormValue.Str -> {
+                    value = v.str
+                }
+                else -> {}
+            }
+        }
+
+        mutableStateOf(value)
+    }
     val placeholder = block.data?.placeholder ?: ""
     val fontStyle = parseFontStyle(
         size = block.data?.size,
@@ -28,6 +44,11 @@ internal fun TextInput(block: UITextInputBlock, modifier: Modifier = Modifier) {
         value = value,
         onValueChange = {
             value = it
+
+            val key = block?.data?.key
+            if (key != null) {
+                container.setFormValue(key, FormValue.Str(it))
+            }
         },
         modifier = modifier,
         singleLine = true,

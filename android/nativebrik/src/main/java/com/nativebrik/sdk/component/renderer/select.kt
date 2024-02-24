@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.nativebrik.sdk.component.provider.container.ContainerContext
+import com.nativebrik.sdk.data.FormValue
 import com.nativebrik.sdk.schema.UIMultiSelectInputBlock
 import com.nativebrik.sdk.schema.UISelectInputBlock
 import com.nativebrik.sdk.schema.UISelectInputOption
@@ -33,9 +35,21 @@ internal const val NONE_VALUE = "None"
 @Composable
 internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
     val localDensity = LocalDensity.current
+    val container = ContainerContext.value
     var expanded by remember { mutableStateOf(false) }
     var value by remember {
-        mutableStateOf(block.data?.value ?: NONE_VALUE)
+        var value = block.data?.value ?: NONE_VALUE
+        val key = block?.data?.key
+        if (key != null) {
+            when (val v = container.getFormValue(key)) {
+                is FormValue.Str -> {
+                    value = v.str
+                }
+                else -> {}
+            }
+        }
+
+        mutableStateOf(value)
     }
     var widthDp by remember {
         mutableStateOf(0.dp)
@@ -82,6 +96,11 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
                 val handleSelect = {
                     value = option.value ?: NONE_VALUE
                     expanded = false
+
+                    val key = block?.data?.key
+                    if (key != null) {
+                        container.setFormValue(key, FormValue.Str(value))
+                    }
                 }
 
                 DropdownMenuItem(
@@ -119,9 +138,21 @@ internal fun selectedOptionsToText(options: List<UISelectInputOption>): String {
 @Composable
 internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Modifier) {
     val localDensity = LocalDensity.current
+    val container = ContainerContext.value
     var expanded by remember { mutableStateOf(false) }
     var value by remember {
-        mutableStateOf(block.data?.value ?: emptyList())
+        var value = block.data?.value ?: emptyList()
+        val key = block?.data?.key
+        if (key != null) {
+            when (val v = container.getFormValue(key)) {
+                is FormValue.StrList -> {
+                    value = v.list
+                }
+                else -> {}
+            }
+        }
+
+        mutableStateOf(value)
     }
     var widthDp by remember {
         mutableStateOf(0.dp)
@@ -180,6 +211,11 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                             list.add(option.value)
                             value = list
                         }
+                    }
+
+                    val key = block?.data?.key
+                    if (key != null) {
+                        container.setFormValue(key, FormValue.StrList(value))
                     }
                 }
                 DropdownMenuItem(

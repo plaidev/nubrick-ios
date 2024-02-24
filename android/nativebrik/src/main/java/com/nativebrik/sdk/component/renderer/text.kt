@@ -30,7 +30,6 @@ internal fun parseFontDesign(fontDesign: FontDesign?): PrimitiveFontFamily {
     }
 }
 
-
 internal fun parseFontWeight(fontWeight: FontWeight?): PrimitiveFontWeight {
     return when (fontWeight) {
         FontWeight.ULTRA_LIGHT -> PrimitiveFontWeight.ExtraLight
