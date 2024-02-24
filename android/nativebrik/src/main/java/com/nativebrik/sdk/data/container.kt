@@ -23,6 +23,9 @@ class SkipHttpRequestException: Exception("Skip http request")
 internal interface Container {
     fun createVariableForTemplate(data: JsonElement? = null, properties: List<Property>? = null): JsonElement
 
+    fun getFormValue(key: String): FormValue?
+    fun setFormValue(key: String, value: FormValue)
+
     suspend fun sendHttpRequest(req: ApiHttpRequest, data: JsonElement? = null): Result<JsonElement>
     suspend fun fetchEmbedding(experimentId: String, componentId: String? = null): Result<UIBlock>
     suspend fun fetchInAppMessage(trigger: String): Result<UIBlock>
@@ -46,6 +49,9 @@ internal class ContainerImpl(
     private val httpRequestRepository: HttpRequestRepository by lazy {
         HttpRequestRepositoryImpl()
     }
+    private val formRepository: FormRepository by lazy {
+        FormRepositoryImpl()
+    }
 
     override fun createVariableForTemplate(data: JsonElement?, properties: List<Property>?): JsonElement {
         return createVariableForTemplate(
@@ -54,6 +60,14 @@ internal class ContainerImpl(
             properties = properties,
             form = null,
         )
+    }
+
+    override fun getFormValue(key: String): FormValue? {
+        return this.formRepository.getValue(key)
+    }
+
+    override fun setFormValue(key: String, value: FormValue) {
+        this.formRepository.setValue(key, value)
     }
 
     override suspend fun sendHttpRequest(req: ApiHttpRequest, data: JsonElement?): Result<JsonElement> {
