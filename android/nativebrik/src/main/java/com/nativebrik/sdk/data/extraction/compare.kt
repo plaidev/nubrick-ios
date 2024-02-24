@@ -32,7 +32,7 @@ internal fun comparePropWithConditionValue(prop: UserProperty, value: String, op
         UserPropertyType.TIMESTAMPZ -> {
             try {
                 val dateFormatter = SimpleDateFormat()
-                val propValue = dateFormatter?.parse(prop.value)?.time ?: 0
+                val propValue = dateFormatter.parse(prop.value)?.time ?: 0
                 val conditionValues = values.map { dateFormatter.parse(it)?.time?.div(1000) ?: 0 }
                 compareLong(a = propValue, b = conditionValues, op = op)
             } catch (e: Exception) {
