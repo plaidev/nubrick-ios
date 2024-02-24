@@ -27,9 +27,9 @@ internal fun rememberEmbeddingState(container: Container, experimentId: String, 
     var loadingState: EmbeddingLoadingState by remember { mutableStateOf(EmbeddingLoadingState.Loading()) }
     LaunchedEffect("key") {
         container.fetchEmbedding(experimentId, componentId).onSuccess {
-            when (it) {
+            loadingState = when (it) {
                 is UIBlock.UnionUIRootBlock -> {
-                    loadingState = EmbeddingLoadingState.Completed {
+                    EmbeddingLoadingState.Completed {
                         Root(
                             container = container,
                             root = it.data,
@@ -37,17 +37,19 @@ internal fun rememberEmbeddingState(container: Container, experimentId: String, 
                         )
                     }
                 }
+
                 else -> {
-                    loadingState = EmbeddingLoadingState.NotFound()
+                    EmbeddingLoadingState.NotFound()
                 }
             }
         }.onFailure {
-            when (it) {
+            loadingState = when (it) {
                 is NotFoundException -> {
-                    loadingState = EmbeddingLoadingState.NotFound()
+                    EmbeddingLoadingState.NotFound()
                 }
+
                 else -> {
-                    loadingState = EmbeddingLoadingState.Failed(it)
+                    EmbeddingLoadingState.Failed(it)
                 }
             }
         }
