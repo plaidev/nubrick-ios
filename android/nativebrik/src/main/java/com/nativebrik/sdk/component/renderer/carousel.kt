@@ -13,13 +13,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.nativebrik.sdk.component.provider.data.DataContext
+import com.nativebrik.sdk.component.provider.data.NestedDataProvider
 import com.nativebrik.sdk.schema.FlexDirection
 import com.nativebrik.sdk.schema.UICollectionBlock
+import com.nativebrik.sdk.template.variableByPath
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.jsonArray
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun Carousel(block: UICollectionBlock, modifier: Modifier = Modifier) {
-    val children = block.data?.children ?: emptyList()
+    val dataState = DataContext.state
+    val reference = block.data?.reference
+    var children = block.data?.children ?: emptyList()
+    var arrayData: JsonArray? = null
+    if (reference != null) {
+        var data = variableByPath(reference, dataState.data)
+        if (data is JsonArray && children.isNotEmpty()) {
+            arrayData = data.jsonArray
+            children = arrayData.map { children[0] }
+        }
+    }
+
     val state = rememberPagerState {
         children.size
     }
@@ -36,7 +52,9 @@ internal fun Carousel(block: UICollectionBlock, modifier: Modifier = Modifier) {
             modifier = modifier.fillMaxWidth()
         ) {
             Box(Modifier.size(size)) {
-                Block(block = children[it])
+                NestedDataProvider(data = if (arrayData != null) arrayData[it] else dataState.data) {
+                    Block(block = children[it])
+                }
             }
         }
     } else {
@@ -48,7 +66,9 @@ internal fun Carousel(block: UICollectionBlock, modifier: Modifier = Modifier) {
             modifier = modifier.fillMaxHeight()
         ) {
             Box(Modifier.size(size)) {
-                Block(block = children[it])
+                NestedDataProvider(data = if (arrayData != null) arrayData[it] else dataState.data) {
+                    Block(block = children[it])
+                }
             }
         }
     }
