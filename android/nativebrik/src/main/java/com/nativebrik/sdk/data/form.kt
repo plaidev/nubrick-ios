@@ -21,12 +21,17 @@ internal sealed class FormValue {
 }
 
 internal interface FormRepository {
+    fun getFormData(): Map<String, JsonElement>
     fun setValue(key: String, value: FormValue)
     fun getValue(key: String): FormValue?
 }
 
 internal class FormRepositoryImpl: FormRepository {
     private val map: MutableMap<String, FormValue> = mutableMapOf()
+
+    override fun getFormData(): Map<String, JsonElement> {
+        return this.map.entries.associate { it.key to it.value.toJsonElement() }
+    }
 
     override fun getValue(key: String): FormValue? {
         return this.map[key]
