@@ -26,6 +26,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import com.nativebrik.sdk.component.provider.container.ContainerProvider
 import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
 import com.nativebrik.sdk.component.renderer.ModalBottomSheetBackHandler
@@ -211,71 +212,74 @@ internal fun Root(
     val displayedPageBlock = viewModel.displayedPageBlock.value
     val modalStack = viewModel.modalStack.value
 
-    Box {
-        if (embeddingVisibility && displayedPageBlock != null) {
-            AnimatedContent(
-                targetState = displayedPageBlock,
-                transitionSpec = {
-                    fadeIn() togetherWith fadeOut()
-                },
-                label = "Embedding",
-            ) {
-                PageDataProvider(container = container, request = it.data?.httpRequest) {
-                    EventListenerProvider(listener = listener) {
-                        Page(block = it, modifier)
+    ContainerProvider(container = container) {
+        Box {
+            if (embeddingVisibility && displayedPageBlock != null) {
+                AnimatedContent(
+                    targetState = displayedPageBlock,
+                    transitionSpec = {
+                        fadeIn() togetherWith fadeOut()
+                    },
+                    label = "Embedding",
+                ) {
+                    PageDataProvider(container = container, request = it.data?.httpRequest) {
+                        EventListenerProvider(listener = listener) {
+                            Page(block = it, modifier)
+                        }
                     }
                 }
             }
-        }
-        if (viewModel.modalVisibility.value) {
-            BackHandler(true) {
-                viewModel.back()
-            }
-            ModalBottomSheet(
-                sheetState = sheetState,
-                onDismissRequest = {
-                    viewModel.handleModalDismiss()
-                },
-                properties = bottomSheetProps,
-            ) {
-                ModalBottomSheetBackHandler {
+            if (viewModel.modalVisibility.value) {
+                BackHandler(true) {
                     viewModel.back()
                 }
-                Column {
-                    AnimatedContent(
-                        targetState = viewModel.displayedModalIndex.intValue,
-                        transitionSpec = {
-                            if (targetState > initialState) {
-                                slideInHorizontally { it } togetherWith slideOutHorizontally { -it } + fadeOut()
-                            } else {
-                                slideInHorizontally { -it } togetherWith slideOutHorizontally { it } + fadeOut()
-                            }
-                        },
-                        label = "Bottom Sheet"
-                    ) {
-                        val stack = modalStack[it]
-                        NavigationHeader(it, stack, onClose = { viewModel.close() }, onBack = { viewModel.back() })
-                        ModalPage(
-                            container = container,
-                            listener = listener,
-                            block = stack,
-                        )
+                ModalBottomSheet(
+                    sheetState = sheetState,
+                    onDismissRequest = {
+                        viewModel.handleModalDismiss()
+                    },
+                    properties = bottomSheetProps,
+                ) {
+                    ModalBottomSheetBackHandler {
+                        viewModel.back()
+                    }
+                    Column {
+                        AnimatedContent(
+                            targetState = viewModel.displayedModalIndex.intValue,
+                            transitionSpec = {
+                                if (targetState > initialState) {
+                                    slideInHorizontally { it } togetherWith slideOutHorizontally { -it } + fadeOut()
+                                } else {
+                                    slideInHorizontally { -it } togetherWith slideOutHorizontally { it } + fadeOut()
+                                }
+                            },
+                            label = "Bottom Sheet"
+                        ) {
+                            val stack = modalStack[it]
+                            NavigationHeader(it, stack, onClose = { viewModel.close() }, onBack = { viewModel.back() })
+                            ModalPage(
+                                container = container,
+                                listener = listener,
+                                block = stack,
+                            )
+                        }
                     }
                 }
             }
-        }
-        if (viewModel.webviewUrl.value.isNotEmpty()) {
-            ModalBottomSheet(
-                sheetState = webviewSheetState,
-                onDismissRequest = {
-                    viewModel.handleWebviewDismiss()
-                }) {
-                Box(
-                    Modifier.verticalScroll(scrollState, true)
-                ) {
-                    WebViewPage(url = viewModel.webviewUrl.value, modifier = Modifier.defaultMinSize(minHeight = 200f.dp))
+            if (viewModel.webviewUrl.value.isNotEmpty()) {
+                ModalBottomSheet(
+                    sheetState = webviewSheetState,
+                    onDismissRequest = {
+                        viewModel.handleWebviewDismiss()
+                    }) {
+                    Box(
+                        Modifier.verticalScroll(scrollState, true)
+                    ) {
+                        WebViewPage(url = viewModel.webviewUrl.value, modifier = Modifier.defaultMinSize(minHeight = 200f.dp))
+                    }
                 }
             }
         }
     }
+
 }
