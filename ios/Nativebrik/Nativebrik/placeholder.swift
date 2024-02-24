@@ -120,6 +120,7 @@ struct CreateDataForTemplateOption {
     var properties: [Property]? = nil
     var user: NativebrikUser? = nil
     var form: [String:Any]? = nil
+    var projectId: String? = nil
 }
 func createDataForTemplate(_ option: CreateDataForTemplateOption) -> Any {
     let userData: [String:Any] = (option.user != nil) ? [
@@ -135,11 +136,15 @@ func createDataForTemplate(_ option: CreateDataForTemplateOption) -> Any {
             propertiesData[key] = prop.value
         }
     }
+    let projectData: [String:Any] = [
+        "id": option.projectId ?? "",
+    ]
     return [
         "user": (userData.isEmpty ? nil : userData) as Any,
         "props": (propertiesData.isEmpty ? nil : propertiesData) as Any,
         "form": (formData?.isEmpty == true ? nil : formData) as Any,
-        "data": option.data as Any
+        "data": option.data as Any,
+        "project": projectData as Any,
     ]
 }
 func createDataForTemplateFrom(base: Any?, _ option: CreateDataForTemplateOption) -> Any {
@@ -152,6 +157,7 @@ func createDataForTemplateFrom(base: Any?, _ option: CreateDataForTemplateOption
         "props": overlay?["props"] ?? base["props"] as Any,
         "form": overlay?["form"] ?? base["form"] as Any,
         "data": overlay?["data"] ?? base["data"] as Any,
+        "project": overlay?["project"] ?? base["project"] as Any,
     ]
     return data
 }

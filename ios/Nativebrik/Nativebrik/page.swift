@@ -223,7 +223,8 @@ class PageView: UIView {
                     data: createDataForTemplateFrom(base: self?.data, CreateDataForTemplateOption(
                         properties: self?.props,
                         user: self?.user,
-                        form: self?.form?.formValues
+                        form: self?.form?.formValues,
+                        projectId: self?.config.projectId
                     ))
                 ))
                 self?.repositories?.httpRequest.fetch(request: httpRequest, assertion: nil, placeholderReplacer: { key in
@@ -235,7 +236,8 @@ class PageView: UIView {
                                 data: data.value,
                                 properties: self?.props,
                                 user: self?.user,
-                                form: self?.form?.formValues
+                                form: self?.form?.formValues,
+                                projectId: self?.config.projectId
                             ))
                         }
                         self?.loading = false
