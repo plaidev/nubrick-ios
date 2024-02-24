@@ -58,7 +58,8 @@ internal class ContainerImpl(
             user = this.user,
             data = data,
             properties = properties,
-            form = null,
+            form = formRepository.getFormData(),
+            projectId = config.projectId,
         )
     }
 

@@ -12,17 +12,22 @@ internal fun createVariableForTemplate(
     user: NativebrikUser? = null,
     data: JsonElement? = null,
     properties: List<Property>? = null,
-    form: Map<String, Any>? = null,
+    form: Map<String, JsonElement>? = null,
+    projectId: String? = null,
 ): JsonElement {
-    val userJsonObject = JsonObject(mapOf(
-        "id" to JsonPrimitive(user?.id ?: "")
-    ))
+    val userJsonObject = JsonObject(mapOf("id" to JsonPrimitive(user?.id ?: "")))
     val propertiesJsonObject = JsonObject(properties?.associate { (it.name ?: "") to JsonPrimitive(it.value) } ?: emptyMap())
+    val formJsonObject = JsonObject(form?.entries?.associate {
+        it.key to it.value
+    } ?: emptyMap())
     return JsonObject(mapOf(
         "user" to userJsonObject,
         "props" to propertiesJsonObject,
-        "form" to JsonPrimitive(null),
+        "form" to formJsonObject,
         "data" to (data ?: JsonPrimitive(null)),
+        "project" to JsonObject(mapOf(
+            "id" to JsonPrimitive(projectId),
+        ))
     ))
 }
 
@@ -45,5 +50,6 @@ internal fun mergeVariableForTemplate(
         "props" to (b.jsonObject["props"] ?: a.jsonObject["props"] ?: JsonPrimitive(null)),
         "forms" to (b.jsonObject["forms"] ?: a.jsonObject["forms"] ?: JsonPrimitive(null)),
         "data" to (b.jsonObject["data"] ?: a.jsonObject["data"] ?: JsonPrimitive(null)),
+        "project" to (b.jsonObject["project"] ?: a.jsonObject["project"] ?: JsonPrimitive(null)),
     ))
 }
