@@ -30,12 +30,12 @@ data class Endpoint(
     val track: String = "https://track.nativebrik.com/track/v1",
 )
 
-data class Config(
+public data class Config(
     val projectId: String,
     val endpoint: Endpoint = Endpoint()
 )
 
-data class NativebrikEvent(
+public data class NativebrikEvent(
     val name: String
 )
 
