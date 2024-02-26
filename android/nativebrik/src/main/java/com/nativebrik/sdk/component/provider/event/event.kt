@@ -14,15 +14,20 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.nativebrik.sdk.component.provider.container.ContainerContext
+import com.nativebrik.sdk.component.provider.data.DataContext
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-internal var LocalEventListener = compositionLocalOf<EventListenerState> {
+private var LocalEventListener = compositionLocalOf<EventListenerState> {
     error("LocalEventListener is not found")
 }
 
@@ -62,10 +67,31 @@ internal fun EventListenerProvider(
 @Composable
 internal fun Modifier.eventDispatcher(eventDispatcher: UIBlockEventDispatcher?): Modifier {
     return composed {
+        val scope = rememberCoroutineScope()
+        val container = ContainerContext.value
+        val data = DataContext.state.data
         val eventListener = LocalEventListener.current
-        val eventDispatcher = eventDispatcher ?: return@composed this
+        val event = eventDispatcher ?: return@composed this
         this.clickable(true) {
-            eventListener.dispatch(eventDispatcher)
+            val req = event.httpRequest
+            if (req != null) {
+                scope.launch(Dispatchers.IO) {
+                    container
+                        .sendHttpRequest(req, data)
+                        .onSuccess {
+                            scope.launch(Dispatchers.Main) {
+                                eventListener.dispatch(event)
+                            }
+                        }
+                        .onFailure {
+                            scope.launch(Dispatchers.Main) {
+                                eventListener.dispatch(event)
+                            }
+                        }
+                }
+            } else {
+                eventListener.dispatch(event)
+            }
         }
     }
 }
