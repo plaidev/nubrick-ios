@@ -26,7 +26,7 @@ internal interface Container {
     fun getFormValue(key: String): FormValue?
     fun setFormValue(key: String, value: FormValue)
 
-    suspend fun sendHttpRequest(req: ApiHttpRequest, data: JsonElement? = null): Result<JsonElement>
+    suspend fun sendHttpRequest(req: ApiHttpRequest, variable: JsonElement? = null): Result<JsonElement>
     suspend fun fetchEmbedding(experimentId: String, componentId: String? = null): Result<UIBlock>
     suspend fun fetchInAppMessage(trigger: String): Result<UIBlock>
     suspend fun fetchRemoteConfig(experimentId: String): Result<ExperimentVariant>
