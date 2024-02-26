@@ -7,7 +7,7 @@ import androidx.compose.runtime.compositionLocalOf
 import com.nativebrik.sdk.data.Container
 
 
-internal var LocalContainer = compositionLocalOf<Container> {
+private var LocalContainer = compositionLocalOf<Container> {
     error("LocalContainer is not found")
 }
 
