@@ -71,8 +71,7 @@ internal class ContainerImpl(
         this.formRepository.setValue(key, value)
     }
 
-    override suspend fun sendHttpRequest(req: ApiHttpRequest, data: JsonElement?): Result<JsonElement> {
-        val variable = this.createVariableForTemplate(data = data)
+    override suspend fun sendHttpRequest(req: ApiHttpRequest, variable: JsonElement?): Result<JsonElement> {
         val compiledReq = ApiHttpRequest(
             url = req.url?.let { compile(it, variable) },
             method = req.method,
