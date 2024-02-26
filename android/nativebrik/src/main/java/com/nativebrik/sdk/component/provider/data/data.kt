@@ -10,13 +10,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import com.nativebrik.sdk.component.provider.container.ContainerContext
+import com.nativebrik.sdk.component.provider.pageblock.PageBlockContext
 import com.nativebrik.sdk.data.Container
-import com.nativebrik.sdk.data.createVariableForTemplate
-import com.nativebrik.sdk.data.mergeVariableForTemplate
 import com.nativebrik.sdk.schema.ApiHttpRequest
 import kotlinx.serialization.json.JsonElement
 
-internal var LocalData = compositionLocalOf<DataState> {
+private var LocalData = compositionLocalOf<DataState> {
     error("LocalData is not found")
 }
 
@@ -40,20 +40,27 @@ internal fun rememberPageState(
     container: Container,
     request: ApiHttpRequest?,
 ): DataState {
-    var state: DataState by remember { mutableStateOf(DataState(loading = true, container.createVariableForTemplate())) }
+    val pageBlock = PageBlockContext.value
+    var state: DataState by remember {
+        mutableStateOf(DataState(
+            loading = true,
+            container.createVariableForTemplate(
+                properties = pageBlock.toProperties()
+            )
+        ))
+    }
     LaunchedEffect("key") {
         if (request == null) {
             state = state.copy(loading = false)
             return@LaunchedEffect
         }
         state = state.copy(loading = true)
-        container.sendHttpRequest(request, state.data).onSuccess {
+        container.sendHttpRequest(
+            request, container.createVariableForTemplate(properties = pageBlock.toProperties())
+        ).onSuccess {
             state = state.copy(
                 loading = false,
-                data = mergeVariableForTemplate(
-                    state.data,
-                    createVariableForTemplate(data = it),
-                )
+                data = container.createVariableForTemplate(it, properties = pageBlock.toProperties())
             )
         }.onFailure {
             state = state.copy(loading = false)
@@ -66,14 +73,13 @@ internal fun rememberPageState(
 internal fun rememberNestedDataState(
     data: JsonElement,
 ): DataState {
+    val pageBlock = PageBlockContext.value
+    val container = ContainerContext.value
     val parentData by rememberUpdatedState(newValue = DataContext.state)
     return remember(parentData, data) {
         DataState(
             loading = parentData.loading,
-            data = mergeVariableForTemplate(
-                parentData.data,
-                createVariableForTemplate(data = data),
-            )
+            data = container.createVariableForTemplate(data = data, properties = pageBlock.toProperties())
         )
     }
 }
