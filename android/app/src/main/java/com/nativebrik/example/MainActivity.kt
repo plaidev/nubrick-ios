@@ -20,9 +20,11 @@ import com.nativebrik.sdk.NativebrikClient
 import com.nativebrik.sdk.NativebrikProvider
 
 class MainActivity : ComponentActivity() {
+    private lateinit var nativebrik: NativebrikClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val nativebrik = NativebrikClient(
+        this.nativebrik = NativebrikClient(
             config = Config(projectId = "ckto7v223akg00ag3jsg"),
             context = this.applicationContext,
         )
@@ -38,13 +40,18 @@ class MainActivity : ComponentActivity() {
                             Greeting("Android")
                             Nativebrik.client.experiment.Embedding(
                                 "SCROLLABLE_CONTENT",
-                                modifier = Modifier.height(300f.dp)
+                                modifier = Modifier.height(400f.dp)
                             )
                         }
                     }
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        this.nativebrik.close()
+        super.onDestroy()
     }
 }
 
