@@ -1,15 +1,23 @@
 package com.nativebrik.sdk.component
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.nativebrik.sdk.Event
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.NotFoundException
 import com.nativebrik.sdk.schema.UIBlock
@@ -23,7 +31,7 @@ sealed class EmbeddingLoadingState {
 
 
 @Composable
-internal fun rememberEmbeddingState(container: Container, experimentId: String, componentId: String?): EmbeddingLoadingState {
+internal fun rememberEmbeddingState(container: Container, experimentId: String, componentId: String?, onEvent: ((event: Event) -> Unit)?): EmbeddingLoadingState {
     var loadingState: EmbeddingLoadingState by remember { mutableStateOf(EmbeddingLoadingState.Loading()) }
     LaunchedEffect("key") {
         container.fetchEmbedding(experimentId, componentId).onSuccess {
@@ -33,7 +41,9 @@ internal fun rememberEmbeddingState(container: Container, experimentId: String, 
                         Root(
                             container = container,
                             root = it.data,
-                            modifier = Modifier.fillMaxHeight().fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            onEvent = onEvent ?: {}
                         )
                     }
                 }
@@ -63,17 +73,35 @@ internal fun Embedding(
     experimentId: String,
     componentId: String? = null,
     modifier: Modifier = Modifier,
+    onEvent: ((event: Event) -> Unit)? = null,
     content: (@Composable() (state: EmbeddingLoadingState) -> Unit)?
 ) {
-    val state = rememberEmbeddingState(container, experimentId, componentId)
-    val render = content ?: { state ->
-        when (state) {
-            is EmbeddingLoadingState.Completed -> state.view()
-            else -> {}
-        }
-    }
-
+    val state = rememberEmbeddingState(container, experimentId, componentId, onEvent)
     Box(modifier = modifier) {
-        render(state)
+        AnimatedContent(
+            targetState = state,
+            label = "EmbeddingLoadingStateAnimation",
+            transitionSpec = {
+                fadeIn() togetherWith fadeOut()
+            }
+        ) { state ->
+            when (state) {
+                is EmbeddingLoadingState.Completed -> if (content != null) content(state) else state.view()
+                is EmbeddingLoadingState.Loading -> Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (content != null) content(state) else CircularProgressIndicator()
+                }
+                else -> Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (content != null) content(state) else Unit
+                }
+            }
+        }
     }
 }

@@ -30,6 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import com.nativebrik.sdk.Event
+import com.nativebrik.sdk.EventProperty
+import com.nativebrik.sdk.EventPropertyType
 import com.nativebrik.sdk.component.provider.container.ContainerProvider
 import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
@@ -42,11 +45,31 @@ import com.nativebrik.sdk.component.renderer.WebViewPage
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.schema.PageKind
 import com.nativebrik.sdk.schema.Property
+import com.nativebrik.sdk.schema.PropertyType
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
 import com.nativebrik.sdk.schema.UIPageBlock
 import com.nativebrik.sdk.schema.UIRootBlock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+
+private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
+    return Event(
+        name = event.name,
+        deepLink = event.deepLink,
+        payload = event?.payload?.map { p ->
+            EventProperty(
+                name = p.name ?: "",
+                value = p.value ?: "",
+                type = when (p.ptype) {
+                    PropertyType.INTEGER -> EventPropertyType.INTEGER
+                    PropertyType.STRING -> EventPropertyType.STRING
+                    PropertyType.TIMESTAMPZ -> EventPropertyType.TIMESTAMPZ
+                    else -> EventPropertyType.UNKNOWN
+                }
+            )
+        }
+    )
+}
 
 internal class RootViewModel: ViewModel {
     private val root: UIRootBlock
@@ -217,6 +240,7 @@ internal fun Root(
     container: Container,
     root: UIRootBlock,
     embeddingVisibility: Boolean = true,
+    onEvent: (event: Event) -> Unit = {},
     onDismiss: ((root: UIRootBlock) -> Unit) = {},
 ) {
     val context = LocalContext.current
@@ -230,9 +254,14 @@ internal fun Root(
     val bottomSheetProps = remember {
         ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false)
     }
-    val listener = remember<(event: UIBlockEventDispatcher) -> Unit>(key1 = viewModel) {
+    val listener = remember<(event: UIBlockEventDispatcher) -> Unit>(viewModel, onEvent, container) {
         return@remember {
             viewModel.handleUIEvent(it)
+
+            // send event to listeners
+            val event = parseUIEventToEvent(it)
+            onEvent(event)
+            container.handleEvent(event)
         }
     }
 

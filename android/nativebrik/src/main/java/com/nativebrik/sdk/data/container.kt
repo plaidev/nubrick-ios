@@ -3,6 +3,7 @@ package com.nativebrik.sdk.data
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import com.nativebrik.sdk.Config
+import com.nativebrik.sdk.Event
 import com.nativebrik.sdk.data.database.DatabaseRepository
 import com.nativebrik.sdk.data.database.DatabaseRepositoryImpl
 import com.nativebrik.sdk.data.extraction.extractComponentId
@@ -24,6 +25,8 @@ class FailedToDecodeException: Exception("Failed to decode")
 class SkipHttpRequestException: Exception("Skip http request")
 
 internal interface Container {
+    fun handleEvent(it: Event) {}
+
     fun createVariableForTemplate(data: JsonElement? = null, properties: List<Property>? = null): JsonElement
 
     fun getFormValue(key: String): FormValue?
@@ -58,6 +61,10 @@ internal class ContainerImpl(
     }
     private val databaseRepository: DatabaseRepository by lazy {
         DatabaseRepositoryImpl(db)
+    }
+
+    override fun handleEvent(it: Event) {
+        this.config.onEvent?.let { it1 -> it1(it) }
     }
 
     override fun createVariableForTemplate(data: JsonElement?, properties: List<Property>?): JsonElement {

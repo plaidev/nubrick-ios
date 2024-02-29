@@ -2,20 +2,10 @@ package com.nativebrik.sdk
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.nativebrik.sdk.component.Embedding
 import com.nativebrik.sdk.component.EmbeddingLoadingState
@@ -34,9 +24,28 @@ data class Endpoint(
     val track: String = "https://track.nativebrik.com/track/v1",
 )
 
+public enum class EventPropertyType {
+    INTEGER,
+    STRING,
+    TIMESTAMPZ,
+    UNKNOWN
+}
+
+public data class EventProperty(
+    val name: String,
+    val value: String,
+    val type: EventPropertyType
+)
+public data class Event(
+    val name: String?,
+    val deepLink: String?,
+    val payload: List<EventProperty>?
+)
+
 public data class Config(
     val projectId: String,
-    val endpoint: Endpoint = Endpoint()
+    val endpoint: Endpoint = Endpoint(),
+    val onEvent: ((event: Event) -> Unit)? = null
 )
 
 public data class NativebrikEvent(
@@ -119,34 +128,13 @@ public class NativebrikExperiment {
     }
 
     @Composable
-    public fun Embedding(id: String, modifier: Modifier = Modifier) {
-        Embedding(container = this.container, id, modifier = modifier) { state ->
-            AnimatedContent(
-                targetState = state,
-                label = "",
-                transitionSpec = {
-                    fadeIn() togetherWith fadeOut()
-                }
-            ) { state ->
-                when (state) {
-                    is EmbeddingLoadingState.Completed -> state.view()
-                    is EmbeddingLoadingState.Loading -> Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                    else -> Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        BasicText(text = "Not Found")
-                    }
-                }
-            }
-        }
+    public fun Embedding(
+        id: String,
+        modifier: Modifier = Modifier,
+        onEvent: ((event: Event) -> Unit)? = null,
+        content: (@Composable() (state: EmbeddingLoadingState) -> Unit)? = null
+    ) {
+        Embedding(container = this.container, id, modifier = modifier, onEvent = onEvent, content = content)
     }
 
     @Composable

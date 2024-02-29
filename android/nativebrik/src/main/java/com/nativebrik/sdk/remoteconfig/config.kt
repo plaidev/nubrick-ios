@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.nativebrik.sdk.Event
 import com.nativebrik.sdk.component.Embedding
 import com.nativebrik.sdk.component.EmbeddingLoadingState
 import com.nativebrik.sdk.data.Container
@@ -101,13 +102,15 @@ class RemoteConfigVariant internal constructor(
     @Composable
     fun GetAsEmbedding(
         key: String,
-        content: (@Composable() (state: EmbeddingLoadingState) -> Unit)?
+        onEvent: ((event: Event) -> Unit)? = null,
+        content: (@Composable() (state: EmbeddingLoadingState) -> Unit)? = null
     ) {
         val componentId = this.get(key) ?: return
         return Embedding(
             container = this.container,
             experimentId = this.experimentId,
             componentId = componentId,
+            onEvent = onEvent,
             content = content,
         )
     }
