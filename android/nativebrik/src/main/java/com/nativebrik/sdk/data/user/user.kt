@@ -3,13 +3,14 @@ package com.nativebrik.sdk.data.user
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
+import com.nativebrik.sdk.VERSION
 import com.nativebrik.sdk.schema.BuiltinUserProperty
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.util.UUID
 import kotlin.random.Random
-
 
 internal fun getNativebrikUserSharedPreferences(context: Context): SharedPreferences? {
     return context.getSharedPreferences(
@@ -23,6 +24,11 @@ internal const val USER_SEED_KEY = "NATIVEBRIK_USER_SEED"
 
 internal fun getCurrentDate(): ZonedDateTime {
     return ZonedDateTime.now()
+}
+
+internal fun getToday(): ZonedDateTime {
+    val now = getCurrentDate()
+    return now.truncatedTo(ChronoUnit.DAYS)
 }
 
 internal fun formatISO8601(time: ZonedDateTime): String {
@@ -53,7 +59,7 @@ class NativebrikUser {
             return this.properties[BuiltinUserProperty.userId.toString()] ?: ""
         }
 
-    internal constructor(context: Context) {
+    internal constructor(context: Context, seed: Int? = null) {
         this.preferences = getNativebrikUserSharedPreferences(context)
 
         // userId := uuid by default
@@ -63,7 +69,8 @@ class NativebrikUser {
         this.properties[userIdKey] = userId
 
         // USER_SEED_KEY := n in [0,USER_SEED_MAX)
-        val userSeed: Int = this.preferences?.getInt(USER_SEED_KEY, Random.nextInt(0, USER_SEED_MAX)) ?: Random.nextInt(0, USER_SEED_MAX)
+        val rand = if (seed != null) Random(seed) else Random
+        val userSeed: Int = this.preferences?.getInt(USER_SEED_KEY, rand.nextInt(0, USER_SEED_MAX)) ?: rand.nextInt(0, USER_SEED_MAX)
         this.preferences?.edit()?.putInt(USER_SEED_KEY, userSeed)?.apply()
         this.properties[USER_SEED_KEY] = userSeed.toString()
 
@@ -80,16 +87,10 @@ class NativebrikUser {
         this.preferences?.edit()?.putString(firstBootTimeKey, firstBootTime)?.apply()
         this.properties[firstBootTimeKey] = firstBootTime
 
-        try {
-            val sdkVersion = context.packageManager.getPackageInfo("com.nativebrik.sdk", 0).versionName
-            this.properties[BuiltinUserProperty.sdkVersion.toString()] = sdkVersion
-        } catch (_: Exception) {
-            this.properties[BuiltinUserProperty.sdkVersion.toString()] = "0.0.0"
-        }
+        this.properties[BuiltinUserProperty.sdkVersion.toString()] = VERSION
 
         this.properties[BuiltinUserProperty.osName.toString()] = "Android"
         this.properties[BuiltinUserProperty.osVersion.toString()] = Build.VERSION.SDK_INT.toString()
-
 
         try {
             val packageName = context.packageName

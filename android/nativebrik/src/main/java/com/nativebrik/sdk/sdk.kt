@@ -1,6 +1,7 @@
 package com.nativebrik.sdk
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,8 +23,11 @@ import com.nativebrik.sdk.component.Trigger
 import com.nativebrik.sdk.component.TriggerViewModel
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.ContainerImpl
+import com.nativebrik.sdk.data.database.NativebrikDbHelper
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
+
+const val VERSION = "0.3.2"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -69,17 +73,25 @@ public fun NativebrikProvider(
 
 public class NativebrikClient {
     private final val config: Config
+    private final val db: SQLiteDatabase
     public final val user: NativebrikUser
     public final val experiment: NativebrikExperiment
 
     public constructor(config: Config, context: Context) {
         this.config = config
         this.user = NativebrikUser(context)
+        val helper = NativebrikDbHelper(context)
+        this.db = helper.writableDatabase
         this.experiment = NativebrikExperiment(
             config = this.config,
             user = this.user,
+            db = this.db,
             context = context,
         )
+    }
+
+    public fun close() {
+        this.db.close()
     }
 }
 
@@ -87,10 +99,11 @@ public class NativebrikExperiment {
     private val container: Container
     private val trigger: TriggerViewModel
 
-    internal constructor(config: Config, user: NativebrikUser, context: Context) {
+    internal constructor(config: Config, user: NativebrikUser, db: SQLiteDatabase, context: Context) {
         this.container = ContainerImpl(
             config = config,
             user = user,
+            db = db,
             context = context,
         )
         this.trigger = TriggerViewModel(this.container)
