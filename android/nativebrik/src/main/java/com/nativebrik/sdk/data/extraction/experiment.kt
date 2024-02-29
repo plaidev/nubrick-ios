@@ -1,6 +1,7 @@
 package com.nativebrik.sdk.data.extraction
 
 import com.nativebrik.sdk.data.user.UserProperty
+import com.nativebrik.sdk.data.user.getCurrentDate
 import com.nativebrik.sdk.schema.ConditionOperator
 import com.nativebrik.sdk.schema.ExperimentCondition
 import com.nativebrik.sdk.schema.ExperimentConfig
@@ -9,24 +10,24 @@ import com.nativebrik.sdk.schema.ExperimentFrequency
 import com.nativebrik.sdk.schema.ExperimentVariant
 
 internal fun extractComponentId(variant: ExperimentVariant): String? {
-    val configs = variant.configs?.let { it } ?: return null
+    val configs = variant.configs ?: return null
     if (configs.isEmpty()) return null
     val id = configs.firstOrNull()
     return id?.value
 }
 
 internal fun extractExperimentVariant(config: ExperimentConfig, normalizedUserRnd: Double): ExperimentVariant? {
-    val baseline = config.baseline?.let { it } ?: return null
-    val variants = config.variants?.let { it } ?: return baseline
+    val baseline = config.baseline ?: return null
+    val variants = config.variants ?: return baseline
     if (variants.isEmpty()) return baseline
 
     val baselineWeight = baseline.weight ?: 1
-    var weights: MutableList<Int> = mutableListOf(baselineWeight)
+    val weights: MutableList<Int> = mutableListOf(baselineWeight)
     variants.forEach {
         val weight = it.weight ?: 1
         weights.add(weight)
     }
-    var weightSum = weights.sum()
+    val weightSum = weights.sum()
 
     // here is calculation of the picking from the probability.
     // X is selected when p_X(x) >= F_X(x)
@@ -53,20 +54,29 @@ internal fun extractExperimentVariant(config: ExperimentConfig, normalizedUserRn
 internal fun extractExperimentConfig(
     configs: ExperimentConfigs,
     properties: (seed: Int?) -> List<UserProperty>,
-    records: (experimentId: String) -> List<Double>,
+    isNotInFrequency: (experimentId: String, frequency: ExperimentFrequency?) -> Boolean,
 ): ExperimentConfig? {
-    val configs = configs.configs?.let { it } ?: return null
+    val configs = configs.configs ?: return null
     if (configs.isEmpty()) return null
+    val currentDate = getCurrentDate()
 
     return configs.firstOrNull { config ->
-        val distribution = config.distribution
-        if (distribution == null) {
-            true
+        val startedAt = config.startedAt
+        if (startedAt != null) {
+            if (currentDate.isBefore(startedAt)) {
+                return@firstOrNull false
+            }
+        }
+        val endedAt = config.endedAt
+        if (endedAt != null) {
+            if (currentDate.isAfter(endedAt)) {
+                return@firstOrNull false
+            }
         }
         val experimentId = config.id ?: ""
-        isNotInFrequency(
-            frequency = config.frequency,
-            records = records(experimentId),
+        return@firstOrNull isNotInFrequency(
+            experimentId,
+            config.frequency
         ) && isInDistributionTarget(
             distribution = config.distribution,
             properties = properties(config.seed),
@@ -89,8 +99,3 @@ internal fun isInDistributionTarget(distribution: List<ExperimentCondition>?, pr
     }
     return foundNotMatched == null
 }
-
-internal fun isNotInFrequency(frequency: ExperimentFrequency?, records: List<Double>): Boolean {
-    return true
-}
-
