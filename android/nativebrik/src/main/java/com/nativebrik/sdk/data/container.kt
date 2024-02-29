@@ -1,7 +1,10 @@
 package com.nativebrik.sdk.data
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import com.nativebrik.sdk.Config
+import com.nativebrik.sdk.data.database.DatabaseRepository
+import com.nativebrik.sdk.data.database.DatabaseRepositoryImpl
 import com.nativebrik.sdk.data.extraction.extractComponentId
 import com.nativebrik.sdk.data.extraction.extractExperimentConfig
 import com.nativebrik.sdk.data.extraction.extractExperimentVariant
@@ -35,6 +38,7 @@ internal interface Container {
 internal class ContainerImpl(
     private val config: Config,
     private val user: NativebrikUser,
+    private val db: SQLiteDatabase,
     private val context: Context,
 ): Container {
     private val componentRepository: ComponentRepository by lazy {
@@ -51,6 +55,9 @@ internal class ContainerImpl(
     }
     private val formRepository: FormRepository by lazy {
         FormRepositoryImpl()
+    }
+    private val databaseRepository: DatabaseRepository by lazy {
+        DatabaseRepositoryImpl(db)
     }
 
     override fun createVariableForTemplate(data: JsonElement?, properties: List<Property>?): JsonElement {
@@ -109,6 +116,11 @@ internal class ContainerImpl(
     }
 
     override suspend fun fetchInAppMessage(trigger: String): Result<UIBlock> {
+        // send the user track event and save it to database
+        this.trackRepository.trackEvent(TrackUserEvent(trigger))
+        this.databaseRepository.appendUserEvent(trigger)
+
+        // fetch config from cdn
         val configs = this.experimentRepository.fetchTriggerExperimentConfigs(trigger).getOrElse {
             return Result.failure(it)
         }
@@ -149,7 +161,9 @@ internal class ContainerImpl(
         val config = extractExperimentConfig(
             configs = configs,
             properties = { seed -> this.user.toUserProperties(seed) },
-            records = { _ -> emptyList() }
+            isNotInFrequency = { experimentId, frequency ->
+                this.databaseRepository.isNotInFrequency(experimentId, frequency)
+            }
         ) ?: return Result.failure(NotFoundException())
         val experimentId = config.id ?: return Result.failure(NotFoundException())
         if (config.kind != kind) return Result.failure(NotFoundException())
