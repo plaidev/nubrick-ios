@@ -229,8 +229,8 @@ internal class ApiHttpRequest (
 				url = StringDecoder.decode(element.jsonObject["url"]),
 				method = ApiHttpRequestMethod.decode(element.jsonObject["method"]),
 				headers = ListDecoder.decode(element.jsonObject["headers"]) { element: JsonElement? ->
-				ApiHttpHeader.decode(element)
-			},
+					ApiHttpHeader.decode(element)
+				},
 				body = StringDecoder.decode(element.jsonObject["body"]),
 			)
 		}
@@ -290,8 +290,8 @@ internal class ApiHttpResponseAssertion (
 
 			return ApiHttpResponseAssertion(
 				statusCodes = ListDecoder.decode(element.jsonObject["statusCodes"]) { element: JsonElement? ->
-				IntDecoder.decode(element)
-			},
+					IntDecoder.decode(element)
+				},
 			)
 		}
 	}
@@ -574,7 +574,6 @@ internal class ExperimentConfigs (
 }
 
 internal class ExperimentFrequency (
-	val times: Int? = null,
 	val period: Int? = null,
 	val unit: FrequencyUnit? = null,
 ) {
@@ -588,7 +587,6 @@ internal class ExperimentFrequency (
 			}
 
 			return ExperimentFrequency(
-				times = IntDecoder.decode(element.jsonObject["times"]),
 				period = IntDecoder.decode(element.jsonObject["period"]),
 				unit = FrequencyUnit.decode(element.jsonObject["unit"]),
 			)
