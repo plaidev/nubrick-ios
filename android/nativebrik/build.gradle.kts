@@ -1,8 +1,14 @@
+import groovy.util.Node
+import java.net.URI
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("kotlinx-serialization")
+
     id("maven-publish")
+    id("signing")
+//    id("io.codearte.nexus-staging")
 }
 
 group = "com.nativebrik"
@@ -43,6 +49,12 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    publishing {
+        singleVariant("release") {
+            withJavadocJar()
+            withSourcesJar()
+        }
+    }
 }
 
 dependencies {
@@ -62,3 +74,59 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }
+
+afterEvaluate {
+
+    publishing {
+        publications {
+            register<MavenPublication>("maven") {
+                groupId = "com.nativebrik"
+                artifactId = "sdk"
+                version = "0.0.1"
+                from(components["release"])
+
+                pom {
+                    name = "Nativebrik SDK for Android"
+                    description = "Nativebrik is a tool that helps you to build/manage your mobile application."
+                    url = "https://github.com/plaidev/nativebrik-sdk"
+                    licenses {
+                        license {
+                            name = "The Apache License, Version 2.0"
+                            url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = "nativebrik"
+                            name = "nativebrik"
+                            email = "dev.share+nativebrik@plaid.co.jp"
+                        }
+                    }
+                    scm {
+                        connection = "scm:git:https://github.com/plaidev/karte-android-sdk.git\""
+                        developerConnection = "scm:git:ssh://github.com/plaidev/karte-android-sdk.git"
+                        url = "https://github.com/plaidev/nativebrik-sdk"
+                    }
+                }
+            }
+        }
+        repositories {
+            maven {
+                url = URI("https://oss.sonatype.org/service/local/staging/deploy/maven2")
+                credentials {
+                    username = "xxx"
+                    password = "xxx"
+                }
+            }
+        }
+    }
+}
+signing {
+//    sign(publishing.publications["maven"])
+}
+//nexusStaging {
+//    packageGroup = "com.nativebrik"
+//    stagingProfileId = "xxx"
+//    username = "ossrhUsername"
+//    password = "ossrhPassword"
+//}
