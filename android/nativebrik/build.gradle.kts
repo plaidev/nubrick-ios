@@ -1,4 +1,3 @@
-import groovy.util.Node
 import java.net.URI
 
 plugins {
