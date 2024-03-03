@@ -14,8 +14,7 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v2
         with:
-          distribution: 'adopt'
-          java-version: '11'
+          java-version: '21'
       - name: unit test
         working-directory: android
         run: ./gradlew testDebugUnitTest
