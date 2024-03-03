@@ -1,5 +1,3 @@
-import java.net.URI
-
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
@@ -7,7 +5,6 @@ plugins {
 
     id("maven-publish")
     id("signing")
-//    id("io.codearte.nexus-staging")
 }
 
 group = "com.nativebrik"
@@ -50,7 +47,7 @@ android {
     }
     publishing {
         singleVariant("release") {
-            withJavadocJar()
+//            withJavadocJar() // こっちだとsigningに間に合わないので諦めて空にする
             withSourcesJar()
         }
     }
@@ -74,15 +71,25 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }
 
+tasks.register<Jar>("javadocEmptyJar") {
+    archiveClassifier = "javadoc"
+}
+tasks.register<Zip>("makeArchive") {
+    dependsOn("publishMavenPublicationToMavenRepository")
+    from(layout.buildDirectory.dir("repos/com/nativebrik/sdk/$version"))
+    into("com/nativebrik/sdk/$version")
+}
+
 afterEvaluate {
 
     publishing {
         publications {
             register<MavenPublication>("maven") {
-                groupId = "com.nativebrik"
+                groupId = project.group as String
                 artifactId = "sdk"
-                version = "0.0.1"
+                version = project.version as String
                 from(components["release"])
+                artifact(tasks["javadocEmptyJar"])
 
                 pom {
                     name = "Nativebrik SDK for Android"
@@ -102,8 +109,8 @@ afterEvaluate {
                         }
                     }
                     scm {
-                        connection = "scm:git:https://github.com/plaidev/karte-android-sdk.git\""
-                        developerConnection = "scm:git:ssh://github.com/plaidev/karte-android-sdk.git"
+                        connection = "scm:git:https://github.com/plaidev/nativebrik-sdk.git\""
+                        developerConnection = "scm:git:ssh://github.com/plaidev/nativebrik-sdk.git"
                         url = "https://github.com/plaidev/nativebrik-sdk"
                     }
                 }
@@ -111,21 +118,11 @@ afterEvaluate {
         }
         repositories {
             maven {
-                url = URI("https://oss.sonatype.org/service/local/staging/deploy/maven2")
-                credentials {
-                    username = "xxx"
-                    password = "xxx"
-                }
+                url = uri(layout.buildDirectory.dir("repos"))
             }
         }
     }
+    signing {
+        sign(publishing.publications["maven"])
+    }
 }
-signing {
-//    sign(publishing.publications["maven"])
-}
-//nexusStaging {
-//    packageGroup = "com.nativebrik"
-//    stagingProfileId = "xxx"
-//    username = "ossrhUsername"
-//    password = "ossrhPassword"
-//}
