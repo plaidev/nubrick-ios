@@ -13,6 +13,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -270,7 +271,7 @@ internal fun Root(
 
     ContainerProvider(container = container) {
         EventListenerProvider(listener = listener) {
-            Box {
+            Box(Modifier.fillMaxSize()) {
                 if (embeddingVisibility && displayedPageBlock != null) {
                     AnimatedContent(
                         targetState = displayedPageBlock,
@@ -278,10 +279,11 @@ internal fun Root(
                             fadeIn() togetherWith fadeOut()
                         },
                         label = "Embedding",
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         PageBlockProvider(it) {
                             PageDataProvider(container = container, request = it.block.data?.httpRequest) {
-                                Page(block = it.block, modifier)
+                                Page(block = it.block)
                             }
                         }
                     }
