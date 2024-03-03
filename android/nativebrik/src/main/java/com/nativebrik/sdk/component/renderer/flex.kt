@@ -27,8 +27,35 @@ import com.nativebrik.sdk.schema.FlexDirection
 import com.nativebrik.sdk.schema.FrameData
 import com.nativebrik.sdk.schema.JustifyContent
 import com.nativebrik.sdk.schema.Overflow
+import com.nativebrik.sdk.schema.UIBlock
 import com.nativebrik.sdk.schema.UIFlexContainerBlock
 import com.nativebrik.sdk.schema.Color as SchemaColor
+
+private fun calcWeight(frameData: FrameData?, flexDirection: FlexDirection): Float? {
+    if (flexDirection == FlexDirection.ROW) {
+        if (frameData?.width != null && frameData.width == 0) {
+            return 1f
+        }
+    } else {
+        if (frameData?.height != null && frameData.height == 0) {
+            return 1f
+        }
+    }
+    return null
+}
+
+private fun childFrameWeight(block: UIBlock, direction: FlexDirection): Float? {
+    return when (block) {
+        is UIBlock.UnionUITextBlock -> calcWeight(block.data.data?.frame, direction)
+        is UIBlock.UnionUIImageBlock -> calcWeight(block.data.data?.frame, direction)
+        is UIBlock.UnionUIFlexContainerBlock -> calcWeight(block.data.data?.frame, direction)
+        is UIBlock.UnionUICollectionBlock -> calcWeight(block.data.data?.frame, direction)
+        is UIBlock.UnionUIMultiSelectInputBlock -> calcWeight(block.data.data?.frame, direction)
+        is UIBlock.UnionUISelectInputBlock -> calcWeight(block.data.data?.frame, direction)
+        is UIBlock.UnionUITextInputBlock -> calcWeight(block.data.data?.frame, direction)
+        else -> null
+    }
+}
 
 internal fun framedModifier(modifier: Modifier, frame: FrameData?): Modifier {
     var mod: Modifier = modifier
@@ -157,7 +184,6 @@ internal fun parseVerticalJustifyContent(gap: Int?, justifyContent: JustifyConte
 internal fun Flex(
     block: UIFlexContainerBlock,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
 ) {
     val direction: FlexDirection = block.data?.direction ?: FlexDirection.ROW
     var modifier = framedModifier(modifier, block.data?.frame)
@@ -173,7 +199,10 @@ internal fun Flex(
             horizontalArrangement = parseHorizontalJustifyContent(gap, justifyContent),
             verticalAlignment = parseVerticalAlignItems(alignItems),
         ) {
-            content()
+            block.data?.children?.map {
+                val weight = childFrameWeight(it, direction)
+                Block(block = it, if (weight != null) Modifier.weight(weight) else Modifier)
+            }
         }
     } else {
         Column(
@@ -181,7 +210,10 @@ internal fun Flex(
             horizontalAlignment = parseHorizontalAlignItems(alignItems),
             verticalArrangement = parseVerticalJustifyContent(gap, justifyContent)
         ) {
-            content()
+            block.data?.children?.map {
+                val weight = childFrameWeight(it, direction)
+                Block(block = it, if (weight != null) Modifier.weight(weight) else Modifier)
+            }
         }
     }
 }

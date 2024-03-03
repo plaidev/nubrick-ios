@@ -8,11 +8,7 @@ import com.nativebrik.sdk.schema.UIBlock
 @Composable
 internal fun Block(block: UIBlock, modifier: Modifier = Modifier) {
     return when (block) {
-        is UIBlock.UnionUIFlexContainerBlock -> Flex(block = block.data, modifier) {
-            block.data.data?.children?.map {
-                Block(block = it)
-            }
-        }
+        is UIBlock.UnionUIFlexContainerBlock -> Flex(block = block.data, modifier)
         is UIBlock.UnionUIImageBlock -> Image(block = block.data, modifier)
         is UIBlock.UnionUITextBlock -> Text(block = block.data, modifier)
         is UIBlock.UnionUICollectionBlock -> {
