@@ -1,0 +1,30 @@
+name: "[android] Test Nativebrik SDK"
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  runs-on: ubuntu-latest
+  test:
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: setup jdk
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+      - name: unit test
+        working-directory: android
+        run: ./gradlew testDebugUnitTest
+
+      - name: android test
+        uses: ReactiveCircus/android-emulator-runner@v2
+        working-directory: android
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          script: ./gradlew connectedCheck
