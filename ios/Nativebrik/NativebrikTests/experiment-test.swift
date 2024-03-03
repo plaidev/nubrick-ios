@@ -140,44 +140,29 @@ final class ExperimentTests: XCTestCase {
         let actual = isNotInFrequency(frequency: frequency, records: records)
         XCTAssertFalse(actual)
     }
-    
-    func testIsNotInFrequencyWhenItShowsOnlyTwoTimesInOneDay() throws {
+
+    func testIsNotInFrequencyWhenItShowsOnlyOneTimeInTwoDays() throws {
         let today = getToday()
         let morning = today.timeIntervalSince1970 + 5000
         let morning2 = today.timeIntervalSince1970 + 10000
         let yesterday = today.timeIntervalSince1970 - Double(1 * 24 * 60 * 60) + 5000
         let twoDaysAgo = today.timeIntervalSince1970 - Double(2 * 24 * 60 * 60) + 5000
+        let threeDaysAgo = today.timeIntervalSince1970 - Double(3 * 24 * 60 * 60) + 5000
         let frequency = ExperimentFrequency(
-            times: 2,
-            period: 1,
-            unit: .DAY
-        )
-        var actual = isNotInFrequency(frequency: frequency, records: [morning, yesterday, twoDaysAgo])
-        XCTAssertTrue(actual)
-        
-        actual = isNotInFrequency(frequency: frequency, records: [morning, morning2, yesterday, twoDaysAgo])
-        XCTAssertFalse(actual)
-    }
-    
-    func testIsNotInFrequencyWhenItShowsOnlyTwoTimesInTwoDay() throws {
-        let today = getToday()
-        let morning = today.timeIntervalSince1970 + 5000
-        let morning2 = today.timeIntervalSince1970 + 10000
-        let yesterday = today.timeIntervalSince1970 - Double(1 * 24 * 60 * 60) + 5000
-        let twoDaysAgo = today.timeIntervalSince1970 - Double(2 * 24 * 60 * 60) + 5000
-        let frequency = ExperimentFrequency(
-            times: 2,
             period: 2,
             unit: .DAY
         )
         
-        var actual = isNotInFrequency(frequency: frequency, records: [yesterday, twoDaysAgo])
+        var actual = isNotInFrequency(frequency: frequency, records: [twoDaysAgo])
         XCTAssertTrue(actual)
         
-        actual = isNotInFrequency(frequency: frequency, records: [morning, yesterday, twoDaysAgo])
+        actual = isNotInFrequency(frequency: frequency, records: [yesterday, twoDaysAgo])
         XCTAssertFalse(actual)
         
-        actual = isNotInFrequency(frequency: frequency, records: [morning, morning2, yesterday, twoDaysAgo])
+        actual = isNotInFrequency(frequency: frequency, records: [twoDaysAgo, threeDaysAgo])
+        XCTAssertTrue(actual)
+        
+        actual = isNotInFrequency(frequency: frequency, records: [yesterday, twoDaysAgo, threeDaysAgo])
         XCTAssertFalse(actual)
     }
     
