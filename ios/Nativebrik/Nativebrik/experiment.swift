@@ -110,7 +110,7 @@ func isNotInFrequency(frequency: ExperimentFrequency?, records: [ExperimentHisto
     guard let frequency = frequency else {
         return true
     }
-    let time = frequency.times ?? 1
+    let time = 1
     guard let period = frequency.period else {
         return records.count < time
     }

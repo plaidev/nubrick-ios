@@ -121,7 +121,6 @@ struct ExperimentConfigs: Decodable {
   var configs: [ExperimentConfig]?
 }
 struct ExperimentFrequency: Decodable {
-  var times: Int?
   var period: Int?
   var unit: FrequencyUnit?
 }
