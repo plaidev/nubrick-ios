@@ -22,9 +22,9 @@ jobs:
 
       - name: android test
         uses: ReactiveCircus/android-emulator-runner@v2
-        working-directory: android
         with:
+          working-directory: android
           api-level: 34
           target: google_apis
           arch: x86_64
-          script: ./gradlew connectedCheck
+          script: ./android/gradlew connectedCheck
