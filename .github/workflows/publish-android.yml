@@ -17,12 +17,14 @@ jobs:
         java-version: '11'
     - name: make archive
       uses: eskatos/gradle-command-action@v1
+      working-directory: android
       run: |
         ./gradlew makeArchive
       env:
         GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
         GPG_SIGNING_KEY_PASSPHRASE: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
     - name: publish to maven central
+      working-directory: android
       run: |
         ls nativebrik/build/distributions
         curl --request POST \
