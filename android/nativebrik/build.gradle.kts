@@ -19,6 +19,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+
+        aarMetadata {
+            minCompileSdk = 26
+        }
     }
 
     buildTypes {
@@ -81,7 +85,6 @@ tasks.register<Zip>("makeArchive") {
 }
 
 afterEvaluate {
-
     publishing {
         publications {
             register<MavenPublication>("maven") {
@@ -92,20 +95,21 @@ afterEvaluate {
                 artifact(tasks["javadocEmptyJar"])
 
                 pom {
-                    name = "Nativebrik SDK for Android"
+                    name = "Nativebrik SDK"
                     description = "Nativebrik is a tool that helps you to build/manage your mobile application."
                     url = "https://github.com/plaidev/nativebrik-sdk"
                     licenses {
                         license {
                             name = "The Apache License, Version 2.0"
-                            url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                            url = "https://github.com/plaidev/nativebrik-sdk/blob/main/LICENSE"
+                            distribution = "repo"
                         }
                     }
                     developers {
                         developer {
                             id = "nativebrik"
                             name = "nativebrik"
-                            email = "dev.share+nativebrik@plaid.co.jp"
+                            email = "dev.share@nativebrik.com"
                         }
                     }
                     scm {
@@ -123,6 +127,9 @@ afterEvaluate {
         }
     }
     signing {
+        val signingKey = System.getenv("GPG_SIGNING_KEY")
+        val signingKeyPassphrase = System.getenv("GPG_SIGNING_KEY_PASSPHRASE")
+        useInMemoryPgpKeys(signingKey, signingKeyPassphrase)
         sign(publishing.publications["maven"])
     }
 }
