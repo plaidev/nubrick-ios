@@ -1,0 +1,34 @@
+name: "[android] Publish Nativebrik SDK"
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'android.v*.*.*'
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: setup jdk
+      uses: actions/setup-java@v2
+      with:
+        distribution: 'adopt'
+        java-version: '11'
+    - name: make archive
+      uses: eskatos/gradle-command-action@v1
+      run: |
+        ./gradlew makeArchive
+      env:
+        GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+        GPG_SIGNING_KEY_PASSPHRASE: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
+    - name: publish to maven central
+      run: |
+        ls nativebrik/build/distributions
+        curl --request POST \
+          --header "Authorization: Bearer $(echo "$SONATYPE_USERNAME:$SONATYPE_PASSWORD" | base64)" \
+          --form bundle="@nativebrik/build/distributions/$(ls nativebrik/build/distributions)" \
+          'https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC'
+      env:
+        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
