@@ -54,7 +54,7 @@ class ExtractionUnitTest {
             configs = listOf(
                 ExperimentConfig(
                     "1",
-                    distribution = listOf(ExperimentCondition())
+                    distribution = emptyList()
                 )
             )
         )

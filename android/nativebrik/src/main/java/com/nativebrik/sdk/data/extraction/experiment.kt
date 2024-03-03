@@ -76,7 +76,7 @@ internal fun extractExperimentConfig(
         val experimentId = config.id ?: ""
         return@firstOrNull isNotInFrequency(
             experimentId,
-            config.frequency
+            config.frequency,
         ) && isInDistributionTarget(
             distribution = config.distribution,
             properties = properties(config.seed),
@@ -85,8 +85,10 @@ internal fun extractExperimentConfig(
 }
 
 internal fun isInDistributionTarget(distribution: List<ExperimentCondition>?, properties: List<UserProperty>): Boolean {
+    if (distribution == null) return true
+    if (distribution.isEmpty()) return true
     val props = properties.associateBy { property -> property.name }
-    val foundNotMatched = distribution?.firstOrNull { condition ->
+    val foundNotMatched = distribution.firstOrNull { condition ->
         val propKey = condition.property ?: return@firstOrNull true
         val conditionValue = condition.value ?: return@firstOrNull true
         val op = condition.operator ?: return@firstOrNull true
