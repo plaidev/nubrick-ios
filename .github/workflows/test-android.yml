@@ -14,6 +14,7 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v2
         with:
+          distribution: 'zulu'
           java-version: '21'
       - name: unit test
         working-directory: android
