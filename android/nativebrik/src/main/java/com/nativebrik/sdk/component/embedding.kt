@@ -5,7 +5,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,7 +27,6 @@ sealed class EmbeddingLoadingState {
     class NotFound(): EmbeddingLoadingState()
     class Failed(e: Throwable): EmbeddingLoadingState()
 }
-
 
 @Composable
 internal fun rememberEmbeddingState(container: Container, experimentId: String, componentId: String?, onEvent: ((event: Event) -> Unit)?): EmbeddingLoadingState {
@@ -77,29 +75,28 @@ internal fun Embedding(
     content: (@Composable() (state: EmbeddingLoadingState) -> Unit)?
 ) {
     val state = rememberEmbeddingState(container, experimentId, componentId, onEvent)
-    Box(modifier = modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         AnimatedContent(
             targetState = state,
             label = "EmbeddingLoadingStateAnimation",
             transitionSpec = {
                 fadeIn() togetherWith fadeOut()
-            }
+            },
+            modifier = Modifier.fillMaxSize()
         ) { state ->
-            when (state) {
-                is EmbeddingLoadingState.Completed -> if (content != null) content(state) else state.view()
-                is EmbeddingLoadingState.Loading -> Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (content != null) content(state) else CircularProgressIndicator()
-                }
-                else -> Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (content != null) content(state) else Unit
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                when (state) {
+                    is EmbeddingLoadingState.Completed -> if (content != null) content(state) else state.view()
+                    is EmbeddingLoadingState.Loading -> if (content != null) content(state) else CircularProgressIndicator()
+                    else -> if (content != null) content(state) else Unit
                 }
             }
         }
