@@ -7,6 +7,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment:
+      name: Only Main
     steps:
     - name: checkout
       uses: actions/checkout@v2

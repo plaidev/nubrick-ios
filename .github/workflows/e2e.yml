@@ -6,6 +6,8 @@ on:
 jobs:
   e2e:
     runs-on: macos-13
+    environment:
+      name: Only Main
     steps:
     - uses: maxim-lobanov/setup-xcode@v1
       with:
