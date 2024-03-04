@@ -17,7 +17,7 @@ import com.nativebrik.sdk.data.database.NativebrikDbHelper
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 
-const val VERSION = "0.0.2"
+const val VERSION = "0.0.3"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
