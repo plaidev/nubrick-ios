@@ -18,9 +18,9 @@ jobs:
     - name: make archive
       working-directory: android
       run: |
-        ./gradlew makeArchive
+        GPG_SIGNING_KEY=$(echo $GPG_SIGNING_KEY_BASE64 | base64 --decode) ./gradlew makeArchive
       env:
-        GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+        GPG_SIGNING_KEY_BASE64: ${{ secrets.GPG_SIGNING_KEY }}
         GPG_SIGNING_KEY_PASSPHRASE: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
     - name: publish to maven central
       working-directory: android
