@@ -16,7 +16,6 @@ jobs:
         distribution: 'zulu'
         java-version: '21'
     - name: make archive
-      uses: eskatos/gradle-command-action@v1
       working-directory: android
       run: |
         ./gradlew makeArchive
