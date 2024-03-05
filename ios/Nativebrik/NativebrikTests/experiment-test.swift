@@ -211,6 +211,39 @@ final class ExperimentTests: XCTestCase {
         
         XCTAssertEqual(configs.configs?[1].id, actual?.id)
     }
+    
+    func testExtractExperimentConfigMatchedToPropertiesWhenItsScheduled() throws {
+        let now = getCurrentDate()
+        let dayM1 = now.addingTimeInterval(-1000)
+        let day1 = now.addingTimeInterval(1000)
+        let day2 = now.addingTimeInterval(2000)
+        
+        let configs = ExperimentConfigs(
+            configs: [
+                ExperimentConfig(
+                    id: "id_0",
+                    startedAt: formatToISO8601(day1)
+                ),
+                ExperimentConfig(
+                    id: "id_1",
+                    endedAt: formatToISO8601(dayM1)
+                ),
+                ExperimentConfig(
+                    id: "now",
+                    startedAt: formatToISO8601(dayM1),
+                    endedAt: formatToISO8601(day2)
+                ),
+            ]
+        )
+        
+        let actual = extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: configs.configs)) { seed in
+            return []
+        } records: { experimentId in
+            return []
+        }
+        
+        XCTAssertEqual("now", actual?.id)
+    }
 
 }
 
