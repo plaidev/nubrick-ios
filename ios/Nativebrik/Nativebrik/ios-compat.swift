@@ -15,6 +15,11 @@ func getCurrentDate() -> Date {
     }
 }
 
+func parseDateTime(_ date: DateTime) -> Date? {
+    let formatter = ISO8601DateFormatter()
+    return formatter.date(from: date)
+}
+
 func getToday() -> Date {
     let now = getCurrentDate()
     let calendar = Calendar(identifier: .gregorian)

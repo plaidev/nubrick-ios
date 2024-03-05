@@ -75,7 +75,23 @@ func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, prop
     if configs.count == 0 {
         return nil
     }
+    let now = getCurrentDate()
     return configs.first { config in
+        if let startedAt = config.startedAt {
+            if let startedAt = parseDateTime(startedAt) {
+                if now.compare(startedAt) == ComparisonResult.orderedAscending {
+                    return false
+                }
+            }
+        }
+        if let endedAt = config.endedAt {
+            if let endedAt = parseDateTime(endedAt) {
+                if now.compare(endedAt) == ComparisonResult.orderedDescending {
+                    return false
+                }
+            }
+        }
+        
         guard let distribution = config.distribution else {
             return true
         }
