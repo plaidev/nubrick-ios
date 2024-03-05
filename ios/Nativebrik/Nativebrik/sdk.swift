@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-public let nativebrikSdkVersion = "0.3.2"
+public let nativebrikSdkVersion = "0.3.3"
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
         return true
@@ -188,11 +188,11 @@ public class NativebrikExperiment {
         self.repositories = repositories
         self.overlayVC = overlay
     }
-    
+
     public func dispatch(event: NativebrikEvent) {
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
-    
+
     public func overlayViewController() -> UIViewController {
         if !isNativebrikAvailable {
             let vc = UIViewController()
