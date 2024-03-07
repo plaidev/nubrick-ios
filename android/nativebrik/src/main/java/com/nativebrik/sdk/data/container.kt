@@ -51,7 +51,7 @@ internal class ContainerImpl(
         ExperimentRepositoryImpl(config)
     }
     private val trackRepository: TrackRepository by lazy {
-        TrackRepositoryImpl(config)
+        TrackRepositoryImpl(config, user)
     }
     private val httpRequestRepository: HttpRequestRepository by lazy {
         HttpRequestRepositoryImpl()

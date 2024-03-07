@@ -1,6 +1,7 @@
 package com.nativebrik.sdk.data
 
 import com.nativebrik.sdk.Config
+import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.data.user.formatISO8601
 import com.nativebrik.sdk.data.user.getCurrentDate
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +58,23 @@ internal sealed class TrackEvent {
     }
 }
 
+internal data class TrackRequest(
+    val projectId: String,
+    val userId: String,
+    val events: List<TrackEvent>,
+    val timestamp: ZonedDateTime = getCurrentDate(),
+) {
+    fun encode(): JsonObject {
+        val events = this.events.map { it.encode() }
+        return JsonObject(mapOf(
+            "projectId" to JsonPrimitive(projectId),
+            "userId" to JsonPrimitive(userId),
+            "timestamp" to JsonPrimitive(formatISO8601(timestamp)),
+            "events" to JsonArray(events)
+        ))
+    }
+}
+
 internal interface TrackRepository {
     fun trackExperimentEvent(event: TrackExperimentEvent)
     fun trackEvent(event: TrackUserEvent)
@@ -65,13 +83,15 @@ internal interface TrackRepository {
 internal class TrackRepositoryImpl: TrackRepository {
     private val queueLock: ReentrantLock = ReentrantLock()
     private val config: Config
+    private val user: NativebrikUser
     private var timer: Timer? = null
     private val maxBatchSize: Int = 50
     private val maxQueueSize: Int = 300
     private var buffer: MutableList<TrackEvent> = mutableListOf()
 
-    internal constructor(config: Config) {
+    internal constructor(config: Config, user: NativebrikUser) {
         this.config = config
+        this.user = user
     }
 
     override fun trackEvent(event: TrackUserEvent) {
@@ -112,9 +132,12 @@ internal class TrackRepositoryImpl: TrackRepository {
         val tempBuffer = this.buffer
         if (tempBuffer.isEmpty()) return
         this.buffer = mutableListOf()
-        val encodes = tempBuffer.map { it.encode() }
-        val jsonArray = JsonArray(content = encodes)
-        val body = Json.encodeToString(jsonArray)
+        val request = TrackRequest(
+            projectId = config.projectId,
+            userId = user.id,
+            events = tempBuffer
+        )
+        val body = Json.encodeToString(request.encode())
         this.timer?.cancel()
         this.timer = null
         postRequest(this.config.endpoint.track, body).onFailure {
