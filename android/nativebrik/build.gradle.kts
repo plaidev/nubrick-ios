@@ -113,7 +113,7 @@ afterEvaluate {
                         }
                     }
                     scm {
-                        connection = "scm:git:https://github.com/plaidev/nativebrik-sdk.git\""
+                        connection = "scm:git:https://github.com/plaidev/nativebrik-sdk.git"
                         developerConnection = "scm:git:ssh://github.com/plaidev/nativebrik-sdk.git"
                         url = "https://github.com/plaidev/nativebrik-sdk"
                     }
