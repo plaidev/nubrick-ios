@@ -171,10 +171,13 @@
 			isa = PBXGroup;
 			children = (
 				C1219DC82B9B0F84005F487E /* renderer */,
+				C1219DD72B9B0F85005F487E /* action-listener.swift */,
 				C1219DC72B9B0F84005F487E /* embedding.swift */,
 				C1219DD22B9B0F84005F487E /* root.swift */,
 				C1219DD32B9B0F84005F487E /* page.swift */,
 				C1219DD92B9B0F85005F487E /* context.swift */,
+				C1219DD42B9B0F84005F487E /* overlay.swift */,
+				C1219DED2B9B0F85005F487E /* trigger.swift */,
 			);
 			path = component;
 			sourceTree = "<group>";
@@ -182,6 +185,7 @@
 		C1219DC82B9B0F84005F487E /* renderer */ = {
 			isa = PBXGroup;
 			children = (
+				C1219DD82B9B0F85005F487E /* modal-component.swift */,
 				C1219DC92B9B0F84005F487E /* carousel.swift */,
 				C1219DCA2B9B0F84005F487E /* forms.swift */,
 				C1219DCB2B9B0F84005F487E /* collection.swift */,
@@ -266,16 +270,12 @@
 				C1219DDA2B9B0F85005F487E /* vendor */,
 				C1219DC62B9B0F84005F487E /* component */,
 				C1219DDD2B9B0F85005F487E /* data */,
-				C1219DD72B9B0F85005F487E /* action-listener.swift */,
-				C1219DD82B9B0F85005F487E /* modal-component.swift */,
 				C1219DD52B9B0F84005F487E /* generated.swift */,
 				C1219DEC2B9B0F85005F487E /* Nativebrik.h */,
-				C1219DD42B9B0F84005F487E /* overlay.swift */,
 				C1219DEB2B9B0F85005F487E /* PrivacyInfo.xcprivacy */,
 				C1219DC22B9B0F84005F487E /* remote-config.swift */,
 				C1219DD62B9B0F85005F487E /* scalars.swift */,
 				C1219DEE2B9B0F85005F487E /* sdk.swift */,
-				C1219DED2B9B0F85005F487E /* trigger.swift */,
 			);
 			path = Nativebrik;
 			sourceTree = "<group>";
