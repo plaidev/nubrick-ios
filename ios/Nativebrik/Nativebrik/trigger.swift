@@ -15,23 +15,20 @@ enum UserDefaultsKeys: String {
 
 class TriggerViewController: UIViewController {
     private let user: NativebrikUser
-    private let config: Config
-    private let repositories: Repositories?
+    private let container: Container
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: UIViewController? = nil
     private var didLoaded = false
 
     required init?(coder: NSCoder) {
         self.user = NativebrikUser()
-        self.config = Config()
-        self.repositories = nil
+        self.container = ContainerEmptyImpl()
         super.init(coder: coder)
     }
 
-    init(user: NativebrikUser, config: Config, repositories: Repositories, modalViewController: ModalComponentViewController?) {
+    init(user: NativebrikUser, container: Container, modalViewController: ModalComponentViewController?) {
         self.user = user
-        self.config = config
-        self.repositories = repositories
+        self.container = container
         self.modalViewController = modalViewController
         super.init(nibName: nil, bundle: nil)
     }
@@ -82,101 +79,43 @@ class TriggerViewController: UIViewController {
     }
 
     func dispatch(event: NativebrikEvent) {
-        DispatchQueue.global().async {
-            Task {
-                if event.name.isEmpty {
+        Task {
+            let result = await Task.detached {
+                return await self.container.fetchInAppMessage(trigger: event.name)
+            }.value
+            
+            await MainActor.run { [weak self] in
+                let didLoaded = self?.didLoaded ?? false
+                if !didLoaded {
+                    print("nativebrik.dispatch should be called after nativebrik.overlay did load")
                     return
                 }
-                self.repositories?.track.trackEvent(TrackUserEvent(name: event.name))
+                guard let container = self?.container else {
+                    return
+                }
+                switch result {
+                case .success(let block):
+                    switch block {
+                    case .EUIRootBlock(let root):
+                        let root = ModalRootViewController(
+                            root: root,
+                            container: container,
+                            modalViewController: self?.modalViewController
+                        )
+                        if let currentVC = self?.currentVC {
+                            currentVC.removeFromParent()
+                            self?.currentVC = nil
+                        }
+                        self?.addChild(root)
+                        self?.currentVC = root
+                    default:
+                        break
+                    }
+                default:
+                    break
+                }
             }
         }
-
-        if !self.didLoaded {
-            print("nativebrik.dispatch should be called after nativebrik.overlay did load")
-            return
-        }
-        DispatchQueue.global().async {
-            Task {
-                await self.repositories?.experiment.trigger(event: event) { [weak self] entry in
-                    guard let value = entry.value else {
-                        return
-                    }
-                    let experimentConfigs = value.value
-                    guard let extractedConfig = extractExperimentConfigMatchedToProperties(configs: experimentConfigs, properties: { seed in
-                        return self?.user.toEventProperties(seed: seed) ?? []
-                    }, records: { experimentId in
-                        return self?.user.getExperimentHistoryRecord(experimentId: experimentId) ?? []
-                    }) else {
-                        return
-                    }
-                    guard let experimentId = extractedConfig.id else {
-                        return
-                    }
-                    if extractedConfig.kind != .POPUP {
-                        return
-                    }
-                    guard let normalizedUsrRnd = self?.user.getSeededNormalizedUserRnd(seed: extractedConfig.seed ?? 0) else {
-                        return
-                    }
-                    guard let extractedVariant = extractExperimentVariant(config: extractedConfig, normalizedUsrRnd: normalizedUsrRnd) else {
-                        return
-                    }
-                    guard let variantConfig = extractedVariant.configs?[0] else {
-                        return
-                    }
-                    guard let variantId = extractedVariant.id else {
-                        return
-                    }
-                    guard let componentId = variantConfig.value else {
-                        return
-                    }
-                    
-                    self?.user.addExperimentHistoryRecord(experimentId: experimentId)
-
-                    self?.repositories?.track.trackExperimentEvent(
-                        TrackExperimentEvent(
-                            experimentId: experimentId,
-                            variantId: variantId
-                        )
-                    )
-
-                    self?.repositories?.component.fetch(
-                        experimentId: experimentId,
-                        id: componentId
-                    ) { entry in
-                        DispatchQueue.main.sync {
-                            guard let view = entry.value?.view else {
-                                return
-                            }
-                            switch view {
-                            case .EUIRootBlock(let root):
-                                if let currentVC = self?.currentVC {
-                                    currentVC.dismiss(animated: true)
-                                    currentVC.removeFromParent()
-                                }
-                                guard let config = self?.config else {
-                                    return
-                                }
-                                guard let repositories = self?.repositories else {
-                                    return
-                                }
-                                let rootController = ModalRootViewController(
-                                    root: root,
-                                    user: self?.user,
-                                    config: config,
-                                    repositories: repositories,
-                                    modalViewController: self?.modalViewController
-                                )
-                                self?.addChild(rootController)
-                                self?.currentVC = rootController
-                            default:
-                                return
-                            }
-                        } // END DispatchQueue.main.sync
-                    } // END self.repositories?.component.fetch
-                } // END self.repositories?.experiment.trigger
-            } // END Task
-        } // END DispatchQueue.global().async {
     } // END dispatch
 }
 
