@@ -16,35 +16,43 @@ protocol DatabaseRepository {
 
 class DatabaseRepositoryImpl: DatabaseRepository {
     private let persistentContainer: NSPersistentContainer
-    
+
     init(persistentContainer: NSPersistentContainer) {
         self.persistentContainer = persistentContainer
     }
-    
+
     func appendUserEvent(name: String) {
-        let context = self.persistentContainer.viewContext
-        let event = UserEventEntity(context: context)
-        event.name = name
-        event.timestamp = getCurrentDate()
-        do {
-            try context.save()
-        } catch {
-            print("WORLD")
+        Task {
+            await MainActor.run {
+                let context = self.persistentContainer.viewContext
+                let event = UserEventEntity(context: context)
+                event.name = name
+                event.timestamp = getCurrentDate()
+                do {
+                    try context.save()
+                } catch {
+                    print("Cound'nt save UserEventEntity \(error)")
+                }
+            }
         }
     }
-    
+
     func appendExperimentHistory(experimentId: String) {
-        let context = self.persistentContainer.viewContext
-        let history = ExperimentHistoryEntity(context: context)
-        history.experimentId = experimentId
-        history.timestamp = getCurrentDate()
-        do {
-            try context.save()
-        } catch {
-            print("HELLO")
+        Task {
+            await MainActor.run {
+                let context = self.persistentContainer.viewContext
+                let history = ExperimentHistoryEntity(context: context)
+                history.experimentId = experimentId
+                history.timestamp = getCurrentDate()
+                do {
+                    try context.save()
+                } catch {
+                    print("Cound'nt save ExperimentHistoryEntity \(error)")
+                }
+            }
         }
     }
-    
+
     func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) -> Boolean {
         guard let frequency = frequency else {
             return true
@@ -55,13 +63,11 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         let count = self.experimentHisotryCountAfter(experimentId: experimentId, after: after)
         return count == 0
     }
-    
+
     private func experimentHisotryCountAfter(experimentId: String, after: Date) -> Int {
         let request = UserEventEntity.fetchRequest()
-        let experimentPredicate = NSPredicate(format: "experimentId = %@", experimentId)
-        let timePredicate = NSPredicate(format: "timestamp >= %@", after as CVarArg)
         request.predicate = NSPredicate(format: "experimentId = %@ && timestamp >= %@", experimentId, after as NSDate)
-        
+
         let context = self.persistentContainer.viewContext
         return (try? context.count(for: request)) ?? 0
     }

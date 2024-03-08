@@ -18,57 +18,65 @@ class UIBlockEventManager {
     }
 }
 
-class UIBlockFormManager {
-    var formValues: [String:Any] = [:]
-    func write(key: String, value: Any) {
-        formValues[key] = value
-    }
-    func getByKey(key: String) -> Any? {
-        return formValues[key]
-    }
-}
-
 struct UIBlockContextInit {
-    var data: Any? = nil
+    var container: Container? = nil
+    var variable: Any? = nil
+    var childData: Any? = nil
     var properties: [Property]? = nil
     var event: UIBlockEventManager? = nil
-    var form: UIBlockFormManager? = nil
+    var parentClickListener: ClickListener? = nil
+    var parentDirection: FlexDirection? = nil
+    var loading: Bool? = false
+}
+
+struct UIBlockContextChildInit {
+    var childData: Any? = nil
+    var properties: [Property]? = nil
+    var event: UIBlockEventManager? = nil
     var parentClickListener: ClickListener? = nil
     var parentDirection: FlexDirection? = nil
     var loading: Bool? = false
 }
 
 class UIBlockContext {
-    // data that page fetched with http request
-    private let data: Any?
+    // variable that page fetched with http request
+    private let variable: Any?
     // page properties
     private let properties: [Property]?
+    private let container: Container?
     private let event: UIBlockEventManager?
-    private let form: UIBlockFormManager?
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
     private var loading: Bool = false
     
     init(_ args: UIBlockContextInit) {
-        self.data = args.data
+        self.variable = args.variable
         self.properties = args.properties
         self.event = args.event
-        self.form = args.form
         self.parentClickListener = args.parentClickListener
         self.parentDirection = args.parentDirection
         self.loading = args.loading ?? false
+        self.container = args.container
     }
 
-    func instanciateFrom(_ args: UIBlockContextInit) -> UIBlockContext {
+    func instanciateFrom(_ args: UIBlockContextChildInit) -> UIBlockContext {
+        var v = self.variable
+        if let childData = args.childData {
+            v = _mergeVariable(base: v, self.container?.createVariableForTemplate(data: childData, properties: nil))
+        }
         return UIBlockContext(UIBlockContextInit(
-            data: args.data ?? self.data,
+            container: self.container,
+            variable: v,
             properties: args.properties ?? self.properties,
             event: args.event ?? self.event,
-            form: args.form ?? self.form,
             parentClickListener: args.parentClickListener ?? self.parentClickListener,
             parentDirection: args.parentDirection ?? self.parentDirection,
             loading: args.loading ?? self.loading
         ))
+    }
+    
+    func getVariable() -> Any? {
+        return self.variable
     }
 
     func isLoading() -> Bool {
@@ -88,11 +96,11 @@ class UIBlockContext {
     }
     
     func writeToForm(key: String, value: Any) {
-        self.form?.write(key: key, value: value)
+        self.container?.setFormValue(key: key, value: value)
     }
     
     func getFormValueByKey(key: String) -> Any? {
-        self.form?.getByKey(key: key)
+        return self.container?.getFormValue(key: key)
     }
 
     /**
@@ -109,28 +117,7 @@ class UIBlockContext {
     }
 
     func getByReferenceKey(key: String?) -> Any? {
-        if let key = key {
-            if key.count == 0 {
-                return nil
-            }
-            if let data = data {
-                let keys = key.split(separator: ".")
-                var current: Any? = data
-                for key in keys {
-                    if current == nil {
-                        return nil
-                    }
-                    if let dictionary = current as? [String: Any] {
-                        let child = dictionary.first(where: { $0.key == key })
-                        current = child?.value
-                    } else {
-                        return nil
-                    }
-                }
-                return current
-            }
-        }
-        return nil
+        return variableByPath(path: key ?? "", variable: self.variable)
     }
 
     func getArrayByReferenceKey(key: String?) -> [Any]? {

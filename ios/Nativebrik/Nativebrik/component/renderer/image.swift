@@ -30,9 +30,7 @@ class ImageView: AnimatedUIControl {
             configureSkelton(view: self, showSkelton: showSkelton)
         }
 
-        let compiledSrc = compileTemplate(template: block.data?.src ?? "") { placeholder in
-            return context.getByReferenceKey(key: placeholder)
-        }
+        let compiledSrc = compile(block.data?.src ?? "", context.getVariable())
 
         let fallbackSetting = parseImageFallbackToBlurhash(compiledSrc)
         let fallback = fallbackSetting.blurhash == "" ? UIImage() : UIImage(

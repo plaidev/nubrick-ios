@@ -178,22 +178,6 @@ public class NativebrikUser {
         }
     }
 
-    func getExperimentHistoryRecord(experimentId: String) -> [ExperimentHistoryRecord] {
-        let key = "NATIVEBRIK_EXPERIMENTET_RECORDS_\(experimentId)"
-        let records = self.userDB.object(forKey: key) as? [ExperimentHistoryRecord]
-        return records ?? []
-    }
-
-    func addExperimentHistoryRecord(experimentId: String) {
-        var records = self.getExperimentHistoryRecord(experimentId: experimentId)
-        let key = "NATIVEBRIK_EXPERIMENTET_RECORDS_\(experimentId)"
-        records.insert(ExperimentHistoryRecord(getCurrentDate().timeIntervalSince1970), at: 0)
-        if records.count > 365 {
-            records.removeLast()
-        }
-        self.userDB.set(records, forKey: key)
-    }
-
     // returns [0, 1)
     func getSeededNormalizedUserRnd(seed: Int) -> Double {
         let userSeedStr = self.properties[USER_SEED_KEY] ?? "0"

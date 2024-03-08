@@ -19,7 +19,7 @@ class ExperimentRepositoryImpl: ExperimentRepository2 {
     }
     
     func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NativebrikError> {
-        guard let url = URL(string: config.cdnUrl + "/projects/" + config.projectId + "/experiments/id/" + id) else {
+        guard let url = URL(string: self.config.cdnUrl + "/projects/" + self.config.projectId + "/experiments/id/" + id) else {
             return Result.failure(NativebrikError.irregular("Failed to create URL object"))
         }
         var request = URLRequest(url: url)

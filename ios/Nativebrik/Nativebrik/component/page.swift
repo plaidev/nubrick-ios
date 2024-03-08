@@ -227,7 +227,8 @@ class PageView: UIView {
                 data: renderAs,
                 context: UIBlockContext(
                     UIBlockContextInit(
-                        data: self.data,
+                        container: self.container,
+                        variable: self.data,
                         event: self.event,
                         loading: self.loading
                     )

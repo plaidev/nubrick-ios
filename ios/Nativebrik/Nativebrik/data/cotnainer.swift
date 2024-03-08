@@ -240,8 +240,8 @@ class ContainerImpl: Container {
             properties: { seed in
                 return self.user.toEventProperties(seed: seed)
             },
-            records: { experimentId in
-                return self.user.getExperimentHistoryRecord(experimentId: experimentId)
+            isNotInFrequency: { experimentId, frequency in
+                return self.databaseRepository.isNotInFrequency(experimentId: experimentId, frequency: frequency)
             }
         ) else {
             return Result.failure(NativebrikError.notFound)

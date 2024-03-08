@@ -145,7 +145,7 @@ public class NativebrikClient: ObservableObject {
         httpRequestInterceptor: NativebrikHttpRequestInterceptor? = nil
     ) {
         let user = NativebrikUser()
-        let config = Config()
+        let config = Config(projectId: projectId, onEvent: onEvent)
         let persistentContainer = createNativebrikCoreDataHelper()
         self.user = user
         self.config = config

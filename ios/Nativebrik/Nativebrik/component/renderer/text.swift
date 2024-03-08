@@ -29,9 +29,7 @@ class TextView: AnimatedUIControl {
             label.textColor = .label
         }
         label.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
-        let text = compileTemplate(template: block.data?.value ?? "") { placeholder in
-            return context.getByReferenceKey(key: placeholder)
-        }
+        let text = compile(block.data?.value ?? "", context.getVariable())
         label.text = text
         label.numberOfLines = 0
         configureSkeltonText(view: label, showSkelton: showSkelton)

@@ -12,6 +12,10 @@ final class ExperimentHistoryEntity: NSManagedObject {
     @NSManaged var experimentId: String
     @NSManaged var timestamp: Date
     
+    override var description: String {
+        return "NativebrikExperimentHistory"
+    }
+    
     static func entityDescription() -> NSEntityDescription {
         let entity = NSEntityDescription()
         entity.name = "NativebrikExperimentHistory"
@@ -36,10 +40,14 @@ final class UserEventEntity: NSManagedObject {
     @NSManaged var name: String
     @NSManaged var timestamp: Date
     
+    override var description: String {
+        return "NativebrikUserEvent"
+    }
+    
     static func entityDescription() -> NSEntityDescription {
         let entity = NSEntityDescription()
         entity.name = "NativebrikUserEvent"
-        entity.managedObjectClassName = NSStringFromClass(ExperimentHistoryEntity.self)
+        entity.managedObjectClassName = NSStringFromClass(UserEventEntity.self)
         
         let nameAttr = NSAttributeDescription()
         nameAttr.name = "name"
@@ -62,7 +70,7 @@ func createNativebrikCoreDataHelper() -> NSPersistentContainer {
     let container = NSPersistentContainer(name: "com.nativebrik.sdk", managedObjectModel: model)
     
     container.loadPersistentStores { storeDescription, error in
-        if let error = error as NSError? {
+        if (error as NSError?) != nil {
             fatalError("Nativebrik SDK couldn't create a coredata database.")
         }
     }
