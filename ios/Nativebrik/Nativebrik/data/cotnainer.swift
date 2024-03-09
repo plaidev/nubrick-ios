@@ -74,7 +74,7 @@ class ContainerImpl: Container {
     private let experimentRepository: ExperimentRepository2
     private let componentRepository: ComponentRepository2
     private let trackRepository: TrackRepository2
-    private let formRepository: FormRepository
+    private let formRepository: FormRepository?
     private let databaseRepository: DatabaseRepository
     private let httpRequestRepository: HttpRequestRepository
     
@@ -85,11 +85,27 @@ class ContainerImpl: Container {
         self.experimentRepository = ExperimentRepositoryImpl(config: config)
         self.componentRepository = ComponentRepositoryImpl(config: config)
         self.trackRepository = TrackRespositoryImpl(config: config, user: user)
-        self.formRepository = FormRepositoryImpl()
+        self.formRepository = nil
         self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
         self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: intercepter)
     }
     
+    // should be refactored.
+    // this is because, i wanted to initialize form instance for each component, not to share the same instance from every components.
+    // this is called when component is instantiated.
+    // bad code.
+    init(_ container: ContainerImpl) {
+        self.config = container.config
+        self.user = container.user
+        self.persistentContainer = container.persistentContainer
+        self.experimentRepository = container.experimentRepository
+        self.componentRepository = container.componentRepository
+        self.trackRepository = container.trackRepository
+        self.formRepository = FormRepositoryImpl()
+        self.databaseRepository = container.databaseRepository
+        self.httpRequestRepository = container.httpRequestRepository
+    }
+        
     func handleEvent(_ it: UIBlockEventDispatcher) {
         self.config.dispatchUIBlockEvent(event: it)
     }
@@ -99,17 +115,17 @@ class ContainerImpl: Container {
             user: self.user,
             data: data,
             properties: properties,
-            form: self.formRepository.getFormData(),
+            form: self.formRepository?.getFormData(),
             projectId: self.config.projectId
         )
     }
     
     func getFormValue(key: String) -> Any? {
-        return self.formRepository.getValue(key: key)
+        return self.formRepository?.getValue(key: key)
     }
     
     func setFormValue(key: String, value: Any) {
-        self.formRepository.setValue(key: key, value: value)
+        self.formRepository?.setValue(key: key, value: value)
     }
     
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError> {

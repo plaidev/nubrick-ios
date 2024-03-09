@@ -160,7 +160,7 @@ public class NativebrikExperiment {
         }
         return AnyView(EmbeddingSwiftView(
             experimentId: id,
-            container: self.container,
+            container: ContainerImpl(self.container as! ContainerImpl),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent
         ))
@@ -178,7 +178,7 @@ public class NativebrikExperiment {
         return AnyView(EmbeddingSwiftView.init<V>(
             experimentId: id,
             componentId: nil,
-            container: self.container,
+            container: ContainerImpl(self.container as! ContainerImpl),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             content: content
@@ -195,7 +195,7 @@ public class NativebrikExperiment {
         }
         return EmbeddingUIView(
             experimentId: id,
-            container: self.container,
+            container: ContainerImpl(self.container as! ContainerImpl),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -213,7 +213,7 @@ public class NativebrikExperiment {
         }
         return EmbeddingUIView(
             experimentId: id,
-            container: self.container,
+            container: ContainerImpl(self.container as! ContainerImpl),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content
@@ -230,7 +230,7 @@ public class NativebrikExperiment {
         }
         let _ = RemoteConfig(
             experimentId: id,
-            container: self.container,
+            container: ContainerImpl(self.container as! ContainerImpl),
             modalViewController: self.overlayVC.modalViewController,
             phase: phase
         )

@@ -84,7 +84,7 @@ public class RemoteConfigVariant {
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: self.container,
+            container: ContainerImpl(self.container as! ContainerImpl),
             modalViewController: self.modalViewController,
             onEvent: onEvent
         )
@@ -100,7 +100,7 @@ public class RemoteConfigVariant {
         return EmbeddingSwiftView.init<V>(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: self.container,
+            container: ContainerImpl(self.container as! ContainerImpl),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             content: content
@@ -118,7 +118,7 @@ public class RemoteConfigVariant {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: self.container,
+            container: ContainerImpl(self.container as! ContainerImpl),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -138,7 +138,7 @@ public class RemoteConfigVariant {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: self.container,
+            container: ContainerImpl(self.container as! ContainerImpl),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: content
