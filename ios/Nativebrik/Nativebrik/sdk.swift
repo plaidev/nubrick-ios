@@ -250,13 +250,6 @@ public class NativebrikExperiment {
             content: phase
         ))
     }
-
-    public func z__never_use_this_function_internal_embedding(
-        _ id: String,
-        content: @escaping (_ phase: EmbeddingPhase) -> UIView
-    ) {
-
-    }
 }
 
 public struct NativebrikProvider<Content: View>: View {
