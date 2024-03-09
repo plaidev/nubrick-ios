@@ -18,7 +18,7 @@ final class EmbeddingUIViewTests: XCTestCase {
             case .loading:
                 didLoadingPhaseCome = true
                 return UIView()
-            case .failure:
+            default:
                 XCTFail("should found the remote config")
                 return UIView()
             }
@@ -32,7 +32,7 @@ final class EmbeddingUIViewTests: XCTestCase {
             XCTAssertTrue(didLoadingPhaseCome)
         }
     }
-    
+
     func testEmbeddingShouldNotFetch() {
         let expectation = expectation(description: "Fetch an embedding for test")
         
@@ -46,7 +46,7 @@ final class EmbeddingUIViewTests: XCTestCase {
             case .loading:
                 didLoadingPhaseCome = true
                 return UIView()
-            case .failure:
+            default:
                 expectation.fulfill()
                 return UIView()
             }

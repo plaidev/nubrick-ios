@@ -89,12 +89,9 @@ class ModalPageViewController: UIViewController {
 class PageView: UIView {
     fileprivate let page: UIPageBlock?
     private let props: [Property]?
-    private let config: Config
-    private let repositories: Repositories?
+    private let container: Container
     private var data: Any? = nil
-    private let user: NativebrikUser?
     private var event: UIBlockEventManager? = nil
-    private let form: UIBlockFormManager?
     private var fullScreenInitialNavItemVisibility = false
     private var loading: Bool = false
     private var view: UIView = UIView()
@@ -104,29 +101,20 @@ class PageView: UIView {
     required init?(coder: NSCoder) {
         self.page = nil
         self.props = nil
-        self.config = Config()
-        self.repositories = nil
-        self.user = nil
-        self.form = nil
+        self.container = ContainerEmptyImpl()
         super.init(coder: coder)
     }
 
     init(
         page: UIPageBlock?,
         props: [Property]?,
+        container: Container,
         event: UIBlockEventManager?,
-        form: UIBlockFormManager?,
-        user: NativebrikUser?,
-        config: Config,
-        repositories: Repositories?,
         modalViewController: ModalComponentViewController?
     ) {
         self.page = page
-        self.config = config
-        self.repositories = repositories
+        self.container = container
         self.modalViewController = modalViewController
-        self.user = user
-        self.form = form
 
         // build placeholder input. init.props is passed from other pages, and page.data.props are the page.props.
         // so merge them and create self.props.
@@ -142,23 +130,17 @@ class PageView: UIView {
             )
         } ?? []
 
-        self.data = createDataForTemplate(CreateDataForTemplateOption(
-            properties: self.props,
-            user: self.user,
-            form: self.form?.formValues
-        ))
-
+        self.data = container.createVariableForTemplate(data: nil, properties: self.props)
         super.init(frame: .zero)
 
         let parentEventManager = event
         // handle events that has http request, and then dispatch the event to parent.
         // here, we only process http request.
         self.event = UIBlockEventManager(on: { [weak self] dispatchedEvent in
-            let context = UIBlockContext(UIBlockContextInit(
-                data: createDataForTemplateFrom(base: self?.data, CreateDataForTemplateOption(
-                    form: self?.form?.formValues
-                ))
-            ))
+            let variable = _mergeVariable(
+                base: self?.data,
+                self?.container.createVariableForTemplate(data: nil, properties: self?.props)
+            )
 
             let assertion = dispatchedEvent.httpResponseAssertion
             let handleEvent = { () -> () in
@@ -170,9 +152,7 @@ class PageView: UIView {
                         payload: dispatchedEvent.payload?.map({ prop in
                             return Property(
                                 name: prop.name ?? "",
-                                value: compileTemplate(template: prop.value ?? "", getByPath: { key in
-                                    return context.getByReferenceKey(key: key)
-                                }),
+                                value: compile(prop.value ?? "", variable),
                                 ptype: prop.ptype ?? PropertyType.STRING
                             )
                         }),
@@ -184,13 +164,19 @@ class PageView: UIView {
             }
             if let httpRequest = dispatchedEvent.httpRequest {
                 Task {
-                    self?.repositories?.httpRequest.fetch(request: httpRequest, assertion: assertion, placeholderReplacer: { key in
-                        return context.getByReferenceKey(key: key)
-                    }, callback: { entry in
-                        if entry.state == .EXPECTED {
+                    Task.detached { [weak self] in
+                        let result = await self?.container.sendHttpRequest(
+                            req: httpRequest,
+                            assertion: assertion,
+                            variable: variable
+                        )
+                        switch result {
+                        case .success:
                             handleEvent()
+                        default:
+                            break
                         }
-                    })
+                    }
                 }
             } else {
                 handleEvent()
@@ -202,7 +188,6 @@ class PageView: UIView {
             layout.isEnabled = true
         }
         self.addSubview(self.view)
-
         self.loadDataAndTransition()
     }
 
@@ -216,34 +201,21 @@ class PageView: UIView {
         // when it has http request, render loading view, and then
         self.loading = true
         self.renderView()
-
-        DispatchQueue.global().async {
-            Task { [weak self] in
-                let context = UIBlockContext(UIBlockContextInit(
-                    data: createDataForTemplateFrom(base: self?.data, CreateDataForTemplateOption(
-                        properties: self?.props,
-                        user: self?.user,
-                        form: self?.form?.formValues,
-                        projectId: self?.config.projectId
-                    ))
-                ))
-                self?.repositories?.httpRequest.fetch(request: httpRequest, assertion: nil, placeholderReplacer: { key in
-                    return context.getByReferenceKey(key: key)
-                }) { entry in
-                    DispatchQueue.main.async { [weak self] in
-                        if let data = entry.value?.data {
-                            self?.data = createDataForTemplate(CreateDataForTemplateOption(
-                                data: data.value,
-                                properties: self?.props,
-                                user: self?.user,
-                                form: self?.form?.formValues,
-                                projectId: self?.config.projectId
-                            ))
-                        }
-                        self?.loading = false
-                        self?.renderView()
-                    }
+        
+        Task {
+            let result = await Task.detached {
+                let variable = self.container.createVariableForTemplate(data: nil, properties: self.props)
+                return await self.container.sendHttpRequest(req: httpRequest, assertion: nil, variable: variable)
+            }.value
+            await MainActor.run { [weak self] in
+                switch result {
+                case .success(let response):
+                    self?.data = self?.container.createVariableForTemplate(data: response.data?.value, properties: self?.props)
+                default:
+                    break
                 }
+                self?.loading = false
+                self?.renderView()
             }
         }
     }
@@ -255,9 +227,9 @@ class PageView: UIView {
                 data: renderAs,
                 context: UIBlockContext(
                     UIBlockContextInit(
-                        data: self.data,
+                        container: self.container,
+                        variable: self.data,
                         event: self.event,
-                        form: self.form,
                         loading: self.loading
                     )
                 )

@@ -19,10 +19,10 @@ struct ContentView: View {
                     switch phase {
                     case .completed(let view):
                         view
-                    case .failure:
-                        Text("EMBED IS FAILED")
-                    default:
+                    case .loading:
                         ProgressView()
+                    default:
+                        Text("EMBED IS FAILED")
                     }
                 })
                 .frame(height: 240)
@@ -32,10 +32,10 @@ struct ContentView: View {
                     switch phase {
                     case .completed(let config):
                         Text(config.getAsString("message") ?? "")
-                    case .failure:
-                        Text("CONFIG IS FAILED")
-                    default:
+                    case .loading:
                         ProgressView()
+                    default:
+                        Text("CONFIG IS FAILED")
                     }
                 }
         }

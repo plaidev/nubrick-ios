@@ -13,74 +13,65 @@ import XCTest
 final class CompileTemplateTests: XCTestCase {
     func testShouldCompileTemplate() throws {
         let template = "Hello {{ value }}"
-        let result = compileTemplate(template: template) { key in
-            if key == "value" {
-                return "World"
-            } else {
-                return ""
-            }
-        }
+        let json: [String: Any] = [
+            "value": "World",
+        ]
+        let result = compile(template, json)
         XCTAssertEqual("Hello World", result)
     }
     
     func testShouldCompileTemplateWithMultiplePlaceholders() throws {
         let template = "{{ value1 }} {{ value2 }}"
-        let result = compileTemplate(template: template) { key in
-            if key == "value1" {
-                return "Hello"
-            } else if key == "value2" {
-                return "World"
-            } else {
-                return ""
-            }
-        }
+        let json: [String: Any] = [
+            "value1": "Hello",
+            "value2": "World",
+        ]
+        let result = compile(template, json)
         XCTAssertEqual("Hello World", result)
     }
     
     func testShouldCompileTemplateWithoutFmtButPipelined() throws {
         let template = "Hello {{ value | }}"
-        let result = compileTemplate(template: template) { key in
-            return "World"
-        }
+        let json: [String: Any] = [
+            "value": "World"
+        ]
+        let result = compile(template, json)
         XCTAssertEqual("Hello World", result)
     }
 
     func testShouldCompileTemplateWithUnknownFmt() throws {
         let template = "Hello {{ value | unknown }}"
-        let result = compileTemplate(template: template) { key in
-            if key == "value" {
-                return "World"
-            } else {
-                return ""
-            }
-        }
+        let json: [String: Any] = [
+            "value": "World"
+        ]
+        let result = compile(template, json)
         XCTAssertEqual("Hello World", result)
     }
     
     func testShouldCompileTemplateWithUpperFmt() throws {
+        let json: [String: Any] = [
+            "value": "world"
+        ]
         let template = "HELLO {{ value | upper }}"
-        let result = compileTemplate(template: template) { key in
-            return "world"
-        }
+        let result = compile(template, json)
         XCTAssertEqual("HELLO WORLD", result)
     }
     
     func testShouldCompileTemplateWithLowerFmt() throws {
+        let json: [String: Any] = [
+            "value": "WORLD"
+        ]
         let template = "hello {{ value | lower }}"
-        let result = compileTemplate(template: template) { key in
-            return "WORLD"
-        }
+        let result = compile(template, json)
         XCTAssertEqual("hello world", result)
     }
     
     func testShouldCompileTemplateWithJsonFmt() throws {
+        let json: [String: Any] = [
+            "value": ["Key": "Value"]
+        ]
         let template = "{{ value | json }}"
-        let result = compileTemplate(template: template) { key in
-            let json: [String: Any] = [
-                "Key": "Value",
-            ]
-            return json
-        }
+        let result = compile(template, json)
         XCTAssertEqual("{\"Key\":\"Value\"}", result)
     }
 }

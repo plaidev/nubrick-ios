@@ -167,14 +167,8 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                 let childView = UIViewBlock(
                     data: child,
                     context: self.context.instanciateFrom(
-                        UIBlockContextInit(
-                            data: createDataForTemplate(
-                                CreateDataForTemplateOption(
-                                    data: childData,
-                                    properties: nil,
-                                    user: nil
-                                )
-                            ),
+                        UIBlockContextChildInit(
+                            childData: childData,
                             parentClickListener: self.gesture,
                             parentDirection: self.block?.data?.direction
                         )
@@ -188,7 +182,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                 let childView = UIViewBlock(
                     data: child,
                     context: self.context.instanciateFrom(
-                        UIBlockContextInit(
+                        UIBlockContextChildInit(
                             parentClickListener: self.gesture,
                             parentDirection: self.block?.data?.direction
                         )

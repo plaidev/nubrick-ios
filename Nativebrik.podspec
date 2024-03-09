@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Nativebrik'
-  s.version          = '0.3.3'
+  s.version          = '0.4.0'
   s.summary          = 'Nativebrik SDK'
   s.description      = <<-DESC
 Nativebrik SDK for iOS.
@@ -18,5 +18,5 @@ Nativebrik SDK for iOS.
   s.source_files = 'ios/Nativebrik/Nativebrik/**/*'
 
   s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine', 'YogaKit', 'Yoga', 'TipKit', 'ImageIO', 'SafariServices'
-  s.dependency 'YogaKit', '2.0.0'
+  s.dependency 'YogaKit', '~> 2.0.0'
 end

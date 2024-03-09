@@ -13,8 +13,8 @@ class OverlayViewController: UIViewController {
     let modalForTriggerViewController: ModalComponentViewController = ModalComponentViewController()
     let triggerViewController: TriggerViewController
     
-    init(user: NativebrikUser, config: Config, repositories: Repositories) {
-        self.triggerViewController = TriggerViewController(user: user, config: config, repositories: repositories, modalViewController: self.modalForTriggerViewController)
+    init(user: NativebrikUser, container: Container) {
+        self.triggerViewController = TriggerViewController(user: user, container: container, modalViewController: self.modalForTriggerViewController)
         super.init(nibName: nil, bundle: nil)
         
         if !isNativebrikAvailable {

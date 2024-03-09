@@ -68,7 +68,7 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     return nil
 }
 
-func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: (_ seed: Int) -> [UserProperty], records: (_ experimentId: String) -> [ExperimentHistoryRecord]) -> ExperimentConfig? {
+func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: (_ seed: Int) -> [UserProperty], isNotInFrequency: (_ experimentId: String, _ frequency: ExperimentFrequency?) -> Bool) -> ExperimentConfig? {
     guard let configs = configs.configs else {
         return nil
     }
@@ -96,7 +96,7 @@ func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, prop
             return true
         }
         let experimentId = config.id ?? ""
-        return isNotInFrequency(frequency: config.frequency, records: records(experimentId)) && isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
+        return isNotInFrequency(experimentId, config.frequency) && isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
     }
 }
 
@@ -120,31 +120,6 @@ func isInDistribution(distribution: [ExperimentCondition], properties: [UserProp
         return !comparePropWithConditionValue(prop: prop, value: conditionValue, op: ConditionOperator(rawValue: op) ?? .Equal)
     }
     return foundNotMatched == nil
-}
-
-func isNotInFrequency(frequency: ExperimentFrequency?, records: [ExperimentHistoryRecord]) -> Bool {
-    guard let frequency = frequency else {
-        return true
-    }
-    let time = 1
-    guard let period = frequency.period else {
-        return records.count < time
-    }
-    let unit = frequency.unit ?? .DAY
-    switch unit {
-    case .DAY, .unknown:
-        let today = getToday()
-        let from = today.timeIntervalSince1970 - Double((period - 1) * 24 * 60 * 60)
-        var count = 0
-        for timestamp in records {
-            if timestamp > from {
-                count += 1
-            } else {
-                break
-            }
-        }
-        return count < time
-    }
 }
 
 func comparePropWithConditionValue(prop: UserProperty, value: String, op: ConditionOperator) -> Bool {

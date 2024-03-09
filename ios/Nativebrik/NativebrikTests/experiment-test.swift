@@ -115,62 +115,11 @@ final class ExperimentTests: XCTestCase {
         XCTAssertFalse(actual)
     }
     
-    func testIsNotInFrequencyShouldBeTrueWhenZeroRecords() throws {
-        let frequency = ExperimentFrequency()
-        let records: [ExperimentHistoryRecord] = []
-        let actual = isNotInFrequency(frequency: frequency, records: records)
-        XCTAssertTrue(actual)
-    }
-    
-    func testIsNotInFrequencyShouldBeTrueWhenNilFrequency() throws {
-        let today = getToday()
-        let morning = today.timeIntervalSince1970 + 5000
-        let morning2 = today.timeIntervalSince1970 + 10000
-        let records: [ExperimentHistoryRecord] = [morning, morning2]
-        let actual = isNotInFrequency(frequency: nil, records: records)
-        XCTAssertTrue(actual)
-    }
-
-    
-    func testIsNotInFrequencyShouldBeFalseWhenItsIndifinetePeriod() throws {
-        let today = getToday()
-        let morning = today.timeIntervalSince1970 + 50000
-        let frequency = ExperimentFrequency()
-        let records: [ExperimentHistoryRecord] = [morning]
-        let actual = isNotInFrequency(frequency: frequency, records: records)
-        XCTAssertFalse(actual)
-    }
-
-    func testIsNotInFrequencyWhenItShowsOnlyOneTimeInTwoDays() throws {
-        let today = getToday()
-        let morning = today.timeIntervalSince1970 + 5000
-        let morning2 = today.timeIntervalSince1970 + 10000
-        let yesterday = today.timeIntervalSince1970 - Double(1 * 24 * 60 * 60) + 5000
-        let twoDaysAgo = today.timeIntervalSince1970 - Double(2 * 24 * 60 * 60) + 5000
-        let threeDaysAgo = today.timeIntervalSince1970 - Double(3 * 24 * 60 * 60) + 5000
-        let frequency = ExperimentFrequency(
-            period: 2,
-            unit: .DAY
-        )
-        
-        var actual = isNotInFrequency(frequency: frequency, records: [twoDaysAgo])
-        XCTAssertTrue(actual)
-        
-        actual = isNotInFrequency(frequency: frequency, records: [yesterday, twoDaysAgo])
-        XCTAssertFalse(actual)
-        
-        actual = isNotInFrequency(frequency: frequency, records: [twoDaysAgo, threeDaysAgo])
-        XCTAssertTrue(actual)
-        
-        actual = isNotInFrequency(frequency: frequency, records: [yesterday, twoDaysAgo, threeDaysAgo])
-        XCTAssertFalse(actual)
-    }
-    
     func testExtractExperimentConfigMatchedToPropertiesShouldReturnNilWhenItsZeroConfig() throws {
         let actual = extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: [])) { seed in
             return []
-        } records: { experimentId in
-            return []
+        } isNotInFrequency: { experimentId, frequency in
+            return true
         }
         XCTAssertNil(actual)
     }
@@ -205,8 +154,8 @@ final class ExperimentTests: XCTestCase {
 
         let actual = extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: configs.configs)) { seed in
             return props
-        } records: { experimentId in
-            return []
+        } isNotInFrequency: { experimentId, frequency in
+            return true
         }
         
         XCTAssertEqual(configs.configs?[1].id, actual?.id)
@@ -238,8 +187,8 @@ final class ExperimentTests: XCTestCase {
         
         let actual = extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: configs.configs)) { seed in
             return []
-        } records: { experimentId in
-            return []
+        } isNotInFrequency: { experimentId, frequency in
+            return true
         }
         
         XCTAssertEqual("now", actual?.id)

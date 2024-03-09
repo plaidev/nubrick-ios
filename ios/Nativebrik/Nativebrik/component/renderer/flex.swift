@@ -13,12 +13,12 @@ class FlexView: AnimatedUIControl {
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
-    
+
     init(block: UIFlexContainerBlock, context: UIBlockContext) {
         super.init(frame: .zero)
         initialize(block: block, context: context, childFlexShrink: nil)
     }
-    
+
     init(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
         super.init(frame: .zero)
         initialize(block: block, context: context, childFlexShrink: childFlexShrink)
@@ -41,7 +41,7 @@ class FlexView: AnimatedUIControl {
         let gesture = configureOnClickGesture(target: self, action: #selector(onClicked(sender:)), context: context, event: block.data?.onClick)
         let children = block.data?.children?.map {
             uiblockToUIView(data: $0, context: context.instanciateFrom(
-                UIBlockContextInit(
+                UIBlockContextChildInit(
                     parentClickListener: gesture,
                     parentDirection: block.data?.direction
                 )
@@ -72,7 +72,7 @@ class FlexView: AnimatedUIControl {
                         layout.marginBottom = parseInt((block.data?.frame?.paddingTop ?? 0) +  (block.data?.frame?.paddingBottom ?? 0))
                     }
                 }
-                
+
                 // when it's wraped by FlexOverflow, set the minimum size not to shrink
                 if let childFlexShrink = childFlexShrink {
                     layout.isEnabled = true

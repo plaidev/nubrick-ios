@@ -53,10 +53,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
     gesture.onClick = {
         if let event = event {
             let compiledPayload = event.payload?.map { property -> Property in
-                let value = compileTemplate(template: property.value ?? "") { placeholder in
-                    return context.getByReferenceKey(key: placeholder)
-                }
-
+                let value = compile(property.value ?? "", context.getVariable())
                 return Property(
                     name: property.name,
                     value: value,

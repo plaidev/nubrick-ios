@@ -29,8 +29,8 @@ final class RemoteConfigTests: XCTestCase {
                 expectation.fulfill()
             case .loading:
                 didLoadingPhaseCome = true
-            case .failure:
-                XCTFail("should found the remote config")
+            default:
+                XCTFail("should found the remote config \(phase)")
                 expectation.fulfill()
             }
         }
@@ -54,7 +54,7 @@ final class RemoteConfigTests: XCTestCase {
                 XCTFail("should found the remote config")
             case .loading:
                 didLoadingPhaseCome = true
-            case .failure:
+            default:
                 expectation.fulfill()
             }
         }
