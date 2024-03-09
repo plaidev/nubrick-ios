@@ -54,46 +54,8 @@ class Config {
         }
     }
 
-    func initFrom(onEvent: ((_ event: ComponentEvent) -> Void)?) -> Config {
-        let config = Config(
-            projectId: self.projectId
-        )
-
-        for listener in eventListeners {
-            config.eventListeners.append(listener)
-        }
-
-        if let onEvent = onEvent {
-            config.eventListeners.append(onEvent)
-        }
-
-        return config
-    }
-
     func dispatchUIBlockEvent(event: UIBlockEventDispatcher) {
-        let e = ComponentEvent(
-            name: event.name,
-            destinationPageId: event.destinationPageId,
-            deepLink: event.deepLink,
-            payload: event.payload?.map({ prop in
-                var ptype: EventPropertyType = .UNKNOWN
-                switch prop.ptype {
-                case .INTEGER:
-                    ptype = .INTEGER
-                case .STRING:
-                    ptype = .STRING
-                case .TIMESTAMPZ:
-                    ptype = .TIMESTAMPZ
-                default:
-                    ptype = .UNKNOWN
-                }
-                return EventProperty(
-                    name: prop.name ?? "",
-                    value: prop.value ?? "",
-                    type: ptype
-                )
-            })
-        )
+        let e = convertEvent(event)
         for listener in eventListeners {
             listener(e)
         }
@@ -118,7 +80,6 @@ public struct EventProperty {
 
 public struct ComponentEvent {
     public let name: String?
-    public let destinationPageId: String?
     public let deepLink: String?
     public let payload: [EventProperty]?
 }
@@ -197,10 +158,11 @@ public class NativebrikExperiment {
         if !isNativebrikAvailable {
             return AnyView(EmptyView())
         }
-        return AnyView(EmbeddingSwiftView2(
+        return AnyView(EmbeddingSwiftView(
             experimentId: id,
             container: self.container,
-            modalViewController: self.overlayVC.modalViewController
+            modalViewController: self.overlayVC.modalViewController,
+            onEvent: onEvent
         ))
     }
 
@@ -208,16 +170,17 @@ public class NativebrikExperiment {
         _ id: String,
         arguments: [String:Any?]? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase2) -> V)
+        @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
     ) -> some View {
         if !isNativebrikAvailable {
             return AnyView(content(.notFound))
         }
-        return AnyView(EmbeddingSwiftView2.init<V>(
+        return AnyView(EmbeddingSwiftView.init<V>(
             experimentId: id,
             componentId: nil,
             container: self.container,
             modalViewController: self.overlayVC.modalViewController,
+            onEvent: onEvent,
             content: content
         ))
     }
@@ -230,10 +193,11 @@ public class NativebrikExperiment {
         if !isNativebrikAvailable {
             return UIView()
         }
-        return EmbeddingUIView2(
+        return EmbeddingUIView(
             experimentId: id,
             container: self.container,
             modalViewController: self.overlayVC.modalViewController,
+            onEvent: onEvent,
             fallback: nil
         )
     }
@@ -247,10 +211,11 @@ public class NativebrikExperiment {
         if !isNativebrikAvailable {
             return content(.notFound)
         }
-        return EmbeddingUIView2(
+        return EmbeddingUIView(
             experimentId: id,
             container: self.container,
             modalViewController: self.overlayVC.modalViewController,
+            onEvent: onEvent,
             fallback: content
         )
     }

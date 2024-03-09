@@ -81,11 +81,12 @@ public class RemoteConfigVariant {
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
         let componentId = self.get(key)
-        return EmbeddingSwiftView2(
+        return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
             container: self.container,
-            modalViewController: self.modalViewController
+            modalViewController: self.modalViewController,
+            onEvent: onEvent
         )
     }
 
@@ -93,14 +94,15 @@ public class RemoteConfigVariant {
         _ key: String,
         arguments: [String:Any?]? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase2) -> V)
+        @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
     ) -> some View {
         let componentId = self.get(key)
-        return EmbeddingSwiftView2.init<V>(
+        return EmbeddingSwiftView.init<V>(
             experimentId: self.experimentId,
             componentId: componentId,
             container: self.container,
             modalViewController: self.modalViewController,
+            onEvent: onEvent,
             content: content
         )
     }
@@ -113,12 +115,12 @@ public class RemoteConfigVariant {
         guard let componentId = self.get(key) else {
             return nil
         }
-//            config: self.config.initFrom(onEvent: onEvent),
-        let uiview = EmbeddingUIView2(
+        let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
             container: self.container,
             modalViewController: self.modalViewController,
+            onEvent: onEvent,
             fallback: nil
         )
         return uiview
@@ -133,12 +135,12 @@ public class RemoteConfigVariant {
         guard let componentId = self.get(key) else {
             return nil
         }
-//            config: self.config.initFrom(onEvent: onEvent),
-        let uiview = EmbeddingUIView2(
+        let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
             container: self.container,
             modalViewController: self.modalViewController,
+            onEvent: onEvent,
             fallback: content
         )
         return uiview

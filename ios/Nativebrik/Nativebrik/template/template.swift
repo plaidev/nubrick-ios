@@ -68,7 +68,7 @@ func compile(_ template: String, _ variable: Any?) -> String {
         let value = variableByPath(path: placeholder.path, variable: variable)
         
         // format value when the placeholer is like {{ path | formatter }}
-        var valueStr = formatValue(formatter: placeholder.formatter, value: value)
+        let valueStr = formatValue(formatter: placeholder.formatter, value: value)
         result = result.replacingOccurrences(of: rawPlaceholder, with: valueStr) as NSString
     }
     return result as String

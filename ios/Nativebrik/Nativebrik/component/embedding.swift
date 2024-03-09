@@ -17,24 +17,49 @@ public enum EmbeddingPhase {
     case failed(Error)
 }
 
-class EmbeddingUIView2: UIView {
-    private let container: Container
+func convertEvent(_ event: UIBlockEventDispatcher) -> ComponentEvent {
+    let convertType: (_ t: PropertyType?) -> EventPropertyType = { t in
+        switch t {
+        case .INTEGER:
+                return .INTEGER
+        case .STRING:
+                return .STRING
+        case .TIMESTAMPZ:
+                return .TIMESTAMPZ
+        default:
+                return .UNKNOWN
+        }
+    }
+    return ComponentEvent(
+        name: event.name,
+        deepLink: event.deepLink,
+        payload: event.payload?.map({ prop in
+            return EventProperty(
+                name: prop.name ?? "",
+                value: prop.value ?? "",
+                type: convertType(prop.ptype)
+            )
+        })
+    )
+}
+
+class EmbeddingUIView: UIView {
     private let fallback: ((_ phase: EmbeddingPhase) -> UIView)
     private var fallbackView: UIView = UIView()
-    private var modalViewController: ModalComponentViewController? = nil
     
     required init?(coder: NSCoder) {
-        self.container = ContainerEmptyImpl()
         self.fallback = { (_ phase) in
             return UIProgressView()
         }
         super.init(coder: coder)
     }
+
     init(
         experimentId: String,
         componentId: String? = nil,
         container: Container,
         modalViewController: ModalComponentViewController?,
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
         fallback: ((_ phase: EmbeddingPhase) -> UIView)?
     ) {
         self.fallback = fallback ?? { (_ phase) in
@@ -47,8 +72,6 @@ class EmbeddingUIView2: UIView {
                 return UIView()
             }
         }
-        self.container = container
-        self.modalViewController = modalViewController
         super.init(frame: .zero)
 
         self.configureLayout { layout in
@@ -71,7 +94,14 @@ class EmbeddingUIView2: UIView {
                 case .success(let view):
                     switch view {
                     case .EUIRootBlock(let root):
-                        let rootView = RootView(coder: NSCoder())!
+                        let rootView = RootView(
+                            root: root,
+                            container: container,
+                            modalViewController: modalViewController,
+                            onEvent: { event in
+                                onEvent?(convertEvent(event))
+                            }
+                        )
                         self?.renderFallback(phase: .completed(rootView))
                     default:
                         self?.renderFallback(phase: .notFound)
@@ -112,21 +142,22 @@ public struct ComponentView: View {
     }
 }
 
-public enum AsyncEmbeddingPhase2 {
+public enum AsyncEmbeddingPhase {
     case loading
     case completed(ComponentView)
     case notFound
     case failed(Error)
 }
 
-class EmbeddingSwiftViewModel2: ObservableObject {
-    @Published var phase: AsyncEmbeddingPhase2 = .loading
+class EmbeddingSwiftViewModel: ObservableObject {
+    @Published var phase: AsyncEmbeddingPhase = .loading
 
     func fetchEmbeddingAndUpdatePhase(
         experimentId: String,
         componentId: String? = nil,
         container: Container,
-        modalViewController: ModalComponentViewController?
+        modalViewController: ModalComponentViewController?,
+        onEvent: ((_ event: ComponentEvent) -> Void)?
     ) {
         Task {
             let result = await Task.detached {
@@ -139,7 +170,12 @@ class EmbeddingSwiftViewModel2: ObservableObject {
                     switch view {
                     case .EUIRootBlock(let root):
                         self?.phase = .completed(ComponentView(content: RootViewRepresentable(
-                            root: root, container: container, modalViewController: modalViewController
+                            root: root,
+                            container: container,
+                            modalViewController: modalViewController,
+                            onEvent: { event in
+                                onEvent?(convertEvent(event))
+                            }
                         )))
                     default:
                         self?.phase = .notFound
@@ -158,15 +194,16 @@ class EmbeddingSwiftViewModel2: ObservableObject {
 
 }
 
-struct EmbeddingSwiftView2: View {
-    @ViewBuilder private let _content: ((_ phase: AsyncEmbeddingPhase2) -> AnyView)
-    @ObservedObject private var data: EmbeddingSwiftViewModel2
+struct EmbeddingSwiftView: View {
+    @ViewBuilder private let _content: ((_ phase: AsyncEmbeddingPhase) -> AnyView)
+    @ObservedObject private var data: EmbeddingSwiftViewModel
     
     init(
         experimentId: String,
         componentId: String? = nil,
         container: Container,
-        modalViewController: ModalComponentViewController?
+        modalViewController: ModalComponentViewController?,
+        onEvent: ((_ event: ComponentEvent) -> Void)?
     ) {
         self._content = { phase in
             switch phase {
@@ -182,11 +219,12 @@ struct EmbeddingSwiftView2: View {
                 return AnyView(EmptyView())
             }
         }
-        self.data = EmbeddingSwiftViewModel2()
+        self.data = EmbeddingSwiftViewModel()
         self.data.fetchEmbeddingAndUpdatePhase(
             experimentId: experimentId,
             container: container,
-            modalViewController: modalViewController
+            modalViewController: modalViewController,
+            onEvent: onEvent
         )
     }
 
@@ -195,16 +233,18 @@ struct EmbeddingSwiftView2: View {
         componentId: String? = nil,
         container: Container,
         modalViewController: ModalComponentViewController?,
-        content: @escaping ((_ phase: AsyncEmbeddingPhase2) -> V)
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        content: @escaping ((_ phase: AsyncEmbeddingPhase) -> V)
     ) {
         self._content = { phase in
             AnyView(content(phase))
         }
-        self.data = EmbeddingSwiftViewModel2()
+        self.data = EmbeddingSwiftViewModel()
         self.data.fetchEmbeddingAndUpdatePhase(
             experimentId: experimentId,
             container: container,
-            modalViewController: modalViewController
+            modalViewController: modalViewController,
+            onEvent: onEvent
         )
     }
 

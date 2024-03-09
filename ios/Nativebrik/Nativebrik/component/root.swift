@@ -104,9 +104,10 @@ struct RootViewRepresentable: UIViewRepresentable {
     let root: UIRootBlock?
     let container: Container
     let modalViewController: ModalComponentViewController?
+    let onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?
 
     func makeUIView(context: Self.Context) -> Self.UIViewType {
-        return RootView(root: root, container: container, modalViewController: modalViewController)
+        return RootView(root: root, container: container, modalViewController: modalViewController, onEvent: onEvent)
     }
 
     // データの更新に応じてラップしている UIView を更新する
@@ -133,7 +134,7 @@ class RootView: UIView {
         super.init(coder: coder)
     }
 
-    init(root: UIRootBlock?, container: Container, modalViewController: ModalComponentViewController?) {
+    init(root: UIRootBlock?, container: Container, modalViewController: ModalComponentViewController?, onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?) {
         self.id = root?.id ?? ""
         self.container = container
         self.pages = root?.data?.pages ?? []
@@ -155,6 +156,7 @@ class RootView: UIView {
                 )
             }
             self?.container.handleEvent(event)
+            onEvent?(event)
         })
 
         if let destId = trigger?.data?.triggerSetting?.onTrigger?.destinationPageId {
