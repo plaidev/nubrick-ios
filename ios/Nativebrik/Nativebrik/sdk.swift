@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-public let nativebrikSdkVersion = "0.3.3"
+public let nativebrikSdkVersion = "0.4.0"
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
         return true
@@ -250,12 +250,12 @@ public class NativebrikExperiment {
             content: phase
         ))
     }
-    
+
     public func z__never_use_this_function_internal_embedding(
         _ id: String,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) {
-        
+
     }
 }
 
