@@ -22,6 +22,7 @@ let nativebrikSession: URLSession = {
 public enum NativebrikError: Error {
     case notFound
     case failedToDecode
+    case unexpected
     case skipRequest
     case irregular(String)
     case other(Error)
@@ -214,7 +215,7 @@ class ContainerImpl: Container {
         
         var experimentId: String
         var variant: ExperimentVariant
-        switch await self.extractVariant(configs: configs, kind: ExperimentKind.POPUP) {
+        switch await self.extractVariant(configs: configs, kind: ExperimentKind.CONFIG) {
         case .success(let (id, v)):
             experimentId = id
             variant = v

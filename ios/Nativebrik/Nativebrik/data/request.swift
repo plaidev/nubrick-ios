@@ -41,7 +41,7 @@ class HttpRequestRepositoryImpl: HttpRequestRepository {
             return Result.failure(NativebrikError.irregular("Failed to create URL object"))
         }
         var request = URLRequest(url: url)
-        var method = req.method ?? ApiHttpRequestMethod.GET
+        let method = req.method ?? ApiHttpRequestMethod.GET
         request.httpMethod = method.rawValue
         if (method != ApiHttpRequestMethod.GET && method != ApiHttpRequestMethod.TRACE) {
             let body = (req.body ?? "").data(using: .utf8)
@@ -72,6 +72,10 @@ class HttpRequestRepositoryImpl: HttpRequestRepository {
                 } else {
                     expected = true
                 }
+            } else {
+                if 200 <= res.statusCode && res.statusCode <= 299 {
+                    expected = true
+                }
             }
             
             let decoder = JSONDecoder()
@@ -79,7 +83,7 @@ class HttpRequestRepositoryImpl: HttpRequestRepository {
                 if expected {
                     return Result.success(JSONData(data: nil))
                 } else {
-                    return Result.failure(NativebrikError.failedToDecode)
+                    return Result.failure(NativebrikError.unexpected)
                 }
             }
             return Result.success(JSONData(data: result))
