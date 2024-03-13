@@ -49,7 +49,6 @@ class FLNativeView: NSObject, FlutterPlatformView {
         guard let channelId = args["channelId"] else {
             return
         }
-        print("entity, channelId: \(channelId)")
         guard let entity = manager.getEmbeddingEntity(channelId: channelId) else {
             return
         }

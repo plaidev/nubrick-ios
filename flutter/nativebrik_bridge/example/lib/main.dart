@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:nativebrik_bridge/nativebrik_bridge.dart';
 import 'package:nativebrik_bridge/embedding.dart';
+import 'package:nativebrik_bridge/remote_config.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,8 +17,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _nativebrikBridgePlugin = NativebrikBridge("cgv3p3223akg00fod19g");
+  final nativebrik = NativebrikBridge("cgv3p3223akg00fod19g");
+  String _message = "Not Found";
 
   @override
   void initState() {
@@ -28,24 +28,17 @@ class _MyAppState extends State<MyApp> {
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      platformVersion =
-          await _nativebrikBridgePlugin.getNativebrikSDKVersion() ??
-              'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
     if (!mounted) return;
 
+    var config = RemoteConfig("cnoku4223akg00e5m630");
+    var variant = await config.fetch();
+    var message = await variant.get("message");
+
     setState(() {
-      _platformVersion = platformVersion;
+      _message = message ?? "Not Found";
     });
   }
 
@@ -58,11 +51,8 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Column(
           children: [
-            SizedBox(
-              height: 270,
-              child: Embedding("TOP_COMPONENT", height: 270),
-            ),
-            const Text('Text 1'),
+            const Embedding("TOP_COMPONENT", height: 270),
+            Text(_message),
             const Text("Text 2")
           ],
         ),

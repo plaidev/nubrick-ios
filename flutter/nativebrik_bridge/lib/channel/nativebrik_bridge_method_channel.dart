@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:nativebrik_bridge/remote_config.dart';
 
 import './nativebrik_bridge_platform_interface.dart';
 
@@ -42,6 +43,63 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
     final result = await methodChannel.invokeMethod<String>(
       'disconnectEmbedding',
       channelId,
+    );
+    return result;
+  }
+
+  @override
+  Future<RemoteConfigPhase?> connectRemoteConfig(
+      String id, String channelId) async {
+    final result = await methodChannel.invokeMethod<String>(
+      'connectRemoteConfig',
+      <String, String>{
+        'id': id,
+        'channelId': channelId,
+      },
+    );
+    switch (result) {
+      case "completed":
+        return RemoteConfigPhase.completed;
+      case "not-found":
+        return RemoteConfigPhase.notFound;
+      case "failed":
+        return RemoteConfigPhase.failed;
+      default:
+        return null;
+    }
+  }
+
+  @override
+  Future<String?> disconnectRemoteConfig(String channelId) async {
+    final result = await methodChannel.invokeMethod<String>(
+      'disconnectRemoteConfig',
+      channelId,
+    );
+    return result;
+  }
+
+  @override
+  Future<String?> getRemoteConfigValue(String channelId, String key) async {
+    final result = await methodChannel.invokeMethod<String>(
+      'getRemoteConfigValue',
+      <String, String>{
+        'key': key,
+        'channelId': channelId,
+      },
+    );
+    return result;
+  }
+
+  @override
+  Future<String?> connectEmbeddingInRemoteConfigValue(
+      String key, String channelId, String embeddingChannelId) async {
+    final result = await methodChannel.invokeMethod<String>(
+      'connectEmbeddingInRemoteConfigValue',
+      <String, String>{
+        'key': key,
+        'channelId': channelId,
+        'embeddingChannelId': embeddingChannelId,
+      },
     );
     return result;
   }

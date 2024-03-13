@@ -34,6 +34,8 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             let projectId = call.arguments as! String
             self.manager.setNativebrikClient(nativebrik: NativebrikClient(projectId: projectId))
             result("ok")
+
+        // embedding
         case "connectEmbedding":
             let args = call.arguments as! [String:String]
             let id = args["id"]!
@@ -43,6 +45,41 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
         case "disconnectEmbedding":
             let channelId = call.arguments as! String
             self.manager.disconnectEmbedding(channelId: channelId)
+            result("ok")
+
+        // remote config
+        case "connectRemoteConfig":
+            let args = call.arguments as! [String:String]
+            let id = args["id"]!
+            let channelId = args["channelId"]!
+            self.manager.connectRemoteConfig(id: id, channelId: channelId, onPhase: { phase in
+                switch phase {
+                case .completed:
+                    result("completed")
+                case .failed:
+                    result("failed")
+                case .notFound:
+                    result("not-found")
+                case .loading:
+                    break
+                }
+            })
+        case "disconnectRemoteConfig":
+            let channelId = call.arguments as! String
+            self.manager.disconnectRemoteConfig(channelId: channelId)
+            result("ok")
+        case "getRemoteConfigValue":
+            let args = call.arguments as! [String:String]
+            let channelId = args["channelId"]!
+            let key = args["key"]!
+            let value = self.manager.getRemoteConfigValue(channelId: channelId, key: key)
+            result(value)
+        case "connectEmbeddingInRemoteConfigValue":
+            let args = call.arguments as! [String:String]
+            let key = args["key"]!
+            let channelId = args["channelId"]!
+            let embeddingChannelId = args["embeddingChannelId"]!
+            self.manager.connectEmbeddingInRemoteConfigValue(key: key, channelId: channelId, embeddingChannelId: embeddingChannelId, messenger: self.messenger)
             result("ok")
         default:
             result(FlutterMethodNotImplemented)

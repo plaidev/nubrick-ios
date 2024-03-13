@@ -1,3 +1,4 @@
+import 'package:nativebrik_bridge/remote_config.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import './nativebrik_bridge_method_channel.dart';
@@ -38,5 +39,25 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
 
   Future<String?> disconnectEmbedding(String channelId) {
     throw UnimplementedError('disconnectEmbedding() has not been implemented.');
+  }
+
+  Future<RemoteConfigPhase?> connectRemoteConfig(String id, String channelId) {
+    throw UnimplementedError('connectRemoteConfig() has not been implemented.');
+  }
+
+  Future<String?> disconnectRemoteConfig(String channelId) {
+    throw UnimplementedError(
+        'disconnectRemoteConfig() has not been implemented.');
+  }
+
+  Future<String?> getRemoteConfigValue(String channelId, String key) {
+    throw UnimplementedError(
+        'getRemoteConfigValue() has not been implemented.');
+  }
+
+  Future<String?> connectEmbeddingInRemoteConfigValue(
+      String key, String channelId, String embeddingChannelId) {
+    throw UnimplementedError(
+        'connectEmbeddingInRemoteConfigValue() has not been implemented.');
   }
 }

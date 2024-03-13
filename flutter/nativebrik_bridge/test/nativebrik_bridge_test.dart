@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nativebrik_bridge/nativebrik_bridge.dart';
 import 'package:nativebrik_bridge/channel/nativebrik_bridge_platform_interface.dart';
 import 'package:nativebrik_bridge/channel/nativebrik_bridge_method_channel.dart';
+import 'package:nativebrik_bridge/remote_config.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockNativebrikBridgePlatform
@@ -23,6 +24,30 @@ class MockNativebrikBridgePlatform
   @override
   Future<String?> disconnectEmbedding(String channelId) {
     throw UnimplementedError('disconnectEmbedding() has not been implemented.');
+  }
+
+  @override
+  Future<RemoteConfigPhase?> connectRemoteConfig(String id, String channelId) {
+    throw UnimplementedError('connectRemoteConfig() has not been implemented.');
+  }
+
+  @override
+  Future<String?> disconnectRemoteConfig(String channelId) {
+    throw UnimplementedError(
+        'disconnectRemoteConfig() has not been implemented.');
+  }
+
+  @override
+  Future<String?> getRemoteConfigValue(String channelId, String key) {
+    throw UnimplementedError(
+        'getRemoteConfigValue() has not been implemented.');
+  }
+
+  @override
+  Future<String?> connectEmbeddingInRemoteConfigValue(
+      String key, String channelId, String embeddingChannelId) {
+    throw UnimplementedError(
+        'connectEmbeddingInRemoteConfigValue() has not been implemented.');
   }
 }
 
