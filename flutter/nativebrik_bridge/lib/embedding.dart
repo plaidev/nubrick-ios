@@ -1,27 +1,47 @@
-import 'dart:math';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nativebrik_bridge/remote_config.dart';
+import 'package:nativebrik_bridge/utils/random.dart';
 import './channel/nativebrik_bridge_platform_interface.dart';
 
-String _generateRandomString(int len) {
-  var r = Random();
-  return String.fromCharCodes(
-      List.generate(len, (index) => r.nextInt(33) + 89));
-}
-
 typedef EmbeddingBuilder = Widget Function(
-    BuildContext context, EmbeddingPhase value, Widget child);
+    BuildContext context, EmbeddingPhase phase, Widget child);
 
+/// A widget that embeds an experiment.
+///
+/// - **NativebrikBridge** must be initialized before using this widget.
+///
+/// ```dart
+/// // Embedding with default height
+/// Embedding("ID OR CUSTOM ID", height: 300);
+///
+/// // Embedding with custom builder
+/// Embedding("ID OR CUSTOM ID", builder: (context, phase, child) {
+///  return phase == EmbeddingPhase.loading
+///     ? const Center(child: CircularProgressIndicator())
+///    : child;
+/// });
+///
+/// // Embedding with remoteconfig.variant
+/// var config = RemoteConfig("ID OR CUSTOM ID");
+/// var variant = await config.fetch();
+/// Embedding("Config Key", variant: variant);
+/// ```
 class Embedding extends StatefulWidget {
   final String id;
   final double? width;
   final double? height;
   final EmbeddingBuilder? builder;
-  Embedding(this.id, {super.key, this.width, this.height, this.builder});
+
+  // this is used from remoteconfig.embed
+  final RemoteConfigVariant? variant;
+
+  const Embedding(this.id,
+      {super.key, this.width, this.height, this.variant, this.builder});
 
   @override
+  // ignore: library_private_types_in_public_api
   _EmbeddingState createState() => _EmbeddingState();
 }
 
@@ -34,7 +54,7 @@ enum EmbeddingPhase {
 
 class _EmbeddingState extends State<Embedding> {
   var _phase = EmbeddingPhase.loading;
-  final _channelId = _generateRandomString(32);
+  final _channelId = generateRandomString(32);
 
   @override
   void initState() {
@@ -42,7 +62,14 @@ class _EmbeddingState extends State<Embedding> {
     final MethodChannel channel =
         MethodChannel("Nativebrik/Embedding/$_channelId");
     channel.setMethodCallHandler(_handleMethod);
-    NativebrikBridgePlatform.instance.connectEmbedding(widget.id, _channelId);
+
+    final variant = widget.variant;
+    if (variant != null) {
+      NativebrikBridgePlatform.instance.connectEmbeddingInRemoteConfigValue(
+          widget.id, variant.channelId, _channelId);
+    } else {
+      NativebrikBridgePlatform.instance.connectEmbedding(widget.id, _channelId);
+    }
   }
 
   @override
@@ -73,28 +100,28 @@ class _EmbeddingState extends State<Embedding> {
     return SizedBox(
       height: widget.height,
       width: widget.width,
-      child: renderByPhase(context),
+      child: _renderByPhase(context),
     );
   }
 
-  Widget renderByPhase(BuildContext context) {
+  Widget _renderByPhase(BuildContext context) {
     switch (_phase) {
       case EmbeddingPhase.loading:
-        return renderWithBuilder(
+        return _renderWithBuilder(
             context, const Center(child: CircularProgressIndicator()));
       case EmbeddingPhase.failed:
-        return renderWithBuilder(
+        return _renderWithBuilder(
             context, const Center(child: Text("Failed to load embedding")));
       case EmbeddingPhase.notFound:
-        return renderWithBuilder(
+        return _renderWithBuilder(
             context, const Center(child: Text("Embedding not found")));
       case EmbeddingPhase.completed:
-        return renderWithBuilder(
+        return _renderWithBuilder(
             context, SizedBox(child: _BridgeView(_channelId)));
     }
   }
 
-  Widget renderWithBuilder(BuildContext context, Widget child) {
+  Widget _renderWithBuilder(BuildContext context, Widget child) {
     if (widget.builder != null) {
       return widget.builder!(context, _phase, child);
     }
