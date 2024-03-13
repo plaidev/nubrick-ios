@@ -15,12 +15,18 @@ struct EmbeddingEntity {
     let channel: FlutterMethodChannel
 }
 
+struct RemoteConfigEntity {
+    let variant: RemoteConfigVariant?
+}
+
 class NativebrikBridgeManager {
     private var nativebrikClient: NativebrikClient? = nil
     private var embeddingMaps: [String:EmbeddingEntity]
+    private var configMaps: [String:RemoteConfigEntity]
 
     init() {
         self.embeddingMaps = [:]
+        self.configMaps = [:]
     }
 
     func setNativebrikClient(nativebrik: NativebrikClient) {
@@ -35,6 +41,7 @@ class NativebrikBridgeManager {
         }
     }
 
+    // embedding
     func connectEmbedding(id: String, channelId: String, messenger: FlutterBinaryMessenger) {
         guard let nativebrikClient = self.nativebrikClient else {
             return
@@ -60,7 +67,7 @@ class NativebrikBridgeManager {
             case .notFound:
                 channel.invokeMethod(EMBEDDING_PHASE_UPDATE_METHOD, arguments: "not-found")
                 return UIView()
-            case .failed(let err):
+            case .failed:
                 channel.invokeMethod(EMBEDDING_PHASE_UPDATE_METHOD, arguments: "failed")
                 return UIView()
             case .loading:
@@ -83,6 +90,92 @@ class NativebrikBridgeManager {
             return nil
         }
         return entity
+    }
+
+    // remote config
+    func connectRemoteConfig(id: String, channelId: String, onPhase:  @escaping ((RemoteConfigPhase) -> Void)) {
+        guard let nativebrikClient = self.nativebrikClient else {
+            return
+        }
+        let entity = RemoteConfigEntity(variant: nil)
+        self.configMaps[channelId] = entity
+
+        nativebrikClient.experiment.remoteConfig(id) { phase in
+            switch phase {
+            case .completed(let config):
+                if self.configMaps[channelId] == nil {
+                    // disconnected already
+                    return
+                }
+                let entity = RemoteConfigEntity(variant: config)
+                self.configMaps[channelId] = entity
+                onPhase(phase)
+            case .notFound:
+                onPhase(phase)
+            case .failed:
+                onPhase(phase)
+            default:
+                break
+            }
+        }
+    }
+
+    func disconnectRemoteConfig(channelId: String) {
+        self.configMaps[channelId] = nil
+    }
+
+    func connectEmbeddingInRemoteConfigValue(key: String, channelId: String, embeddingChannelId: String, messenger: FlutterBinaryMessenger) {
+        guard let entity = self.configMaps[channelId] else {
+            return
+        }
+        guard let variant = entity.variant else {
+            return
+        }
+        let channel = FlutterMethodChannel(name: "Nativebrik/Embedding/\(embeddingChannelId)", binaryMessenger: messenger)
+        guard let uiview = variant.getAsUIView(key, onEvent: { event in
+            channel.invokeMethod(ON_EVENT_METHOD, arguments: [
+                "name": event.name as Any?,
+                "deepLink": event.deepLink as Any?,
+                "payload": event.payload?.map({ prop in
+                    return [
+                        "name": prop.name,
+                        "value": prop.value,
+                        "type": prop.type
+                    ]
+                }),
+            ])
+        }, content: { phase in
+            switch phase {
+            case .completed(let view):
+                channel.invokeMethod(EMBEDDING_PHASE_UPDATE_METHOD, arguments: "completed")
+                return view
+            case .notFound:
+                channel.invokeMethod(EMBEDDING_PHASE_UPDATE_METHOD, arguments: "not-found")
+                return UIView()
+            case .failed:
+                channel.invokeMethod(EMBEDDING_PHASE_UPDATE_METHOD, arguments: "failed")
+                return UIView()
+            case .loading:
+                return UIView()
+            }
+        }) else {
+            return
+        }
+        let embeedingEntity = EmbeddingEntity(
+            uiview: uiview,
+            channel: channel
+        )
+        self.embeddingMaps[embeddingChannelId] = embeedingEntity
+    }
+
+    func getRemoteConfigValue(channelId: String, key: String) -> String? {
+        guard let entity = self.configMaps[channelId] else {
+            return nil
+        }
+        guard let variant = entity.variant else {
+            return nil
+        }
+        return variant.get(key)
     }
 }
 
