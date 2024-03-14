@@ -23,7 +23,7 @@ import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 import com.nativebrik.sdk.schema.UIBlock
 
-const val VERSION = "0.0.3"
+const val VERSION = "0.0.4"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
