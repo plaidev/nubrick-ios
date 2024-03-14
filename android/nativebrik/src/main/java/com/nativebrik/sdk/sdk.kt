@@ -2,13 +2,18 @@ package com.nativebrik.sdk
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.nativebrik.sdk.component.Embedding
 import com.nativebrik.sdk.component.EmbeddingLoadingState
+import com.nativebrik.sdk.component.Root
 import com.nativebrik.sdk.component.Trigger
 import com.nativebrik.sdk.component.TriggerViewModel
 import com.nativebrik.sdk.data.Container
@@ -16,6 +21,7 @@ import com.nativebrik.sdk.data.ContainerImpl
 import com.nativebrik.sdk.data.database.NativebrikDbHelper
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
+import com.nativebrik.sdk.schema.UIBlock
 
 const val VERSION = "0.0.3"
 
@@ -105,7 +111,7 @@ public class NativebrikClient {
 }
 
 public class NativebrikExperiment {
-    private val container: Container
+    internal val container: Container
     private val trigger: TriggerViewModel
 
     internal constructor(config: Config, user: NativebrikUser, db: SQLiteDatabase, context: Context) {
@@ -151,5 +157,35 @@ public class NativebrikExperiment {
             container = this.container,
             experimentId = id,
         )
+    }
+}
+
+public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikClient) {
+    suspend fun connectEmbedding(experimentId: String, componentId: String?): Result<Any?> {
+        return client.experiment.container.fetchEmbedding(experimentId, componentId)
+    }
+
+    suspend fun connectRemoteConfig(experimentId: String): Result<Any?> {
+        return client.experiment.container.fetchRemoteConfig(experimentId)
+    }
+
+    @Composable
+    fun render(modifier: Modifier = Modifier, data: Any?, onEvent: ((event: Event) -> Unit)) {
+        if (data is UIBlock.UnionUIRootBlock) {
+            Row(
+                modifier = modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Root(
+                    modifier = Modifier.fillMaxSize(),
+                    container = client.experiment.container,
+                    root = data.data,
+                    onEvent = onEvent,
+                )
+            }
+        } else {
+            Unit
+        }
     }
 }
