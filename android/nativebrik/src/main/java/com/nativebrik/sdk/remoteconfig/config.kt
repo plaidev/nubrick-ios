@@ -49,9 +49,12 @@ internal fun rememberRemoteConfigState(
 
 class RemoteConfigVariant internal constructor(
     private val container: Container,
-    private val experimentId: String,
+    val experimentId: String,
     private val variant: ExperimentVariant
 ) {
+    val id: String
+        get() = this.variant.id ?: ""
+
     fun get(key: String): String? {
         val config = this.variant.configs?.firstOrNull { config ->
             config.key == key
