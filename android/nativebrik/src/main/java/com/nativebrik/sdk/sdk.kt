@@ -23,7 +23,7 @@ import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 import com.nativebrik.sdk.schema.UIBlock
 
-const val VERSION = "0.0.4"
+const val VERSION = "0.0.5"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -163,10 +163,6 @@ public class NativebrikExperiment {
 public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikClient) {
     suspend fun connectEmbedding(experimentId: String, componentId: String?): Result<Any?> {
         return client.experiment.container.fetchEmbedding(experimentId, componentId)
-    }
-
-    suspend fun connectRemoteConfig(experimentId: String): Result<Any?> {
-        return client.experiment.container.fetchRemoteConfig(experimentId)
     }
 
     @Composable
