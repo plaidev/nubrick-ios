@@ -165,10 +165,6 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         return client.experiment.container.fetchEmbedding(experimentId, componentId)
     }
 
-    suspend fun connectRemoteConfig(experimentId: String): Result<Any?> {
-        return client.experiment.container.fetchRemoteConfig(experimentId)
-    }
-
     @Composable
     fun render(modifier: Modifier = Modifier, data: Any?, onEvent: ((event: Event) -> Unit)) {
         if (data is UIBlock.UnionUIRootBlock) {
