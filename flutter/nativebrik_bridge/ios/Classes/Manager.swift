@@ -177,5 +177,12 @@ class NativebrikBridgeManager {
         }
         return variant.get(key)
     }
+
+    func dispatch(name: String) {
+        guard let nativebrikClient = self.nativebrikClient else {
+            return
+        }
+        nativebrikClient.experiment.dispatch(NativebrikEvent(name))
+    }
 }
 
