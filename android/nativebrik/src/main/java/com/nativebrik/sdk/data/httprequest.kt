@@ -25,6 +25,10 @@ internal class HttpRequestRepositoryImpl(): HttpRequestRepository {
                 val body = req.body ?: ""
                 setBody(connection, body)
             }
+            req.headers?.forEach { header ->
+                val name = header.name ?: return@forEach
+                connection.setRequestProperty(name, header.value ?: "")
+            }
 
             val response: String = connectAndGetResponse(connection).getOrElse {
                 return@withContext Result.failure(it)
