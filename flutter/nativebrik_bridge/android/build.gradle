@@ -2,7 +2,7 @@ group 'com.nativebrik.flutter.nativebrik_bridge'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.7.10'
+    ext.kotlin_version = '1.9.10'
     repositories {
         google()
         mavenCentral()
@@ -31,6 +31,14 @@ android {
 
     compileSdk 34
 
+    buildFeatures {
+        compose true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.3"
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -46,11 +54,12 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 26
     }
 
     dependencies {
-        implementation 'com.nativebrik:sdk:0.0.3'
+        implementation 'com.nativebrik:sdk:0.0.5'
+        implementation 'androidx.activity:activity-compose:1.8.2'
         testImplementation 'org.jetbrains.kotlin:kotlin-test'
         testImplementation 'org.mockito:mockito-core:5.0.0'
     }

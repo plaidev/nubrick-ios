@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:nativebrik_bridge/nativebrik_bridge.dart';
 import 'package:nativebrik_bridge/embedding.dart';
 import 'package:nativebrik_bridge/remote_config.dart';
+import 'package:nativebrik_bridge/provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,7 +34,7 @@ class _MyAppState extends State<MyApp> {
     // setState to update our non-existent appearance.
     if (!mounted) return;
 
-    var config = RemoteConfig("cnoku4223akg00e5m630");
+    var config = NativebrikRemoteConfig("cnoku4223akg00e5m630");
     var variant = await config.fetch();
     var message = await variant.get("message");
 
@@ -46,17 +47,22 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: Column(
-          children: [
-            const Embedding("TOP_COMPONENT", height: 270),
-            Text(_message),
-            const Text("Text 2")
-          ],
-        ),
-      ),
+          appBar: AppBar(
+            title: const Text('Plugin example app'),
+          ),
+          body: NativebrikProvider(
+            child: Column(
+              children: [
+                NativebrikEmbedding("TOP_COMPONENT", height: 270,
+                    onEvent: (event) {
+                  print("Nativebrik Event: ${event.payload}");
+                }),
+                const Text("Text 2"),
+                Text(_message),
+                const Text("Text 2")
+              ],
+            ),
+          )),
     );
   }
 }

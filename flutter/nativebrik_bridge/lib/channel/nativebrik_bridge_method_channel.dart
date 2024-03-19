@@ -103,4 +103,13 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
     );
     return result;
   }
+
+  @override
+  Future<String?> dispatch(String name) async {
+    final result = await methodChannel.invokeMethod<String>(
+      'dispatch',
+      name,
+    );
+    return result;
+  }
 }

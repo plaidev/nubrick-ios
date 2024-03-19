@@ -13,29 +13,30 @@ enum RemoteConfigPhase {
 /// - Dispose the variant after using it not to leak resources.
 ///
 /// ```dart
-/// final config = RemoteConfig("ID OR CUSTOM ID");
+/// final config = NativebrikRemoteConfig("ID OR CUSTOM ID");
 /// final variant = await config.fetch();
 /// final phase = variant.phase;
 /// final value = await variant.get("KEY");
 /// await variant.dispose();
 /// ```
 ///
-class RemoteConfig {
+class NativebrikRemoteConfig {
   final String id;
   final _channelId = generateRandomString(32);
-  RemoteConfig(this.id);
+  NativebrikRemoteConfig(this.id);
 
-  Future<RemoteConfigVariant> fetch() async {
+  Future<NativebrikRemoteConfigVariant> fetch() async {
     var phase = await NativebrikBridgePlatform.instance
         .connectRemoteConfig(id, _channelId);
-    return RemoteConfigVariant._(_channelId, phase ?? RemoteConfigPhase.failed);
+    return NativebrikRemoteConfigVariant._(
+        _channelId, phase ?? RemoteConfigPhase.failed);
   }
 }
 
-class RemoteConfigVariant {
+class NativebrikRemoteConfigVariant {
   final String channelId;
   final RemoteConfigPhase phase;
-  RemoteConfigVariant._(this.channelId, this.phase);
+  NativebrikRemoteConfigVariant._(this.channelId, this.phase);
 
   Future<String?> get(String key) async {
     return await NativebrikBridgePlatform.instance

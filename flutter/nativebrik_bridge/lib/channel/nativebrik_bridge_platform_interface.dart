@@ -60,4 +60,8 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
     throw UnimplementedError(
         'connectEmbeddingInRemoteConfigValue() has not been implemented.');
   }
+
+  Future<String?> dispatch(String name) {
+    throw UnimplementedError('dispatch() has not been implemented.');
+  }
 }

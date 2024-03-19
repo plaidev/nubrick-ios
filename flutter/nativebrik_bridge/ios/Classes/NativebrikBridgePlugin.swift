@@ -81,6 +81,10 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             let embeddingChannelId = args["embeddingChannelId"]!
             self.manager.connectEmbeddingInRemoteConfigValue(key: key, channelId: channelId, embeddingChannelId: embeddingChannelId, messenger: self.messenger)
             result("ok")
+        case "dispatch":
+            let name = call.arguments as! String
+            self.manager.dispatch(name: name)
+            result("ok")
         default:
             result(FlutterMethodNotImplemented)
         }
