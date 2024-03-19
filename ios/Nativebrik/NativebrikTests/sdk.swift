@@ -19,7 +19,7 @@ final class NativebrikClientTests: XCTestCase {
     
     func testDispatchWithoutErrorThrows() throws {
         let client = NativebrikClient(projectId: "Nothing")
-        client.experiment.dispatch(event: NativebrikEvent("Hello"))
+        client.experiment.dispatch(NativebrikEvent("Hello"))
     }
 }
 
