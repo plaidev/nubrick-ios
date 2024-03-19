@@ -17,8 +17,10 @@ class NativebrikProvider extends StatelessWidget {
     const String viewType = "nativebrik-overlay-view";
     switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
+        // overlay view controller will be attached when the nativebrik bridge plugin is intialized.
         return const SizedBox.shrink();
       case TargetPlatform.android:
+        // to support in-app-messeging for android, we need to attach the overlay view into the flutter widget tree.
         return const SizedBox(
           height: 1,
           width: 1,
