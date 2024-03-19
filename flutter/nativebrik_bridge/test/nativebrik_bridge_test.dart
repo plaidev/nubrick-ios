@@ -49,6 +49,11 @@ class MockNativebrikBridgePlatform
     throw UnimplementedError(
         'connectEmbeddingInRemoteConfigValue() has not been implemented.');
   }
+
+  @override
+  Future<String?> dispatch(String name) {
+    throw UnimplementedError('dispatch() has not been implemented.');
+  }
 }
 
 void main() {
