@@ -115,6 +115,7 @@ internal class ContainerImpl(
             experimentId = experimentId,
             variantId = variantId
         ))
+        this.databaseRepository.appendExperimentHistory(experimentId)
         val componentId = extractComponentId(variant) ?: return Result.failure(NotFoundException())
         val component = this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
             return Result.failure(it)
@@ -139,6 +140,7 @@ internal class ContainerImpl(
             experimentId = experimentId,
             variantId = variantId
         ))
+        this.databaseRepository.appendExperimentHistory(experimentId)
         val componentId = extractComponentId(variant) ?: return Result.failure(NotFoundException())
         val component = this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
             return Result.failure(it)
@@ -158,6 +160,7 @@ internal class ContainerImpl(
             experimentId = experimentId,
             variantId = variantId
         ))
+        this.databaseRepository.appendExperimentHistory(experimentId)
         return Result.success(variant)
     }
 
