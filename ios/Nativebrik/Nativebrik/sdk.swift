@@ -130,7 +130,7 @@ public class NativebrikExperiment {
         self.overlayVC = overlay
     }
 
-    public func dispatch(event: NativebrikEvent) {
+    public func dispatch(_ event: NativebrikEvent) {
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
 
