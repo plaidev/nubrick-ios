@@ -5,6 +5,23 @@ import 'package:nativebrik_bridge/remote_config.dart';
 import 'package:nativebrik_bridge/utils/random.dart';
 import './channel/nativebrik_bridge_platform_interface.dart';
 
+enum EventPayloadType { integer, string, timestamp, unknown }
+
+class EventPayload {
+  final String name;
+  final String value;
+  final EventPayloadType type;
+  EventPayload(this.name, this.value, this.type);
+}
+
+class Event {
+  final String? name;
+  final String? deepLink;
+  final List<EventPayload>? payload;
+  Event(this.name, this.deepLink, this.payload);
+}
+
+typedef EventHandler = void Function(Event event);
 typedef EmbeddingBuilder = Widget Function(
     BuildContext context, EmbeddingPhase phase, Widget child);
 
@@ -28,17 +45,23 @@ typedef EmbeddingBuilder = Widget Function(
 /// var variant = await config.fetch();
 /// Embedding("Config Key", variant: variant);
 /// ```
-class Embedding extends StatefulWidget {
+class NativebrikEmbedding extends StatefulWidget {
   final String id;
   final double? width;
   final double? height;
+  final EventHandler? onEvent;
   final EmbeddingBuilder? builder;
 
   // this is used from remoteconfig.embed
-  final RemoteConfigVariant? variant;
+  final NativebrikRemoteConfigVariant? variant;
 
-  const Embedding(this.id,
-      {super.key, this.width, this.height, this.variant, this.builder});
+  const NativebrikEmbedding(this.id,
+      {super.key,
+      this.width,
+      this.height,
+      this.variant,
+      this.onEvent,
+      this.builder});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -52,7 +75,7 @@ enum EmbeddingPhase {
   completed,
 }
 
-class _EmbeddingState extends State<Embedding> {
+class _EmbeddingState extends State<NativebrikEmbedding> {
   var _phase = EmbeddingPhase.loading;
   final _channelId = generateRandomString(32);
 
@@ -92,6 +115,12 @@ class _EmbeddingState extends State<Embedding> {
           };
         });
         return Future.value(true);
+      case 'on-event':
+        if (widget.onEvent == null) return Future.value(false);
+        widget.onEvent?.call(_parseEvent(call.arguments));
+        return Future.value(true);
+      default:
+        return Future.value(false);
     }
   }
 
@@ -148,8 +177,40 @@ class _BridgeView extends StatelessWidget {
           creationParams: creationParams,
           creationParamsCodec: const StandardMessageCodec(),
         );
+      case TargetPlatform.android:
+        return AndroidView(
+          viewType: viewType,
+          layoutDirection: TextDirection.ltr,
+          creationParams: creationParams,
+          creationParamsCodec: const StandardMessageCodec(),
+        );
       default:
-        throw UnsupportedError("Unsupported platform view type");
+        return const SizedBox.shrink();
     }
   }
+}
+
+EventPayloadType _parseEventPayloadType(dynamic type) {
+  switch (type) {
+    case "INTEGER":
+      return EventPayloadType.integer;
+    case "STRING":
+      return EventPayloadType.string;
+    case "TIMESTAMPZ":
+      return EventPayloadType.timestamp;
+    default:
+      return EventPayloadType.unknown;
+  }
+}
+
+Event _parseEvent(dynamic arguments) {
+  final map = arguments;
+  final name = map["name"] as String?;
+  final deepLink = map["deepLink"] as String?;
+  final rawPayload = map["payload"] as List<dynamic>? ?? [];
+  final payload = rawPayload
+      .map((e) => EventPayload(e["name"] as String? ?? "",
+          e["value"] as String? ?? "", _parseEventPayloadType(e["type"])))
+      .toList();
+  return Event(name, deepLink, payload);
 }
