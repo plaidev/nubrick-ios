@@ -65,7 +65,7 @@ class DatabaseRepositoryImpl: DatabaseRepository {
     }
 
     private func experimentHisotryCountAfter(experimentId: String, after: Date) -> Int {
-        let request = UserEventEntity.fetchRequest()
+        let request = ExperimentHistoryEntity.fetchRequest()
         request.predicate = NSPredicate(format: "experimentId = %@ && timestamp >= %@", experimentId, after as NSDate)
 
         let context = self.persistentContainer.viewContext
