@@ -1,4 +1,4 @@
-# nativebrik sdk
+# Nativebrik SDK
 
 documentations
 
