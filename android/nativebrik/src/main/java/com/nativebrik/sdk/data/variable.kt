@@ -2,17 +2,18 @@ package com.nativebrik.sdk.data
 
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.schema.Property
-import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonObject
 
 internal fun createVariableForTemplate(
     user: NativebrikUser? = null,
     data: JsonElement? = null,
     properties: List<Property>? = null,
     form: Map<String, JsonElement>? = null,
+    arguments: Any? = null,
     projectId: String? = null,
 ): JsonElement {
     val userJsonObject = JsonObject(mapOf("id" to JsonPrimitive(user?.id ?: "")))
@@ -24,32 +25,42 @@ internal fun createVariableForTemplate(
         "user" to userJsonObject,
         "props" to propertiesJsonObject,
         "form" to formJsonObject,
-        "data" to (data ?: JsonPrimitive(null)),
+        "args" to buildJsonElement(arguments),
+        "data" to (data ?: JsonNull),
         "project" to JsonObject(mapOf(
             "id" to JsonPrimitive(projectId),
         ))
     ))
 }
 
-@OptIn(ExperimentalSerializationApi::class)
-internal fun mergeVariableForTemplate(
-    a: JsonElement,
-    b: JsonElement
-): JsonElement {
-    if (a !is JsonObject && b !is JsonObject) {
-        return JsonObject(emptyMap())
+internal fun buildJsonElement(value: Any?): JsonElement {
+    if (value == null) return JsonNull
+    when (value) {
+        is Map<*, *> -> {
+            return JsonObject(value.map {
+                it.key.toString() to buildJsonElement(it.value)
+            }.toMap())
+        }
+        is List<*> -> {
+            return JsonArray(value.map { buildJsonElement(it) })
+        }
+        is Array<*> -> {
+            return JsonArray(value.map { buildJsonElement(it) })
+        }
+        is Int -> {
+            return JsonPrimitive(value)
+        }
+        is Float -> {
+            return JsonPrimitive(value)
+        }
+        is Double -> {
+            return JsonPrimitive(value)
+        }
+        is String -> {
+            return JsonPrimitive(value)
+        }
+        else -> {
+            return JsonPrimitive(value.toString())
+        }
     }
-    if (a !is JsonObject) {
-        return b
-    }
-    if (b !is JsonObject) {
-        return a
-    }
-    return JsonObject(mapOf(
-        "user" to (b.jsonObject["user"] ?: a.jsonObject["user"] ?: JsonPrimitive(null)),
-        "props" to (b.jsonObject["props"] ?: a.jsonObject["props"] ?: JsonPrimitive(null)),
-        "forms" to (b.jsonObject["forms"] ?: a.jsonObject["forms"] ?: JsonPrimitive(null)),
-        "data" to (b.jsonObject["data"] ?: a.jsonObject["data"] ?: JsonPrimitive(null)),
-        "project" to (b.jsonObject["project"] ?: a.jsonObject["project"] ?: JsonPrimitive(null)),
-    ))
 }

@@ -25,6 +25,8 @@ class FailedToDecodeException: Exception("Failed to decode")
 class SkipHttpRequestException: Exception("Skip http request")
 
 internal interface Container {
+    fun initWith(arguments: Any?): Container
+
     fun handleEvent(it: Event) {}
 
     fun createVariableForTemplate(data: JsonElement? = null, properties: List<Property>? = null): JsonElement
@@ -42,6 +44,8 @@ internal class ContainerImpl(
     private val config: Config,
     private val user: NativebrikUser,
     private val db: SQLiteDatabase,
+    private val arguments: Any? = null,
+    private val formRepository: FormRepository? = null,
     private val context: Context,
 ): Container {
     private val componentRepository: ComponentRepository by lazy {
@@ -56,12 +60,21 @@ internal class ContainerImpl(
     private val httpRequestRepository: HttpRequestRepository by lazy {
         HttpRequestRepositoryImpl()
     }
-    private val formRepository: FormRepository by lazy {
-        FormRepositoryImpl()
-    }
     private val databaseRepository: DatabaseRepository by lazy {
         DatabaseRepositoryImpl(db)
     }
+
+    override fun initWith(arguments: Any?): Container {
+        return ContainerImpl(
+            config = this.config,
+            user = this.user,
+            db = this.db,
+            arguments = arguments,
+            formRepository = FormRepositoryImpl(),
+            context = this.context,
+        )
+    }
+
 
     override fun handleEvent(it: Event) {
         this.config.onEvent?.let { it1 -> it1(it) }
@@ -72,17 +85,18 @@ internal class ContainerImpl(
             user = this.user,
             data = data,
             properties = properties,
-            form = formRepository.getFormData(),
+            form = formRepository?.getFormData(),
+            arguments = arguments,
             projectId = config.projectId,
         )
     }
 
     override fun getFormValue(key: String): FormValue? {
-        return this.formRepository.getValue(key)
+        return this.formRepository?.getValue(key)
     }
 
     override fun setFormValue(key: String, value: FormValue) {
-        this.formRepository.setValue(key, value)
+        this.formRepository?.setValue(key, value)
     }
 
     override suspend fun sendHttpRequest(req: ApiHttpRequest, variable: JsonElement?): Result<JsonElement> {
