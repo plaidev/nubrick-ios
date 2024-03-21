@@ -37,10 +37,11 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
 
         // embedding
         case "connectEmbedding":
-            let args = call.arguments as! [String:String]
-            let id = args["id"]!
-            let channelId = args["channelId"]!
-            self.manager.connectEmbedding(id: id, channelId: channelId, messenger: self.messenger)
+            let args = call.arguments as! [String:Any]
+            let id = args["id"] as! String
+            let channelId = args["channelId"] as! String
+            let arguments = args["arguments"] as Any?
+            self.manager.connectEmbedding(id: id, channelId: channelId, arguments: arguments, messenger: self.messenger)
             result("ok")
         case "disconnectEmbedding":
             let channelId = call.arguments as! String
@@ -75,11 +76,12 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             let value = self.manager.getRemoteConfigValue(channelId: channelId, key: key)
             result(value)
         case "connectEmbeddingInRemoteConfigValue":
-            let args = call.arguments as! [String:String]
-            let key = args["key"]!
-            let channelId = args["channelId"]!
-            let embeddingChannelId = args["embeddingChannelId"]!
-            self.manager.connectEmbeddingInRemoteConfigValue(key: key, channelId: channelId, embeddingChannelId: embeddingChannelId, messenger: self.messenger)
+            let args = call.arguments as! [String:Any]
+            let key = args["key"] as! String
+            let channelId = args["channelId"] as! String
+            let embeddingChannelId = args["embeddingChannelId"] as! String
+            let arguments = args["arguments"] as Any?
+            self.manager.connectEmbeddingInRemoteConfigValue(key: key, channelId: channelId, arguments: arguments, embeddingChannelId: embeddingChannelId, messenger: self.messenger)
             result("ok")
         case "dispatch":
             let name = call.arguments as! String

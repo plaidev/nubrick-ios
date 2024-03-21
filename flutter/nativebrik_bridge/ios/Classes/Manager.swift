@@ -42,12 +42,12 @@ class NativebrikBridgeManager {
     }
 
     // embedding
-    func connectEmbedding(id: String, channelId: String, messenger: FlutterBinaryMessenger) {
+    func connectEmbedding(id: String, channelId: String, arguments: Any?, messenger: FlutterBinaryMessenger) {
         guard let nativebrikClient = self.nativebrikClient else {
             return
         }
         let channel = FlutterMethodChannel(name: "Nativebrik/Embedding/\(channelId)", binaryMessenger: messenger)
-        let uiview = nativebrikClient.experiment.embeddingUIView(id, onEvent: { event in
+        let uiview = nativebrikClient.experiment.embeddingUIView(id, arguments: arguments, onEvent: { event in
             channel.invokeMethod(ON_EVENT_METHOD, arguments: [
                 "name": event.name as Any?,
                 "deepLink": event.deepLink as Any?,
@@ -124,7 +124,7 @@ class NativebrikBridgeManager {
         self.configMaps[channelId] = nil
     }
 
-    func connectEmbeddingInRemoteConfigValue(key: String, channelId: String, embeddingChannelId: String, messenger: FlutterBinaryMessenger) {
+    func connectEmbeddingInRemoteConfigValue(key: String, channelId: String, arguments: Any?, embeddingChannelId: String, messenger: FlutterBinaryMessenger) {
         guard let entity = self.configMaps[channelId] else {
             return
         }
@@ -132,7 +132,7 @@ class NativebrikBridgeManager {
             return
         }
         let channel = FlutterMethodChannel(name: "Nativebrik/Embedding/\(embeddingChannelId)", binaryMessenger: messenger)
-        guard let uiview = variant.getAsUIView(key, onEvent: { event in
+        guard let uiview = variant.getAsUIView(key, arguments: arguments, onEvent: { event in
             channel.invokeMethod(ON_EVENT_METHOD, arguments: [
                 "name": event.name as Any?,
                 "deepLink": event.deepLink as Any?,

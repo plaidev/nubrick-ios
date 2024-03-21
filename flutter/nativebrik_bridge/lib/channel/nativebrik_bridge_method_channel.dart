@@ -27,12 +27,14 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
   }
 
   @override
-  Future<String?> connectEmbedding(String id, String channelId) async {
+  Future<String?> connectEmbedding(
+      String id, String channelId, dynamic arguments) async {
     final result = await methodChannel.invokeMethod<String>(
       'connectEmbedding',
-      <String, String>{
+      <String, dynamic>{
         'id': id,
         'channelId': channelId,
+        'arguments': arguments,
       },
     );
     return result;
@@ -91,14 +93,15 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
   }
 
   @override
-  Future<String?> connectEmbeddingInRemoteConfigValue(
-      String key, String channelId, String embeddingChannelId) async {
+  Future<String?> connectEmbeddingInRemoteConfigValue(String key,
+      String channelId, String embeddingChannelId, dynamic arguments) async {
     final result = await methodChannel.invokeMethod<String>(
       'connectEmbeddingInRemoteConfigValue',
-      <String, String>{
+      <String, dynamic>{
         'key': key,
         'channelId': channelId,
         'embeddingChannelId': embeddingChannelId,
+        'arguments': arguments,
       },
     );
     return result;
