@@ -75,7 +75,7 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
     }
 
     @Composable
-    fun Render(channelId: String, modifier: Modifier = Modifier) {
+    fun Render(channelId: String, arguments: Any?, modifier: Modifier = Modifier) {
         if (channelId.isEmpty()) {
             return
         }
@@ -84,7 +84,7 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
             MethodChannel(this.binaryMessenger, "Nativebrik/Embedding/$channelId")
         }
         val data = this.embeddingMap[channelId]
-        bridgeClient.render(modifier, data, onEvent = { event ->
+        bridgeClient.render(modifier, arguments, data, onEvent = { event ->
             methodChannel.invokeMethod(ON_EVENT_METHOD, mapOf(
                 "name" to event.name,
                 "deepLink" to event.deepLink,
@@ -183,11 +183,12 @@ internal class NativeViewFactory(private val manager: NativebrikBridgeManager): 
     override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
         val creationParams = args as Map<*, *>?
         val channelId = creationParams?.get("channelId") as String
-        return NativeView(context, channelId, manager)
+        val arguments = creationParams["arguments"]
+        return NativeView(context, channelId, arguments, manager)
     }
 }
 
-internal class NativeView(context: Context, channelId: String, manager: NativebrikBridgeManager): PlatformView {
+internal class NativeView(context: Context, channelId: String, arguments: Any?, manager: NativebrikBridgeManager): PlatformView {
     private val view: ComposeView
 
     override fun getView(): View {
@@ -200,7 +201,7 @@ internal class NativeView(context: Context, channelId: String, manager: Nativebr
         val param = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
         view = ComposeView(context).apply {
             setContent {
-                manager.Render(channelId)
+                manager.Render(channelId, arguments)
             }
             layoutParams = param
         }
