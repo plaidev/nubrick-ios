@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.nativebrik.sdk.component.Embedding
@@ -137,10 +138,11 @@ public class NativebrikExperiment {
     public fun Embedding(
         id: String,
         modifier: Modifier = Modifier,
+        arguments: Any? = null,
         onEvent: ((event: Event) -> Unit)? = null,
         content: (@Composable() (state: EmbeddingLoadingState) -> Unit)? = null
     ) {
-        Embedding(container = this.container, id, modifier = modifier, onEvent = onEvent, content = content)
+        Embedding(container = this.container.initWith(arguments), id, modifier = modifier, onEvent = onEvent, content = content)
     }
 
     @Composable
@@ -166,7 +168,10 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
     }
 
     @Composable
-    fun render(modifier: Modifier = Modifier, data: Any?, onEvent: ((event: Event) -> Unit)) {
+    fun render(modifier: Modifier = Modifier, arguments: Any? = null, data: Any?, onEvent: ((event: Event) -> Unit)) {
+        val container = remember(arguments) {
+            client.experiment.container.initWith(arguments)
+        }
         if (data is UIBlock.UnionUIRootBlock) {
             Row(
                 modifier = modifier.fillMaxSize(),
@@ -175,7 +180,7 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
             ) {
                 Root(
                     modifier = Modifier.fillMaxSize(),
-                    container = client.experiment.container,
+                    container = container,
                     root = data.data,
                     onEvent = onEvent,
                 )
