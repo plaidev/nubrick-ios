@@ -77,14 +77,14 @@ public class RemoteConfigVariant {
 
     public func getAsView(
         _ key: String,
-        arguments: [String:Any?]? = nil,
+        arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
         let componentId = self.get(key)
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: ContainerImpl(self.container as! ContainerImpl),
+            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent
         )
@@ -92,7 +92,7 @@ public class RemoteConfigVariant {
 
     public func getAsView<V: View>(
         _ key: String,
-        arguments: [String:Any?]? = nil,
+        arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
     ) -> some View {
@@ -100,7 +100,7 @@ public class RemoteConfigVariant {
         return EmbeddingSwiftView.init<V>(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: ContainerImpl(self.container as! ContainerImpl),
+            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             content: content
@@ -109,7 +109,7 @@ public class RemoteConfigVariant {
 
     public func getAsUIView(
         _ key: String,
-        arguments: [String:Any?]? = nil,
+        arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView? {
         guard let componentId = self.get(key) else {
@@ -118,7 +118,7 @@ public class RemoteConfigVariant {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: ContainerImpl(self.container as! ContainerImpl),
+            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -128,7 +128,7 @@ public class RemoteConfigVariant {
 
     public func getAsUIView(
         _ key: String,
-        arguments: [String:Any?]? = nil,
+        arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView? {
@@ -138,7 +138,7 @@ public class RemoteConfigVariant {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: ContainerImpl(self.container as! ContainerImpl),
+            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: content
