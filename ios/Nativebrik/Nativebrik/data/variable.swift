@@ -12,6 +12,7 @@ func _createVariableForTemplate(
     data: Any? = nil,
     properties: [Property]? = nil,
     form: [String: Any]? = nil,
+    arguments: Any? = nil,
     projectId: String? = nil
 ) -> Any {
     let userData: [String:Any] = (user != nil) ? [
@@ -34,6 +35,7 @@ func _createVariableForTemplate(
         "user": (userData.isEmpty ? nil : userData) as Any,
         "props": (propertiesData.isEmpty ? nil : propertiesData) as Any,
         "form": (formData?.isEmpty == true ? nil : formData) as Any,
+        "args": arguments as Any,
         "data": data as Any,
         "project": projectData as Any,
     ]
@@ -48,6 +50,7 @@ func _mergeVariable(base: Any?, _ overlay: Any?) -> Any? {
         "user": overlay?["user"] ?? base["user"] as Any,
         "props": overlay?["props"] ?? base["props"] as Any,
         "form": overlay?["form"] ?? base["form"] as Any,
+        "args": overlay?["args"] ?? base["args"] as Any,
         "data": overlay?["data"] ?? base["data"] as Any,
         "project": overlay?["project"] ?? base["project"] as Any,
     ]

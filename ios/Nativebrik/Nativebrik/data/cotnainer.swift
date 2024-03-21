@@ -78,6 +78,8 @@ class ContainerImpl: Container {
     private let databaseRepository: DatabaseRepository
     private let httpRequestRepository: HttpRequestRepository
     
+    private let arguments: Any?
+    
     init(config: Config, user: NativebrikUser, persistentContainer: NSPersistentContainer, intercepter: NativebrikHttpRequestInterceptor? = nil) {
         self.config = config
         self.user = user
@@ -88,13 +90,15 @@ class ContainerImpl: Container {
         self.formRepository = nil
         self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
         self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: intercepter)
+        
+        self.arguments = nil
     }
     
     // should be refactored.
     // this is because, i wanted to initialize form instance for each component, not to share the same instance from every components.
     // this is called when component is instantiated.
     // bad code.
-    init(_ container: ContainerImpl) {
+    init(_ container: ContainerImpl, arguments: Any?) {
         self.config = container.config
         self.user = container.user
         self.persistentContainer = container.persistentContainer
@@ -104,6 +108,7 @@ class ContainerImpl: Container {
         self.formRepository = FormRepositoryImpl()
         self.databaseRepository = container.databaseRepository
         self.httpRequestRepository = container.httpRequestRepository
+        self.arguments = arguments
     }
         
     func handleEvent(_ it: UIBlockEventDispatcher) {
@@ -116,6 +121,7 @@ class ContainerImpl: Container {
             data: data,
             properties: properties,
             form: self.formRepository?.getFormData(),
+            arguments: self.arguments,
             projectId: self.config.projectId
         )
     }

@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Nativebrik'
-  s.version          = '0.4.2'
+  s.version          = '0.5.0'
   s.summary          = 'Nativebrik SDK'
   s.description      = <<-DESC
 Nativebrik SDK for iOS.

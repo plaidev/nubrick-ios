@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-public let nativebrikSdkVersion = "0.4.2"
+public let nativebrikSdkVersion = "0.5.0"
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
         return true
@@ -152,7 +152,7 @@ public class NativebrikExperiment {
 
     public func embedding(
         _ id: String,
-        arguments: [String:Any?]? = nil,
+        arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
         if !isNativebrikAvailable {
@@ -160,7 +160,7 @@ public class NativebrikExperiment {
         }
         return AnyView(EmbeddingSwiftView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl),
+            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent
         ))
@@ -168,7 +168,7 @@ public class NativebrikExperiment {
 
     public func embedding<V: View>(
         _ id: String,
-        arguments: [String:Any?]? = nil,
+        arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
     ) -> some View {
@@ -178,7 +178,7 @@ public class NativebrikExperiment {
         return AnyView(EmbeddingSwiftView.init<V>(
             experimentId: id,
             componentId: nil,
-            container: ContainerImpl(self.container as! ContainerImpl),
+            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             content: content
@@ -187,7 +187,7 @@ public class NativebrikExperiment {
 
     public func embeddingUIView(
         _ id: String,
-        arguments: [String:Any?]? = nil,
+        arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView {
         if !isNativebrikAvailable {
@@ -195,7 +195,7 @@ public class NativebrikExperiment {
         }
         return EmbeddingUIView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl),
+            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -204,7 +204,7 @@ public class NativebrikExperiment {
 
     public func embeddingUIView(
         _ id: String,
-        arguments: [String:Any?]? = nil,
+        arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
@@ -213,7 +213,7 @@ public class NativebrikExperiment {
         }
         return EmbeddingUIView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl),
+            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content
@@ -230,7 +230,7 @@ public class NativebrikExperiment {
         }
         let _ = RemoteConfig(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl),
+            container: self.container,
             modalViewController: self.overlayVC.modalViewController,
             phase: phase
         )
