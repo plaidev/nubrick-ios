@@ -49,19 +49,23 @@ class NativebrikEmbedding extends StatefulWidget {
   final String id;
   final double? width;
   final double? height;
+  final dynamic arguments;
   final EventHandler? onEvent;
   final EmbeddingBuilder? builder;
 
   // this is used from remoteconfig.embed
   final NativebrikRemoteConfigVariant? variant;
 
-  const NativebrikEmbedding(this.id,
-      {super.key,
-      this.width,
-      this.height,
-      this.variant,
-      this.onEvent,
-      this.builder});
+  const NativebrikEmbedding(
+    this.id, {
+    super.key,
+    this.width,
+    this.height,
+    this.arguments,
+    this.onEvent,
+    this.variant,
+    this.builder,
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -89,9 +93,10 @@ class _EmbeddingState extends State<NativebrikEmbedding> {
     final variant = widget.variant;
     if (variant != null) {
       NativebrikBridgePlatform.instance.connectEmbeddingInRemoteConfigValue(
-          widget.id, variant.channelId, _channelId);
+          widget.id, variant.channelId, _channelId, widget.arguments);
     } else {
-      NativebrikBridgePlatform.instance.connectEmbedding(widget.id, _channelId);
+      NativebrikBridgePlatform.instance
+          .connectEmbedding(widget.id, _channelId, widget.arguments);
     }
   }
 
@@ -145,8 +150,8 @@ class _EmbeddingState extends State<NativebrikEmbedding> {
         return _renderWithBuilder(
             context, const Center(child: Text("Embedding not found")));
       case EmbeddingPhase.completed:
-        return _renderWithBuilder(
-            context, SizedBox(child: _BridgeView(_channelId)));
+        return _renderWithBuilder(context,
+            SizedBox(child: _BridgeView(_channelId, widget.arguments)));
     }
   }
 
@@ -160,14 +165,16 @@ class _EmbeddingState extends State<NativebrikEmbedding> {
 
 class _BridgeView extends StatelessWidget {
   final String channelId;
+  final dynamic arguments;
 
-  const _BridgeView(this.channelId);
+  const _BridgeView(this.channelId, this.arguments);
 
   @override
   Widget build(BuildContext context) {
     const String viewType = "nativebrik-embedding-view";
     final Map<String, dynamic> creationParams = <String, dynamic>{
       "channelId": channelId,
+      "arguments": arguments,
     };
     switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
