@@ -43,10 +43,10 @@ class FLNativeView: NSObject, FlutterPlatformView {
         self._view = UIView(frame: frame)
         super.init()
 
-        guard let args = args as? [String:String] else {
+        guard let args = args as? [String:Any] else {
             return
         }
-        guard let channelId = args["channelId"] else {
+        guard let channelId = args["channelId"] as? String else {
             return
         }
         guard let entity = manager.getEmbeddingEntity(channelId: channelId) else {
