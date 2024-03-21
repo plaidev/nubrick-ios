@@ -17,7 +17,8 @@ class MockNativebrikBridgePlatform
   }
 
   @override
-  Future<String?> connectEmbedding(String id, String channelId) {
+  Future<String?> connectEmbedding(
+      String id, String channelId, dynamic arguments) {
     throw UnimplementedError('connectEmbedding() has not been implemented.');
   }
 
@@ -44,8 +45,8 @@ class MockNativebrikBridgePlatform
   }
 
   @override
-  Future<String?> connectEmbeddingInRemoteConfigValue(
-      String key, String channelId, String embeddingChannelId) {
+  Future<String?> connectEmbeddingInRemoteConfigValue(String key,
+      String channelId, String embeddingChannelId, dynamic arguments) {
     throw UnimplementedError(
         'connectEmbeddingInRemoteConfigValue() has not been implemented.');
   }

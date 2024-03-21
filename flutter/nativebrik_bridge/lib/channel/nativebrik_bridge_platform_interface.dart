@@ -33,7 +33,8 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
     throw UnimplementedError('connectClient() has not been implemented.');
   }
 
-  Future<String?> connectEmbedding(String id, String channelId) {
+  Future<String?> connectEmbedding(
+      String id, String channelId, dynamic arguments) {
     throw UnimplementedError('connectEmbedding() has not been implemented.');
   }
 
@@ -55,8 +56,8 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
         'getRemoteConfigValue() has not been implemented.');
   }
 
-  Future<String?> connectEmbeddingInRemoteConfigValue(
-      String key, String channelId, String embeddingChannelId) {
+  Future<String?> connectEmbeddingInRemoteConfigValue(String key,
+      String channelId, String embeddingChannelId, dynamic arguments) {
     throw UnimplementedError(
         'connectEmbeddingInRemoteConfigValue() has not been implemented.');
   }
