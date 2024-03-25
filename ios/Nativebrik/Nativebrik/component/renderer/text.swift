@@ -31,7 +31,11 @@ class TextView: AnimatedUIControl {
         label.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
         let text = compile(block.data?.value ?? "", context.getVariable())
         label.text = text
-        label.numberOfLines = 0
+        if let maxLines = block.data?.maxLines {
+            label.numberOfLines = maxLines
+        } else {
+            label.numberOfLines = 0
+        }
         configureSkeltonText(view: label, showSkelton: showSkelton)
         
         self.label = label
