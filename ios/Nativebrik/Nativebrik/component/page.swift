@@ -141,28 +141,32 @@ class PageView: UIView {
                 base: self?.data,
                 self?.container.createVariableForTemplate(data: nil, properties: self?.props)
             )
+            
+            // compile event
+            let deepLink = dispatchedEvent.deepLink
+            let name = dispatchedEvent.name
+            let compiledEvent = UIBlockEventDispatcher(
+                name: (name != nil) ? compile(name ?? "", variable) : nil,
+                destinationPageId: dispatchedEvent.destinationPageId,
+                deepLink: (deepLink != nil) ? compile(deepLink ?? "", variable) : nil,
+                payload: dispatchedEvent.payload?.map({ prop in
+                    return Property(
+                        name: prop.name ?? "",
+                        value: compile(prop.value ?? "", variable),
+                        ptype: prop.ptype ?? PropertyType.STRING
+                    )
+                }),
+                httpRequest: dispatchedEvent.httpRequest,
+                httpResponseAssertion: dispatchedEvent.httpResponseAssertion
+            )
 
-            let assertion = dispatchedEvent.httpResponseAssertion
+            let assertion = compiledEvent.httpResponseAssertion
             let handleEvent = { () -> () in
                 DispatchQueue.main.async {
-                    let event = UIBlockEventDispatcher(
-                        name: dispatchedEvent.name,
-                        destinationPageId: dispatchedEvent.destinationPageId,
-                        deepLink: dispatchedEvent.deepLink,
-                        payload: dispatchedEvent.payload?.map({ prop in
-                            return Property(
-                                name: prop.name ?? "",
-                                value: compile(prop.value ?? "", variable),
-                                ptype: prop.ptype ?? PropertyType.STRING
-                            )
-                        }),
-                        httpRequest: dispatchedEvent.httpRequest,
-                        httpResponseAssertion: dispatchedEvent.httpResponseAssertion
-                    )
-                    parentEventManager?.dispatch(event: event)
+                    parentEventManager?.dispatch(event: compiledEvent)
                 }
             }
-            if let httpRequest = dispatchedEvent.httpRequest {
+            if let httpRequest = compiledEvent.httpRequest {
                 Task {
                     Task.detached { [weak self] in
                         let result = await self?.container.sendHttpRequest(

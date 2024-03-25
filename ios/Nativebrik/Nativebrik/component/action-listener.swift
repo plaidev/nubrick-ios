@@ -52,25 +52,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
     let gesture = ClickListener(target: target, action: action)
     gesture.onClick = {
         if let event = event {
-            let compiledPayload = event.payload?.map { property -> Property in
-                let value = compile(property.value ?? "", context.getVariable())
-                return Property(
-                    name: property.name,
-                    value: value,
-                    ptype: property.ptype
-                )
-            }
-
-            let compiledEvent = UIBlockEventDispatcher(
-                name: event.name,
-                destinationPageId: event.destinationPageId,
-                deepLink: event.deepLink,
-                payload: compiledPayload,
-                httpRequest: event.httpRequest,
-                httpResponseAssertion: event.httpResponseAssertion
-            )
-
-            context.dipatch(event: compiledEvent)
+            context.dipatch(event: event)
         }
     }
     if event != nil {
