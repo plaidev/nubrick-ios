@@ -514,6 +514,7 @@ struct UITextBlockData: Decodable {
   var color: Color?
   var design: FontDesign?
   var weight: FontWeight?
+  var maxLines: Int?
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
 }
