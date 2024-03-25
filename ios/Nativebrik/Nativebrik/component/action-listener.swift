@@ -64,6 +64,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
             let compiledEvent = UIBlockEventDispatcher(
                 name: event.name,
                 destinationPageId: event.destinationPageId,
+                deepLink: event.deepLink,
                 payload: compiledPayload,
                 httpRequest: event.httpRequest,
                 httpResponseAssertion: event.httpResponseAssertion
