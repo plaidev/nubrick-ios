@@ -72,7 +72,11 @@ class ModalComponentViewController: UIViewController {
     }
 
     func presentToTop(_ viewController: UIViewController) {
-        self.view.window?.rootViewController?.present(viewController, animated: true)
+        guard let root = self.view.window?.rootViewController else {
+            return
+        }
+        let top = findTopPresenting(root)
+        top.present(viewController, animated: true)
     }
 
     @objc func dismissModal() {
