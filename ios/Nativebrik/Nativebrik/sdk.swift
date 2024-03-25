@@ -22,7 +22,9 @@ func openLink(_ event: ComponentEvent) -> Void {
     guard let link = event.deepLink else {
         return
     }
-    let url = URL(string: link)!
+    guard let url = URL(string: link) else {
+        return
+    }
     if UIApplication.shared.canOpenURL(url) {
         if #available(iOS 10.0, *) {
             UIApplication.shared.open(url, options: [:])
@@ -32,12 +34,23 @@ func openLink(_ event: ComponentEvent) -> Void {
     }
 }
 
+func createDispatchNativebrikEvent(_ client: NativebrikClient) -> (_ event: ComponentEvent) -> Void {
+    return { event in
+        guard let name = event.name else {
+            return
+        }
+        if name.isEmpty {
+            return
+        }
+        client.experiment.dispatch(NativebrikEvent(name))
+    }
+}
+
 class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
     var trackUrl: String = "https://track.nativebrik.com/track/v1"
     var cdnUrl: String = "https://cdn.nativebrik.com"
-    static let defaultListeners: [((_ event: ComponentEvent) -> Void)] = [openLink]
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
 
     init() {
@@ -46,20 +59,23 @@ class Config {
 
     init(
         projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+        onEvents: [((_ event: ComponentEvent) -> Void)?] = []
     ) {
         self.projectId = projectId
-        if let onEvent = onEvent {
-            self.eventListeners.append(onEvent)
+        onEvents.forEach { onEvent in
+            if let onEvent = onEvent {
+                self.eventListeners.append(onEvent)
+            }
         }
+    }
+
+    func addEventListner(_ onEvent: @escaping (_ event: ComponentEvent) -> Void) {
+        self.eventListeners.append(onEvent)
     }
 
     func dispatchUIBlockEvent(event: UIBlockEventDispatcher) {
         let e = convertEvent(event)
         for listener in eventListeners {
-            listener(e)
-        }
-        for listener in Config.defaultListeners {
             listener(e)
         }
     }
@@ -106,7 +122,10 @@ public class NativebrikClient: ObservableObject {
         httpRequestInterceptor: NativebrikHttpRequestInterceptor? = nil
     ) {
         let user = NativebrikUser()
-        let config = Config(projectId: projectId, onEvent: onEvent)
+        let config = Config(projectId: projectId, onEvents: [
+            openLink,
+            onEvent
+        ])
         let persistentContainer = createNativebrikCoreDataHelper()
         self.user = user
         self.config = config
@@ -118,6 +137,8 @@ public class NativebrikClient: ObservableObject {
         )
         self.overlayVC = OverlayViewController(user: self.user, container: self.container)
         self.experiment = NativebrikExperiment(container: self.container, overlay: self.overlayVC)
+
+        config.addEventListner(createDispatchNativebrikEvent(self))
     }
 }
 
