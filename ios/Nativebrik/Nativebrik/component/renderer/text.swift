@@ -47,6 +47,11 @@ class TextView: AnimatedUIControl {
             context: context,
             event: block.data?.onClick
         )
+        
+        if let bgSrc = block.data?.frame?.backgroundSrc {
+            let bgSrc = compile(bgSrc, context.getVariable())
+            loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
+        }
     }
     
     override func layoutSubviews() {
