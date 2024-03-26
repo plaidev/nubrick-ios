@@ -18,6 +18,7 @@ class ImageView: AnimatedUIControl {
 
     init(block: UIImageBlock, context: UIBlockContext) {
         super.init(frame: .zero)
+
         let showSkelton = context.isLoading() && hasPlaceholderPath(template: block.data?.src ?? "")
 
         self.configureLayout { layout in
@@ -61,50 +62,107 @@ class ImageView: AnimatedUIControl {
             event: block.data?.onClick
         )
 
-        self.asyncLoadImage(url: compiledSrc)
-    }
-
-    func asyncLoadImage(url: String) {
-        guard let requestUrl = URL(string: url) else {
-            return
-        }
-        URLSession.shared.dataTask(with: requestUrl) { (data, response, error) in
-            DispatchQueue.main.async { [weak self] in
-                if error != nil {
-                    return
-                }
-                
-                if let imageData = data {
-                    if isGif(response) {
-                        UIView.transition(
-                            with: self?.image ?? UIImageView(),
-                            duration: 0.2,
-                            options: .transitionCrossDissolve,
-                            animations: {
-                                self?.image.image = UIImage.gifImageWithData(imageData)
-                            },
-                            completion: nil)
-                    } else {
-                        UIView.transition(
-                            with: self?.image ?? UIImageView(),
-                            duration: 0.2,
-                            options: .transitionCrossDissolve,
-                            animations: {
-                                self?.image.image = UIImage(data: imageData)
-                            },
-                            completion: nil)
-                    }
-                    self?.layoutSubviews()
-                } else {
-                    return
-                }
-            }
-        }.resume()
+        loadAsyncImage(url: compiledSrc, view: self, image: self.image)
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
     }
+}
+
+func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
+    guard let requestUrl = URL(string: url) else {
+        return
+    }
+    
+    let fallbackSetting = parseImageFallbackToBlurhash(url)
+    let fallback = fallbackSetting.blurhash == "" ? UIImage() : UIImage(
+        blurHash: fallbackSetting.blurhash,
+        size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))
+    )
+    
+    if let fallback = fallback {
+        view.layer.contents = fallback.cgImage
+        view.contentMode = UIView.ContentMode.scaleAspectFill
+        view.clipsToBounds = true
+    }
+    
+    nativebrikSession.dataTask(with: requestUrl) { (data, response, error) in
+        if error != nil {
+            return
+        }
+
+        DispatchQueue.main.async {
+            if let imageData = data {
+                if isGif(response) {
+                    guard let image = UIImage.gifImageWithData(imageData) else {
+                        return
+                    }
+                    UIView.transition(
+                        with: view,
+                        duration: 0.2,
+                        options: .transitionCrossDissolve) {
+                            view.layer.contents = image.cgImage
+                            view.contentMode = UIView.ContentMode.scaleAspectFill
+                            view.clipsToBounds = true
+                        }
+                } else {
+                    guard let image = UIImage(data: imageData) else {
+                        return
+                    }
+                    UIView.transition(
+                        with: view,
+                        duration: 0.2,
+                        options: .transitionCrossDissolve,
+                        animations: {
+                            view.layer.contents = image.cgImage
+                            view.contentMode = UIView.ContentMode.scaleAspectFill
+                            view.clipsToBounds = true
+                        },
+                        completion: nil)
+                }
+                view.layoutSubviews()
+            }
+        }
+    }.resume()
+}
+
+func loadAsyncImage(url: String, view: UIView, image: UIImageView) {
+    guard let requestUrl = URL(string: url) else {
+        return
+    }
+    nativebrikSession.dataTask(with: requestUrl) { (data, response, error) in
+        DispatchQueue.main.async {
+            if error != nil {
+                return
+            }
+            
+            if let imageData = data {
+                if isGif(response) {
+                    UIView.transition(
+                        with: image,
+                        duration: 0.2,
+                        options: .transitionCrossDissolve,
+                        animations: {
+                            image.image = UIImage.gifImageWithData(imageData)
+                        },
+                        completion: nil)
+                } else {
+                    UIView.transition(
+                        with: image,
+                        duration: 0.2,
+                        options: .transitionCrossDissolve,
+                        animations: {
+                            image.image = UIImage(data: imageData)
+                        },
+                        completion: nil)
+                }
+                view.layoutSubviews()
+            } else {
+                return
+            }
+        }
+    }.resume()
 }
 
 func isGif(_ response: URLResponse?) -> Boolean {
