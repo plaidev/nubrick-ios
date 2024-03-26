@@ -84,6 +84,13 @@ class FlexView: AnimatedUIControl {
 
             self.addSubview(child)
         }
+        
+        if childFlexShrink == nil {
+            if let bgSrc = block.data?.frame?.backgroundSrc {
+                let bgSrc = compile(bgSrc, context.getVariable())
+                loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
+            }
+        }
     }
 
     override func layoutSubviews() {
@@ -143,6 +150,11 @@ class FlexOverflowView: UIScrollView {
         flexView.layer.backgroundColor = .init(gray: 0, alpha: 0)
         self.flexView = flexView
         self.addSubview(flexView)
+        
+        if let bgSrc = block.data?.frame?.backgroundSrc {
+            let bgSrc = compile(bgSrc, context.getVariable())
+            loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
+        }
     }
 
     @objc func onClicked(sender: ClickListener) {
