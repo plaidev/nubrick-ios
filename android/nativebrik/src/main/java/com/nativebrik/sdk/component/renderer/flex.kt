@@ -26,7 +26,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.nativebrik.sdk.component.provider.data.DataContext
 import com.nativebrik.sdk.component.provider.event.eventDispatcher
 import com.nativebrik.sdk.schema.AlignItems
 import com.nativebrik.sdk.schema.FlexDirection
@@ -35,6 +37,8 @@ import com.nativebrik.sdk.schema.JustifyContent
 import com.nativebrik.sdk.schema.Overflow
 import com.nativebrik.sdk.schema.UIBlock
 import com.nativebrik.sdk.schema.UIFlexContainerBlock
+import com.nativebrik.sdk.template.compile
+import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
 import com.nativebrik.sdk.schema.Color as SchemaColor
 
 private fun calcWeight(frameData: FrameData?, flexDirection: FlexDirection): Float? {
@@ -202,6 +206,7 @@ internal fun Flex(
     block: UIFlexContainerBlock,
     modifier: Modifier = Modifier,
 ) {
+    val data = DataContext.state
     val direction: FlexDirection = block.data?.direction ?: FlexDirection.ROW
     val modifier = modifier.frameSize(block.data?.frame)
     val flexModifier = modifier
@@ -215,16 +220,24 @@ internal fun Flex(
 
     Box(modifier = modifier) {
         if (block.data?.frame?.backgroundSrc != null) {
+            val src = compile(block.data.frame.backgroundSrc, data.data)
+            val fallback = parseImageFallbackToBlurhash(src)
+            val decoded = BlurHashDecoder.decode(
+                blurHash = fallback.blurhash,
+                height = fallback.height,
+                width = fallback.width
+            )
             AsyncImage(
                 modifier = Modifier
                     .zIndex(0f)
                     .matchParentSize(),
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(block.data.frame.backgroundSrc)
+                    .data(src)
                     .crossfade(true)
                     .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                placeholder = rememberAsyncImagePainter(decoded),
             )
         }
         if (direction == FlexDirection.ROW) {

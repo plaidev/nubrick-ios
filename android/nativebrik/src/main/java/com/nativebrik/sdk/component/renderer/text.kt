@@ -10,6 +10,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.nativebrik.sdk.component.provider.data.DataContext
 import com.nativebrik.sdk.component.provider.event.eventDispatcher
@@ -21,6 +22,7 @@ import com.nativebrik.sdk.schema.TextAlign
 import com.nativebrik.sdk.schema.UITextBlock
 import com.nativebrik.sdk.template.compile
 import com.nativebrik.sdk.template.hasPlaceholder
+import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
 import androidx.compose.ui.graphics.Color as PrimitiveColor
 import androidx.compose.ui.text.font.FontFamily as PrimitiveFontFamily
 import androidx.compose.ui.text.font.FontWeight as PrimitiveFontWeight
@@ -101,16 +103,24 @@ internal fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
 
     Box(modifier = modifier) {
         if (block.data?.frame?.backgroundSrc != null) {
+            val src = compile(block.data.frame.backgroundSrc, data.data)
+            val fallback = parseImageFallbackToBlurhash(src)
+            val decoded = BlurHashDecoder.decode(
+                blurHash = fallback.blurhash,
+                height = fallback.height,
+                width = fallback.width
+            )
             AsyncImage(
                 modifier = Modifier
                     .zIndex(0f)
                     .matchParentSize(),
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(block.data.frame.backgroundSrc)
+                    .data(src)
                     .crossfade(true)
                     .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                placeholder = rememberAsyncImagePainter(decoded),
             )
         }
         BasicText(
