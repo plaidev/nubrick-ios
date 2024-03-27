@@ -55,8 +55,10 @@ internal fun Image(block: UIImageBlock, modifier: Modifier = Modifier) {
         src = if (loading) block.data?.src ?: "" else compile(block.data?.src ?: "", data.data)
     }
 
-    var modifier = framedModifier(modifier, block.data?.frame)
-    modifier = modifier.eventDispatcher(block.data?.onClick).skeleton(skeleton)
+    val modifier = modifier
+        .styleByFrame(block.data?.frame)
+        .eventDispatcher(block.data?.onClick)
+        .skeleton(skeleton)
 
     val fallback = parseImageFallbackToBlurhash(src)
     val decoded = BlurHashDecoder.decode(

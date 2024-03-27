@@ -38,7 +38,7 @@ internal fun TextInput(block: UITextInputBlock, modifier: Modifier = Modifier) {
         fontDesign = block.data?.design,
         alignment = block.data?.textAlign,
     )
-    val modifier = framedModifier(modifier, block.data?.frame).fillMaxWidth()
+    val modifier = modifier.styleByFrame(block.data?.frame).fillMaxWidth()
 
     BasicTextField(
         value = value,
