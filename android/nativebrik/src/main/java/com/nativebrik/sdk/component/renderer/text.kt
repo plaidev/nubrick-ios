@@ -1,10 +1,16 @@
 package com.nativebrik.sdk.component.renderer
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.nativebrik.sdk.component.provider.data.DataContext
 import com.nativebrik.sdk.component.provider.event.eventDispatcher
 import com.nativebrik.sdk.component.provider.event.skeleton
@@ -75,9 +81,11 @@ internal fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
         skeleton = loading
         value = if (loading) block.data?.value ?: "" else compile(block.data?.value ?: "", data.data)
     }
+    var modifier = modifier
+        .styleByFrame(block.data?.frame)
+        .skeleton(skeleton)
+        .eventDispatcher(block.data?.onClick)
 
-    var modifier = framedModifier(modifier, block.data?.frame)
-    modifier = modifier.skeleton(skeleton).eventDispatcher(block.data?.onClick)
     val fontStyle = parseFontStyle(
         size = block.data?.size,
         color = block.data?.color,
@@ -86,10 +94,30 @@ internal fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
         alignment = null,
         transparent = skeleton,
     )
+    var maxLines = block.data?.maxLines ?: Int.MAX_VALUE
+    if (maxLines <= 0) {
+        maxLines = Int.MAX_VALUE
+    }
 
-    BasicText(
-        text = value,
-        modifier = modifier,
-        style = fontStyle,
-    )
+    Box(modifier = modifier) {
+        if (block.data?.frame?.backgroundSrc != null) {
+            AsyncImage(
+                modifier = Modifier
+                    .zIndex(0f)
+                    .matchParentSize(),
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(block.data.frame.backgroundSrc)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+            )
+        }
+        BasicText(
+            text = value,
+            modifier = Modifier.zIndex(1f),
+            style = fontStyle,
+            maxLines = maxLines,
+        )
+    }
 }
