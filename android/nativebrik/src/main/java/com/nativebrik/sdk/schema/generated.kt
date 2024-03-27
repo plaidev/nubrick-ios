@@ -3,15 +3,16 @@
  */
 package com.nativebrik.sdk.schema
 
-import kotlinx.serialization.json.JsonArray
+import android.os.Build
+import java.time.ZonedDateTime
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import java.time.ZonedDateTime
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonArray
 
 
 internal typealias ID = String
@@ -229,8 +230,8 @@ internal class ApiHttpRequest (
 				url = StringDecoder.decode(element.jsonObject["url"]),
 				method = ApiHttpRequestMethod.decode(element.jsonObject["method"]),
 				headers = ListDecoder.decode(element.jsonObject["headers"]) { element: JsonElement? ->
-					ApiHttpHeader.decode(element)
-				},
+				ApiHttpHeader.decode(element)
+			},
 				body = StringDecoder.decode(element.jsonObject["body"]),
 			)
 		}
@@ -290,8 +291,8 @@ internal class ApiHttpResponseAssertion (
 
 			return ApiHttpResponseAssertion(
 				statusCodes = ListDecoder.decode(element.jsonObject["statusCodes"]) { element: JsonElement? ->
-					IntDecoder.decode(element)
-				},
+				IntDecoder.decode(element)
+			},
 			)
 		}
 	}
@@ -1837,6 +1838,7 @@ internal class UITextBlockData (
 	val color: Color? = null,
 	val design: FontDesign? = null,
 	val weight: FontWeight? = null,
+	val maxLines: Int? = null,
 	val frame: FrameData? = null,
 	val onClick: UIBlockEventDispatcher? = null,
 ) {
@@ -1855,6 +1857,7 @@ internal class UITextBlockData (
 				color = Color.decode(element.jsonObject["color"]),
 				design = FontDesign.decode(element.jsonObject["design"]),
 				weight = FontWeight.decode(element.jsonObject["weight"]),
+				maxLines = IntDecoder.decode(element.jsonObject["maxLines"]),
 				frame = FrameData.decode(element.jsonObject["frame"]),
 				onClick = UIBlockEventDispatcher.decode(element.jsonObject["onClick"]),
 			)
