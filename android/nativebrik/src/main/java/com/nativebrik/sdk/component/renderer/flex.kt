@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,7 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import com.nativebrik.sdk.component.provider.data.DataContext
 import com.nativebrik.sdk.component.provider.event.eventDispatcher
 import com.nativebrik.sdk.schema.AlignItems
 import com.nativebrik.sdk.schema.FlexDirection
@@ -29,6 +37,8 @@ import com.nativebrik.sdk.schema.JustifyContent
 import com.nativebrik.sdk.schema.Overflow
 import com.nativebrik.sdk.schema.UIBlock
 import com.nativebrik.sdk.schema.UIFlexContainerBlock
+import com.nativebrik.sdk.template.compile
+import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
 import com.nativebrik.sdk.schema.Color as SchemaColor
 
 private fun calcWeight(frameData: FrameData?, flexDirection: FlexDirection): Float? {
@@ -57,29 +67,37 @@ private fun childFrameWeight(block: UIBlock, direction: FlexDirection): Float? {
     }
 }
 
-internal fun framedModifier(modifier: Modifier, frame: FrameData?): Modifier {
-    var mod: Modifier = modifier
+@Composable
+internal fun Modifier.styleByFrame(frame: FrameData?): Modifier {
+    return this
+        .frameSize(frame)
+        .framePadding(frame)
+}
 
+
+@Composable
+internal fun Modifier.frameSize(frame: FrameData?): Modifier {
+    var mod = this
     // size should be set most lastly to make padding insets.
     // width should be content fit by default
     if (frame?.width != null) {
-        if  (frame.width == 0) {
+        mod = if (frame.width == 0) {
             // parent fit
-            mod = mod.fillMaxWidth()
+            mod.fillMaxWidth()
         } else {
             // fixed size
-            mod = mod.width(frame.width.dp)
+            mod.width(frame.width.dp)
         }
     }
 
     // height should be content fit by default
     if (frame?.height != null) {
-        if (frame.height == 0) {
+        mod = if (frame.height == 0) {
             // parent fit
-            mod = mod.fillMaxHeight()
+            mod.fillMaxHeight()
         } else {
             // fixed size
-            mod = mod.height(frame.height.dp)
+            mod.height(frame.height.dp)
         }
     }
 
@@ -94,15 +112,19 @@ internal fun framedModifier(modifier: Modifier, frame: FrameData?): Modifier {
         shape = roundedShape,
     )
 
-    mod = mod.padding(
+    return mod
+}
+
+@Composable
+internal fun Modifier.framePadding(frame: FrameData?): Modifier {
+    return this.padding(
         start = frame?.paddingLeft?.dp ?: 0.dp,
         top = frame?.paddingTop?.dp ?: 0.dp,
         end = frame?.paddingRight?.dp ?: 0.dp,
         bottom = frame?.paddingBottom?.dp ?: 0.dp,
     )
-
-    return mod
 }
+
 
 internal fun parseFramePadding(frame: FrameData?): PaddingValues {
     return PaddingValues(
@@ -112,16 +134,15 @@ internal fun parseFramePadding(frame: FrameData?): PaddingValues {
         bottom = frame?.paddingBottom?.dp ?: 0.dp,
     )
 }
-
 @Composable
-internal fun overflowModifier(modifier: Modifier, direction: FlexDirection, overflow: Overflow?): Modifier {
-    val overflow = overflow ?: return modifier
-    if (overflow != Overflow.SCROLL) return modifier
-    if (direction == FlexDirection.ROW) {
-        return modifier
+internal fun Modifier.flexOverflow(direction: FlexDirection, overflow: Overflow?): Modifier {
+    val overflow = overflow ?: return this
+    if (overflow != Overflow.SCROLL) return this
+    return if (direction == FlexDirection.ROW) {
+        this
             .horizontalScroll(rememberScrollState())
     } else {
-        return modifier
+        this
             .verticalScroll(rememberScrollState())
     }
 }
@@ -185,35 +206,64 @@ internal fun Flex(
     block: UIFlexContainerBlock,
     modifier: Modifier = Modifier,
 ) {
+    val data = DataContext.state
     val direction: FlexDirection = block.data?.direction ?: FlexDirection.ROW
-    var modifier = framedModifier(modifier, block.data?.frame)
-    modifier = overflowModifier(modifier, direction, block.data?.overflow)
-    modifier = modifier.eventDispatcher(block.data?.onClick)
+    val modifier = modifier.frameSize(block.data?.frame)
+    val flexModifier = modifier
+        .framePadding(block.data?.frame)
+        .flexOverflow(direction, block.data?.overflow)
+        .eventDispatcher(block.data?.onClick)
+
     val gap = block.data?.gap
     val justifyContent = block.data?.justifyContent
     val alignItems = block.data?.alignItems
 
-    if (direction == FlexDirection.ROW) {
-        Row(
-            modifier = modifier,
-            horizontalArrangement = parseHorizontalJustifyContent(gap, justifyContent),
-            verticalAlignment = parseVerticalAlignItems(alignItems),
-        ) {
-            block.data?.children?.map {
-                val weight = childFrameWeight(it, direction)
-                Block(block = it, if (weight != null) Modifier.weight(weight) else Modifier)
-            }
+    Box(modifier = modifier) {
+        if (block.data?.frame?.backgroundSrc != null) {
+            val src = compile(block.data.frame.backgroundSrc, data.data)
+            val fallback = parseImageFallbackToBlurhash(src)
+            val decoded = BlurHashDecoder.decode(
+                blurHash = fallback.blurhash,
+                height = fallback.height,
+                width = fallback.width
+            )
+            AsyncImage(
+                modifier = Modifier
+                    .zIndex(0f)
+                    .matchParentSize(),
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(src)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                placeholder = rememberAsyncImagePainter(decoded),
+            )
         }
-    } else {
-        Column(
-            modifier = modifier,
-            horizontalAlignment = parseHorizontalAlignItems(alignItems),
-            verticalArrangement = parseVerticalJustifyContent(gap, justifyContent)
-        ) {
-            block.data?.children?.map {
-                val weight = childFrameWeight(it, direction)
-                Block(block = it, if (weight != null) Modifier.weight(weight) else Modifier)
+        if (direction == FlexDirection.ROW) {
+            Row(
+                modifier = flexModifier.zIndex(1f),
+                horizontalArrangement = parseHorizontalJustifyContent(gap, justifyContent),
+                verticalAlignment = parseVerticalAlignItems(alignItems),
+            ) {
+                block.data?.children?.map {
+                    val weight = childFrameWeight(it, direction)
+                    Block(block = it, if (weight != null) Modifier.weight(weight) else Modifier)
+                }
+            }
+        } else {
+            Column(
+                modifier = flexModifier.zIndex(1f),
+                horizontalAlignment = parseHorizontalAlignItems(alignItems),
+                verticalArrangement = parseVerticalJustifyContent(gap, justifyContent)
+            ) {
+                block.data?.children?.map {
+                    val weight = childFrameWeight(it, direction)
+                    Block(block = it, if (weight != null) Modifier.weight(weight) else Modifier)
+                }
             }
         }
     }
+
+
 }

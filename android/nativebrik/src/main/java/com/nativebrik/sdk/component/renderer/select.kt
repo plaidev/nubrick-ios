@@ -65,7 +65,7 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
                 (it.width.toFloat() / this.density).dp
             }
         }
-    val selectModifier = framedModifier(Modifier, block.data?.frame)
+    val selectModifier = modifier.styleByFrame(block.data?.frame)
     val fontStyle = parseFontStyle(
         size = block.data?.size,
         color = block.data?.color,
@@ -172,7 +172,7 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                 (it.width.toFloat() / this.density).dp
             }
         }
-    val selectModifier = framedModifier(Modifier, block.data?.frame)
+    val selectModifier = Modifier.styleByFrame(block.data?.frame)
         .fillMaxWidth()
     val fontStyle = parseFontStyle(
         size = block.data?.size,
