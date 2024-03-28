@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nativebrik_bridge/remote_config.dart';
 import 'package:nativebrik_bridge/utils/random.dart';
+import 'package:nativebrik_bridge/utils/parse_event.dart';
 import './channel/nativebrik_bridge_platform_interface.dart';
 
 enum EventPayloadType { integer, string, timestamp, unknown }
@@ -122,7 +123,7 @@ class _EmbeddingState extends State<NativebrikEmbedding> {
         return Future.value(true);
       case 'on-event':
         if (widget.onEvent == null) return Future.value(false);
-        widget.onEvent?.call(_parseEvent(call.arguments));
+        widget.onEvent?.call(parseEvent(call.arguments));
         return Future.value(true);
       default:
         return Future.value(false);
@@ -195,29 +196,4 @@ class _BridgeView extends StatelessWidget {
         return const SizedBox.shrink();
     }
   }
-}
-
-EventPayloadType _parseEventPayloadType(dynamic type) {
-  switch (type) {
-    case "INTEGER":
-      return EventPayloadType.integer;
-    case "STRING":
-      return EventPayloadType.string;
-    case "TIMESTAMPZ":
-      return EventPayloadType.timestamp;
-    default:
-      return EventPayloadType.unknown;
-  }
-}
-
-Event _parseEvent(dynamic arguments) {
-  final map = arguments;
-  final name = map["name"] as String?;
-  final deepLink = map["deepLink"] as String?;
-  final rawPayload = map["payload"] as List<dynamic>? ?? [];
-  final payload = rawPayload
-      .map((e) => EventPayload(e["name"] as String? ?? "",
-          e["value"] as String? ?? "", _parseEventPayloadType(e["type"])))
-      .toList();
-  return Event(name, deepLink, payload);
 }

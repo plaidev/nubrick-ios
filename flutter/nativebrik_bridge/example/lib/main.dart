@@ -34,6 +34,10 @@ class _MyAppState extends State<MyApp> {
     // setState to update our non-existent appearance.
     if (!mounted) return;
 
+    nativebrik.addEventListener((event) {
+      print("Nativebrik Global Embedding Event: $event");
+    });
+
     var config = NativebrikRemoteConfig("cnoku4223akg00e5m630");
     var variant = await config.fetch();
     var message = await variant.get("message");
@@ -55,7 +59,7 @@ class _MyAppState extends State<MyApp> {
               children: [
                 NativebrikEmbedding("TOP_COMPONENT", height: 270,
                     onEvent: (event) {
-                  print("Nativebrik Event: ${event.payload}");
+                  print("Nativebrik Embedding Event: ${event.payload}");
                 }),
                 const Text("Text 2"),
                 Text(_message),

@@ -9,16 +9,18 @@ let ON_EVENT_METHOD = "on-event"
 public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
     private let manager: NativebrikBridgeManager
     private let messenger: FlutterBinaryMessenger
-    init(messenger: FlutterBinaryMessenger, manager: NativebrikBridgeManager) {
+    private let channel: FlutterMethodChannel
+    init(messenger: FlutterBinaryMessenger, manager: NativebrikBridgeManager, channel: FlutterMethodChannel) {
         self.messenger = messenger
         self.manager = manager
+        self.channel = channel
         super.init()
     }
     public static func register(with registrar: FlutterPluginRegistrar) {
         let manager = NativebrikBridgeManager()
         let messenger = registrar.messenger()
         let channel = FlutterMethodChannel(name: "nativebrik_bridge", binaryMessenger: messenger)
-        let instance = NativebrikBridgePlugin(messenger: messenger, manager: manager)
+        let instance = NativebrikBridgePlugin(messenger: messenger, manager: manager, channel: channel)
         registrar.addMethodCallDelegate(instance, channel: channel)
         registrar.register(
             FLNativeViewFactory(messenger: messenger, manager: manager),
@@ -32,7 +34,19 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             result(nativebrikSdkVersion)
         case "connectClient":
             let projectId = call.arguments as! String
-            self.manager.setNativebrikClient(nativebrik: NativebrikClient(projectId: projectId))
+            self.manager.setNativebrikClient(nativebrik: NativebrikClient(projectId: projectId, onEvent: { [weak self] event in
+                self?.channel.invokeMethod(ON_EVENT_METHOD, arguments: [
+                    "name": event.name as Any?,
+                    "deepLink": event.deepLink as Any?,
+                    "payload": event.payload?.map({ prop in
+                        return [
+                            "name": prop.name,
+                            "value": prop.value,
+                            "type": prop.type
+                        ]
+                    }),
+                ])
+            }))
             result("ok")
 
         // embedding

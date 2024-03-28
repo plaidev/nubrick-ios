@@ -49,57 +49,84 @@ class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
 
   @OptIn(DelicateCoroutinesApi::class)
   override fun onMethodCall(call: MethodCall, result: Result) {
-    if (call.method == "getNativebrikSDKVersion") {
-      result.success(VERSION)
-    } else if (call.method == "connectClient") {
-      val projectId = call.arguments as String
-      if (projectId.isEmpty()) {
-        result.success("ok")
-        return
-      }
-      val client = NativebrikClient(Config(projectId), context)
-      this.manager.setNativebrikClient(client)
-      result.success("ok")
-    } else if (call.method == "connectEmbedding") {
-      val channelId = call.argument<String>("channelId") as String
-      val id = call.argument<String>("id") as String
-      this.manager.connectEmbedding(channelId, id)
-      result.success("ok")
-    } else if (call.method == "disconnectEmbedding") {
-      val channelId = call.arguments as String
-      this.manager.disconnectEmbedding(channelId)
-      result.success("ok")
-    } else if (call.method == "connectRemoteConfig") {
-      val channelId = call.argument<String>("channelId") as String
-      val id = call.argument<String>("id") as String
-      GlobalScope.launch(Dispatchers.IO) {
-          manager.connectRemoteConfig(channelId, id).onSuccess {
-            result.success(it)
-          }.onFailure {
-            result.success("failed")
+    when (call.method) {
+        "getNativebrikSDKVersion" -> {
+          result.success(VERSION)
+        }
+        "connectClient" -> {
+          val projectId = call.arguments as String
+          if (projectId.isEmpty()) {
+            result.success("no")
+            return
           }
-      }
-    } else if (call.method == "disconnectRemoteConfig") {
-      val channelId = call.arguments as String
-      this.manager.disconnectRemoteConfig(channelId)
-      result.success("ok")
-    } else if (call.method == "getRemoteConfigValue") {
-      val channelId = call.argument<String>("channelId") as String
-      val key = call.argument<String>("key") as String
-      val value = this.manager.getRemoteConfigValue(channelId, key)
-      result.success(value)
-    } else if (call.method == "connectEmbeddingInRemoteConfigValue") {
-      val channelId = call.argument<String>("channelId") as String
-      val embeddingChannelId = call.argument<String>("embeddingChannelId") as String
-      val key = call.argument<String>("key") as String
-      this.manager.connectEmbeddingInRemoteConfigValue(channelId, key, embeddingChannelId)
-      result.success("ok")
-    } else if (call.method == "dispatch") {
-      val event = call.arguments as String
-      this.manager.dispatch(event)
-      result.success("ok")
-    } else {
-      result.notImplemented()
+          val client = NativebrikClient(
+              Config(
+                  projectId,
+                  onEvent = { it ->
+                      this.channel.invokeMethod(ON_EVENT_METHOD, mapOf(
+                          "name" to it.name,
+                          "deepLink" to it.deepLink,
+                          "payload" to it.payload?.map { prop ->
+                              mapOf(
+                                  "name" to prop.name,
+                                  "value" to prop.value,
+                                  "type" to prop.type,
+                              )
+                          }
+                      ))
+                  }
+              ), context)
+          this.manager.setNativebrikClient(client)
+          result.success("ok")
+        }
+        "connectEmbedding" -> {
+          val channelId = call.argument<String>("channelId") as String
+          val id = call.argument<String>("id") as String
+          this.manager.connectEmbedding(channelId, id)
+          result.success("ok")
+        }
+        "disconnectEmbedding" -> {
+          val channelId = call.arguments as String
+          this.manager.disconnectEmbedding(channelId)
+          result.success("ok")
+        }
+        "connectRemoteConfig" -> {
+          val channelId = call.argument<String>("channelId") as String
+          val id = call.argument<String>("id") as String
+          GlobalScope.launch(Dispatchers.IO) {
+            manager.connectRemoteConfig(channelId, id).onSuccess {
+              result.success(it)
+            }.onFailure {
+              result.success("failed")
+            }
+          }
+        }
+        "disconnectRemoteConfig" -> {
+          val channelId = call.arguments as String
+          this.manager.disconnectRemoteConfig(channelId)
+          result.success("ok")
+        }
+        "getRemoteConfigValue" -> {
+          val channelId = call.argument<String>("channelId") as String
+          val key = call.argument<String>("key") as String
+          val value = this.manager.getRemoteConfigValue(channelId, key)
+          result.success(value)
+        }
+        "connectEmbeddingInRemoteConfigValue" -> {
+          val channelId = call.argument<String>("channelId") as String
+          val embeddingChannelId = call.argument<String>("embeddingChannelId") as String
+          val key = call.argument<String>("key") as String
+          this.manager.connectEmbeddingInRemoteConfigValue(channelId, key, embeddingChannelId)
+          result.success("ok")
+        }
+        "dispatch" -> {
+          val event = call.arguments as String
+          this.manager.dispatch(event)
+          result.success("ok")
+        }
+        else -> {
+          result.notImplemented()
+        }
     }
   }
 
