@@ -38,6 +38,7 @@ fun variableByPath(path: String, variable: JsonElement?): JsonElement? {
     if (keys.isEmpty()) return null
     var current = variable
     keys.forEach { key ->
+        if (key.isEmpty()) return@forEach
         if (key == "$") {
             current = variable
         } else {

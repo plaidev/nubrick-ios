@@ -24,7 +24,7 @@ import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 import com.nativebrik.sdk.schema.UIBlock
 
-const val VERSION = "0.1.1"
+const val VERSION = "0.1.2"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -117,7 +117,13 @@ public class NativebrikExperiment {
 
     internal constructor(config: Config, user: NativebrikUser, db: SQLiteDatabase, context: Context) {
         this.container = ContainerImpl(
-            config = config,
+            config = config.copy(onEvent = { event ->
+                val name = event.name ?: ""
+                if (name.isNotEmpty()) {
+                    this.dispatch(NativebrikEvent(name))
+                }
+                config.onEvent?.let { it(event) }
+            }),
             user = user,
             db = db,
             context = context,
