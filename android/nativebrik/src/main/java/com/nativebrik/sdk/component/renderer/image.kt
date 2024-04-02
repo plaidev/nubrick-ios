@@ -71,7 +71,7 @@ internal fun Image(block: UIImageBlock, modifier: Modifier = Modifier) {
     AsyncImage(
         modifier = modifier,
         model = ImageRequest.Builder(LocalContext.current)
-            .data(block.data?.src ?: "https://example.com/image.jpg",)
+            .data(src)
             .crossfade(true)
             .build(),
         contentDescription = null,
