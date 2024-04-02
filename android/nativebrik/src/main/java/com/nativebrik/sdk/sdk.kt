@@ -117,7 +117,13 @@ public class NativebrikExperiment {
 
     internal constructor(config: Config, user: NativebrikUser, db: SQLiteDatabase, context: Context) {
         this.container = ContainerImpl(
-            config = config,
+            config = config.copy(onEvent = { event ->
+                val name = event.name ?: ""
+                if (name.isNotEmpty()) {
+                    this.dispatch(NativebrikEvent(name))
+                }
+                config.onEvent?.let { it(event) }
+            }),
             user = user,
             db = db,
             context = context,
