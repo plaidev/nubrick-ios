@@ -59,13 +59,13 @@ android {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("androidx.compose.ui:ui-tooling:1.6.2")
-    implementation("androidx.compose.ui:ui:1.6.2")
-    implementation("androidx.compose.foundation:foundation:1.6.2")
-    implementation("androidx.compose.runtime:runtime:1.6.2")
+    implementation("androidx.compose.ui:ui-tooling:1.6.4")
+    implementation("androidx.compose.ui:ui:1.6.4")
+    implementation("androidx.compose.foundation:foundation:1.6.4")
+    implementation("androidx.compose.runtime:runtime:1.6.4")
     implementation("io.coil-kt:coil:2.5.0")
     implementation("io.coil-kt:coil-compose:2.5.0")
-    implementation("androidx.compose.material3:material3:1.2.0")
+    implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     implementation("androidx.core:core-ktx:1.12.0")
