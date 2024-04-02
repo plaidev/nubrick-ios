@@ -29,7 +29,7 @@ internal fun Carousel(block: UICollectionBlock, modifier: Modifier = Modifier) {
     var children = block.data?.children ?: emptyList()
     var arrayData: JsonArray? = null
     if (reference != null) {
-        var data = variableByPath(reference, dataState.data)
+        val data = variableByPath(reference, dataState.data)
         if (data is JsonArray && children.isNotEmpty()) {
             arrayData = data.jsonArray
             children = arrayData.map { children[0] }
