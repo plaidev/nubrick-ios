@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 rootProject.name = "Nativebrik android"
 include(":app")
 include(":nativebrik")
+include(":e2e")
