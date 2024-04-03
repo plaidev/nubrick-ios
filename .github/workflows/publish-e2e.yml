@@ -1,10 +1,10 @@
-name: "[ios] E2E Test Nativebrik SDK"
+name: "Publish Nativebrik SDK to MagicPod"
 on:
   push:
     branches: [ main ]
 
 jobs:
-  e2e:
+  publish-ios-e2e:
     runs-on: macos-13
     environment:
       name: Only Main
@@ -22,3 +22,21 @@ jobs:
     - name: Uploade to magicpod
       run: |
         curl -L -X POST -F "file=@.dist/Build/Products/Release-iphonesimulator/E2E.app.zip" -H "Authorization: Token ${{ secrets.MAGICPOD_API_TOKEN }}" "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik/upload-file/"
+  publish-android-e2e:
+    runs-on: ubuntu-latest
+    environment:
+      name: Only Main
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Build Nativebrik E2E
+      working-directory: android
+      run: ./gradlew assemble
+    - name: Zip app
+      working-directory: android
+      run: |
+        cd ./e2e/build/outputs/apk/release/ && zip -r E2E.apk.zip ./e2e-release-unsigned.apk
+    - name: Uploade to magicpod
+      working-directory: android
+      run: |
+        curl -L -X POST -F "file=@./e2e/build/outputs/apk/release/E2E.apk.zip" -H "Authorization: Token ${{ secrets.MAGICPOD_API_TOKEN }}" "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik/upload-file/"
