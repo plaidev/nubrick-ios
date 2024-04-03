@@ -11,3 +11,7 @@
 
 - Support Adding/Removing Event Listener
 - Update Dependencies
+
+## 0.2.1
+
+- Update com.nativebrik.sdk to 0.1.2
