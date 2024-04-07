@@ -159,7 +159,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         }
         self.addSubview(root)
         
-        if block.data?.pageControl == true && block.data?.fullItemWidth == true {
+        if block.data?.kind == CollectionKind.CAROUSEL && block.data?.pageControl == true && block.data?.fullItemWidth == true {
             let pageControl = UIPageControl(frame: CGRect(x: 0, y: 0, width: 70, height: 30))
             pageControl.numberOfPages = self.childrenCount
             pageControl.currentPage = 0
@@ -176,7 +176,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             self.addSubview(pageControl)
         }
         
-        if block.data?.autoScroll == true {
+        if block.data?.kind == CollectionKind.CAROUSEL && block.data?.fullItemWidth == true && block.data?.autoScroll == true {
             let timeInterval = block.data?.autoScrollInterval ?? 3.0
             DispatchQueue.main.async { [self] in
                 self.timer = Timer.scheduledTimer(timeInterval: TimeInterval(timeInterval), target: self, selector: #selector(automaticScroll), userInfo: nil, repeats: true)
