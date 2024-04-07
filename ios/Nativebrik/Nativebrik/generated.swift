@@ -405,6 +405,10 @@ struct UICollectionBlockData: Decodable {
   var gridSize: Int?
   var itemWidth: Int?
   var itemHeight: Int?
+  var fullItemWidth: Boolean?
+  var pageControl: Boolean?
+  var autoScroll: Boolean?
+  var autoScrollInterval: Float?
   var onClick: UIBlockEventDispatcher?
 }
 struct UIFlexContainerBlock: Decodable {
