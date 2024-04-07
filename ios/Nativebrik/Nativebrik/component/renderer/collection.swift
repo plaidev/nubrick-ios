@@ -70,7 +70,7 @@ fileprivate func calcCollectionWidth(_ data: UICollectionBlockData?) -> CGFloat 
     return CGFloat(gridSize * itemWidth + (gridSize - 1) * gap + left + right)
 }
 
-fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollectionViewLayout {
+fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollectionViewFlowLayout {
     switch block.data?.kind {
     case .GRID:
         return GridLayout(block)
@@ -88,6 +88,14 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     private var isReferenced: Bool = false
     private var data: [Any]? = nil
     private var gesture: ClickListener? = nil
+    private var layout: UICollectionViewFlowLayout? = nil
+    private var pageControl: UIPageControl? = nil
+    private var collectionView: UICollectionView? = nil
+    
+    // for auto scroll
+    private var timer: Timer? = nil
+    private var counter: Int = 0
+    
     required init?(coder aDecoder: NSCoder) {
         self.block = nil
         self.context = UIBlockContext(UIBlockContextInit())
@@ -114,6 +122,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         super.init(frame: .zero)
 
         let layout = getCollectionLayout(block)
+        self.layout = layout
         let root = UICollectionView(
             frame: CGRect(
                 x: 0,
@@ -123,6 +132,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             ),
             collectionViewLayout: layout
         )
+        self.collectionView = root
         root.showsVerticalScrollIndicator = false
         root.showsHorizontalScrollIndicator = false
         root.register(CollectionViewCell.self, forCellWithReuseIdentifier: "CellView")
@@ -145,9 +155,37 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
 
         self.configureLayout { layout in
             layout.isEnabled = true
+            layout.position = .relative
         }
         self.addSubview(root)
-
+        
+        if block.data?.kind == CollectionKind.CAROUSEL && block.data?.pageControl == true && block.data?.fullItemWidth == true {
+            let pageControl = UIPageControl(frame: CGRect(x: 0, y: 0, width: 70, height: 30))
+            pageControl.numberOfPages = self.childrenCount
+            pageControl.currentPage = 0
+            pageControl.currentPageIndicatorTintColor = .init(white: 1, alpha: 0.8)
+            pageControl.pageIndicatorTintColor = .init(white: 0.4, alpha: 0.3)
+            pageControl.isUserInteractionEnabled = false
+            pageControl.configureLayout { layout in
+                layout.isEnabled = true
+                layout.position = .absolute
+                layout.bottom = YGValue(floatLiteral: 0)
+                layout.alignSelf = .center
+            }
+            self.pageControl = pageControl
+            self.addSubview(pageControl)
+        }
+        
+        if block.data?.kind == CollectionKind.CAROUSEL && block.data?.fullItemWidth == true && block.data?.autoScroll == true {
+            let timeInterval = block.data?.autoScrollInterval ?? 3.0
+            DispatchQueue.main.async { [self] in
+                self.timer = Timer.scheduledTimer(timeInterval: TimeInterval(timeInterval), target: self, selector: #selector(automaticScroll), userInfo: nil, repeats: true)
+            }
+        }
+    }
+    
+    deinit {
+        self.timer?.invalidate()
     }
 
     override func layoutSubviews() {
@@ -199,7 +237,45 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: CGFloat(self.block?.data?.itemWidth ?? 0), height: CGFloat(self.block?.data?.itemHeight ?? 0))
+        let width = (self.block?.data?.fullItemWidth == true) ? self.frame.width : CGFloat(self.block?.data?.itemWidth ?? 0)
+        let size = CGSize(width: width, height: CGFloat(self.block?.data?.itemHeight ?? 0))
+        self.layout?.itemSize = size
+        return size
+    }
+    
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        self.pageControl?.currentPage = getCurrentPage()
+    }
+        
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        self.pageControl?.currentPage = getCurrentPage()
+    }
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        self.pageControl?.currentPage = getCurrentPage()
+    }
+    
+    func getCurrentPage() -> Int {
+        guard let pageControl = self.pageControl else {
+            return 0
+        }
+        guard let collectionView = self.collectionView else {
+            return 0
+        }
+        let visibleRect = CGRect(origin: collectionView.contentOffset, size: collectionView.bounds.size)
+        let visiblePoint = CGPoint(x: visibleRect.midX, y: visibleRect.midY)
+        if let visibleIndexPath = collectionView.indexPathForItem(at: visiblePoint) {
+            return visibleIndexPath.row
+        }
+        return pageControl.currentPage
+    }
+    
+    @objc func automaticScroll() {
+        if self.counter >= self.childrenCount - 1 {
+            self.counter = 0
+        } else {
+            self.counter += 1
+        }
+        self.collectionView?.scrollToItem(at: IndexPath(item: self.counter, section: 0), at: .centeredHorizontally, animated: true)
     }
 }
-

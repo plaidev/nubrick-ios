@@ -19,7 +19,6 @@ class GridLayout: UICollectionViewFlowLayout {
         } else {
             self.scrollDirection = .horizontal
         }
-        self.itemSize = CGSize(width: CGFloat(block.data?.itemWidth ?? 0), height: CGFloat(block.data?.itemHeight ?? 0))
         self.sectionInset = parseFrameDataToUIKitUIEdgeInsets(block.data?.frame)
         self.minimumInteritemSpacing = self.gap
         self.minimumLineSpacing = self.gap
