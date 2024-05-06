@@ -1368,6 +1368,10 @@ internal class UICollectionBlockData (
 	val gridSize: Int? = null,
 	val itemWidth: Int? = null,
 	val itemHeight: Int? = null,
+	val fullItemWidth: Boolean? = null,
+	val pageControl: Boolean? = null,
+	val autoScroll: Boolean? = null,
+	val autoScrollInterval: Float? = null,
 	val onClick: UIBlockEventDispatcher? = null,
 ) {
 	companion object {
@@ -1391,6 +1395,10 @@ internal class UICollectionBlockData (
 				gridSize = IntDecoder.decode(element.jsonObject["gridSize"]),
 				itemWidth = IntDecoder.decode(element.jsonObject["itemWidth"]),
 				itemHeight = IntDecoder.decode(element.jsonObject["itemHeight"]),
+				fullItemWidth = BooleanDecoder.decode(element.jsonObject["fullItemWidth"]),
+				pageControl = BooleanDecoder.decode(element.jsonObject["pageControl"]),
+				autoScroll = BooleanDecoder.decode(element.jsonObject["autoScroll"]),
+				autoScrollInterval = FloatDecoder.decode(element.jsonObject["autoScrollInterval"]),
 				onClick = UIBlockEventDispatcher.decode(element.jsonObject["onClick"]),
 			)
 		}
