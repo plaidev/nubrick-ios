@@ -132,8 +132,11 @@ internal class RootViewModel: ViewModel {
         val data = Uri.parse(link) ?: return
         val intent = Intent(Intent.ACTION_VIEW).apply {
             this.data = data
+            this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
-        this.context.startActivity(intent)
+        try {
+            this.context.startActivity(intent)
+        } catch (_: Throwable) {}
     }
 
     private fun render(destId: String, properties: List<Property>? = null) {
