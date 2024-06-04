@@ -59,6 +59,11 @@ class NativebrikUser {
             return this.properties[BuiltinUserProperty.userId.toString()] ?: ""
         }
 
+    val retention: Int
+        get() {
+            return (this.properties[BuiltinUserProperty.retentionPeriod.toString()] ?: "0").toInt()
+        }
+
     internal constructor(context: Context, seed: Int? = null) {
         this.preferences = getNativebrikUserSharedPreferences(context)
 
