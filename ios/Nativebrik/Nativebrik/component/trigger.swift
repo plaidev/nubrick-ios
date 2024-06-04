@@ -17,7 +17,7 @@ class TriggerViewController: UIViewController {
     private let user: NativebrikUser
     private let container: Container
     private var modalViewController: ModalComponentViewController? = nil
-    private var currentVC: UIViewController? = nil
+    private var currentVC: ModalRootViewController? = nil
     private var didLoaded = false
     private var ignoreFirstUserEventToForegroundEvent = true
 

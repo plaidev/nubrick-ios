@@ -22,6 +22,7 @@ class ModalRootViewController: UIViewController {
             return page.data?.kind == PageKind.TRIGGER
         }
         self.modalViewController = modalViewController
+        self.modalViewController?.dismissModal()
         self.container = container
         super.init(nibName: nil, bundle: nil)
 
@@ -235,6 +236,9 @@ class RootView: UIView {
 
 func findTopPresenting(_ viewContorller: UIViewController) ->  UIViewController {
     if let presented = viewContorller.presentedViewController {
+        if presented.isBeingDismissed {
+            return viewContorller
+        }
         return findTopPresenting(presented)
     } else {
         return viewContorller
