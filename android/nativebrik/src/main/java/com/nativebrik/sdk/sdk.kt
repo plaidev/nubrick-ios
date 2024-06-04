@@ -128,7 +128,7 @@ public class NativebrikExperiment {
             db = db,
             context = context,
         )
-        this.trigger = TriggerViewModel(this.container)
+        this.trigger = TriggerViewModel(this.container, user)
     }
 
     public fun dispatch(event: NativebrikEvent) {
