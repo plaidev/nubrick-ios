@@ -19,6 +19,7 @@ class TriggerViewController: UIViewController {
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: UIViewController? = nil
     private var didLoaded = false
+    private var ignoreFirstUserEventToForegroundEvent = true
 
     required init?(coder: NSCoder) {
         self.user = NativebrikUser()
@@ -49,11 +50,15 @@ class TriggerViewController: UIViewController {
         // dispatch retention event
         self.callWhenUserComeBack()
 
-        // dipatch retention event when user come back to foreground
+        // dipatch retention event when user come back to foreground from background
         NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
     @objc func willEnterForeground() {
+        if self.ignoreFirstUserEventToForegroundEvent {
+            self.ignoreFirstUserEventToForegroundEvent = false
+            return
+        }
         self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue))
         self.callWhenUserComeBack()
     }
