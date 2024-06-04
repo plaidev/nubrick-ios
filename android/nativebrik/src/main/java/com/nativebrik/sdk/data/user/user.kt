@@ -103,6 +103,12 @@ class NativebrikUser {
         this.comeBack()
     }
 
+    fun set(props: Map<String, String>) {
+        props.forEach { (key, value) ->
+            this.properties[key] = value
+        }
+    }
+
     fun comeBack() {
         val now = getCurrentDate()
         val lastBootTime = getCurrentDate()
