@@ -15,7 +15,7 @@ A new Flutter plugin project.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'Nativebrik', '~> 0.5.5'
+  s.dependency 'Nativebrik', '~> 0.5.7'
   s.ios.deployment_target = '14.0'
   s.platform = :ios, '14.0'
 
