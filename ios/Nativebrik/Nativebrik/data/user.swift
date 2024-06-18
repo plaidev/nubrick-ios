@@ -66,7 +66,7 @@ private let USER_SEED_MAX: Int = 100000000
 public class NativebrikUser {
     private var properties: [String: String]
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
-    private var userDB: UserDefaults
+    internal var userDB: UserDefaults
 
     init() {
         if !isNativebrikAvailable {
