@@ -171,8 +171,6 @@ class TrackRespositoryImpl: TrackRepository2 {
                 ))
             }
 
-            print("Nativebrik Send Crash Report", causedByNativebrik)
-
             Task(priority: .low) {
                 try await self.sendAndFlush()
             }
