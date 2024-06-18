@@ -39,6 +39,8 @@ protocol Container {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NativebrikError>
     func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NativebrikError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NativebrikError>
+    
+    func record(_ exception: NSException)
 }
 
 class ContainerEmptyImpl: Container {
@@ -63,6 +65,8 @@ class ContainerEmptyImpl: Container {
     }
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NativebrikError> {
         return Result.failure(NativebrikError.notFound)
+    }
+    func record(_ exception: NSException) {
     }
 }
 
@@ -280,5 +284,9 @@ class ContainerImpl: Container {
             return Result.failure(NativebrikError.notFound)
         }
         return Result.success((experimentId, variant))
+    }
+    
+    func record(_ exception: NSException) {
+        self.trackRepository.record(exception)
     }
 }
