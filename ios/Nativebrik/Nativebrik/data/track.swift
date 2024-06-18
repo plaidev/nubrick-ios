@@ -7,9 +7,18 @@
 
 import Foundation
 
+private let CRASH_RECORD_KEY: String = "NATIVEBRIK_CRASH_RECORD"
+
+struct CrashRecord: Codable {
+    var reason: String?
+    var callStacks: [String]?
+}
+
 protocol TrackRepository2 {
     func trackExperimentEvent(_ event: TrackExperimentEvent)
     func trackEvent(_ event: TrackUserEvent)
+
+    func record(_ exception: NSException)
 }
 
 struct TrackRequest: Encodable {
@@ -57,12 +66,14 @@ class TrackRespositoryImpl: TrackRepository2 {
         self.queueLock = NSLock()
         self.buffer = []
         self.timer = nil
+
+        self.report()
     }
-    
+
     deinit {
         self.timer?.invalidate()
     }
-    
+
     func trackExperimentEvent(_ event: TrackExperimentEvent) {
         self.pushToQueue(TrackEvent(
             typename: .Experiment,
@@ -71,7 +82,7 @@ class TrackRespositoryImpl: TrackRepository2 {
             timestamp: formatToISO8601(getCurrentDate())
         ))
     }
-    
+
     func trackEvent(_ event: TrackUserEvent) {
         self.pushToQueue(TrackEvent(
             typename: .Event,
@@ -79,7 +90,7 @@ class TrackRespositoryImpl: TrackRepository2 {
             timestamp: formatToISO8601(getCurrentDate())
         ))
     }
-    
+
     private func pushToQueue(_ event: TrackEvent) {
         self.queueLock.lock()
         if self.timer == nil {
@@ -103,10 +114,10 @@ class TrackRespositoryImpl: TrackRepository2 {
         if self.buffer.count >= self.maxQueueSize {
             self.buffer.removeFirst(self.maxQueueSize - self.buffer.count)
         }
-        
+
         self.queueLock.unlock()
     }
-    
+
     private func sendAndFlush() async throws {
         if self.buffer.count == 0 {
             return
@@ -119,7 +130,7 @@ class TrackRespositoryImpl: TrackRepository2 {
             timestamp: formatToISO8601(getCurrentDate()),
             events: events
         )
-        
+
         do {
             let url = URL(string: config.trackUrl)!
             let jsonData = try JSONEncoder().encode(trackRequest)
@@ -128,11 +139,55 @@ class TrackRespositoryImpl: TrackRepository2 {
             request.httpBody = jsonData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let _ = try await nativebrikSession.data(for: request)
-            
+
             self.timer?.invalidate()
             self.timer = nil
         } catch {
             self.buffer.append(contentsOf: events)
         }
+    }
+
+    private func report() {
+        guard let data = self.user.userDB.data(forKey: CRASH_RECORD_KEY) else {
+            return
+        }
+        do {
+            self.user.userDB.removeObject(forKey: CRASH_RECORD_KEY)
+            let crashRecord = try JSONDecoder().decode(CrashRecord.self, from: data)
+            let causedByNativebrik = (
+                crashRecord.callStacks?.contains(where: { callStack in
+                return callStack.contains("Nativebrik")
+            }) ?? false) || (crashRecord.reason?.contains("Nativebrik") ?? false)
+            self.buffer.append(TrackEvent(
+                typename: .Event,
+                name: "N_CRASH_RECORD",
+                timestamp: formatToISO8601(getCurrentDate())
+            ))
+            if causedByNativebrik {
+                self.buffer.append(TrackEvent(
+                    typename: .Event,
+                    name: "N_CRASH_IN_SDK_RECORD",
+                    timestamp: formatToISO8601(getCurrentDate())
+                ))
+            }
+
+            print("Nativebrik Send Crash Report", causedByNativebrik)
+
+            Task(priority: .low) {
+                try await self.sendAndFlush()
+            }
+
+        } catch {}
+    }
+
+    func record(_ exception: NSException) {
+        let record = CrashRecord(
+            reason: exception.reason,
+            callStacks: exception.callStackSymbols
+        )
+        do {
+            let json = try JSONEncoder().encode(record)
+            self.user.userDB.set(json, forKey: CRASH_RECORD_KEY)
+        } catch {}
     }
 }
