@@ -4,19 +4,57 @@ import com.nativebrik.sdk.Config
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.data.user.formatISO8601
 import com.nativebrik.sdk.data.user.getCurrentDate
+import com.nativebrik.sdk.schema.ListDecoder
+import com.nativebrik.sdk.schema.StringDecoder
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import okio.withLock
 import java.time.ZonedDateTime
 import java.util.Timer
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.fixedRateTimer
+
+private val CRASH_RECORD_KEY = "CRASH_RECORD_KEY"
+
+data class CrashRecord(
+    val reason: String?,
+    val callStacks: List<String>?
+) {
+    fun encode(): JsonObject {
+        val callStacks = this.callStacks?.map {
+            JsonPrimitive(it)
+        } ?: emptyList()
+        return JsonObject(mapOf(
+            "reason" to JsonPrimitive(this.reason),
+            "callStacks" to JsonArray(callStacks)
+        ))
+    }
+
+    companion object {
+        fun decode(element: JsonElement?): CrashRecord? {
+            if (element == null) return null
+            if (element !is JsonObject) return null
+
+            return CrashRecord(
+                reason = StringDecoder.decode(element.jsonObject["name"]),
+                callStacks = ListDecoder.decode(element.jsonObject["callStacks"]) {
+                    StringDecoder.decode(
+                        it
+                    )
+                },
+            )
+        }
+    }
+}
+
 
 internal data class TrackUserEvent(
     val name: String,
@@ -78,6 +116,8 @@ internal data class TrackRequest(
 internal interface TrackRepository {
     fun trackExperimentEvent(event: TrackExperimentEvent)
     fun trackEvent(event: TrackUserEvent)
+
+    fun record(throwable: Throwable)
 }
 
 internal class TrackRepositoryImpl: TrackRepository {
@@ -92,6 +132,8 @@ internal class TrackRepositoryImpl: TrackRepository {
     internal constructor(config: Config, user: NativebrikUser) {
         this.config = config
         this.user = user
+
+        this.report()
     }
 
     override fun trackEvent(event: TrackUserEvent) {
@@ -106,10 +148,10 @@ internal class TrackRepositoryImpl: TrackRepository {
         this.queueLock.withLock {
             if (this.timer == null) {
                 val self = this
-                GlobalScope.launch(Dispatchers.Main) {
+                CoroutineScope(Dispatchers.Main).launch {
                     self.timer?.cancel()
                     self.timer = fixedRateTimer(initialDelay = 0, period = 4000) {
-                        GlobalScope.launch(Dispatchers.IO) {
+                        CoroutineScope(Dispatchers.IO).launch {
                             self.sendAndFlush()
                         }
                     }
@@ -117,7 +159,7 @@ internal class TrackRepositoryImpl: TrackRepository {
             }
             if (this.buffer.size >= this.maxBatchSize) {
                 val self = this
-                GlobalScope.launch(Dispatchers.IO) {
+                CoroutineScope(Dispatchers.IO).launch {
                     self.sendAndFlush()
                 }
             }
@@ -143,5 +185,42 @@ internal class TrackRepositoryImpl: TrackRepository {
         postRequest(this.config.endpoint.track, body).onFailure {
             this.buffer.addAll(tempBuffer)
         }
+    }
+
+    private fun report() {
+        val data = this.user.preferences?.getString(CRASH_RECORD_KEY, "") ?: ""
+        if (data.isEmpty()) {
+            return
+        }
+        this.user.preferences?.edit()?.remove(CRASH_RECORD_KEY)?.apply()
+
+        val json = Json.decodeFromString<JsonElement>(data)
+        val crashRecord = CrashRecord.decode(json) ?: return
+        val causedByNativebrik = crashRecord.callStacks?.any { it.contains("com.nativebrik.sdk") } == true ||
+                                 crashRecord.reason?.contains("com.nativebrik.sdk") == true
+
+        this.buffer.add(TrackEvent.UserEvent(TrackUserEvent(
+            name = "N_CRASH_RECORD"
+        )))
+
+        if (causedByNativebrik) {
+            buffer.add(TrackEvent.UserEvent(TrackUserEvent(
+                name = "N_CRASH_IN_SDK_RECORD"
+            )))
+        }
+
+        val self = this
+        CoroutineScope(Dispatchers.IO).launch {
+            self.sendAndFlush()
+        }
+    }
+
+    override fun record(throwable: Throwable) {
+        val record = CrashRecord(
+            reason = throwable.message,
+            callStacks = throwable.stackTrace.map { it.toString() }
+        )
+        val data = Json.encodeToString(record.encode())
+        this.user.preferences?.edit()?.putString(CRASH_RECORD_KEY, data)?.apply()
     }
 }
