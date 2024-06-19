@@ -24,7 +24,7 @@ import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 import com.nativebrik.sdk.schema.UIBlock
 
-const val VERSION = "0.1.3"
+const val VERSION = "0.1.4"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -133,6 +133,10 @@ public class NativebrikExperiment {
 
     public fun dispatch(event: NativebrikEvent) {
         this.trigger.dispatch(event)
+    }
+
+    public fun record(throwable: Throwable) {
+        this.container.record(throwable)
     }
 
     @Composable
