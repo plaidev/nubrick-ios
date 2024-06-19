@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,9 +27,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         this.nativebrik = NativebrikClient(
-            config = Config(projectId = "ckto7v223akg00ag3jsg"),
+            config = Config(projectId = "cgv3p3223akg00fod19g"),
             context = this.applicationContext,
         )
+
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            this.nativebrik.experiment.record(throwable)
+        }
+
         setContent {
             NativebrikAndroidTheme {
                 NativebrikProvider(client = nativebrik) {
@@ -36,11 +43,18 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        Column {
-                            Greeting("Android")
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState())
+                        ) {
                             Nativebrik.client.experiment.Embedding(
-                                "SCROLLABLE_CONTENT",
-                                modifier = Modifier.height(400f.dp)
+                                "HEADER_INFORMATION",
+                                arguments = emptyMap<String, String>(),
+                                modifier = Modifier.height(100f.dp),
+                            )
+                            Nativebrik.client.experiment.Embedding(
+                                "TOP_COMPONENT",
+                                arguments = emptyMap<String, String>(),
+                                modifier = Modifier.height(270f.dp),
                             )
                         }
                     }

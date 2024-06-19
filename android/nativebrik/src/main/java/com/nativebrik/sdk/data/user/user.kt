@@ -51,7 +51,7 @@ internal data class UserProperty(
 
 class NativebrikUser {
     private var properties: MutableMap<String, String> = mutableMapOf()
-    private var preferences: SharedPreferences? = null
+    internal var preferences: SharedPreferences? = null
     private var lastBootTime: ZonedDateTime = getCurrentDate()
 
     val id: String
