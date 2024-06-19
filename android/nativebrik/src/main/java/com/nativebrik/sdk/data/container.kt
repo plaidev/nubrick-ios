@@ -38,6 +38,8 @@ internal interface Container {
     suspend fun fetchEmbedding(experimentId: String, componentId: String? = null): Result<UIBlock>
     suspend fun fetchInAppMessage(trigger: String): Result<UIBlock>
     suspend fun fetchRemoteConfig(experimentId: String): Result<ExperimentVariant>
+
+    fun record(throwable: Throwable)
 }
 
 internal class ContainerImpl(
@@ -199,6 +201,10 @@ internal class ContainerImpl(
         ) ?: return Result.failure(NotFoundException())
 
         return Result.success(experimentId to variant)
+    }
+
+    override fun record(throwable: Throwable) {
+        this.trackRepository.record(throwable)
     }
 
 }
