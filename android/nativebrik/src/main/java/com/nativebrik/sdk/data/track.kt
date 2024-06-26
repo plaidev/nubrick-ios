@@ -6,6 +6,7 @@ import com.nativebrik.sdk.data.user.formatISO8601
 import com.nativebrik.sdk.data.user.getCurrentDate
 import com.nativebrik.sdk.schema.ListDecoder
 import com.nativebrik.sdk.schema.StringDecoder
+import com.nativebrik.sdk.schema.TriggerEventNameDefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -200,12 +201,12 @@ internal class TrackRepositoryImpl: TrackRepository {
                                  crashRecord.reason?.contains("com.nativebrik.sdk") == true
 
         this.buffer.add(TrackEvent.UserEvent(TrackUserEvent(
-            name = "N_CRASH_RECORD"
+            name = TriggerEventNameDefs.N_ERROR_RECORD.name
         )))
 
         if (causedByNativebrik) {
             buffer.add(TrackEvent.UserEvent(TrackUserEvent(
-                name = "N_CRASH_IN_SDK_RECORD"
+                name = TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.name
             )))
         }
 
