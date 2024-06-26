@@ -160,13 +160,13 @@ class TrackRespositoryImpl: TrackRepository2 {
             }) ?? false) || (crashRecord.reason?.contains("Nativebrik") ?? false)
             self.buffer.append(TrackEvent(
                 typename: .Event,
-                name: "N_CRASH_RECORD",
+                name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
                 timestamp: formatToISO8601(getCurrentDate())
             ))
             if causedByNativebrik {
                 self.buffer.append(TrackEvent(
                     typename: .Event,
-                    name: "N_CRASH_IN_SDK_RECORD",
+                    name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
                     timestamp: formatToISO8601(getCurrentDate())
                 ))
             }
