@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-public let nativebrikSdkVersion = "0.5.8"
+public let nativebrikSdkVersion = "0.5.9"
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
         return true
