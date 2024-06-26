@@ -290,6 +290,8 @@ enum TriggerEventNameDefs: String, Decodable, Encodable {
   case USER_ENTER_TO_APP = "USER_ENTER_TO_APP"
   case USER_ENTER_TO_APP_FIRSTLY = "USER_ENTER_TO_APP_FIRSTLY"
   case USER_ENTER_TO_FOREGROUND = "USER_ENTER_TO_FOREGROUND"
+  case N_ERROR_RECORD = "N_ERROR_RECORD"
+  case N_ERROR_IN_SDK_RECORD = "N_ERROR_IN_SDK_RECORD"
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try TriggerEventNameDefs(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
