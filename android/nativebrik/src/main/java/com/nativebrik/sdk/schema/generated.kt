@@ -336,6 +336,7 @@ internal enum class BuiltinUserProperty {
 	sdkVersion,
 	osVersion,
 	osName,
+	appId,
 	appVersion,
 	cfBundleVersion,
 	localYear,
@@ -374,6 +375,7 @@ internal enum class BuiltinUserProperty {
 				"sdkVersion" -> sdkVersion
 				"osVersion" -> osVersion
 				"osName" -> osName
+				"appId" -> appId
 				"appVersion" -> appVersion
 				"cfBundleVersion" -> cfBundleVersion
 				"localYear" -> localYear

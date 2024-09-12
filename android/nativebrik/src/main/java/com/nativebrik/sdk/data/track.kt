@@ -1,6 +1,8 @@
 package com.nativebrik.sdk.data
 
+import android.os.Build
 import com.nativebrik.sdk.Config
+import com.nativebrik.sdk.VERSION
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.data.user.formatISO8601
 import com.nativebrik.sdk.data.user.getCurrentDate
@@ -97,10 +99,29 @@ internal sealed class TrackEvent {
     }
 }
 
+internal data class TrackEventMeta(
+    val appId: String?,
+    val appVersion: String?,
+    val osName: String?,
+    val osVersion: String?,
+    val sdkVersion: String?
+) {
+    fun encode(): JsonObject {
+        return JsonObject(mapOf(
+            "appId" to JsonPrimitive(this.appId),
+            "appVersion" to JsonPrimitive(this.appVersion),
+            "osName" to JsonPrimitive(this.osName),
+            "osVersion" to JsonPrimitive(this.osVersion),
+            "sdkVersion" to JsonPrimitive(this.sdkVersion),
+        ))
+    }
+}
+
 internal data class TrackRequest(
     val projectId: String,
     val userId: String,
     val events: List<TrackEvent>,
+    val meta: TrackEventMeta,
     val timestamp: ZonedDateTime = getCurrentDate(),
 ) {
     fun encode(): JsonObject {
@@ -109,7 +130,8 @@ internal data class TrackRequest(
             "projectId" to JsonPrimitive(projectId),
             "userId" to JsonPrimitive(userId),
             "timestamp" to JsonPrimitive(formatISO8601(timestamp)),
-            "events" to JsonArray(events)
+            "events" to JsonArray(events),
+            "meta" to meta.encode(),
         ))
     }
 }
@@ -175,10 +197,18 @@ internal class TrackRepositoryImpl: TrackRepository {
         val tempBuffer = this.buffer
         if (tempBuffer.isEmpty()) return
         this.buffer = mutableListOf()
+        val meta = TrackEventMeta(
+            appId = this.user.packageName,
+            appVersion = this.user.appVersion,
+            osVersion = Build.VERSION.SDK_INT.toString(),
+            osName = "Android",
+            sdkVersion = VERSION
+        )
         val request = TrackRequest(
             projectId = config.projectId,
             userId = user.id,
-            events = tempBuffer
+            events = tempBuffer,
+            meta = meta,
         )
         val body = Json.encodeToString(request.encode())
         this.timer?.cancel()
