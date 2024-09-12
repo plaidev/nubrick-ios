@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 private let CRASH_RECORD_KEY: String = "NATIVEBRIK_CRASH_RECORD"
 
@@ -26,6 +27,7 @@ struct TrackRequest: Encodable {
     var userId: String
     var timestamp: DateTime
     var events: [TrackEvent]
+    var meta: TrackEventMeta
 }
 
 struct TrackEvent: Encodable {
@@ -38,6 +40,15 @@ struct TrackEvent: Encodable {
     var variantId: String?
     var name: String?
     var timestamp: DateTime
+}
+
+struct TrackEventMeta: Encodable {
+    var appId: String?
+    var appVersion: String?
+    var cfBundleVersion: String?
+    var osName: String?
+    var osVersion: String?
+    var sdkVersion: String?
 }
 
 struct TrackUserEvent {
@@ -124,11 +135,24 @@ class TrackRespositoryImpl: TrackRepository2 {
         }
         let events = self.buffer
         self.buffer = []
+        
+        let appId = Bundle.main.bundleIdentifier ?? ""
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let cfBundleVersion = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        let trackMeta = await TrackEventMeta(
+            appId: appId,
+            appVersion: appVersion,
+            cfBundleVersion: cfBundleVersion,
+            osName: UIDevice.current.systemName,
+            osVersion: UIDevice.current.systemVersion,
+            sdkVersion: nativebrikSdkVersion
+        )
         let trackRequest = TrackRequest(
             projectId: self.config.projectId,
             userId: self.user.id,
             timestamp: formatToISO8601(getCurrentDate()),
-            events: events
+            events: events,
+            meta: trackMeta
         )
 
         do {

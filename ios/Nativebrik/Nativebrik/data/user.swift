@@ -102,6 +102,9 @@ public class NativebrikUser {
         self.properties[BuiltinUserProperty.sdkVersion.rawValue] = nativebrikSdkVersion
         self.properties[BuiltinUserProperty.osName.rawValue] = UIDevice.current.systemName
         self.properties[BuiltinUserProperty.osVersion.rawValue] = UIDevice.current.systemVersion
+        
+        let appId = Bundle.main.bundleIdentifier ?? ""
+        self.properties[BuiltinUserProperty.appId.rawValue] = appId
 
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         self.properties[BuiltinUserProperty.appVersion.rawValue] = appVersion

@@ -56,6 +56,7 @@ enum BuiltinUserProperty: String, Decodable, Encodable {
   case sdkVersion = "sdkVersion"
   case osVersion = "osVersion"
   case osName = "osName"
+  case appId = "appId"
   case appVersion = "appVersion"
   case cfBundleVersion = "cfBundleVersion"
   case localYear = "localYear"
