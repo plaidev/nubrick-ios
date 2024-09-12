@@ -144,7 +144,8 @@ class TrackRespositoryImpl: TrackRepository2 {
             appVersion: appVersion,
             cfBundleVersion: cfBundleVersion,
             osName: UIDevice.current.systemName,
-            osVersion: UIDevice.current.systemVersion
+            osVersion: UIDevice.current.systemVersion,
+            sdkVersion: nativebrikSdkVersion
         )
         let trackRequest = TrackRequest(
             projectId: self.config.projectId,
