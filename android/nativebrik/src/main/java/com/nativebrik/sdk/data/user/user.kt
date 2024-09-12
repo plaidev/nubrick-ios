@@ -53,6 +53,8 @@ class NativebrikUser {
     private var properties: MutableMap<String, String> = mutableMapOf()
     internal var preferences: SharedPreferences? = null
     private var lastBootTime: ZonedDateTime = getCurrentDate()
+    internal var packageName: String? = null
+    internal var appVersion: String? = null
 
     val id: String
         get() {
@@ -99,8 +101,11 @@ class NativebrikUser {
 
         try {
             val packageName = context.packageName
+            this.packageName = packageName
+            this.properties[BuiltinUserProperty.appId.toString()] = packageName
             val appVersion = context.packageManager.getPackageInfo(packageName, 0).versionName
             this.properties[BuiltinUserProperty.appVersion.toString()] = appVersion
+            this.appVersion = appVersion
         } catch (_: Exception) {
             this.properties[BuiltinUserProperty.appVersion.toString()] = "0.0.0"
         }
