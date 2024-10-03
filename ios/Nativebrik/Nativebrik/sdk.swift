@@ -9,7 +9,11 @@ import Foundation
 import SwiftUI
 import Combine
 
+// for development
+public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
+public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
 public let nativebrikSdkVersion = "0.5.9"
+
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
         return true
@@ -49,8 +53,8 @@ func createDispatchNativebrikEvent(_ client: NativebrikClient) -> (_ event: Comp
 class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
-    var trackUrl: String = "https://track.nativebrik.com/track/v1"
-    var cdnUrl: String = "https://cdn.nativebrik.com"
+    var trackUrl: String = nativebrikTrackUrl
+    var cdnUrl: String = nativebrikCdnUrl
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
 
     init() {
