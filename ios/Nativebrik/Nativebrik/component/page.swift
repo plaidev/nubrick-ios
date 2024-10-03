@@ -187,7 +187,7 @@ class PageView: UIView {
         // when it has http request, render loading view, and then
         self.loading = true
         self.renderView()
-        
+
         Task {
             let result = await Task.detached {
                 let variable = self.container.createVariableForTemplate(data: nil, properties: self.props)
