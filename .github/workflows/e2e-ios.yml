@@ -1,5 +1,6 @@
 name: "[ios] E2E Test Nativebrik SDK"
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
 
