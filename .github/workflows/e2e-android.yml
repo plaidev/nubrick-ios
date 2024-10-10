@@ -23,4 +23,4 @@ jobs:
     - name: upload e2e app
       working-directory: android
       run: |
-        curl -L -X POST -F "file=@./android/e2e/build/outputs/apk/release/e2e-release-unsigned.apk" -H "Authorization: Token ${{ secrets.MAGICPOD_API_TOKEN }}" "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik/upload-file/"
+        curl -L -X POST -F "file=@./e2e/build/outputs/apk/release/e2e-release-unsigned.apk" -H "Authorization: Token ${{ secrets.MAGICPOD_API_TOKEN }}" "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik/upload-file/"
