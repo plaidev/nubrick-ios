@@ -1,0 +1,26 @@
+name: "[android] E2E Test Nativebrik SDK"
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  publish-e2e-app:
+    runs-on: ubuntu-latest
+    environment:
+      name: Only Main
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: setup jdk
+      uses: actions/setup-java@v2
+      with:
+        distribution: 'zulu'
+        java-version: '21'
+    - name: build e2e app
+      working-directory: android
+      run: ./gradlew assembleRelease
+    - name: upload e2e app
+      working-directory: android
+      run: |
+        curl -L -X POST -F "file=@./android/e2e/build/outputs/apk/release/e2e-release-unsigned.apk" -H "Authorization: Token ${{ secrets.MAGICPOD_API_TOKEN }}" "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik/upload-file/"
