@@ -50,23 +50,24 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
+      home: NativebrikProvider(
+        child: Scaffold(
           appBar: AppBar(
             title: const Text('Plugin example app'),
           ),
-          body: NativebrikProvider(
-            child: Column(
-              children: [
-                NativebrikEmbedding("TOP_COMPONENT", height: 270,
-                    onEvent: (event) {
-                  print("Nativebrik Embedding Event: ${event.payload}");
-                }),
-                const Text("Text 2"),
-                Text(_message),
-                const Text("Text 2")
-              ],
-            ),
-          )),
+          body: Column(
+            children: [
+              NativebrikEmbedding("TOP_COMPONENT", height: 270,
+                  onEvent: (event) {
+                print("Nativebrik Embedding Event: ${event.payload}");
+              }),
+              const Text("Text 2"),
+              Text(_message),
+              const Text("Text 2")
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
