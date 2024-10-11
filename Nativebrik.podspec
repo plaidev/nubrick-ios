@@ -17,6 +17,10 @@ Nativebrik SDK for iOS.
 
   s.source_files = 'ios/Nativebrik/Nativebrik/**/*'
 
-  s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine', 'YogaKit', 'Yoga', 'TipKit', 'ImageIO', 'SafariServices'
+  # common deps
+  s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine', 'YogaKit', 'Yoga', 'ImageIO', 'SafariServices'
+
+  # >= ios 17.0
+  s.weak_frameworks = 'TipKit'
   s.dependency 'YogaKit', '~> 2.0.0'
 end
