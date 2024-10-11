@@ -24,6 +24,7 @@ jobs:
         working-directory: flutter/nativebrik_bridge/e2e
         run: flutter build ios --no-codesign
       - name: Zip app
+        working-directory: flutter/nativebrik_bridge/e2e
         run: |
           cd build/ios/iphoneos && zip -r Runner.app.zip ./Runner.app
       - name: Uploade to magicpod
@@ -53,4 +54,4 @@ jobs:
       - name: upload e2e app
         working-directory: flutter/nativebrik_bridge/e2e
         run: |
-          curl -L -X POST -F "file=@build/app/outputs/flutter-apk/app-debug.apk" -H "Authorization: Token ${{ secrets.MAGICPOD_API_TOKEN }}" "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik-Flutter/upload-file/"
+          curl -L -X POST -F "file=@build/app/outputs/flutter-apk/app-release.apk" -H "Authorization: Token ${{ secrets.MAGICPOD_API_TOKEN }}" "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik-Flutter/upload-file/"
