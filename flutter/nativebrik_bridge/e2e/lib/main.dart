@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 import 'package:nativebrik_bridge/nativebrik_bridge.dart';
 import 'package:nativebrik_bridge/embedding.dart';
@@ -18,7 +17,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final nativebrik = NativebrikBridge("cgv3p3223akg00fod19g");
+  final nativebrik = NativebrikBridge("ckto7v223akg00ag3jsg");
   String _message = "Not Found";
 
   @override
@@ -27,18 +26,10 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
     if (!mounted) return;
 
-    nativebrik.addEventListener((event) {
-      print("Nativebrik Global Embedding Event: $event");
-    });
-
-    var config = NativebrikRemoteConfig("cnoku4223akg00e5m630");
+    var config = NativebrikRemoteConfig("REMOTE_CONFIG_FOR_E2E");
     var variant = await config.fetch();
     var message = await variant.get("message");
 
@@ -53,17 +44,12 @@ class _MyAppState extends State<MyApp> {
       home: NativebrikProvider(
         child: Scaffold(
           appBar: AppBar(
-            title: const Text('Plugin example app'),
+            title: const Text('app for e2e '),
           ),
           body: Column(
             children: [
-              NativebrikEmbedding("TOP_COMPONENT", height: 270,
-                  onEvent: (event) {
-                print("Nativebrik Embedding Event: ${event.payload}");
-              }),
-              const Text("Text 2"),
+              const NativebrikEmbedding("EMBEDDING_FOR_E2E", height: 270),
               Text(_message),
-              const Text("Text 2")
             ],
           ),
         ),
