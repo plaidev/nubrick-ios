@@ -19,7 +19,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.3.0
+          flutter-version: 3.19.2
       - name: Build iOS
         working-directory: flutter/nativebrik_bridge/e2e
         run: flutter build ios --no-codesign
@@ -46,7 +46,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.3.0
+          flutter-version: 3.19.2
       - name: Build iOS
         working-directory: flutter/nativebrik_bridge/e2e
         run: flutter build apk
