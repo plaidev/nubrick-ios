@@ -1,6 +1,5 @@
 package com.nativebrik.sdk.component
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -59,7 +58,6 @@ internal class TriggerViewModel(internal val container: Container, internal val 
 
     @OptIn(DelicateCoroutinesApi::class)
     fun dispatch(event: NativebrikEvent) {
-        Log.d("[DATADOG]", event.name)
         val self = this
         GlobalScope.launch(Dispatchers.IO) {
             self.container.fetchInAppMessage(event.name).onSuccess {
