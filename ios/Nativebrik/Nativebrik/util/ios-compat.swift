@@ -7,12 +7,41 @@
 
 import Foundation
 
-func getCurrentDate() -> Date {
-    if #available(iOS 15, *) {
-        return Date.now
-    } else {
-        return Date()
+private var DATETIME_OFFSET: Int64 = 0
+
+func syncDateFromHTTPURLResponse(t0: Date, res: HTTPURLResponse) {
+    let t1 = getCurrentDate()
+
+    guard let dateStr = res.allHeaderFields["Date"] as? String else {
+        return
     }
+    let dateFormatter = DateFormatter()
+    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+    dateFormatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+    
+    guard let serverTime = dateFormatter.date(from: dateStr) else {
+        return
+    }
+    
+    let t0Unix = Int64(t0.timeIntervalSince1970 * 1000)
+    let t1Unix = Int64(t1.timeIntervalSince1970 * 1000)
+    let serverTimeUnix = Int64(serverTime.timeIntervalSince1970 * 1000)
+    let networkDelay = (t1Unix - t0Unix) / 2
+    let estimatedServerTimeUnix = serverTimeUnix + networkDelay
+    let offset = estimatedServerTimeUnix - t1Unix
+
+    DATETIME_OFFSET = offset
+}
+
+func getCurrentDate() -> Date {
+    let currentMillis: Int64
+    if #available(iOS 15, *) {
+        currentMillis = Int64(Date.now.timeIntervalSince1970 * 1000)
+    } else {
+        currentMillis = Int64(Date().timeIntervalSince1970 * 1000)
+    }
+    // device time + (server time - device time) = server.time
+    return Date(timeIntervalSince1970: Double(currentMillis + DATETIME_OFFSET) / 1000.0)
 }
 
 func parseDateTime(_ date: DateTime) -> Date? {

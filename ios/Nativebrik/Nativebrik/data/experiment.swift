@@ -25,10 +25,12 @@ class ExperimentRepositoryImpl: ExperimentRepository2 {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         do {
+            let t0 = getCurrentDate()
             let (data, response) = try await nativebrikSession.data(for: request)
             guard let res = response as? HTTPURLResponse else {
                 return Result.failure(NativebrikError.irregular("Failed to parse as HttpURLResponse"))
             }
+            syncDateFromHTTPURLResponse(t0: t0, res: res)
             if res.statusCode == 404 {
                 return Result.failure(NativebrikError.notFound)
             }
@@ -49,10 +51,12 @@ class ExperimentRepositoryImpl: ExperimentRepository2 {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         do {
+            let t0 = getCurrentDate()
             let (data, response) = try await nativebrikSession.data(for: request)
             guard let res = response as? HTTPURLResponse else {
                 return Result.failure(NativebrikError.irregular("Failed to parse as HttpURLResponse"))
             }
+            syncDateFromHTTPURLResponse(t0: t0, res: res)
             if res.statusCode == 404 {
                 return Result.failure(NativebrikError.notFound)
             }
