@@ -1,5 +1,6 @@
 package com.nativebrik.sdk.data
 
+import com.nativebrik.sdk.data.user.syncDateFromHttpResponse
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -9,9 +10,10 @@ import java.net.URL
 internal const val CONNECT_TIMEOUT = 10 * 1000
 internal const val READ_TIMEOUT = 5 * 1000
 
-internal fun getRequest(endpoint: String): Result<String> {
+internal fun getRequest(endpoint: String, syncDateTime: Boolean = false): Result<String> {
     var connection: HttpURLConnection? = null
     try {
+        val t0 = System.currentTimeMillis()
         val url = URL(endpoint)
         connection = url.openConnection() as HttpURLConnection
         connection.connectTimeout = CONNECT_TIMEOUT
@@ -22,6 +24,10 @@ internal fun getRequest(endpoint: String): Result<String> {
         connection.useCaches = true
         connection.connect()
         val responseCode = connection.responseCode
+
+        if (syncDateTime) {
+            syncDateFromHttpResponse(t0, connection)
+        }
 
         if (responseCode == HttpURLConnection.HTTP_OK) {
             val sb = StringBuilder()
