@@ -5,10 +5,15 @@ import android.content.SharedPreferences
 import android.os.Build
 import com.nativebrik.sdk.VERSION
 import com.nativebrik.sdk.schema.BuiltinUserProperty
+import java.net.HttpURLConnection
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import java.util.TimeZone
 import java.util.UUID
 import kotlin.random.Random
 
@@ -22,8 +27,32 @@ internal fun getNativebrikUserSharedPreferences(context: Context): SharedPrefere
 internal const val USER_SEED_MAX = 100000000
 internal const val USER_SEED_KEY = "NATIVEBRIK_USER_SEED"
 
+internal var DATETIME_OFFSET: Long = 0
 internal fun getCurrentDate(): ZonedDateTime {
-    return ZonedDateTime.now()
+    val currentMillis = ZonedDateTime.now().toInstant().toEpochMilli()
+    return ZonedDateTime.ofInstant(
+        Instant.ofEpochMilli(currentMillis + DATETIME_OFFSET),
+        ZoneId.systemDefault()
+    )
+}
+
+internal fun syncDateFromHttpResponse(t0: Long, connection: HttpURLConnection) {
+    val t1 = System.currentTimeMillis()
+
+    val serverDateStr = connection.headerFields["Date"]?.firstOrNull() ?: return
+
+    val serverTime = try {
+        val formatter = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
+        formatter.timeZone = TimeZone.getTimeZone("GMT")
+        formatter.parse(serverDateStr)?.time ?: return
+    } catch (e: Exception) {
+        return
+    }
+
+    val networkDelay = (t1 - t0) / 2
+    val estimatedServerTime = serverTime + networkDelay
+
+    DATETIME_OFFSET = estimatedServerTime - t1
 }
 
 internal fun getToday(): ZonedDateTime {

@@ -18,7 +18,7 @@ internal class ExperimentRepositoryImpl(private val config: Config): ExperimentR
     ): Result<ExperimentConfigs> {
         return withContext(Dispatchers.IO) {
             val url = config.endpoint.cdn + "/projects/" + config.projectId + "/experiments/id/" + id
-            val response: String = getRequest(url).getOrElse {
+            val response: String = getRequest(url, syncDateTime = true).getOrElse {
                 return@withContext Result.failure(it)
             }
             val json = Json.decodeFromString<JsonElement>(response)
@@ -30,7 +30,7 @@ internal class ExperimentRepositoryImpl(private val config: Config): ExperimentR
     override suspend fun fetchTriggerExperimentConfigs(name: String): Result<ExperimentConfigs> {
         return withContext(Dispatchers.IO) {
             val url = config.endpoint.cdn + "/projects/" + config.projectId + "/experiments/trigger/" + name
-            val response: String = getRequest(url).getOrElse {
+            val response: String = getRequest(url, syncDateTime = true).getOrElse {
                 return@withContext Result.failure(it)
             }
             val json = Json.decodeFromString<JsonElement>(response)
