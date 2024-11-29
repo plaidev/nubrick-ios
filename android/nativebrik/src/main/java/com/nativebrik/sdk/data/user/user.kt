@@ -28,6 +28,7 @@ internal const val USER_SEED_MAX = 100000000
 internal const val USER_SEED_KEY = "NATIVEBRIK_USER_SEED"
 
 internal var DATETIME_OFFSET: Long = 0
+
 internal fun getCurrentDate(): ZonedDateTime {
     val currentMillis = ZonedDateTime.now().toInstant().toEpochMilli()
     return ZonedDateTime.ofInstant(
@@ -39,7 +40,7 @@ internal fun getCurrentDate(): ZonedDateTime {
 internal fun syncDateFromHttpResponse(t0: Long, connection: HttpURLConnection) {
     val t1 = System.currentTimeMillis()
 
-    val serverDateStr = connection.headerFields["Date"]?.firstOrNull() ?: return
+    val serverDateStr = connection.getHeaderField("Date") ?: return
 
     val serverTime = try {
         val formatter = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
