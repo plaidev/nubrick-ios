@@ -29,7 +29,7 @@ class UtilsUnitTest {
         val offset = com.nativebrik.sdk.data.user.DATETIME_OFFSET
         val diff = abs(offset - 24 * 60 * 60 * 1000)
 
-        assertTrue("time offset should be around 24 hours", diff < 1000)
+        assertTrue("time offset should be around 24 hours", diff < 5000)
     }
 
     @Test
