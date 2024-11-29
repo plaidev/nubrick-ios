@@ -9,6 +9,14 @@ import Foundation
 
 private var DATETIME_OFFSET: Int64 = 0
 
+func __for_test_sync_datetime_offset(offset: Int64) {
+    DATETIME_OFFSET = offset
+}
+
+func __for_test_get_datetime_offset() -> Int64 {
+    return DATETIME_OFFSET
+}
+
 func syncDateFromHTTPURLResponse(t0: Date, res: HTTPURLResponse) {
     let t1 = getCurrentDate()
 
