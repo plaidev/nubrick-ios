@@ -20,3 +20,13 @@
 
 - Update com.nativebrik.sdk to 0.1.3
 - Update Nativebrik to 0.5.7
+
+## 0.2.3
+
+- Update com.nativebrik.sdk to 0.1.6
+- Update Nativebrik to 0.5.9
+
+## 0.2.4
+
+- Update com.nativebrik.sdk to 0.1.7
+- Update Nativebrik to 0.5.10
