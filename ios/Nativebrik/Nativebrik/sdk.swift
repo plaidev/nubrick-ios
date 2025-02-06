@@ -12,7 +12,7 @@ import Combine
 // for development
 public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
-public let nativebrikSdkVersion = "0.5.9"
+public let nativebrikSdkVersion = "0.5.10"
 
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
@@ -158,7 +158,7 @@ public class NativebrikExperiment {
     public func dispatch(_ event: NativebrikEvent) {
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
-    
+
     public func record(exception: NSException) {
         self.container.record(exception)
     }
