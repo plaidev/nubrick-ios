@@ -2,11 +2,11 @@ PODS:
   - Flutter (1.0.0)
   - integration_test (0.0.1):
     - Flutter
-  - Nativebrik (0.5.9):
+  - Nativebrik (0.5.10):
     - YogaKit (~> 2.0.0)
   - nativebrik_bridge (0.0.1):
     - Flutter
-    - Nativebrik (~> 0.5.9)
+    - Nativebrik (~> 0.5.10)
   - Yoga (2.0.1)
   - YogaKit (2.0.1):
     - Yoga (~> 2.0.1)
@@ -33,8 +33,8 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   integration_test: 13825b8a9334a850581300559b8839134b124670
-  Nativebrik: 9540f65acd7c55b38e033fe223a7d82d8d55c689
-  nativebrik_bridge: 18b3a8f77067fa6f4d3ed12a40ec194e4a4c9908
+  Nativebrik: e7c192b7578884fd83051b36c741424935885dc6
+  nativebrik_bridge: 53b46396908617ffe9cc8b475d203dc6dc2807f2
   Yoga: 7ac7f65e2d7120bf97e75fd66436ed4c7bf8e37e
   YogaKit: 4751ba673fab49df29e2235e23c4ea7d6d5a339c
 
