@@ -65,12 +65,14 @@ private let USER_SEED_MAX: Int = 100000000
 
 public class NativebrikUser {
     private var properties: [String: String]
+    private var customProperties: [String: String]
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
     internal var userDB: UserDefaults
 
     init() {
         if !isNativebrikAvailable {
             self.properties = [:]
+            self.customProperties = [:]
             self.userDB = UserDefaults.standard
             return
         }
@@ -78,6 +80,7 @@ public class NativebrikUser {
         let suiteName = "\(Bundle.main.bundleIdentifier ?? "app").nativebrik.com"
         self.userDB = UserDefaults(suiteName: suiteName) ?? UserDefaults.standard
         self.properties = [:]
+        self.customProperties = [:]
 
         // userId := uuid by default
         let userId = self.userDB.object(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue) as? String ?? UUID().uuidString
@@ -127,10 +130,19 @@ public class NativebrikUser {
         }
     }
 
+    // This is an alias of NativebrikUser.setProperties
     public func set(_ properties: [String: String]) {
         for (key, value) in properties {
-            self.properties[key] = value
+            self.customProperties[key] = value
         }
+    }
+
+    public func setProperties(_ properties: [String: String]) {
+        self.set(properties)
+    }
+
+    public func getProperties() -> [String:String] {
+        return self.customProperties
     }
 
     /**
@@ -262,6 +274,11 @@ public class NativebrikUser {
                 let eventProp = UserProperty(name: key, value: value, type: nativebrikUserPropType(key: BuiltinUserProperty(rawValue: key) ?? .unknown))
                 eventProps.append(eventProp)
             }
+        }
+        
+        for (key, value) in self.customProperties {
+            let eventProp = UserProperty(name: key, value: value, type: .STRING)
+            eventProps.append(eventProp)
         }
 
         return eventProps
