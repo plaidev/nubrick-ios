@@ -15,9 +15,12 @@ func _createVariableForTemplate(
     arguments: Any? = nil,
     projectId: String? = nil
 ) -> Any {
-    let userData: [String:Any] = (user != nil) ? [
-        "id": user?.id ?? "",
-    ] : [:]
+    var userData: [String: Any] = [:]
+    if let user = user {
+        userData["id"] = user.id
+        user.getProperties().forEach { userData[$0.key] = $0.value }
+    }
+    
     let formData: [String:Any]? = form
     var propertiesData: [String:Any] = [:]
     if let properties = properties {
