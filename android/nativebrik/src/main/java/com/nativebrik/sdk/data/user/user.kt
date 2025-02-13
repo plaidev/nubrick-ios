@@ -81,6 +81,7 @@ internal data class UserProperty(
 
 class NativebrikUser {
     private var properties: MutableMap<String, String> = mutableMapOf()
+    private var customProperties: MutableMap<String, String> = mutableMapOf()
     internal var preferences: SharedPreferences? = null
     private var lastBootTime: ZonedDateTime = getCurrentDate()
     internal var packageName: String? = null
@@ -143,10 +144,25 @@ class NativebrikUser {
         this.comeBack()
     }
 
+    // This is an alias of NativebrikUser.setProperties
     fun set(props: Map<String, String>) {
         props.forEach { (key, value) ->
-            this.properties[key] = value
+            if (key == BuiltinUserProperty.userId.toString()) {
+                this.properties[key] = value
+                return@forEach
+            }
+            this.customProperties[key] = value
         }
+    }
+
+    fun setProperties(props: Map<String, String>) {
+        this.set(props)
+    }
+
+    fun getProperties(): Map<String, String> {
+        val props = this.customProperties
+        props[BuiltinUserProperty.userId.toString()] = this.id
+        return props
     }
 
     fun comeBack() {
@@ -157,7 +173,7 @@ class NativebrikUser {
 
         val retentionPeriodKey = BuiltinUserProperty.retentionPeriod.toString()
         val retentionTimestamp = this.preferences?.getLong(retentionPeriodKey, now.toEpochSecond()) ?: now.toEpochSecond()
-        var retentionPeriodCountKey = "retentionPeriodCount"
+        val retentionPeriodCountKey = "retentionPeriodCount"
         val retentionCount = this.preferences?.getInt(retentionPeriodCountKey, 0) ?: 0
         this.properties[retentionPeriodKey] = retentionCount.toString()
 
@@ -281,6 +297,14 @@ class NativebrikUser {
                     }
                 ))
             }
+        }
+
+        this.customProperties.forEach { (key, value) ->
+            props.add(UserProperty(
+                name = key,
+                value = value,
+                type = UserPropertyType.STRING
+            ))
         }
 
         return props
