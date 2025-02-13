@@ -158,7 +158,7 @@ public class NativebrikExperiment {
     public func dispatch(_ event: NativebrikEvent) {
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
-    
+
     public func record(exception: NSException) {
         self.container.record(exception)
     }
