@@ -12,6 +12,10 @@ on:
       - android
       - .github/workflows/test-android.yml
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest

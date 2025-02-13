@@ -14,6 +14,10 @@ on:
       - .github/workflows/test-ios.yml
       - Nativebrik.podspec
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: macos-13
