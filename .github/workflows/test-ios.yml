@@ -3,8 +3,20 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+    paths:
+      - ios
+      - .github/workflows/test-ios.yml
+      - Nativebrik.podspec
   pull_request:
     branches: [ main ]
+    paths:
+      - ios
+      - .github/workflows/test-ios.yml
+      - Nativebrik.podspec
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:

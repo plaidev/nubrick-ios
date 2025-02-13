@@ -3,8 +3,18 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+    paths:
+      - android
+      - .github/workflows/test-android.yml
   pull_request:
     branches: [ main ]
+    paths:
+      - android
+      - .github/workflows/test-android.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
