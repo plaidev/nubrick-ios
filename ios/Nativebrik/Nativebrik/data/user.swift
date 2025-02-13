@@ -133,6 +133,11 @@ public class NativebrikUser {
     // This is an alias of NativebrikUser.setProperties
     public func set(_ properties: [String: String]) {
         for (key, value) in properties {
+            if key == BuiltinUserProperty.userId.rawValue {
+                // overwrite userId
+                self.properties[BuiltinUserProperty.userId.rawValue] = value
+                continue
+            }
             self.customProperties[key] = value
         }
     }
@@ -142,7 +147,9 @@ public class NativebrikUser {
     }
 
     public func getProperties() -> [String:String] {
-        return self.customProperties
+        var props = self.customProperties
+        props[BuiltinUserProperty.userId.rawValue] = self.properties[BuiltinUserProperty.userId.rawValue]
+        return props
     }
 
     /**
