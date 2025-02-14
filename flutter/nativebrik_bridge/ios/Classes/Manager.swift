@@ -41,6 +41,27 @@ class NativebrikBridgeManager {
         }
     }
 
+    func getUserId() -> String? {
+        guard let nativebrikClient = self.nativebrikClient else {
+            return nil
+        }
+        return nativebrikClient.user.id
+    }
+
+    func setUserProperties(properties: [String: String]) {
+        guard let nativebrikClient = self.nativebrikClient else {
+            return
+        }
+        nativebrikClient.user.setProperties(properties)
+    }
+    
+    func getUserProperties() -> [String: String]? {
+        guard let nativebrikClient = self.nativebrikClient else {
+            return nil
+        }
+        return nativebrikClient.user.getProperties()
+    }
+
     // embedding
     func connectEmbedding(id: String, channelId: String, arguments: Any?, messenger: FlutterBinaryMessenger) {
         guard let nativebrikClient = self.nativebrikClient else {

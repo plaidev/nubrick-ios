@@ -30,3 +30,10 @@
 
 - Update com.nativebrik.sdk to 0.1.7
 - Update Nativebrik to 0.5.10
+
+## 0.3.0
+
+- Support custom user properties and update example
+- Update com.nativebrik.sdk to 0.2.0
+- Update Nativebrik to 0.6.0
+- Update gradle, com.android.application and other internal flutter dependencies

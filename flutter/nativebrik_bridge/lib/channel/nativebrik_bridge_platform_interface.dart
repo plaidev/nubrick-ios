@@ -33,6 +33,18 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
     throw UnimplementedError('connectClient() has not been implemented.');
   }
 
+  Future<String?> getUserId() {
+    throw UnimplementedError('getUserId() has not been implemented.');
+  }
+
+  Future<void> setUserProperties(Map<String, String> properties) {
+    throw UnimplementedError('setUserProperties() has not been implemented.');
+  }
+
+  Future<Map<String, String>?> getUserProperties() {
+    throw UnimplementedError('getUserProperties() has not been implemented.');
+  }
+
   Future<String?> connectEmbedding(
       String id, String channelId, dynamic arguments) {
     throw UnimplementedError('connectEmbedding() has not been implemented.');
