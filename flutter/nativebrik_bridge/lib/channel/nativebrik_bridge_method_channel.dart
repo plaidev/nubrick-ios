@@ -27,6 +27,18 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
   }
 
   @override
+  Future<String?> getUserId() async {
+    final result = await methodChannel.invokeMethod<String>('getUserId');
+    return result;
+  }
+
+  @override
+  Future<String?> setUserProperties(Map<String, String> properties) async {
+    final result = await methodChannel.invokeMethod<String>('setUserProperties', properties);
+    return result;
+  }
+
+  @override
   Future<String?> connectEmbedding(
       String id, String channelId, dynamic arguments) async {
     final result = await methodChannel.invokeMethod<String>(
