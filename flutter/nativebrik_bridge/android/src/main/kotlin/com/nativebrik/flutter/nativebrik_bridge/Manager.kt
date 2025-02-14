@@ -36,6 +36,14 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
         this.bridgeClient = __DO_NOT_USE_THIS_INTERNAL_BRIDGE(client)
     }
 
+    fun getUserId(): String? {
+        return this.nativebrikClient?.user.id
+    }
+
+    fun setUserProperties(properties: Map<String, String>) {
+        this.nativebrikClient?.user.setProperties(properties)
+    }
+
     // embedding
     @OptIn(DelicateCoroutinesApi::class)
     fun connectEmbedding(channelId: String, experimentId: String, componentId: String? = null) {
