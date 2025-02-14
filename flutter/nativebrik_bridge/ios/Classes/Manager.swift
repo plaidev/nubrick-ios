@@ -52,7 +52,14 @@ class NativebrikBridgeManager {
         guard let nativebrikClient = self.nativebrikClient else {
             return
         }
-        nativebrikClient.user.set(properties)
+        nativebrikClient.user.setProperties(properties)
+    }
+    
+    func getUserProperties() -> [String: String]? {
+        guard let nativebrikClient = self.nativebrikClient else {
+            return nil
+        }
+        return nativebrikClient.user.getProperties()
     }
 
     // embedding

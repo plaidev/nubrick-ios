@@ -5,7 +5,11 @@ class NativebrikUser {
     return await NativebrikBridgePlatform.instance.getUserId();
   }
 
-  Future<void> set(Map<String, String> properties) async {
+  Future<void> setProperties(Map<String, String> properties) async {
     await NativebrikBridgePlatform.instance.setUserProperties(properties);
+  }
+
+  Future<Map<String, String>?> getProperties() async {
+    return await NativebrikBridgePlatform.instance.getUserProperties();
   }
 }

@@ -88,6 +88,10 @@ class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
           this.manager.setUserProperties(properties)
           result.success("ok")
         }
+        "getUserProperties" -> {
+          val properties = this.manager.getUserProperties()
+          result.success(properties)
+        }
         "connectEmbedding" -> {
           val channelId = call.argument<String>("channelId") as String
           val id = call.argument<String>("id") as String
