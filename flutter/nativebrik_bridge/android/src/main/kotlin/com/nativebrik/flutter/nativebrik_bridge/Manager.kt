@@ -37,15 +37,15 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
     }
 
     fun getUserId(): String? {
-        return this.nativebrikClient?.user.id
+        return this.nativebrikClient?.user?.id
     }
 
     fun setUserProperties(properties: Map<String, String>) {
-        this.nativebrikClient?.user.setProperties(properties)
+        this.nativebrikClient?.user?.setProperties(properties)
     }
 
     fun getUserProperties(): Map<String, String>? {
-        return this.nativebrikClient?.user.getProperties()
+        return this.nativebrikClient?.user?.getProperties()
     }
 
     // embedding

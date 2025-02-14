@@ -84,7 +84,7 @@ class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
           result.success(userId)
         }
         "setUserProperties" -> {
-          val properties = call.arguments as Map<String, Any>
+          val properties = call.arguments as Map<String, String>
           this.manager.setUserProperties(properties)
           result.success("ok")
         }

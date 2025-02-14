@@ -17,6 +17,21 @@ class MockNativebrikBridgePlatform
   }
 
   @override
+  Future<String?> getUserId() {
+    throw UnimplementedError('getUserId() has not been implemented.');
+  }
+
+  @override
+  Future<void> setUserProperties(Map<String, String> properties) {
+    throw UnimplementedError('setUserProperties() has not been implemented.');
+  }
+
+  @override
+  Future<Map<String, String>?> getUserProperties() {
+    throw UnimplementedError('getUserProperties() has not been implemented.');
+  }
+
+  @override
   Future<String?> connectEmbedding(
       String id, String channelId, dynamic arguments) {
     throw UnimplementedError('connectEmbedding() has not been implemented.');
