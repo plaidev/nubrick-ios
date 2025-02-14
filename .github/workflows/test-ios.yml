@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main ]
     paths:
-      - ios
+      - "ios/**"
       - .github/workflows/test-ios.yml
       - Nativebrik.podspec
   pull_request:
     branches: [ main ]
     paths:
-      - ios
+      - "ios/**"
       - .github/workflows/test-ios.yml
       - Nativebrik.podspec
 

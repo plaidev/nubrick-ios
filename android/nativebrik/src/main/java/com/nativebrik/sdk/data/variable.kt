@@ -1,6 +1,7 @@
 package com.nativebrik.sdk.data
 
 import com.nativebrik.sdk.data.user.NativebrikUser
+import com.nativebrik.sdk.schema.BuiltinUserProperty
 import com.nativebrik.sdk.schema.Property
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -16,7 +17,13 @@ internal fun createVariableForTemplate(
     arguments: Any? = null,
     projectId: String? = null,
 ): JsonElement {
-    val userJsonObject = JsonObject(mapOf("id" to JsonPrimitive(user?.id ?: "")))
+    val userData = mutableMapOf("id" to JsonPrimitive(user?.id ?: ""))
+    user?.getProperties()?.forEach { (key, value) ->
+        if (key == BuiltinUserProperty.userId.toString()) return@forEach
+        userData[key] = JsonPrimitive(value)
+    }
+    val userJsonObject = JsonObject(userData.toMap())
+
     val propertiesJsonObject = JsonObject(properties?.associate { (it.name ?: "") to JsonPrimitive(it.value) } ?: emptyMap())
     val formJsonObject = JsonObject(form?.entries?.associate {
         it.key to it.value
