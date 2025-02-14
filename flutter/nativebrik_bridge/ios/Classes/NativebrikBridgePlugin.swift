@@ -49,6 +49,15 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             }))
             result("ok")
 
+        // user
+        case "getUserId":
+            let id = self.manager.getUserId()
+            result(id)
+        case "setUserProperties":
+            let props = call.arguments as! [String:String]
+            self.manager.setUserProperties(properties: props)
+            result("ok")
+
         // embedding
         case "connectEmbedding":
             let args = call.arguments as! [String:Any]
