@@ -5,6 +5,7 @@ import 'package:nativebrik_bridge/nativebrik_bridge.dart';
 import 'package:nativebrik_bridge/embedding.dart';
 import 'package:nativebrik_bridge/remote_config.dart';
 import 'package:nativebrik_bridge/provider.dart';
+import 'package:nativebrik_bridge/user.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,6 +21,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final nativebrik = NativebrikBridge("cgv3p3223akg00fod19g");
   String _message = "Not Found";
+  String _userId = "None";
+  String _prefecture = "None";
 
   @override
   void initState() {
@@ -38,12 +41,21 @@ class _MyAppState extends State<MyApp> {
       print("Nativebrik Global Embedding Event: $event");
     });
 
+    final user = NativebrikUser();
+    var userId = await user.getId();
+    await user.setProperties({
+      'prefecture': "Tokyo",
+    });
+    var properties = await user.getProperties();
+
     var config = NativebrikRemoteConfig("cnoku4223akg00e5m630");
     var variant = await config.fetch();
     var message = await variant.get("message");
 
     setState(() {
       _message = message ?? "Not Found";
+      _userId = userId ?? "Not Found";
+      _prefecture = properties?['prefecture'] ?? "Not Found";
     });
   }
 
@@ -61,9 +73,12 @@ class _MyAppState extends State<MyApp> {
                   onEvent: (event) {
                 print("Nativebrik Embedding Event: ${event.payload}");
               }),
-              const Text("Text 2"),
+              const Text("Message:"),
               Text(_message),
-              const Text("Text 2")
+              const Text("User ID:"),
+              Text(_userId),
+              const Text("Prefecture:"),
+              Text(_prefecture),
             ],
           ),
         ),
