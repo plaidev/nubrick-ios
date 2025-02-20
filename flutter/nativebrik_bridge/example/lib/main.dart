@@ -79,6 +79,12 @@ class _MyAppState extends State<MyApp> {
               Text(_userId),
               const Text("Prefecture:"),
               Text(_prefecture),
+              ElevatedButton(
+                onPressed: () {
+                  nativebrik.dispatch("my-event");
+                },
+                child: const Text('dispatch custom event'),
+              ),
             ],
           ),
         ),
