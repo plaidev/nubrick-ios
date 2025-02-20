@@ -37,3 +37,7 @@
 - Update com.nativebrik.sdk to 0.2.0
 - Update Nativebrik to 0.6.0
 - Update gradle, com.android.application and other internal flutter dependencies
+
+## 0.3.1
+
+- Add event dispatch method to the NativebrikBridge
