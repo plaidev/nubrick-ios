@@ -34,6 +34,10 @@ class NativebrikBridge {
     _listeners.remove(listener);
   }
 
+  dispatch(String name) {
+    return NativebrikBridgePlatform.instance.dispatch(name);
+  }
+
   Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
       case 'on-event':
