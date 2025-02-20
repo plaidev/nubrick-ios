@@ -41,3 +41,8 @@
 ## 0.3.1
 
 - Add event dispatch method to the NativebrikBridge
+
+## 0.3.2
+
+- Update com.nativebrik.sdk to 0.2.1
+- Update Nativebrik to 0.6.1
