@@ -79,6 +79,8 @@ internal data class UserProperty(
     val type: UserPropertyType,
 )
 
+private const val USER_CUSTOM_PROPERTY_KEY_PREFIX = "NATIVEBRIK_CUSTOM_"
+
 class NativebrikUser {
     private var properties: MutableMap<String, String> = mutableMapOf()
     private var customProperties: MutableMap<String, String> = mutableMapOf()
@@ -141,18 +143,29 @@ class NativebrikUser {
             this.properties[BuiltinUserProperty.appVersion.toString()] = "0.0.0"
         }
 
+        this.preferences?.all?.forEach { (key, value) ->
+            if (key.startsWith(USER_CUSTOM_PROPERTY_KEY_PREFIX)) {
+                val propKey = key.removePrefix(USER_CUSTOM_PROPERTY_KEY_PREFIX)
+                this.customProperties[propKey] = value.toString()
+            }
+        }
+
         this.comeBack()
     }
 
     // This is an alias of NativebrikUser.setProperties
     fun set(props: Map<String, String>) {
+        val editor = this.preferences?.edit()
         props.forEach { (key, value) ->
             if (key == BuiltinUserProperty.userId.toString()) {
                 this.properties[key] = value
+                editor?.putString(BuiltinUserProperty.userId.toString(), value)
                 return@forEach
             }
             this.customProperties[key] = value
+            editor?.putString(USER_CUSTOM_PROPERTY_KEY_PREFIX + key, value)
         }
+        editor?.apply()
     }
 
     fun setProperties(props: Map<String, String>) {
