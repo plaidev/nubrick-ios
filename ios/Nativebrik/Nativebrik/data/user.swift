@@ -60,6 +60,7 @@ func nativebrikUserPropType(key: BuiltinUserProperty) -> UserPropertyType {
     }
 }
 
+private let USER_CUSTOM_PROPERTY_KEY_PREFIX = "NATIVEBRIK_CUSTOM_"
 private let USER_SEED_KEY: String = "NATIVEBRIK_USER_SEED"
 private let USER_SEED_MAX: Int = 100000000
 
@@ -114,6 +115,13 @@ public class NativebrikUser {
 
         let cfBundleVersion = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
         self.properties[BuiltinUserProperty.cfBundleVersion.rawValue] = cfBundleVersion
+        
+        self.userDB.dictionaryRepresentation().forEach { key, value in
+            if key.starts(with: USER_CUSTOM_PROPERTY_KEY_PREFIX) {
+                let propKey = key.replacingOccurrences(of: USER_CUSTOM_PROPERTY_KEY_PREFIX, with: "")
+                self.customProperties[propKey] = String(describing: value)
+            }
+        }
 
         self.comeBack()
     }
@@ -136,9 +144,11 @@ public class NativebrikUser {
             if key == BuiltinUserProperty.userId.rawValue {
                 // overwrite userId
                 self.properties[BuiltinUserProperty.userId.rawValue] = value
+                self.userDB.set(value, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
                 continue
             }
             self.customProperties[key] = value
+            self.userDB.set(value, forKey: USER_CUSTOM_PROPERTY_KEY_PREFIX + key)
         }
     }
 
