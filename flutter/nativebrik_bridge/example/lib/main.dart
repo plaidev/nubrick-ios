@@ -6,6 +6,7 @@ import 'package:nativebrik_bridge/embedding.dart';
 import 'package:nativebrik_bridge/remote_config.dart';
 import 'package:nativebrik_bridge/provider.dart';
 import 'package:nativebrik_bridge/user.dart';
+import 'package:nativebrik_bridge/dispatcher.dart';
 
 void main() {
   runApp(const MyApp());
@@ -45,6 +46,9 @@ class _MyAppState extends State<MyApp> {
     var userId = await user.getId();
     await user.setProperties({
       'prefecture': "Tokyo",
+      'environment': const bool.fromEnvironment('dart.vm.product')
+          ? 'production'
+          : 'development',
     });
     var properties = await user.getProperties();
 
@@ -81,7 +85,7 @@ class _MyAppState extends State<MyApp> {
               Text(_prefecture),
               ElevatedButton(
                 onPressed: () {
-                  nativebrik.dispatch("my-event");
+                  NativebrikDispatcher().dispatch(NativebrikEvent("my-event"));
                 },
                 child: const Text('dispatch custom event'),
               ),

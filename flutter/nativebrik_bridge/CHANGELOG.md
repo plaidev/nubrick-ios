@@ -46,3 +46,8 @@
 
 - Update com.nativebrik.sdk to 0.2.1
 - Update Nativebrik to 0.6.1
+
+## 0.4.0
+
+- Migrate event dispatch to dispatcher class: NativebrikDispatcher
+- Remove event dispatch from NativebrikBridge
