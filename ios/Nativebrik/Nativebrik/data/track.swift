@@ -178,10 +178,13 @@ class TrackRespositoryImpl: TrackRepository2 {
         do {
             self.user.userDB.removeObject(forKey: CRASH_RECORD_KEY)
             let crashRecord = try JSONDecoder().decode(CrashRecord.self, from: data)
+            // potentially caused by nativebrik sdk.
             let causedByNativebrik = (
                 crashRecord.callStacks?.contains(where: { callStack in
-                return callStack.contains("Nativebrik")
-            }) ?? false) || (crashRecord.reason?.contains("Nativebrik") ?? false)
+                    return callStack.contains("Nativebrik") || callStack.contains("package:nativebrik_bridge/") // support error from flutter
+                }) ?? false
+            )
+            || (crashRecord.reason?.contains("Nativebrik") ?? false)
             self.buffer.append(TrackEvent(
                 typename: .Event,
                 name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
@@ -203,9 +206,16 @@ class TrackRespositoryImpl: TrackRepository2 {
     }
 
     func record(_ exception: NSException) {
+        var callstacks: [String] = exception.callStackSymbols
+        
+        // the exception sent from flutter sdk includes call stack in userinfo.
+        if let userStack = exception.userInfo?["stack"] as? String {
+            callstacks.append(userStack)
+        }
+
         let record = CrashRecord(
             reason: exception.reason,
-            callStacks: exception.callStackSymbols
+            callStacks: callstacks
         )
         do {
             let json = try JSONEncoder().encode(record)
