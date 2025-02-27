@@ -189,8 +189,8 @@ class PageView: UIView {
         self.renderView()
 
         Task {
+            let variable = self.container.createVariableForTemplate(data: nil, properties: self.props)
             let result = await Task.detached {
-                let variable = await self.container.createVariableForTemplate(data: nil, properties: self.props)
                 return await self.container.sendHttpRequest(req: httpRequest, assertion: nil, variable: variable)
             }.value
             await MainActor.run { [weak self] in
