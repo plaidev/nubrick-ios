@@ -16,8 +16,26 @@ export 'package:nativebrik_bridge/user.dart';
 /// - Initialize the bridge with the project ID before using nativebrik SDK.
 ///
 /// ```dart
-/// class _YourAppStore extends State<YourApp> {
-///   final nativebrik = NativebrikBridge("PROJECT ID");
+/// // Setup Nativebrik SDK
+/// void main() {
+///   runZonedGuarded(() {
+///     WidgetsFlutterBinding.ensureInitialized();
+///     // Initialize the bridge with the project ID
+///     NativebrikBridge("PROJECT ID");
+///     // Set up global error handling
+///     FlutterError.onError = (errorDetails) {
+///       NativebrikCrashReport.instance.recordFlutterError(errorDetails);
+///     };
+///     // Set up platform dispatcher error handling
+///     PlatformDispatcher.instance.onError = (error, stack) {
+///       NativebrikCrashReport.instance.recordPlatformError(error, stack);
+///       return true;
+///     };
+///     runApp(const YourApp());
+///   }, (error, stack) {
+///     // Record any unhandled errors
+///     NativebrikCrashReport.instance.recordPlatformError(error, stack);
+///   });
 /// }
 /// ```
 class NativebrikBridge {
