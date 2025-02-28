@@ -132,4 +132,12 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
     );
     return result;
   }
+
+  @override
+  Future<void> recordCrash(Map<String, dynamic> errorData) async {
+    await methodChannel.invokeMethod<void>(
+      'recordCrash',
+      errorData,
+    );
+  }
 }
