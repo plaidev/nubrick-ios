@@ -227,8 +227,10 @@ internal class TrackRepositoryImpl: TrackRepository {
 
         val json = Json.decodeFromString<JsonElement>(data)
         val crashRecord = CrashRecord.decode(json) ?: return
-        val causedByNativebrik = crashRecord.callStacks?.any { it.contains("com.nativebrik.sdk") } == true ||
-                                 crashRecord.reason?.contains("com.nativebrik.sdk") == true
+        val causedByNativebrik = crashRecord.callStacks?.any {
+            // support flutter
+            it.contains("com.nativebrik.sdk") || it.contains("package:nativebrik_bridge/")
+        } == true || crashRecord.reason?.contains("com.nativebrik.sdk") == true
 
         this.buffer.add(TrackEvent.UserEvent(TrackUserEvent(
             name = TriggerEventNameDefs.N_ERROR_RECORD.name
