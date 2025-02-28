@@ -165,6 +165,15 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
     fun dispatch(name: String) {
         this.nativebrikClient?.experiment?.dispatch(NativebrikEvent(name))
     }
+
+    /**
+     * Records a crash with the given throwable.
+     *
+     * This method forwards the throwable to the Nativebrik SDK for crash reporting.
+     */
+    fun recordCrash(throwable: Throwable) {
+        this.nativebrikClient?.experiment?.record(throwable)
+    }
 }
 
 internal class OverlayViewFactory(private val manager: NativebrikBridgeManager): PlatformViewFactory(StandardMessageCodec.INSTANCE) {
