@@ -51,3 +51,10 @@
 
 - Migrate event dispatch to dispatcher class: NativebrikDispatcher
 - Remove event dispatch from NativebrikBridge
+
+## 0.5.0
+
+- Update com.nativebrik.sdk to 0.2.2
+- Update Nativebrik to 0.6.2
+- Add NativebrikCrashReport
+- Fix Other Classes (No breaking changes)

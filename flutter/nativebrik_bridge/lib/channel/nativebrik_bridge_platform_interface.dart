@@ -77,4 +77,12 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
   Future<String?> dispatch(String name) {
     throw UnimplementedError('dispatch() has not been implemented.');
   }
+
+  /// Records a crash with the given error data.
+  ///
+  /// This method sends the error data to the native implementation
+  /// for crash reporting.
+  Future<void> recordCrash(Map<String, dynamic> errorData) {
+    throw UnimplementedError('recordCrash() has not been implemented.');
+  }
 }

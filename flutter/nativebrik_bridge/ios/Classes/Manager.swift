@@ -54,7 +54,7 @@ class NativebrikBridgeManager {
         }
         nativebrikClient.user.setProperties(properties)
     }
-    
+
     func getUserProperties() -> [String: String]? {
         guard let nativebrikClient = self.nativebrikClient else {
             return nil
@@ -204,6 +204,18 @@ class NativebrikBridgeManager {
             return
         }
         nativebrikClient.experiment.dispatch(NativebrikEvent(name))
+    }
+
+    /**
+     * Records a crash with the given exception.
+     *
+     * This method forwards the exception to the Nativebrik SDK for crash reporting.
+     */
+    func recordCrash(exception: NSException) {
+        guard let nativebrikClient = self.nativebrikClient else {
+            return
+        }
+        nativebrikClient.experiment.record(exception: exception)
     }
 }
 

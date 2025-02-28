@@ -113,6 +113,38 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             let name = call.arguments as! String
             self.manager.dispatch(name: name)
             result("ok")
+        case "recordCrash":
+            do {
+                guard let errorData = call.arguments as? [String: Any] else {
+                    throw NSError(domain: "com.nativebrik.flutter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid error data"])
+                }
+
+                let exception = errorData["exception"] as? String ?? "Unknown Flutter Error"
+                let stack = errorData["stack"] as? String ?? ""
+                let library = errorData["library"] as? String ?? "flutter"
+                let context = errorData["context"] as? String ?? ""
+                let summary = errorData["summary"] as? String ?? ""
+
+                // Create an NSException with the Flutter error information
+                let userInfo: [String: Any] = [
+                    "stack": stack,
+                    "library": library,
+                    "context": context,
+                    "summary": summary
+                ]
+
+                let nsException = NSException(
+                    name: NSExceptionName("FlutterException"),
+                    reason: exception,
+                    userInfo: userInfo
+                )
+
+                // Record the exception using the Nativebrik SDK
+                self.manager.recordCrash(exception: nsException)
+                result("ok")
+            } catch {
+                result(FlutterError(code: "CRASH_REPORT_ERROR", message: "Failed to record crash: \(error.localizedDescription)", details: nil))
+            }
         default:
             result(FlutterMethodNotImplemented)
         }
