@@ -1,15 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-
 import 'package:nativebrik_bridge/nativebrik_bridge.dart';
-import 'package:nativebrik_bridge/embedding.dart';
-import 'package:nativebrik_bridge/remote_config.dart';
-import 'package:nativebrik_bridge/provider.dart';
-import 'package:nativebrik_bridge/user.dart';
-import 'package:nativebrik_bridge/dispatcher.dart';
 
 void main() {
-  runApp(const MyApp());
+  runZonedGuarded(() {
+    WidgetsFlutterBinding.ensureInitialized();
+    NativebrikBridge("cgv3p3223akg00fod19g");
+    FlutterError.onError = (errorDetails) {
+      NativebrikCrashReport.instance.recordFlutterError(errorDetails);
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      NativebrikCrashReport.instance.recordPlatformError(error, stack);
+      return true;
+    };
+    runApp(const MyApp());
+  }, (error, stack) {
+    NativebrikCrashReport.instance.recordPlatformError(error, stack);
+  });
 }
 
 class MyApp extends StatefulWidget {
@@ -20,7 +28,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final nativebrik = NativebrikBridge("cgv3p3223akg00fod19g");
   String _message = "Not Found";
   String _userId = "None";
   String _prefecture = "None";
@@ -37,10 +44,6 @@ class _MyAppState extends State<MyApp> {
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
     if (!mounted) return;
-
-    nativebrik.addEventListener((event) {
-      print("Nativebrik Global Embedding Event: $event");
-    });
 
     final user = NativebrikUser();
     var userId = await user.getId();
