@@ -2,4 +2,4 @@
 
 documentations
 
-https://nativebrik.com/intl/en/docs
+[https://docs.nativebrik.com](https://docs.nativebrik.com/)
