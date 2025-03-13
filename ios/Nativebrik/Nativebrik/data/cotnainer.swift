@@ -8,17 +8,6 @@
 import Foundation
 import CoreData
 
-let nativebrikSession: URLSession = {
-    let sessionConfig = URLSessionConfiguration.default
-    sessionConfig.waitsForConnectivity = true
-    sessionConfig.allowsCellularAccess = true
-    sessionConfig.allowsExpensiveNetworkAccess = true
-    sessionConfig.allowsConstrainedNetworkAccess = true
-    sessionConfig.timeoutIntervalForRequest = 10.0
-    sessionConfig.timeoutIntervalForResource = 30.0
-    return URLSession(configuration: sessionConfig)
-}()
-
 public enum NativebrikError: Error {
     case notFound
     case failedToDecode
