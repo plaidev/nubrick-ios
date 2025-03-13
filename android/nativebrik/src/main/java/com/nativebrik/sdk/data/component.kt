@@ -11,11 +11,11 @@ internal interface ComponentRepository {
     suspend fun fetchComponent(experimentId: String, id: String): Result<UIBlock>
 }
 
-internal class ComponentRepositoryImpl(private val config: Config): ComponentRepository {
+internal class ComponentRepositoryImpl(private val config: Config, private val cache: Cache): ComponentRepository {
     override suspend fun fetchComponent(experimentId: String, id: String): Result<UIBlock> {
         return withContext(Dispatchers.IO) {
             val url = config.endpoint.cdn + "/projects/" + config.projectId + "/experiments/components/" + experimentId + "/" + id
-            val response: String = getRequest(url).getOrElse {
+            val response: String = getRequestWithCache(url, cache).getOrElse {
                 return@withContext Result.failure(it)
             }
             val json = Json.decodeFromString<JsonElement>(response)

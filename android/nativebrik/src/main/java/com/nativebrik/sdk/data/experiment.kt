@@ -12,13 +12,13 @@ internal interface ExperimentRepository {
     suspend fun fetchTriggerExperimentConfigs(name: String): Result<ExperimentConfigs>
 }
 
-internal class ExperimentRepositoryImpl(private val config: Config): ExperimentRepository {
+internal class ExperimentRepositoryImpl(private val config: Config, private val cache: Cache): ExperimentRepository {
     override suspend fun fetchExperimentConfigs(
         id: String
     ): Result<ExperimentConfigs> {
         return withContext(Dispatchers.IO) {
             val url = config.endpoint.cdn + "/projects/" + config.projectId + "/experiments/id/" + id
-            val response: String = getRequest(url, syncDateTime = true).getOrElse {
+            val response: String = getRequestWithCache(url, cache, syncDateTime = true).getOrElse {
                 return@withContext Result.failure(it)
             }
             val json = Json.decodeFromString<JsonElement>(response)
@@ -30,7 +30,7 @@ internal class ExperimentRepositoryImpl(private val config: Config): ExperimentR
     override suspend fun fetchTriggerExperimentConfigs(name: String): Result<ExperimentConfigs> {
         return withContext(Dispatchers.IO) {
             val url = config.endpoint.cdn + "/projects/" + config.projectId + "/experiments/trigger/" + name
-            val response: String = getRequest(url, syncDateTime = true).getOrElse {
+            val response: String = getRequestWithCache(url, cache, syncDateTime = true).getOrElse {
                 return@withContext Result.failure(it)
             }
             val json = Json.decodeFromString<JsonElement>(response)
