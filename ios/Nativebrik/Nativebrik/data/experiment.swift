@@ -14,8 +14,10 @@ protocol ExperimentRepository2 {
 
 class ExperimentRepositoryImpl: ExperimentRepository2 {
     private let config: Config
-    init(config: Config) {
+    private let cache: Cache
+    init(config: Config, cache: Cache) {
         self.config = config
+        self.cache = cache
     }
     
     func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NativebrikError> {
@@ -23,7 +25,7 @@ class ExperimentRepositoryImpl: ExperimentRepository2 {
             return Result.failure(NativebrikError.irregular("Failed to create URL object"))
         }
         
-        let data = await getData(url: url, syncDateTime: true)
+        let data = await getData(url: url, syncDateTime: true, cache: self.cache)
         switch data {
         case .success(let data):
             let decoder = JSONDecoder()
@@ -42,7 +44,7 @@ class ExperimentRepositoryImpl: ExperimentRepository2 {
             return Result.failure(NativebrikError.irregular("Failed to create URL object"))
         }
         
-        let data = await getData(url: url, syncDateTime: true)
+        let data = await getData(url: url, syncDateTime: true, cache: self.cache)
         switch data {
         case .success(let data):
             let decoder = JSONDecoder()

@@ -13,8 +13,10 @@ protocol ComponentRepository2 {
 
 class ComponentRepositoryImpl: ComponentRepository2 {
     private let config: Config
-    init(config: Config) {
+    private let cache: Cache
+    init(config: Config, cache: Cache) {
         self.config = config
+        self.cache = cache
     }
 
     func fetchComponent(experimentId: String, id: String) async -> Result<UIBlock, NativebrikError> {
@@ -22,7 +24,7 @@ class ComponentRepositoryImpl: ComponentRepository2 {
             return Result.failure(NativebrikError.irregular("Failed to create URL object"))
         }
         
-        let data = await getData(url: url)
+        let data = await getData(url: url, cache: self.cache)
         switch data {
         case .success(let data):
             let decoder = JSONDecoder()

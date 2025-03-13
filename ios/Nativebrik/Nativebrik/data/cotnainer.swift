@@ -28,7 +28,7 @@ protocol Container {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NativebrikError>
     func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NativebrikError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NativebrikError>
-    
+
     func record(_ exception: NSException)
 }
 
@@ -63,30 +63,30 @@ class ContainerImpl: Container {
     private let config: Config
     private let user: NativebrikUser
     private let persistentContainer: NSPersistentContainer
-    
+
     private let experimentRepository: ExperimentRepository2
     private let componentRepository: ComponentRepository2
     private let trackRepository: TrackRepository2
     private let formRepository: FormRepository?
     private let databaseRepository: DatabaseRepository
     private let httpRequestRepository: HttpRequestRepository
-    
+
     private let arguments: Any?
-    
-    init(config: Config, user: NativebrikUser, persistentContainer: NSPersistentContainer, intercepter: NativebrikHttpRequestInterceptor? = nil) {
+
+    init(config: Config, cache: Cache, user: NativebrikUser, persistentContainer: NSPersistentContainer, intercepter: NativebrikHttpRequestInterceptor? = nil) {
         self.config = config
         self.user = user
         self.persistentContainer = persistentContainer
-        self.experimentRepository = ExperimentRepositoryImpl(config: config)
-        self.componentRepository = ComponentRepositoryImpl(config: config)
+        self.experimentRepository = ExperimentRepositoryImpl(config: config, cache: cache)
+        self.componentRepository = ComponentRepositoryImpl(config: config, cache: cache)
         self.trackRepository = TrackRespositoryImpl(config: config, user: user)
         self.formRepository = nil
         self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
         self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: intercepter)
-        
+
         self.arguments = nil
     }
-    
+
     // should be refactored.
     // this is because, i wanted to initialize form instance for each component, not to share the same instance from every components.
     // this is called when component is instantiated.
@@ -103,11 +103,11 @@ class ContainerImpl: Container {
         self.httpRequestRepository = container.httpRequestRepository
         self.arguments = arguments
     }
-        
+
     func handleEvent(_ it: UIBlockEventDispatcher) {
         self.config.dispatchUIBlockEvent(event: it)
     }
-    
+
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
         return _createVariableForTemplate(
             user: self.user,
@@ -118,15 +118,15 @@ class ContainerImpl: Container {
             projectId: self.config.projectId
         )
     }
-    
+
     func getFormValue(key: String) -> Any? {
         return self.formRepository?.getValue(key: key)
     }
-    
+
     func setFormValue(key: String, value: Any) {
         self.formRepository?.setValue(key: key, value: value)
     }
-    
+
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError> {
         let request = ApiHttpRequest(
             url: compile(req.url ?? "", variable),
@@ -138,13 +138,14 @@ class ContainerImpl: Container {
         )
         return await self.httpRequestRepository.request(req: request, assetion: assertion)
     }
-    
+
     func fetchEmbedding(experimentId: String, componentId: String? = nil) async -> Result<UIBlock, NativebrikError> {
         if let componentId = componentId {
             let component = await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
             return component
         }
-        
+
+        // retrieve experiment config
         var configs: ExperimentConfigs
         switch await self.experimentRepository.fetchExperimentConfigs(id: experimentId) {
         case .success(let it):
@@ -152,7 +153,7 @@ class ContainerImpl: Container {
         case .failure(let it):
             return Result.failure(it)
         }
-        
+
         var experimentId: String
         var variant: ExperimentVariant
         switch await self.extractVariant(configs: configs, kind: ExperimentKind.EMBED) {
@@ -162,23 +163,28 @@ class ContainerImpl: Container {
         case .failure(let it):
             return Result.failure(it)
         }
-        
+
         guard let variantId = variant.id else {
             return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
         }
         
+        print(experimentId, variantId)
+
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: experimentId, variantId: variantId
         ))
         self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
-        
+
         guard let componentId = extractComponentId(variant: variant) else {
+            print("failed")
             return Result.failure(NativebrikError.notFound)
         }
         
+        print(experimentId)
+
         return await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
     }
-    
+
     func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NativebrikError> {
         // send the user track event and save it to database
         self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
@@ -192,7 +198,7 @@ class ContainerImpl: Container {
         case .failure(let it):
             return Result.failure(it)
         }
-        
+
         var experimentId: String
         var variant: ExperimentVariant
         switch await self.extractVariant(configs: configs, kind: ExperimentKind.POPUP) {
@@ -202,23 +208,23 @@ class ContainerImpl: Container {
         case .failure(let it):
             return Result.failure(it)
         }
-        
+
         guard let variantId = variant.id else {
             return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
         }
-        
+
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: experimentId, variantId: variantId
         ))
         self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
-        
+
         guard let componentId = extractComponentId(variant: variant) else {
             return Result.failure(NativebrikError.notFound)
         }
-        
+
         return await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
     }
-    
+
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NativebrikError> {
         var configs: ExperimentConfigs
         switch await self.experimentRepository.fetchExperimentConfigs(id: experimentId) {
@@ -227,7 +233,7 @@ class ContainerImpl: Container {
         case .failure(let it):
             return Result.failure(it)
         }
-        
+
         var experimentId: String
         var variant: ExperimentVariant
         switch await self.extractVariant(configs: configs, kind: ExperimentKind.CONFIG) {
@@ -237,11 +243,11 @@ class ContainerImpl: Container {
         case .failure(let it):
             return Result.failure(it)
         }
-        
+
         guard let variantId = variant.id else {
             return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
         }
-        
+
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: experimentId, variantId: variantId
         ))
@@ -249,7 +255,7 @@ class ContainerImpl: Container {
 
         return Result.success((experimentId, variant))
     }
-    
+
     private func extractVariant(configs: ExperimentConfigs, kind: ExperimentKind) async -> Result<(String, ExperimentVariant), NativebrikError> {
         guard let config = extractExperimentConfigMatchedToProperties(
             configs: configs,
@@ -274,7 +280,7 @@ class ContainerImpl: Container {
         }
         return Result.success((experimentId, variant))
     }
-    
+
     func record(_ exception: NSException) {
         self.trackRepository.record(exception)
     }
