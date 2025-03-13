@@ -3,38 +3,55 @@ package com.nativebrik.sdk.data
 import com.nativebrik.sdk.CachePolicy
 import com.nativebrik.sdk.data.user.getCurrentDate
 import java.time.ZonedDateTime
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 internal class Cache(
     private val policy: CachePolicy
 ) {
+    private val lock = ReentrantReadWriteLock()
     private val cache = mutableMapOf<String, CacheObject>()
 
     fun get(key: String): Result<CacheObject> {
-        val cached = cache[key] ?: return Result.failure(NotFoundException())
+        lock.readLock().lock()
+        try {
+            val cached = cache[key] ?: return Result.failure(NotFoundException())
 
-        val now = getCurrentDate()
-        val diff = now.toEpochSecond() - cached.timestamp.toEpochSecond()
-        if (diff > policy.cacheTime.inWholeSeconds) { // if it's invalid
-            cache.remove(key)
-            return Result.failure(NotFoundException())
+            val now = getCurrentDate()
+            val diff = now.toEpochSecond() - cached.timestamp.toEpochSecond()
+            if (diff > policy.cacheTime.inWholeSeconds) { // if it's invalid
+                cache.remove(key)
+                return Result.failure(NotFoundException())
+            }
+            return Result.success(cached)
+        } finally {
+            lock.readLock().unlock()
         }
-        return Result.success(cached)
     }
 
     fun set(key: String, value: String): Result<Unit> {
-        val now = getCurrentDate()
-        val cache = CacheObject(
-            data = value,
+        lock.writeLock().lock()
+        try {
+            val now = getCurrentDate()
+            val cache = CacheObject(
+                data = value,
             timestamp = now,
             policy = this.policy,
-        )
-        this.cache[key] = cache
-        return Result.success(Unit)
+            )
+            this.cache[key] = cache
+            return Result.success(Unit)
+        } finally {
+            lock.writeLock().unlock()
+        }
     }
 
     fun invalidate(key: String): Result<Unit> {
-        cache.remove(key)
-        return Result.success(Unit)
+        lock.writeLock().lock()
+        try {
+            cache.remove(key)
+            return Result.success(Unit)
+        } finally {
+            lock.writeLock().unlock()
+        }
     }
 }
 
