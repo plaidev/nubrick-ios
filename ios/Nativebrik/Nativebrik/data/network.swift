@@ -49,7 +49,7 @@ class CacheObject {
     }
 }
 
-class Cache {
+class CacheStore {
     private let policy: NativebrikCachePolicy
     private var cache: [String: (Data, Date)] = [:]
     private let lock = NSLock()
@@ -87,7 +87,7 @@ class Cache {
     }
 }
 
-func getData(url: URL, syncDateTime: Bool = false, cache: Cache) async -> Result<Data, NativebrikError> {
+func getData(url: URL, syncDateTime: Bool = false, cache: CacheStore) async -> Result<Data, NativebrikError> {
     let urlStr = url.absoluteString
     
     guard let cached = cache.get(key: urlStr) else {

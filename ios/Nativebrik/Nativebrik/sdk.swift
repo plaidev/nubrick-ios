@@ -142,7 +142,7 @@ public class NativebrikClient: ObservableObject {
         self.config = config
         self.container = ContainerImpl(
             config: config,
-            cache: Cache(policy: config.cachePolicy),
+            cache: CacheStore(policy: config.cachePolicy),
             user: user,
             persistentContainer: persistentContainer,
             intercepter: httpRequestInterceptor

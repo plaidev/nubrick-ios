@@ -13,8 +13,8 @@ protocol ComponentRepository2 {
 
 class ComponentRepositoryImpl: ComponentRepository2 {
     private let config: Config
-    private let cache: Cache
-    init(config: Config, cache: Cache) {
+    private let cache: CacheStore
+    init(config: Config, cache: CacheStore) {
         self.config = config
         self.cache = cache
     }

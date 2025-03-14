@@ -73,7 +73,7 @@ class ContainerImpl: Container {
 
     private let arguments: Any?
 
-    init(config: Config, cache: Cache, user: NativebrikUser, persistentContainer: NSPersistentContainer, intercepter: NativebrikHttpRequestInterceptor? = nil) {
+    init(config: Config, cache: CacheStore, user: NativebrikUser, persistentContainer: NSPersistentContainer, intercepter: NativebrikHttpRequestInterceptor? = nil) {
         self.config = config
         self.user = user
         self.persistentContainer = persistentContainer

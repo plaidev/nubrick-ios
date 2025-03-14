@@ -58,7 +58,8 @@ final class ContainerTests: XCTestCase {
         let db = createNativebrikCoreDataHelper()
         let user = NativebrikUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
-        let container = ContainerImpl(config: config, user: user, persistentContainer: db)
+        let cache = CacheStore(policy: NativebrikCachePolicy())
+        let container = ContainerImpl(config: config, cache: cache, user: user, persistentContainer: db)
         let expectation = expectation(description: "Request should be expected.")
         
         Task {
