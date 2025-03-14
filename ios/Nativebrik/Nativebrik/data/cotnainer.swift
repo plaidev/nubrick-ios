@@ -168,19 +168,14 @@ class ContainerImpl: Container {
             return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
         }
         
-        print(experimentId, variantId)
-
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: experimentId, variantId: variantId
         ))
         self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
 
         guard let componentId = extractComponentId(variant: variant) else {
-            print("failed")
             return Result.failure(NativebrikError.notFound)
         }
-        
-        print(experimentId)
 
         return await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
     }
