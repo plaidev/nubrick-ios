@@ -13,7 +13,7 @@ import java.net.URL
 internal const val CONNECT_TIMEOUT = 10 * 1000
 internal const val READ_TIMEOUT = 5 * 1000
 
-internal fun getRequestWithCache(endpoint: String, cache: Cache, syncDateTime: Boolean = false): Result<String> {
+internal fun getRequestWithCache(endpoint: String, cache: CacheStore, syncDateTime: Boolean = false): Result<String> {
     val cached = cache.get(endpoint).getOrElse {
         val result = getRequest(endpoint, syncDateTime).getOrElse { error ->
             cache.invalidate(endpoint)

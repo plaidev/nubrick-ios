@@ -11,7 +11,7 @@ internal interface ComponentRepository {
     suspend fun fetchComponent(experimentId: String, id: String): Result<UIBlock>
 }
 
-internal class ComponentRepositoryImpl(private val config: Config, private val cache: Cache): ComponentRepository {
+internal class ComponentRepositoryImpl(private val config: Config, private val cache: CacheStore): ComponentRepository {
     override suspend fun fetchComponent(experimentId: String, id: String): Result<UIBlock> {
         return withContext(Dispatchers.IO) {
             val url = config.endpoint.cdn + "/projects/" + config.projectId + "/experiments/components/" + experimentId + "/" + id

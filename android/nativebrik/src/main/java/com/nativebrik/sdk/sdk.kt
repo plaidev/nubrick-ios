@@ -17,7 +17,7 @@ import com.nativebrik.sdk.component.EmbeddingLoadingState
 import com.nativebrik.sdk.component.Root
 import com.nativebrik.sdk.component.Trigger
 import com.nativebrik.sdk.component.TriggerViewModel
-import com.nativebrik.sdk.data.Cache
+import com.nativebrik.sdk.data.CacheStore
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.ContainerImpl
 import com.nativebrik.sdk.data.database.NativebrikDbHelper
@@ -141,7 +141,7 @@ public class NativebrikExperiment {
             }),
             user = user,
             db = db,
-            cache = Cache(config.cachePolicy),
+            cache = CacheStore(config.cachePolicy),
             context = context,
         )
         this.trigger = TriggerViewModel(this.container, user)

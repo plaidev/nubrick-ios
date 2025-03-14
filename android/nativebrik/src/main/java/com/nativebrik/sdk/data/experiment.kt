@@ -12,7 +12,7 @@ internal interface ExperimentRepository {
     suspend fun fetchTriggerExperimentConfigs(name: String): Result<ExperimentConfigs>
 }
 
-internal class ExperimentRepositoryImpl(private val config: Config, private val cache: Cache): ExperimentRepository {
+internal class ExperimentRepositoryImpl(private val config: Config, private val cache: CacheStore): ExperimentRepository {
     override suspend fun fetchExperimentConfigs(
         id: String
     ): Result<ExperimentConfigs> {

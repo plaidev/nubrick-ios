@@ -5,7 +5,7 @@ import com.nativebrik.sdk.data.user.getCurrentDate
 import java.time.ZonedDateTime
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-internal class Cache(
+internal class CacheStore(
     private val policy: CachePolicy
 ) {
     private val lock = ReentrantReadWriteLock()

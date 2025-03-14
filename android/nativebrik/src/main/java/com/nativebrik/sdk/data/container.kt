@@ -48,7 +48,7 @@ internal class ContainerImpl(
     private val db: SQLiteDatabase,
     private val arguments: Any? = null,
     private val formRepository: FormRepository? = null,
-    private val cache: Cache,
+    private val cache: CacheStore,
     private val context: Context,
 ): Container {
     private val componentRepository: ComponentRepository by lazy {
