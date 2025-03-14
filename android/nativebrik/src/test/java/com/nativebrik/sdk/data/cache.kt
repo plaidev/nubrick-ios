@@ -15,9 +15,13 @@ class CacheStoreTest {
         cacheTime = 60.seconds,
         staleTime = 30.seconds
     )
+    private var currentTime: ZonedDateTime = ZonedDateTime.now()
 
     @Before
     fun setup() {
+        currentTime = ZonedDateTime.now()
+        // Override getCurrentDate for testing
+        com.nativebrik.sdk.data.user.DATETIME_OFFSET = 0
         cacheStore = CacheStore(defaultPolicy)
     }
 
@@ -109,7 +113,8 @@ class CacheStoreTest {
         val setResult = cacheStore.set(key, value)
         assertTrue("Set operation should succeed", setResult.isSuccess)
 
-        Thread.sleep(1500) // Wait 1.5 seconds to ensure expiration
+        // Simulate time passing by adjusting the time offset
+        com.nativebrik.sdk.data.user.DATETIME_OFFSET = 2000 // 2 seconds in milliseconds
 
         val getResult = cacheStore.get(key)
 
