@@ -48,13 +48,14 @@ internal class ContainerImpl(
     private val db: SQLiteDatabase,
     private val arguments: Any? = null,
     private val formRepository: FormRepository? = null,
+    private val cache: CacheStore,
     private val context: Context,
 ): Container {
     private val componentRepository: ComponentRepository by lazy {
-        ComponentRepositoryImpl(config)
+        ComponentRepositoryImpl(config, cache)
     }
     private val experimentRepository: ExperimentRepository by lazy {
-        ExperimentRepositoryImpl(config)
+        ExperimentRepositoryImpl(config, cache)
     }
     private val trackRepository: TrackRepository by lazy {
         TrackRepositoryImpl(config, user)
@@ -73,6 +74,7 @@ internal class ContainerImpl(
             db = this.db,
             arguments = arguments,
             formRepository = FormRepositoryImpl(),
+            cache = cache,
             context = this.context,
         )
     }

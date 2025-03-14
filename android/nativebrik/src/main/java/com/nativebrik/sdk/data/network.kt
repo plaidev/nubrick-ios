@@ -1,6 +1,9 @@
 package com.nativebrik.sdk.data
 
 import com.nativebrik.sdk.data.user.syncDateFromHttpResponse
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -9,6 +12,27 @@ import java.net.URL
 
 internal const val CONNECT_TIMEOUT = 10 * 1000
 internal const val READ_TIMEOUT = 5 * 1000
+
+internal fun getRequestWithCache(endpoint: String, cache: CacheStore, syncDateTime: Boolean = false): Result<String> {
+    val cached = cache.get(endpoint).getOrElse {
+        val result = getRequest(endpoint, syncDateTime).getOrElse { error ->
+            cache.invalidate(endpoint)
+            return Result.failure(error)
+        }
+        cache.set(endpoint, result).getOrNull()
+        return Result.success(result)
+    }
+    if (cached.isStale()) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = getRequest(endpoint, syncDateTime).getOrElse {
+                cache.invalidate(endpoint)
+                return@launch
+            }
+            cache.set(endpoint, result).getOrNull()
+        }
+    }
+    return Result.success(cached.data)
+}
 
 internal fun getRequest(endpoint: String, syncDateTime: Boolean = false): Result<String> {
     var connection: HttpURLConnection? = null

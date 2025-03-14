@@ -17,14 +17,18 @@ import com.nativebrik.sdk.component.EmbeddingLoadingState
 import com.nativebrik.sdk.component.Root
 import com.nativebrik.sdk.component.Trigger
 import com.nativebrik.sdk.component.TriggerViewModel
+import com.nativebrik.sdk.data.CacheStore
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.ContainerImpl
 import com.nativebrik.sdk.data.database.NativebrikDbHelper
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 import com.nativebrik.sdk.schema.UIBlock
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
-const val VERSION = "0.2.2"
+const val VERSION = "0.3.0"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -52,7 +56,18 @@ public data class Event(
 public data class Config(
     val projectId: String,
     val endpoint: Endpoint = Endpoint(),
-    val onEvent: ((event: Event) -> Unit)? = null
+    val onEvent: ((event: Event) -> Unit)? = null,
+    val cachePolicy: CachePolicy = CachePolicy()
+)
+
+public enum class CacheStorage {
+    IN_MEMORY
+}
+
+public data class CachePolicy(
+    val cacheTime: Duration = 10.toDuration(DurationUnit.MINUTES),
+    val staleTime: Duration = Duration.ZERO,
+    val storage: CacheStorage = CacheStorage.IN_MEMORY,
 )
 
 public data class NativebrikEvent(
@@ -126,6 +141,7 @@ public class NativebrikExperiment {
             }),
             user = user,
             db = db,
+            cache = CacheStore(config.cachePolicy),
             context = context,
         )
         this.trigger = TriggerViewModel(this.container, user)
