@@ -15,11 +15,9 @@ class CacheStoreTest {
         cacheTime = 60.seconds,
         staleTime = 30.seconds
     )
-    private var currentTime: ZonedDateTime = ZonedDateTime.now()
 
     @Before
     fun setup() {
-        currentTime = ZonedDateTime.now()
         // Override getCurrentDate for testing
         com.nativebrik.sdk.data.user.DATETIME_OFFSET = 0
         cacheStore = CacheStore(defaultPolicy)
