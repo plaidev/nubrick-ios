@@ -12,7 +12,7 @@ import Combine
 // for development
 public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
-public let nativebrikSdkVersion = "0.6.2"
+public let nativebrikSdkVersion = "0.7.0"
 
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
@@ -56,6 +56,7 @@ class Config {
     var trackUrl: String = nativebrikTrackUrl
     var cdnUrl: String = nativebrikCdnUrl
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
+    var cachePolicy: NativebrikCachePolicy = NativebrikCachePolicy()
 
     init() {
         self.projectId = ""
@@ -63,13 +64,17 @@ class Config {
 
     init(
         projectId: String,
-        onEvents: [((_ event: ComponentEvent) -> Void)?] = []
+        onEvents: [((_ event: ComponentEvent) -> Void)?] = [],
+        cachePolicy: NativebrikCachePolicy? = nil
     ) {
         self.projectId = projectId
         onEvents.forEach { onEvent in
             if let onEvent = onEvent {
                 self.eventListeners.append(onEvent)
             }
+        }
+        if let cachePolicy = cachePolicy {
+            self.cachePolicy = cachePolicy
         }
     }
 
@@ -123,18 +128,21 @@ public class NativebrikClient: ObservableObject {
     public init(
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        httpRequestInterceptor: NativebrikHttpRequestInterceptor? = nil
+        httpRequestInterceptor: NativebrikHttpRequestInterceptor? = nil,
+        cachePolicy: NativebrikCachePolicy? = nil
     ) {
         let user = NativebrikUser()
         let config = Config(projectId: projectId, onEvents: [
             openLink,
             onEvent
-        ])
+        ],
+        cachePolicy: cachePolicy)
         let persistentContainer = createNativebrikCoreDataHelper()
         self.user = user
         self.config = config
         self.container = ContainerImpl(
             config: config,
+            cache: CacheStore(policy: config.cachePolicy),
             user: user,
             persistentContainer: persistentContainer,
             intercepter: httpRequestInterceptor

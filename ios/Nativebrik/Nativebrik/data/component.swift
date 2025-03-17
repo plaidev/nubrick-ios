@@ -13,31 +13,28 @@ protocol ComponentRepository2 {
 
 class ComponentRepositoryImpl: ComponentRepository2 {
     private let config: Config
-    init(config: Config) {
+    private let cache: CacheStore
+    init(config: Config, cache: CacheStore) {
         self.config = config
+        self.cache = cache
     }
-    
+
     func fetchComponent(experimentId: String, id: String) async -> Result<UIBlock, NativebrikError> {
         guard let url = URL(string: config.cdnUrl + "/projects/" + config.projectId + "/experiments/components/" + experimentId + "/" + id) else {
             return Result.failure(NativebrikError.irregular("Failed to create URL object"))
         }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        do {
-            let (data, response) = try await nativebrikSession.data(for: request)
-            guard let res = response as? HTTPURLResponse else {
-                return Result.failure(NativebrikError.irregular("Failed to parse as HttpURLResponse"))
-            }
-            if res.statusCode == 404 {
-                return Result.failure(NativebrikError.notFound)
-            }
+        
+        let data = await getData(url: url, cache: self.cache)
+        switch data {
+        case .success(let data):
             let decoder = JSONDecoder()
             guard let result = try? decoder.decode(UIBlockJSON.self, from: data) else {
                 return Result.failure(NativebrikError.failedToDecode)
             }
             return Result.success(result)
-        } catch {
-            return Result.failure(NativebrikError.other(error))
+            
+        case .failure(let error):
+            return Result.failure(error)
         }
     }
 }
