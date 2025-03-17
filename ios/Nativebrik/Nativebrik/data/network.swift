@@ -26,7 +26,7 @@ public class NativebrikCachePolicy {
     let staleTime: TimeInterval
     let storage: CacheStorage
     
-    public init(cacheTime: TimeInterval = 60, staleTime: TimeInterval = 60, storage: CacheStorage = .INMEMORY) {
+    public init(cacheTime: TimeInterval = 60 * 10, staleTime: TimeInterval = 0, storage: CacheStorage = .INMEMORY) {
         self.cacheTime = cacheTime
         self.staleTime = staleTime
         self.storage = storage
@@ -45,7 +45,9 @@ class CacheObject {
     }
     
     func isStale() -> Bool {
-        return getCurrentDate().timeIntervalSince(timestamp) > staleTime
+        let staleAt = timestamp.addingTimeInterval(staleTime)
+        print(staleAt, getCurrentDate())
+        return getCurrentDate() >= staleAt
     }
 }
 
@@ -61,12 +63,12 @@ class CacheStore {
     func get(key: String) -> CacheObject? {
         lock.lock()
         defer { lock.unlock() }
-        let now = getCurrentDate()
         guard let (data, timestamp) = cache[key] else {
             return nil
         }
         
-        if timestamp.addingTimeInterval(policy.cacheTime) > now {
+        let expiredAt = timestamp.addingTimeInterval(policy.cacheTime)
+        if getCurrentDate() >= expiredAt {
             cache.removeValue(forKey: key)
             return nil
         }
