@@ -1,5 +1,5 @@
-import 'package:nativebrik_bridge/remote_config.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:nativebrik_bridge/nativebrik_bridge.dart';
 
 import './nativebrik_bridge_method_channel.dart';
 
@@ -29,7 +29,8 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
         'getNativebrikSDKVersion() has not been implemented.');
   }
 
-  Future<String?> connectClient(String projectId) {
+  Future<String?> connectClient(
+      String projectId, NativebrikCachePolicy cachePolicy) {
     throw UnimplementedError('connectClient() has not been implemented.');
   }
 

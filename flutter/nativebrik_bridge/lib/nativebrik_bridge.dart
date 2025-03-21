@@ -40,11 +40,13 @@ export 'package:nativebrik_bridge/user.dart';
 /// ```
 class NativebrikBridge {
   final String projectId;
+  final NativebrikCachePolicy cachePolicy;
   final List<EventHandler> _listeners = [];
   final MethodChannel _channel = const MethodChannel("nativebrik_bridge");
 
-  NativebrikBridge(this.projectId) {
-    NativebrikBridgePlatform.instance.connectClient(projectId);
+  NativebrikBridge(this.projectId,
+      {this.cachePolicy = const NativebrikCachePolicy()}) {
+    NativebrikBridgePlatform.instance.connectClient(projectId, cachePolicy);
     _channel.setMethodCallHandler(_handleMethod);
   }
 
@@ -72,4 +74,34 @@ class NativebrikBridge {
         return Future.value(true);
     }
   }
+}
+
+/// A policy for caching data from the nativebrik SDK.
+///
+/// - The cache time is the time to live for the cache. default is 1 day.
+/// - The stale time is the time to live for the stale data. default is 0 seconds.
+/// - The storage is the storage for the cache. default is inMemory.
+///
+/// ```dart
+class NativebrikCachePolicy {
+  final Duration cacheTime;
+  final Duration staleTime;
+  final CacheStorage storage;
+
+  const NativebrikCachePolicy(
+      {this.cacheTime = const Duration(days: 1),
+      this.staleTime = const Duration(seconds: 0),
+      this.storage = CacheStorage.inMemory});
+
+  Map<String, dynamic> toObject() {
+    return {
+      'cacheTime': cacheTime.inSeconds,
+      'staleTime': staleTime.inSeconds,
+      'storage': storage.name,
+    };
+  }
+}
+
+enum CacheStorage {
+  inMemory,
 }
