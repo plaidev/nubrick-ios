@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:nativebrik_bridge/remote_config.dart';
+import 'package:nativebrik_bridge/nativebrik_bridge.dart';
 
 import './nativebrik_bridge_platform_interface.dart';
 
@@ -18,10 +18,14 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
   }
 
   @override
-  Future<String?> connectClient(String projectId) async {
+  Future<String?> connectClient(
+      String projectId, NativebrikCachePolicy cachePolicy) async {
     final result = await methodChannel.invokeMethod<String>(
       'connectClient',
-      projectId,
+      <String, dynamic>{
+        'projectId': projectId,
+        'cachePolicy': cachePolicy.toObject(),
+      },
     );
     return result;
   }

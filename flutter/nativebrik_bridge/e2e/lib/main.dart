@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-
 import 'package:nativebrik_bridge/nativebrik_bridge.dart';
-import 'package:nativebrik_bridge/embedding.dart';
-import 'package:nativebrik_bridge/remote_config.dart';
-import 'package:nativebrik_bridge/provider.dart';
 
 void main() {
   runApp(const MyApp());

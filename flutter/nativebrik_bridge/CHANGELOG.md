@@ -58,3 +58,10 @@
 - Update Nativebrik to 0.6.2
 - Add NativebrikCrashReport
 - Fix Other Classes (No breaking changes)
+
+## 0.6.0
+
+- Update com.nativebrik.sdk to 0.3.0
+- Update Nativebrik to 0.7.0
+- Add NativebrikCachePolicy
+- Fix Other Classes (No breaking changes)

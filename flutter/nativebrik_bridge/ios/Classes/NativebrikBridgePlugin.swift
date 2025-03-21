@@ -33,7 +33,13 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
         case "getNativebrikSDKVersion":
             result(nativebrikSdkVersion)
         case "connectClient":
-            let projectId = call.arguments as! String
+            let args = call.arguments as! [String:Any]
+            let projectId = args["projectId"] as! String
+            let cachePolicy = args["cachePolicy"] as! [String:Any]
+            let cacheTime = cachePolicy["cacheTime"] as! Int
+            let staleTime = cachePolicy["staleTime"] as! Int
+            let storage = cachePolicy["storage"] as! String
+            let nativebrikCachePolicy = NativebrikCachePolicy(cacheTime: TimeInterval(cacheTime), staleTime: TimeInterval(staleTime), storage: storage == "inMemory" ? .INMEMORY : .INMEMORY)
             self.manager.setNativebrikClient(nativebrik: NativebrikClient(projectId: projectId, onEvent: { [weak self] event in
                 self?.channel.invokeMethod(ON_EVENT_METHOD, arguments: [
                     "name": event.name as Any?,
@@ -46,7 +52,7 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
                         ]
                     }),
                 ])
-            }))
+            }, cachePolicy: nativebrikCachePolicy))
             result("ok")
 
         // user
