@@ -65,7 +65,7 @@ public enum class CacheStorage {
 }
 
 public data class CachePolicy(
-    val cacheTime: Duration = 10.toDuration(DurationUnit.MINUTES),
+    val cacheTime: Duration = 24.toDuration(DurationUnit.HOURS),
     val staleTime: Duration = Duration.ZERO,
     val storage: CacheStorage = CacheStorage.IN_MEMORY,
 )

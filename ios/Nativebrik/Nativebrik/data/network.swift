@@ -26,7 +26,7 @@ public class NativebrikCachePolicy {
     let staleTime: TimeInterval
     let storage: CacheStorage
 
-    public init(cacheTime: TimeInterval = 60 * 10, staleTime: TimeInterval = 0, storage: CacheStorage = .INMEMORY) {
+    public init(cacheTime: TimeInterval = 24 * 60 * 60, staleTime: TimeInterval = 0, storage: CacheStorage = .INMEMORY) {
         self.cacheTime = cacheTime
         self.staleTime = staleTime
         self.storage = storage

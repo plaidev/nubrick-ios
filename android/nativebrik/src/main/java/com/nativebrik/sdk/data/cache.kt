@@ -34,8 +34,8 @@ internal class CacheStore(
             val now = getCurrentDate()
             val cache = CacheObject(
                 data = value,
-            timestamp = now,
-            policy = this.policy,
+                timestamp = now,
+                policy = this.policy,
             )
             this.cache[key] = cache
             return Result.success(Unit)
