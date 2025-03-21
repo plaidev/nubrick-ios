@@ -1,6 +1,9 @@
 package com.nativebrik.flutter.nativebrik_bridge
 
 import android.content.Context
+import android.util.Log
+import com.nativebrik.sdk.CachePolicy
+import com.nativebrik.sdk.CacheStorage
 import com.nativebrik.sdk.Config
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -14,6 +17,9 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 internal const val EMBEDDING_VIEW_ID = "nativebrik-embedding-view"
 internal const val OVERLAY_VIEW_ID = "nativebrik-overlay-view"
@@ -54,11 +60,24 @@ class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
                 result.success(VERSION)
             }
             "connectClient" -> {
-                val projectId = call.arguments as String
+                val projectId = call.argument<String>("projectId") as String
                 if (projectId.isEmpty()) {
                     result.success("no")
                     return
                 }
+                val cachePolicy = call.argument<Map<String, *>>("cachePolicy") as Map<String, *>
+                if (cachePolicy.isEmpty()) {
+                    result.success("no")
+                    return
+                }
+                val cacheTime = cachePolicy["cacheTime"] as Int
+                val staleTime = cachePolicy["staleTime"] as Int
+                val storage = cachePolicy["storage"] as String
+                val nativebrikCachePolicy = CachePolicy(
+                        cacheTime = cacheTime.toDuration(DurationUnit.SECONDS),
+                        staleTime = staleTime.toDuration(DurationUnit.SECONDS),
+                        storage = if (storage == "inMemory") CacheStorage.IN_MEMORY else CacheStorage.IN_MEMORY
+                    )
                 val client = NativebrikClient(
                     Config(
                         projectId,
@@ -74,7 +93,8 @@ class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
                                     )
                                 }
                             ))
-                        }
+                        },
+                        cachePolicy = nativebrikCachePolicy,
                     ), context)
                 this.manager.setNativebrikClient(client)
                 result.success("ok")
