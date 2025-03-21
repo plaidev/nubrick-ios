@@ -1,7 +1,6 @@
 package com.nativebrik.flutter.nativebrik_bridge
 
 import android.content.Context
-import android.util.Log
 import com.nativebrik.sdk.CachePolicy
 import com.nativebrik.sdk.CacheStorage
 import com.nativebrik.sdk.Config
@@ -17,7 +16,6 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
