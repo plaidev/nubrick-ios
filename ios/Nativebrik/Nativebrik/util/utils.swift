@@ -311,7 +311,7 @@ func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDir
     layout.flexShrink = 0.0
 
     if parentDirection == FlexDirection.ROW && frame?.width == 0 {
-        layout.width = YGValue(300)
+        layout.width = YGValueAuto
         layout.minWidth = YGValueUndefined
         layout.flexGrow = 1.0
         layout.flexShrink = 1.0
