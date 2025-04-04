@@ -354,10 +354,24 @@ func configureBorder(view: UIView, frame: FrameData?) {
     let bottomRight = CGPoint(x: width, y: height)
     let bottomLeft = CGPoint(x: 0, y: height)
 
-    let topLeftRadius: CGFloat = CGFloat(frame?.borderTopLeftRadius ?? 0)
-    let topRightRadius: CGFloat = CGFloat(frame?.borderTopRightRadius ?? 0)
-    let bottomRightRadius: CGFloat = CGFloat(frame?.borderBottomRightRadius ?? 0)
-    let bottomLeftRadius: CGFloat = CGFloat(frame?.borderBottomLeftRadius ?? 0)
+    var topLeftRadius: CGFloat = CGFloat(frame?.borderTopLeftRadius ?? 0)
+    var topRightRadius: CGFloat = CGFloat(frame?.borderTopRightRadius ?? 0)
+    var bottomRightRadius: CGFloat = CGFloat(frame?.borderBottomRightRadius ?? 0)
+    var bottomLeftRadius: CGFloat = CGFloat(frame?.borderBottomLeftRadius ?? 0)
+
+    // normalize radius
+    if topLeftRadius + bottomLeftRadius > height || topLeftRadius + topRightRadius > width {
+        topLeftRadius = min(topLeftRadius / (topLeftRadius + bottomLeftRadius) * height, topLeftRadius / (topLeftRadius + topRightRadius) * width)
+    }
+    if bottomLeftRadius + bottomRightRadius > height || bottomLeftRadius + topLeftRadius > width {
+        bottomLeftRadius = min(bottomLeftRadius / (bottomLeftRadius + bottomRightRadius) * height, bottomLeftRadius / (bottomLeftRadius + topLeftRadius) * width)
+    }
+    if topRightRadius + bottomRightRadius > height || topRightRadius + topLeftRadius > width {
+        topRightRadius = min(topRightRadius / (topRightRadius + bottomRightRadius) * height, topRightRadius / (topRightRadius + topLeftRadius) * width)
+    }
+    if bottomRightRadius + bottomLeftRadius > height || bottomRightRadius + topRightRadius > width {
+        bottomRightRadius = min(bottomRightRadius / (bottomRightRadius + bottomLeftRadius) * height, bottomRightRadius / (bottomRightRadius + topRightRadius) * width)
+    }
 
     // draw rect path with corner radius
     let path = UIBezierPath()
