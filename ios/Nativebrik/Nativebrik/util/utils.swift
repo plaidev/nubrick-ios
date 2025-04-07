@@ -333,7 +333,7 @@ func configureBorder(view: UIView, frame: FrameData?) {
     }
 
     let singleRadius =
-        (frame?.borderTopLeftRadius == frame?.borderTopLeftRadius)
+    (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
         && (frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius)
         && (frame?.borderTopLeftRadius == frame?.borderBottomRightRadius)
 
