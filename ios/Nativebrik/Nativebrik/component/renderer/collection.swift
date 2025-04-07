@@ -142,7 +142,6 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         root.configureLayout { layout in
             layout.isEnabled = true
             configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
-            configureBorder(view: root, frame: block.data?.frame)
         }
 
         let gesture = configureOnClickGesture(
@@ -190,6 +189,10 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        guard let root = self.collectionView else {
+            return
+        }
+        configureBorder(view: root, frame: self.block?.data?.frame)
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
