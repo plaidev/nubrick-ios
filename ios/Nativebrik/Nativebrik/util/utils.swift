@@ -332,27 +332,8 @@ func configureBorder(view: UIView, frame: FrameData?) {
         view.layer.backgroundColor = parseColorToCGColor(bg)
     }
 
-    let singleRadius =
-    (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
-        && (frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius)
-        && (frame?.borderTopLeftRadius == frame?.borderBottomRightRadius)
-
-    if singleRadius {
-        // if radius is not set or single value
-        view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
-        if let bc = frame?.borderColor {
-            view.layer.borderColor = parseColorToCGColor(bc)
-        }
-        view.layer.cornerRadius = CGFloat(frame?.borderRadius ?? 0)
-        return
-    }
-
     let width = view.bounds.width
     let height = view.bounds.height
-    let topLeft = CGPoint(x: 0, y: 0)
-    let topRight = CGPoint(x: width, y: 0)
-    let bottomRight = CGPoint(x: width, y: height)
-    let bottomLeft = CGPoint(x: 0, y: height)
 
     var topLeftRadius: CGFloat = CGFloat(frame?.borderTopLeftRadius ?? 0)
     var topRightRadius: CGFloat = CGFloat(frame?.borderTopRightRadius ?? 0)
@@ -372,6 +353,26 @@ func configureBorder(view: UIView, frame: FrameData?) {
     if bottomRightRadius + bottomLeftRadius > height || bottomRightRadius + topRightRadius > width {
         bottomRightRadius = min(bottomRightRadius / (bottomRightRadius + bottomLeftRadius) * height, bottomRightRadius / (bottomRightRadius + topRightRadius) * width)
     }
+    
+    let isSingleRadius =
+    (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
+        && (frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius)
+        && (frame?.borderTopLeftRadius == frame?.borderBottomRightRadius)
+
+    if isSingleRadius {
+        // if radius is not set or single value
+        view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
+        if let bc = frame?.borderColor {
+            view.layer.borderColor = parseColorToCGColor(bc)
+        }
+        view.layer.cornerRadius = CGFloat(topLeftRadius)
+        return
+    }
+    
+    let topLeft = CGPoint(x: 0, y: 0)
+    let topRight = CGPoint(x: width, y: 0)
+    let bottomRight = CGPoint(x: width, y: height)
+    let bottomLeft = CGPoint(x: 0, y: height)
 
     // draw rect path with corner radius
     let path = UIBezierPath()
