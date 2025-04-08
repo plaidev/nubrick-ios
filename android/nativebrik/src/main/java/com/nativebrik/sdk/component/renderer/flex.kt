@@ -44,7 +44,6 @@ import com.nativebrik.sdk.schema.UIBlock
 import com.nativebrik.sdk.schema.UIFlexContainerBlock
 import com.nativebrik.sdk.template.compile
 import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
-import kotlin.math.min
 import com.nativebrik.sdk.schema.Color as SchemaColor
 
 private fun calcWeight(frameData: FrameData?, flexDirection: FlexDirection): Float? {
@@ -100,39 +99,26 @@ private data class Size(
 )
 
 private fun normalizeRadius(radius: BorderRadius, size: Size): BorderRadius {
-    val (width, height) = size
     val (topLeft, topRight, bottomRight, bottomLeft) = radius
+    val (width, height) = size
+    var f = 1f
 
-    // First ensure no radius exceeds half the minimum dimension
-    val maxRadius = minOf(width, height) / 2
-    val safeTopLeft = minOf(topLeft, maxRadius)
-    val safeTopRight = minOf(topRight, maxRadius)
-    val safeBottomRight = minOf(bottomRight, maxRadius)
-    val safeBottomLeft = minOf(bottomLeft, maxRadius)
-
-    // Calculate sum of radii for each edge
-    val sTop = safeTopLeft + safeTopRight
-    val sRight = safeTopRight + safeBottomRight
-    val sBottom = safeBottomRight + safeBottomLeft
-    val sLeft = safeBottomLeft + safeTopLeft
-
-    // Calculate the scale factor for each edge
-    val fTop = if (sTop == 0f) 1f else width / sTop
-    val fRight = if (sRight == 0f) 1f else height / sRight
-    val fBottom = if (sBottom == 0f) 1f else width / sBottom
-    val fLeft = if (sLeft == 0f) 1f else height / sLeft
-
-    // Find the minimum scale factor
-    val f = minOf(fTop, fRight, fBottom, fLeft)
-
-    // If f < 1, we need to scale all radii by f to prevent overlap
-    val scale = if (f < 1f) f else 1f
+    for ((l, s) in listOf(
+        width to topLeft + topRight,
+        height to topLeft + bottomLeft,
+        height to topRight + bottomRight,
+        width to bottomLeft + bottomRight
+    )) {
+        if (s > 0 && s > l) {
+            f = minOf(f, l / s)
+        }
+    }
 
     return BorderRadius(
-        topLeft = safeTopLeft * scale,
-        topRight = safeTopRight * scale,
-        bottomRight = safeBottomRight * scale,
-        bottomLeft = safeBottomLeft * scale
+        topLeft = topLeft * f,
+        topRight = topRight * f,
+        bottomRight = bottomRight * f,
+        bottomLeft = bottomLeft * f
     )
 }
 
@@ -176,7 +162,6 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
 
         GenericShape {
             size, _ ->
-
             val width = size.width
             val height = size.height
 
@@ -199,7 +184,6 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
             val bottomLeft = Offset(0f, height)
 
             moveTo(topLeft.x + topLeftRadius, topLeft.y)
-
             lineTo(topRight.x - topRightRadius, topRight.y)
             arcTo(
                 rect = Rect(
@@ -212,7 +196,6 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
                 sweepAngleDegrees = 90f,
                 forceMoveTo = false
             )
-
             lineTo(bottomRight.x, bottomRight.y - bottomRightRadius)
             arcTo(
                 rect = Rect(
@@ -225,7 +208,6 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
                 sweepAngleDegrees = 90f,
                 forceMoveTo = false
             )
-
             lineTo(bottomLeft.x + bottomLeftRadius, bottomLeft.y)
             arcTo(
                 rect = Rect(
@@ -251,7 +233,6 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
                 sweepAngleDegrees = 90f,
                 forceMoveTo = false
             )
-
             close()
         }
     }
