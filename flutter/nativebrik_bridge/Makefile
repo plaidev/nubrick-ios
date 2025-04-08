@@ -23,8 +23,8 @@ patch:
 
 .PHONY: minor
 minor:
-	$(call bump_version, $$1"."$$2+1"."$$3)
+	$(call bump_version, $$1"."$$2+1".0")
 
 .PHONY: major
 major:
-	$(call bump_version, $$1+1"."$$2"."$$3)
+	$(call bump_version, $$1+1".0.0")
