@@ -360,7 +360,7 @@ private func normalizeSingleRadius(radius: CGFloat, width: CGFloat, height: CGFl
     if radius <= 0 {
         return 0
     }
-    let l = if width > height { height } else { width }
+    let l = width > height ? height : width
     return radius * min(1, l / radius / 2)
 }
 
