@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -101,7 +104,82 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
         }
     }
 
-    val roundedShape = RoundedCornerShape(frame?.borderRadius?.dp ?: 0.dp)
+    val isSingleRadius = frame?.borderTopLeftRadius == frame?.borderTopRightRadius &&
+        frame?.borderBottomLeftRadius == frame?.borderBottomRightRadius &&
+        frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius
+
+    val roundedShape = if (isSingleRadius) {
+        RoundedCornerShape(frame?.borderRadius?.dp ?: 0.dp)
+    } else {
+        val topLeftRadius = frame?.borderTopLeftRadius ?: 0
+        val topRightRadius = frame?.borderTopRightRadius ?: 0
+        val bottomRightRadius = frame?.borderBottomRightRadius ?: 0
+        val bottomLeftRadius = frame?.borderBottomLeftRadius ?: 0
+
+        GenericShape {
+            size, _ ->
+            val topLeft = Offset(0f, 0f)
+            val topRight = Offset(size.width, 0f)
+            val bottomRight = Offset(size.width, size.height)
+            val bottomLeft = Offset(0f, size.height)
+
+            moveTo(topLeft.x + topLeftRadius, topLeft.y)
+
+            lineTo(topRight.x - topRightRadius, topRight.y)
+            arcTo(
+                rect = Rect(
+                    topRight.x - 2 * topRightRadius,
+                    topRight.y,
+                    topRight.x,
+                    topRight.y + 2 * topRightRadius
+                ),
+                startAngleDegrees = -90f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+
+            lineTo(bottomRight.x, bottomRight.y - bottomRightRadius)
+            arcTo(
+                rect = Rect(
+                    bottomRight.x - 2 * bottomRightRadius,
+                    bottomRight.y - 2 * bottomRightRadius,
+                    bottomRight.x,
+                    bottomRight.y
+                ),
+                startAngleDegrees = 0f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+
+            lineTo(bottomLeft.x + bottomLeftRadius, bottomLeft.y)
+            arcTo(
+                rect = Rect(
+                    bottomLeft.x,
+                    bottomLeft.y - 2 * bottomLeftRadius,
+                    bottomLeft.x + 2 * bottomLeftRadius,
+                    bottomLeft.y
+                ),
+                startAngleDegrees = 90f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+
+            lineTo(topLeft.x, topLeft.y + topLeftRadius)
+            arcTo(
+                rect = Rect(
+                    topLeft.x,
+                    topLeft.y,
+                    topLeft.x + 2 * topLeftRadius,
+                    topLeft.y + 2 * topLeftRadius
+                ),
+                startAngleDegrees = 180f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+
+            close()
+        }
+    }
     mod = mod.clip(roundedShape)
     if (frame?.background != null) {
         mod = mod.background(parseColor(frame.background))
