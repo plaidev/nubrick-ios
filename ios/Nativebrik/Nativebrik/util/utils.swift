@@ -443,9 +443,11 @@ func configureBorder(view: UIView, frame: FrameData?) {
     shapeLayer.path = path.cgPath
     shapeLayer.lineWidth = CGFloat(frame?.borderWidth ?? 0)
     shapeLayer.fillColor = UIColor.clear.cgColor
+    shapeLayer.name = "border-layer"
     if let bc = frame?.borderColor {
         shapeLayer.strokeColor = parseColorToCGColor(bc)
     }
+    view.layer.sublayers?.filter { $0.name == "border-layer" }.forEach { $0.removeFromSuperlayer() }
     view.layer.addSublayer(shapeLayer)
 }
 
