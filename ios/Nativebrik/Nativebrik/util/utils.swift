@@ -379,7 +379,6 @@ func configureBorder(view: UIView, frame: FrameData?) {
         && (frame?.borderTopLeftRadius == frame?.borderBottomRightRadius)
     
     if isSingleRadius {
-        print("single")
         // if radius is not set or single value
         view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
         if let bc = frame?.borderColor {
