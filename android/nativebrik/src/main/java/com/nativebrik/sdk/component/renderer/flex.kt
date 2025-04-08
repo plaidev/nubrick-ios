@@ -26,6 +26,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
@@ -111,10 +112,11 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
     val roundedShape = if (isSingleRadius) {
         RoundedCornerShape(frame?.borderRadius?.dp ?: 0.dp)
     } else {
-        val topLeftRadius = frame?.borderTopLeftRadius ?: 0
-        val topRightRadius = frame?.borderTopRightRadius ?: 0
-        val bottomRightRadius = frame?.borderBottomRightRadius ?: 0
-        val bottomLeftRadius = frame?.borderBottomLeftRadius ?: 0
+        val density = LocalDensity.current.density
+        val topLeftRadius = (frame?.borderTopLeftRadius?.dp ?: 0.dp).value * density
+        val topRightRadius = (frame?.borderTopRightRadius?.dp ?: 0.dp).value * density
+        val bottomRightRadius = (frame?.borderBottomRightRadius?.dp ?: 0.dp).value * density
+        val bottomLeftRadius = (frame?.borderBottomLeftRadius?.dp ?: 0.dp).value * density
 
         GenericShape {
             size, _ ->
