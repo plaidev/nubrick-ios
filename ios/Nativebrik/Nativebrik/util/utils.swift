@@ -326,6 +326,36 @@ func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDir
     }
 }
 
+private struct BorderRadius {
+    let topLeft: CGFloat
+    let topRight: CGFloat
+    let bottomRight: CGFloat
+    let bottomLeft: CGFloat
+}
+
+private func normalizeRadius(radius: BorderRadius, width: CGFloat, height: CGFloat) -> BorderRadius {
+    let (topLeft, topRight, bottomRight, bottomLeft) = (radius.topLeft, radius.topRight, radius.bottomRight, radius.bottomLeft)
+    var f = 1.0
+    
+    for (l, s) in [
+        (width, topLeft + topRight),
+        (height, topLeft + bottomLeft),
+        (height, topRight + bottomRight),
+        (width, bottomLeft + bottomRight)
+    ] {
+        if s > 0 && s > l {
+            f = min(f, l / s)
+        }
+    }
+        
+    return BorderRadius(
+        topLeft: topLeft * f,
+        topRight: topRight * f,
+        bottomRight: bottomRight * f,
+        bottomLeft: bottomLeft * f
+    )
+}
+
 // NOTE: should be called in viewDidLayoutSubviews to wait until view.bounds are set
 func configureBorder(view: UIView, frame: FrameData?) {
     if let bg = frame?.background {
@@ -335,24 +365,17 @@ func configureBorder(view: UIView, frame: FrameData?) {
     let width = view.bounds.width
     let height = view.bounds.height
 
-    var topLeftRadius: CGFloat = CGFloat(frame?.borderTopLeftRadius ?? 0)
-    var topRightRadius: CGFloat = CGFloat(frame?.borderTopRightRadius ?? 0)
-    var bottomRightRadius: CGFloat = CGFloat(frame?.borderBottomRightRadius ?? 0)
-    var bottomLeftRadius: CGFloat = CGFloat(frame?.borderBottomLeftRadius ?? 0)
-
-    // normalize radius
-    if topLeftRadius + bottomLeftRadius > height || topLeftRadius + topRightRadius > width {
-        topLeftRadius = min(topLeftRadius / (topLeftRadius + bottomLeftRadius) * height, topLeftRadius / (topLeftRadius + topRightRadius) * width)
-    }
-    if bottomLeftRadius + bottomRightRadius > height || bottomLeftRadius + topLeftRadius > width {
-        bottomLeftRadius = min(bottomLeftRadius / (bottomLeftRadius + bottomRightRadius) * height, bottomLeftRadius / (bottomLeftRadius + topLeftRadius) * width)
-    }
-    if topRightRadius + bottomRightRadius > height || topRightRadius + topLeftRadius > width {
-        topRightRadius = min(topRightRadius / (topRightRadius + bottomRightRadius) * height, topRightRadius / (topRightRadius + topLeftRadius) * width)
-    }
-    if bottomRightRadius + bottomLeftRadius > height || bottomRightRadius + topRightRadius > width {
-        bottomRightRadius = min(bottomRightRadius / (bottomRightRadius + bottomLeftRadius) * height, bottomRightRadius / (bottomRightRadius + topRightRadius) * width)
-    }
+    let radius = normalizeRadius(
+        radius: BorderRadius(
+            topLeft: CGFloat(frame?.borderTopLeftRadius ?? 0),
+            topRight: CGFloat(frame?.borderTopRightRadius ?? 0),
+            bottomRight: CGFloat(frame?.borderBottomRightRadius ?? 0),
+            bottomLeft: CGFloat(frame?.borderBottomLeftRadius ?? 0)
+        ),
+        width: width,
+        height: height
+    )
+    let (topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius) = (radius.topLeft, radius.topRight, radius.bottomRight, radius.bottomLeft)
     
     let isSingleRadius =
     (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
