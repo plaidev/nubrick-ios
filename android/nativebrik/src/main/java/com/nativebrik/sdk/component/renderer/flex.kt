@@ -208,8 +208,8 @@ internal fun Flex(
 ) {
     val data = DataContext.state
     val direction: FlexDirection = block.data?.direction ?: FlexDirection.ROW
-    val modifier = modifier.frameSize(block.data?.frame)
     val flexModifier = modifier
+        .frameSize(block.data?.frame)
         .framePadding(block.data?.frame)
         .flexOverflow(direction, block.data?.overflow)
         .eventDispatcher(block.data?.onClick)
@@ -264,6 +264,4 @@ internal fun Flex(
             }
         }
     }
-
-
 }
