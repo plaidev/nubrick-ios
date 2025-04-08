@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
@@ -79,6 +80,61 @@ internal fun Modifier.styleByFrame(frame: FrameData?): Modifier {
         .framePadding(frame)
 }
 
+@Composable
+private fun toPx(dp: Dp): Float {
+    return with(LocalDensity.current) {
+        dp.toPx()
+    }
+}
+
+private data class BorderRadius(
+    val topLeft: Float,
+    val topRight: Float,
+    val bottomRight: Float,
+    val bottomLeft: Float
+)
+
+private data class Size(
+    val width: Float,
+    val height: Float
+)
+
+private fun normalizeRadius(radius: BorderRadius, size: Size): BorderRadius {
+    val (width, height) = size
+    val (topLeft, topRight, bottomRight, bottomLeft) = radius
+
+    // First ensure no radius exceeds half the minimum dimension
+    val maxRadius = minOf(width, height) / 2
+    val safeTopLeft = minOf(topLeft, maxRadius)
+    val safeTopRight = minOf(topRight, maxRadius)
+    val safeBottomRight = minOf(bottomRight, maxRadius)
+    val safeBottomLeft = minOf(bottomLeft, maxRadius)
+
+    // Calculate sum of radii for each edge
+    val sTop = safeTopLeft + safeTopRight
+    val sRight = safeTopRight + safeBottomRight
+    val sBottom = safeBottomRight + safeBottomLeft
+    val sLeft = safeBottomLeft + safeTopLeft
+
+    // Calculate the scale factor for each edge
+    val fTop = if (sTop == 0f) 1f else width / sTop
+    val fRight = if (sRight == 0f) 1f else height / sRight
+    val fBottom = if (sBottom == 0f) 1f else width / sBottom
+    val fLeft = if (sLeft == 0f) 1f else height / sLeft
+
+    // Find the minimum scale factor
+    val f = minOf(fTop, fRight, fBottom, fLeft)
+
+    // If f < 1, we need to scale all radii by f to prevent overlap
+    val scale = if (f < 1f) f else 1f
+
+    return BorderRadius(
+        topLeft = safeTopLeft * scale,
+        topRight = safeTopRight * scale,
+        bottomRight = safeBottomRight * scale,
+        bottomLeft = safeBottomLeft * scale
+    )
+}
 
 @Composable
 internal fun Modifier.frameSize(frame: FrameData?): Modifier {
@@ -113,11 +169,10 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
     val roundedShape = if (isSingleRadius) {
         RoundedCornerShape(frame?.borderRadius?.dp ?: 0.dp)
     } else {
-        val density = LocalDensity.current.density
-        var topLeftRadius = (frame?.borderTopLeftRadius?.dp ?: 0.dp).value * density
-        var topRightRadius = (frame?.borderTopRightRadius?.dp ?: 0.dp).value * density
-        var bottomRightRadius = (frame?.borderBottomRightRadius?.dp ?: 0.dp).value * density
-        var bottomLeftRadius = (frame?.borderBottomLeftRadius?.dp ?: 0.dp).value * density
+        val topLeftRadiusPx = toPx(frame?.borderTopLeftRadius?.dp ?: 0.dp)
+        val topRightRadiusPx = toPx(frame?.borderTopRightRadius?.dp ?: 0.dp)
+        val bottomRightRadiusPx = toPx(frame?.borderBottomRightRadius?.dp ?: 0.dp)
+        val bottomLeftRadiusPx = toPx(frame?.borderBottomLeftRadius?.dp ?: 0.dp)
 
         GenericShape {
             size, _ ->
@@ -125,24 +180,23 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
             val width = size.width
             val height = size.height
 
+            val (topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius) = normalizeRadius(
+                    BorderRadius(
+                        topLeft = topLeftRadiusPx,
+                        topRight = topRightRadiusPx,
+                        bottomRight = bottomRightRadiusPx,
+                        bottomLeft = bottomLeftRadiusPx
+                    ),
+                    Size(
+                        width = width,
+                        height = height,
+                    )
+                )
+
             val topLeft = Offset(0f, 0f)
             val topRight = Offset(width, 0f)
             val bottomRight = Offset(width, height)
             val bottomLeft = Offset(0f, height)
-
-            // normalize radius
-            if (topLeftRadius + bottomLeftRadius > height || topLeftRadius + topRightRadius > width) {
-                topLeftRadius = min(topLeftRadius / (topLeftRadius + bottomLeftRadius) * height, topLeftRadius / (topLeftRadius + topRightRadius) * width)
-            }
-            if (topRightRadius + bottomRightRadius > height || topRightRadius + bottomLeftRadius > width) {
-                topRightRadius = min(topRightRadius / (topRightRadius + bottomRightRadius) * height, topRightRadius / (topRightRadius + bottomLeftRadius) * width)
-            }
-            if (bottomRightRadius + bottomLeftRadius > height || bottomRightRadius + topRightRadius > width) {
-                bottomRightRadius = min(bottomRightRadius / (bottomRightRadius + bottomLeftRadius) * height, bottomRightRadius / (bottomRightRadius + topRightRadius) * width)
-            }
-            if (bottomLeftRadius + topLeftRadius > height || bottomLeftRadius + topLeftRadius > width) {
-                bottomLeftRadius = min(bottomLeftRadius / (bottomLeftRadius + topLeftRadius) * height, bottomLeftRadius / (bottomLeftRadius + topRightRadius) * width)
-            }
 
             moveTo(topLeft.x + topLeftRadius, topLeft.y)
 
