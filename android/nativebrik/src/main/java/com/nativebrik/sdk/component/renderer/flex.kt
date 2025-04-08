@@ -43,6 +43,7 @@ import com.nativebrik.sdk.schema.UIBlock
 import com.nativebrik.sdk.schema.UIFlexContainerBlock
 import com.nativebrik.sdk.template.compile
 import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
+import kotlin.math.min
 import com.nativebrik.sdk.schema.Color as SchemaColor
 
 private fun calcWeight(frameData: FrameData?, flexDirection: FlexDirection): Float? {
@@ -113,17 +114,35 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
         RoundedCornerShape(frame?.borderRadius?.dp ?: 0.dp)
     } else {
         val density = LocalDensity.current.density
-        val topLeftRadius = (frame?.borderTopLeftRadius?.dp ?: 0.dp).value * density
-        val topRightRadius = (frame?.borderTopRightRadius?.dp ?: 0.dp).value * density
-        val bottomRightRadius = (frame?.borderBottomRightRadius?.dp ?: 0.dp).value * density
-        val bottomLeftRadius = (frame?.borderBottomLeftRadius?.dp ?: 0.dp).value * density
+        var topLeftRadius = (frame?.borderTopLeftRadius?.dp ?: 0.dp).value * density
+        var topRightRadius = (frame?.borderTopRightRadius?.dp ?: 0.dp).value * density
+        var bottomRightRadius = (frame?.borderBottomRightRadius?.dp ?: 0.dp).value * density
+        var bottomLeftRadius = (frame?.borderBottomLeftRadius?.dp ?: 0.dp).value * density
 
         GenericShape {
             size, _ ->
+
+            val width = size.width
+            val height = size.height
+
             val topLeft = Offset(0f, 0f)
-            val topRight = Offset(size.width, 0f)
-            val bottomRight = Offset(size.width, size.height)
-            val bottomLeft = Offset(0f, size.height)
+            val topRight = Offset(width, 0f)
+            val bottomRight = Offset(width, height)
+            val bottomLeft = Offset(0f, height)
+
+            // normalize radius
+            if (topLeftRadius + bottomLeftRadius > height || topLeftRadius + topRightRadius > width) {
+                topLeftRadius = min(topLeftRadius / (topLeftRadius + bottomLeftRadius) * height, topLeftRadius / (topLeftRadius + topRightRadius) * width)
+            }
+            if (topRightRadius + bottomRightRadius > height || topRightRadius + bottomLeftRadius > width) {
+                topRightRadius = min(topRightRadius / (topRightRadius + bottomRightRadius) * height, topRightRadius / (topRightRadius + bottomLeftRadius) * width)
+            }
+            if (bottomRightRadius + bottomLeftRadius > height || bottomRightRadius + topRightRadius > width) {
+                bottomRightRadius = min(bottomRightRadius / (bottomRightRadius + bottomLeftRadius) * height, bottomRightRadius / (bottomRightRadius + topRightRadius) * width)
+            }
+            if (bottomLeftRadius + topLeftRadius > height || bottomLeftRadius + topLeftRadius > width) {
+                bottomLeftRadius = min(bottomLeftRadius / (bottomLeftRadius + topLeftRadius) * height, bottomLeftRadius / (bottomLeftRadius + topRightRadius) * width)
+            }
 
             moveTo(topLeft.x + topLeftRadius, topLeft.y)
 
