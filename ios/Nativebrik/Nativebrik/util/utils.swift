@@ -356,14 +356,37 @@ private func normalizeRadius(radius: BorderRadius, width: CGFloat, height: CGFlo
     )
 }
 
+private func normalizeSingleRadius(radius: CGFloat, width: CGFloat, height: CGFloat) -> CGFloat {
+    if radius <= 0 {
+        return 0
+    }
+    let l = width > height ? height : width
+    return radius * min(1, l / radius / 2)
+}
+
 // NOTE: should be called in viewDidLayoutSubviews to wait until view.bounds are set
 func configureBorder(view: UIView, frame: FrameData?) {
     if let bg = frame?.background {
         view.layer.backgroundColor = parseColorToCGColor(bg)
     }
-
+    
     let width = view.bounds.width
     let height = view.bounds.height
+    
+    let isSingleRadius =
+    (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
+        && (frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius)
+        && (frame?.borderTopLeftRadius == frame?.borderBottomRightRadius)
+    
+    if isSingleRadius {
+        // if radius is not set or single value
+        view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
+        if let bc = frame?.borderColor {
+            view.layer.borderColor = parseColorToCGColor(bc)
+        }
+        view.layer.cornerRadius = CGFloat(normalizeSingleRadius(radius: CGFloat(frame?.borderRadius ?? 0), width: width, height: height))
+        return
+    }
 
     let radius = normalizeRadius(
         radius: BorderRadius(
@@ -376,21 +399,6 @@ func configureBorder(view: UIView, frame: FrameData?) {
         height: height
     )
     let (topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius) = (radius.topLeft, radius.topRight, radius.bottomRight, radius.bottomLeft)
-    
-    let isSingleRadius =
-    (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
-        && (frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius)
-        && (frame?.borderTopLeftRadius == frame?.borderBottomRightRadius)
-
-    if isSingleRadius {
-        // if radius is not set or single value
-        view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
-        if let bc = frame?.borderColor {
-            view.layer.borderColor = parseColorToCGColor(bc)
-        }
-        view.layer.cornerRadius = CGFloat(topLeftRadius)
-        return
-    }
     
     let topLeft = CGPoint(x: 0, y: 0)
     let topRight = CGPoint(x: width, y: 0)
