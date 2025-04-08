@@ -4,6 +4,7 @@ import UIKit
 
 class TextView: AnimatedUIControl {
     var label: UILabel = UILabel()
+    var block: UITextBlock = UITextBlock()
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
@@ -12,11 +13,11 @@ class TextView: AnimatedUIControl {
         super.init(frame: .zero)
         let showSkelton = context.isLoading() && hasPlaceholderPath(template: block.data?.value ?? "")
 
+        self.block = block
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.display = .flex
             layout.direction = .LTR
-            configureBorder(view: self, frame: block.data?.frame)
             
             configureSkelton(view: self, showSkelton: showSkelton)
         }
@@ -56,5 +57,6 @@ class TextView: AnimatedUIControl {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        configureBorder(view: self, frame: self.block.data?.frame)
     }
 }

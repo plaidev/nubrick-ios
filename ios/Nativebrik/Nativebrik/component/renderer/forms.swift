@@ -107,6 +107,7 @@ class InputIconView: UIControl {
 class TextInputView: UIView, UITextFieldDelegate {
     let formKey: String?
     let context: UIBlockContext?
+    private var block = UITextInputBlock()
     
     var textInput: UITextField? = nil
     var validateRegex: String? = nil
@@ -125,6 +126,7 @@ class TextInputView: UIView, UITextFieldDelegate {
         self.context = context
         super.init(frame: .zero)
         
+        self.block = block
         self.fontSize = block.data?.size
         self.paddingRight = block.data?.frame?.paddingRight
         self.errorMessage = block.data?.errorMessage
@@ -144,7 +146,6 @@ class TextInputView: UIView, UITextFieldDelegate {
             layout.width = .init(value: 100.0, unit: .percent)
             layout.flexShrink = 1
         }
-        configureBorder(view: self, frame: block.data?.frame)
         
         // toolbar for input
         let toolbar = UIToolbar()
@@ -205,6 +206,7 @@ class TextInputView: UIView, UITextFieldDelegate {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        configureBorder(view: self, frame: self.block.data?.frame)
     }
     
     @objc func doneButtonTapped() {
@@ -253,6 +255,7 @@ class TextInputView: UIView, UITextFieldDelegate {
 class SelectInputView: UIControl {
     let formKey: String?
     let context: UIBlockContext?
+    private var block = UISelectInputBlock()
     required init?(coder: NSCoder) {
         self.formKey = nil
         self.context = nil
@@ -260,6 +263,7 @@ class SelectInputView: UIControl {
     }
     
     init(block: UISelectInputBlock, context: UIBlockContext) {
+        self.block = block
         self.formKey = block.data?.key
         self.context = context
         super.init(frame: .zero)
@@ -271,7 +275,6 @@ class SelectInputView: UIControl {
             layout.width = .init(value: 100.0, unit: .percent)
             layout.flexShrink = 1
         }
-        configureBorder(view: self, frame: block.data?.frame)
         
         var initialValue = block.data?.options?.first(where: { option in
             if option.value == block.data?.value {
@@ -360,6 +363,7 @@ class SelectInputView: UIControl {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        configureBorder(view: self, frame: self.block.data?.frame)
     }
 }
 
@@ -488,6 +492,7 @@ class MultiSelectInputView: UIControl {
     let context: UIBlockContext?
     var values: [String] = []
     var label: UILabel?
+    private var block = UIMultiSelectInputBlock()
 
     required init?(coder: NSCoder) {
         self.formKey = nil
@@ -496,6 +501,7 @@ class MultiSelectInputView: UIControl {
     }
     
     init(block: UIMultiSelectInputBlock, context: UIBlockContext) {
+        self.block = block
         self.formKey = block.data?.key
         self.context = context
         super.init(frame: .zero)
@@ -517,7 +523,6 @@ class MultiSelectInputView: UIControl {
             layout.alignItems = .center
             configurePadding(layout: layout, frame: block.data?.frame)
         }
-        configureBorder(view: self, frame: block.data?.frame)
         
         let label = UILabel(frame: .zero)
         self.label = label
@@ -574,6 +579,7 @@ class MultiSelectInputView: UIControl {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        configureBorder(view: self, frame: self.block.data?.frame)
     }
 }
 

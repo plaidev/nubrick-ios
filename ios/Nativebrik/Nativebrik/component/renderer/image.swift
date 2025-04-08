@@ -11,6 +11,7 @@ import YogaKit
 
 class ImageView: AnimatedUIControl {
     private let image: UIImageView = UIImageView()
+    private var block: UIImageBlock = UIImageBlock()
 
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -18,6 +19,7 @@ class ImageView: AnimatedUIControl {
 
     init(block: UIImageBlock, context: UIBlockContext) {
         super.init(frame: .zero)
+        self.block = block
 
         let showSkelton = context.isLoading() && hasPlaceholderPath(template: block.data?.src ?? "")
 
@@ -26,7 +28,6 @@ class ImageView: AnimatedUIControl {
 
             configurePadding(layout: layout, frame: block.data?.frame)
             configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
-            configureBorder(view: self, frame: block.data?.frame)
 
             configureSkelton(view: self, showSkelton: showSkelton)
         }
@@ -67,6 +68,7 @@ class ImageView: AnimatedUIControl {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        configureBorder(view: self, frame: self.block.data?.frame)
     }
 }
 

@@ -10,17 +10,21 @@ import YogaKit
 import UIKit
 
 class FlexView: AnimatedUIControl {
+    private var block: UIFlexContainerBlock = UIFlexContainerBlock()
+    
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
 
     init(block: UIFlexContainerBlock, context: UIBlockContext) {
         super.init(frame: .zero)
+        self.block = block
         initialize(block: block, context: context, childFlexShrink: nil)
     }
 
     init(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
         super.init(frame: .zero)
+        self.block = block
         initialize(block: block, context: context, childFlexShrink: childFlexShrink)
     }
 
@@ -35,7 +39,6 @@ class FlexView: AnimatedUIControl {
             layout.justifyContent = parseJustifyContent(block.data?.justifyContent)
             configurePadding(layout: layout, frame: block.data?.frame)
             configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
-            configureBorder(view: self, frame: block.data?.frame)
         }
 
         let gesture = configureOnClickGesture(target: self, action: #selector(onClicked(sender:)), context: context, event: block.data?.onClick)
@@ -95,17 +98,20 @@ class FlexView: AnimatedUIControl {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        configureBorder(view: self, frame: self.block.data?.frame)
     }
 }
 
 class FlexOverflowView: UIScrollView {
     private var flexView: UIView = UIView()
+    private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
 
     init(block: UIFlexContainerBlock, context: UIBlockContext) {
         super.init(frame: .zero)
+        self.block = block
 
         let direction = parseDirection(block.data?.direction)
         let overflow = parseOverflow(block.data?.overflow)
@@ -122,7 +128,6 @@ class FlexOverflowView: UIScrollView {
                 layout.justifyContent = .center
             }
             configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
-            configureBorder(view: self, frame: block.data?.frame)
         }
 
         self.showsVerticalScrollIndicator = false
@@ -168,5 +173,6 @@ class FlexOverflowView: UIScrollView {
     override func layoutSubviews() {
         super.layoutSubviews()
         self.contentSize = self.flexView.bounds.size
+        configureBorder(view: self, frame: self.block.data?.frame)
     }
 }
