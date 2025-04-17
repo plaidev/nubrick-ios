@@ -210,17 +210,15 @@ class RootView: UIView {
         
         // when it's tooltip
         if page?.data?.kind == PageKind.TOOLTIP {
-            let anchorId = page?.data?.tooltipAnchor
+            let anchorId = page?.data?.tooltipAnchor ?? ""
             if let currentAnchorId = self.currentTooltipAnchorId {
                 if currentAnchorId != anchorId { // when it's diffrent anchor, dismiss. and callback.
-                    self.onNextTooltip(currentAnchorId)
+                    self.onNextTooltip(anchorId)
                     self.modalViewController?.dismissModal()
                     return
                 }
             }
-            if let anchorId = anchorId {
-                self.currentTooltipAnchorId = anchorId
-            }
+            self.currentTooltipAnchorId = anchorId
         }
 
         let pageView = PageView(
