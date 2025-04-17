@@ -12,24 +12,29 @@ class OverlayViewController: UIViewController {
     let modalViewController: ModalComponentViewController = ModalComponentViewController()
     let modalForTriggerViewController: ModalComponentViewController = ModalComponentViewController()
     let triggerViewController: TriggerViewController
-    
-    init(user: NativebrikUser, container: Container) {
-        self.triggerViewController = TriggerViewController(user: user, container: container, modalViewController: self.modalForTriggerViewController)
+
+    init(user: NativebrikUser, container: Container, onDispatch: ((_ event: NativebrikEvent) -> Void)? = nil) {
+        self.triggerViewController = TriggerViewController(
+            user: user,
+            container: container,
+            modalViewController: self.modalForTriggerViewController,
+            onDispatch: onDispatch
+        )
         super.init(nibName: nil, bundle: nil)
-        
+
         if !isNativebrikAvailable {
             return
         }
-        
+
         self.addChild(self.modalViewController)
         self.addChild(self.modalForTriggerViewController)
         self.addChild(self.triggerViewController)
-        
+
         self.view.frame = .zero
         self.view.addSubview(self.modalViewController.view)
         self.view.addSubview(self.modalForTriggerViewController.view)
     }
-    
+
     override func viewDidLoad() {
         if !isNativebrikAvailable {
             return
@@ -37,7 +42,7 @@ class OverlayViewController: UIViewController {
 
         self.triggerViewController.initialLoad()
     }
-        
+
     required init?(coder: NSCoder) {
         self.triggerViewController = TriggerViewController(coder: coder)!
         super.init(coder: coder)
@@ -46,7 +51,7 @@ class OverlayViewController: UIViewController {
 
 struct OverlayViewControllerRepresentable: UIViewControllerRepresentable {
     let overlayVC: OverlayViewController
-    
+
     func makeUIViewController(context: Context) -> OverlayViewController {
         return self.overlayVC
     }
