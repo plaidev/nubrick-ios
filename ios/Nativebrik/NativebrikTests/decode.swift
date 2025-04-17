@@ -11,7 +11,7 @@ import XCTest
 @testable import Nativebrik
 
 final class DecodeJsonTests: XCTestCase {
-    func testShouldEncodeApiHttpRequest() throws {
+    func testShouldDecodeApiHttpRequest() throws {
         let decoder = JSONDecoder()
         let json = """
 {
@@ -25,7 +25,7 @@ final class DecodeJsonTests: XCTestCase {
         XCTAssertEqual("http://localhost:8070/health", result.url)
     }
     
-    func testShouldEncodeUIBlockEventDispatcher() throws {
+    func testShouldDecodeUIBlockEventDispatcher() throws {
         let decoder = JSONDecoder()
         let json = """
 {"__typename":"UIBlockEventDispatcher","destinationPageId":"0.2c4944c774deb","httpRequest":{"__typename":"ApiHttpRequest","method":"GET","url":"http://localhost:8070/health"}}
