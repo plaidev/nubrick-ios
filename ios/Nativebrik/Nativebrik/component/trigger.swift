@@ -18,6 +18,7 @@ class TriggerViewController: UIViewController {
     private let container: Container
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: ModalRootViewController? = nil
+    private var onDispatch: ((_ event: NativebrikEvent) -> Void)? = nil
     private var didLoaded = false
     private var ignoreFirstUserEventToForegroundEvent = true
 
@@ -27,10 +28,11 @@ class TriggerViewController: UIViewController {
         super.init(coder: coder)
     }
 
-    init(user: NativebrikUser, container: Container, modalViewController: ModalComponentViewController?) {
+    init(user: NativebrikUser, container: Container, modalViewController: ModalComponentViewController?, onDispatch: ((_ event: NativebrikEvent) -> Void)? = nil) {
         self.user = user
         self.container = container
         self.modalViewController = modalViewController
+        self.onDispatch = onDispatch
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -65,7 +67,7 @@ class TriggerViewController: UIViewController {
 
     func callWhenUserComeBack() {
         self.user.comeBack()
-        
+
         // dispatch the event when every time the user is activated
         self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue))
 
@@ -88,7 +90,9 @@ class TriggerViewController: UIViewController {
             let result = await Task.detached {
                 return await self.container.fetchInAppMessage(trigger: event.name)
             }.value
-            
+
+            self.onDispatch?(event)
+
             await MainActor.run { [weak self] in
                 let didLoaded = self?.didLoaded ?? false
                 if !didLoaded {

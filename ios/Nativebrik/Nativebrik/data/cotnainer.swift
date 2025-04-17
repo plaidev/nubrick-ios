@@ -11,6 +11,7 @@ import CoreData
 public enum NativebrikError: Error {
     case notFound
     case failedToDecode
+    case failedToEncode
     case unexpected
     case skipRequest
     case irregular(String)
@@ -27,6 +28,7 @@ protocol Container {
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NativebrikError>
     func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NativebrikError>
+    func fetchTooltip(trigger: String) async -> Result<UIBlock, NativebrikError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NativebrikError>
 
     func record(_ exception: NSException)
@@ -50,6 +52,9 @@ class ContainerEmptyImpl: Container {
         return Result.failure(NativebrikError.notFound)
     }
     func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NativebrikError> {
+        return Result.failure(NativebrikError.notFound)
+    }
+    func fetchTooltip(trigger: String) async -> Result<UIBlock, NativebrikError> {
         return Result.failure(NativebrikError.notFound)
     }
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NativebrikError> {
@@ -167,7 +172,7 @@ class ContainerImpl: Container {
         guard let variantId = variant.id else {
             return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
         }
-        
+
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: experimentId, variantId: variantId
         ))
@@ -197,6 +202,42 @@ class ContainerImpl: Container {
         var experimentId: String
         var variant: ExperimentVariant
         switch await self.extractVariant(configs: configs, kind: ExperimentKind.POPUP) {
+        case .success(let (id, v)):
+            experimentId = id
+            variant = v
+        case .failure(let it):
+            return Result.failure(it)
+        }
+
+        guard let variantId = variant.id else {
+            return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
+        }
+
+        self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
+            experimentId: experimentId, variantId: variantId
+        ))
+        self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+
+        guard let componentId = extractComponentId(variant: variant) else {
+            return Result.failure(NativebrikError.notFound)
+        }
+
+        return await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
+    }
+
+    func fetchTooltip(trigger: String) async -> Result<UIBlock, NativebrikError> {
+        // retrieve experiment config
+        var configs: ExperimentConfigs
+        switch await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger) {
+        case .success(let it):
+            configs = it
+        case .failure(let it):
+            return Result.failure(it)
+        }
+
+        var experimentId: String
+        var variant: ExperimentVariant
+        switch await self.extractVariant(configs: configs, kind: ExperimentKind.TOOLTIP) {
         case .success(let (id, v)):
             experimentId = id
             variant = v

@@ -12,7 +12,7 @@ import Combine
 // for development
 public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
-public let nativebrikSdkVersion = "0.8.1"
+public let nativebrikSdkVersion = "0.9.0"
 
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
@@ -129,7 +129,8 @@ public class NativebrikClient: ObservableObject {
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NativebrikHttpRequestInterceptor? = nil,
-        cachePolicy: NativebrikCachePolicy? = nil
+        cachePolicy: NativebrikCachePolicy? = nil,
+        onDispatch: ((_ event: NativebrikEvent) -> Void)? = nil
     ) {
         let user = NativebrikUser()
         let config = Config(projectId: projectId, onEvents: [
@@ -147,7 +148,7 @@ public class NativebrikClient: ObservableObject {
             persistentContainer: persistentContainer,
             intercepter: httpRequestInterceptor
         )
-        self.overlayVC = OverlayViewController(user: self.user, container: self.container)
+        self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch)
         self.experiment = NativebrikExperiment(container: self.container, overlay: self.overlayVC)
 
         config.addEventListner(createDispatchNativebrikEvent(self))
@@ -287,6 +288,52 @@ public class NativebrikExperiment {
             content: phase
         ))
     }
+
+    // for flutter integration
+    public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NativebrikError> {
+        switch await self.container.fetchTooltip(trigger: trigger) {
+        case .success(let result):
+            do {
+                let encoder = JSONEncoder()
+                let jsonData = try encoder.encode(result)
+                if let jsonString = String(data: jsonData, encoding: .utf8) {
+                    return .success(jsonString)
+                } else {
+                    return .failure(.failedToEncode)
+                }
+            } catch let error {
+                return .failure(.other(error))
+            }
+        case .failure(let error):
+            return .failure(error)
+        }
+    }
+
+    public func __do_not_use__render_uiview(
+        json: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        onNextTooltip: ((_ anchorId: String) -> Void)? = nil
+    ) -> UIView {
+        if !isNativebrikAvailable {
+            return UIView()
+        }
+        do {
+            let decoder = JSONDecoder()
+            let data = Data(json.utf8)
+            let decoded = try decoder.decode(UIRootBlock.self, from: data)
+            return RootView(
+                root: decoded,
+                container: self.container,
+                modalViewController: self.overlayVC.modalViewController,
+                onEvent: { event in
+                    onEvent?(convertEvent(event))
+                },
+                onNextTooltip: onNextTooltip
+            )
+        } catch {
+            return UIView()
+        }
+    }
 }
 
 public struct NativebrikProvider<Content: View>: View {
@@ -305,3 +352,4 @@ public struct NativebrikProvider<Content: View>: View {
         }
     }
 }
+

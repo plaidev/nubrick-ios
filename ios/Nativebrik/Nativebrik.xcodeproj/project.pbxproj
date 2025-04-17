@@ -58,6 +58,7 @@
 		C13634682AF36D7600B9F437 /* repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634672AF36D7600B9F437 /* repository.swift */; };
 		C14FEF532CF95D8B00D243A0 /* ios-compat.swift in Sources */ = {isa = PBXBuildFile; fileRef = C14FEF522CF95D8300D243A0 /* ios-compat.swift */; };
 		C1F488CC2B5521FC009D7DAD /* placeholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F488CB2B5521FC009D7DAD /* placeholder.swift */; };
+		C1FB6EFD2DA7BEA30088EF76 /* encode.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FB6EFC2DA7BEA00088EF76 /* encode.swift */; };
 		C1FFFD7A2B22E98B00ACD132 /* yoga.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C136344F2AEB7D5800B9F437 /* yoga.xcframework */; };
 		C1FFFD7D2B22E98C00ACD132 /* YogaKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13634522AEB7D6600B9F437 /* YogaKit.xcframework */; };
 		F412635E2D82D45D0008FB4E /* network.swift in Sources */ = {isa = PBXBuildFile; fileRef = F412635D2D82D45B0008FB4E /* network.swift */; };
@@ -128,6 +129,7 @@
 		C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Nativebrik/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C14FEF522CF95D8300D243A0 /* ios-compat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ios-compat.swift"; sourceTree = "<group>"; };
 		C1F488CB2B5521FC009D7DAD /* placeholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = placeholder.swift; sourceTree = "<group>"; };
+		C1FB6EFC2DA7BEA00088EF76 /* encode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = encode.swift; sourceTree = "<group>"; };
 		F412635D2D82D45B0008FB4E /* network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = network.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -294,6 +296,7 @@
 				C136345F2AEBB49900B9F437 /* user.swift */,
 				C13634612AEBBC6500B9F437 /* remote-config.swift */,
 				C13634632AEF92F700B9F437 /* embedding.swift */,
+				C1FB6EFC2DA7BEA00088EF76 /* encode.swift */,
 				C13634652AF242B100B9F437 /* decode.swift */,
 				C13634672AF36D7600B9F437 /* repository.swift */,
 				C1F488CB2B5521FC009D7DAD /* placeholder.swift */,
@@ -482,6 +485,7 @@
 				C13634642AEF92F700B9F437 /* embedding.swift in Sources */,
 				C13634682AF36D7600B9F437 /* repository.swift in Sources */,
 				C13634602AEBB49900B9F437 /* user.swift in Sources */,
+				C1FB6EFD2DA7BEA30088EF76 /* encode.swift in Sources */,
 				C13634662AF242B100B9F437 /* decode.swift in Sources */,
 				C1F488CC2B5521FC009D7DAD /* placeholder.swift in Sources */,
 			);
