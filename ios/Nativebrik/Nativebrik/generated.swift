@@ -10,12 +10,16 @@ enum AlignItems: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try AlignItems(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct ApiHttpHeader: Decodable {
+struct ApiHttpHeader: Decodable, Encodable {
   var name: String?
   var value: String?
 }
-struct ApiHttpRequest: Decodable {
+struct ApiHttpRequest: Decodable, Encodable {
   var url: String?
   var method: ApiHttpRequestMethod?
   var headers: [ApiHttpHeader]?
@@ -33,11 +37,15 @@ enum ApiHttpRequestMethod: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try ApiHttpRequestMethod(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct ApiHttpResponseAssertion: Decodable {
+struct ApiHttpResponseAssertion: Decodable, Encodable {
   var statusCodes: [Int]?
 }
-struct BoxShadow: Decodable {
+struct BoxShadow: Decodable, Encodable {
   var color: Color?
   var offsetX: Int?
   var offsetY: Int?
@@ -70,6 +78,10 @@ enum BuiltinUserProperty: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try BuiltinUserProperty(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
 enum CollectionKind: String, Decodable, Encodable {
   case CAROUSEL = "CAROUSEL"
@@ -79,8 +91,12 @@ enum CollectionKind: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try CollectionKind(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct Color: Decodable {
+struct Color: Decodable, Encodable {
   var red: Float?
   var green: Float?
   var blue: Float?
@@ -101,13 +117,17 @@ enum ConditionOperator: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try ConditionOperator(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct ExperimentCondition: Decodable {
+struct ExperimentCondition: Decodable, Encodable {
   var property: String?
   var `operator`: String?
   var value: String?
 }
-struct ExperimentConfig: Decodable {
+struct ExperimentConfig: Decodable, Encodable {
   var id: ID?
   var kind: ExperimentKind?
   var distribution: [ExperimentCondition]?
@@ -118,23 +138,28 @@ struct ExperimentConfig: Decodable {
   var startedAt: DateTime?
   var endedAt: DateTime?
 }
-struct ExperimentConfigs: Decodable {
+struct ExperimentConfigs: Decodable, Encodable {
   var configs: [ExperimentConfig]?
 }
-struct ExperimentFrequency: Decodable {
+struct ExperimentFrequency: Decodable, Encodable {
   var period: Int?
   var unit: FrequencyUnit?
 }
 enum ExperimentKind: String, Decodable, Encodable {
   case EMBED = "EMBED"
   case POPUP = "POPUP"
+  case TOOLTIP = "TOOLTIP"
   case CONFIG = "CONFIG"
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try ExperimentKind(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct ExperimentVariant: Decodable {
+struct ExperimentVariant: Decodable, Encodable {
   var id: ID?
   var configs: [VariantConfig]?
   var weight: Int?
@@ -146,6 +171,10 @@ enum FlexDirection: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try FlexDirection(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
 enum FontDesign: String, Decodable, Encodable {
   case DEFAULT = "DEFAULT"
@@ -155,6 +184,10 @@ enum FontDesign: String, Decodable, Encodable {
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try FontDesign(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
   }
 }
 enum FontWeight: String, Decodable, Encodable {
@@ -171,8 +204,12 @@ enum FontWeight: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try FontWeight(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct FrameData: Decodable {
+struct FrameData: Decodable, Encodable {
   var width: Int?
   var height: Int?
   var paddingLeft: Int?
@@ -196,6 +233,10 @@ enum FrequencyUnit: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try FrequencyUnit(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
 enum ImageContentMode: String, Decodable, Encodable {
   case FIT = "FIT"
@@ -203,6 +244,10 @@ enum ImageContentMode: String, Decodable, Encodable {
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try ImageContentMode(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
   }
 }
 enum JustifyContent: String, Decodable, Encodable {
@@ -214,6 +259,10 @@ enum JustifyContent: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try JustifyContent(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
 enum ModalPresentationStyle: String, Decodable, Encodable {
   case DEPENDS_ON_CONTEXT_OR_FULL_SCREEN = "DEPENDS_ON_CONTEXT_OR_FULL_SCREEN"
@@ -221,6 +270,10 @@ enum ModalPresentationStyle: String, Decodable, Encodable {
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try ModalPresentationStyle(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
   }
 }
 enum ModalScreenSize: String, Decodable, Encodable {
@@ -231,8 +284,12 @@ enum ModalScreenSize: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try ModalScreenSize(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct NavigationBackButton: Decodable {
+struct NavigationBackButton: Decodable, Encodable {
   var title: String?
   var color: Color?
   var visible: Boolean?
@@ -245,11 +302,16 @@ enum Overflow: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try Overflow(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
 enum PageKind: String, Decodable, Encodable {
   case COMPONENT = "COMPONENT"
   case MODAL = "MODAL"
   case WEBVIEW_MODAL = "WEBVIEW_MODAL"
+  case TOOLTIP = "TOOLTIP"
   case TRIGGER = "TRIGGER"
   case LOAD_BALANCER = "LOAD_BALANCER"
   case DISMISSED = "DISMISSED"
@@ -257,8 +319,12 @@ enum PageKind: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try PageKind(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct Property: Decodable {
+struct Property: Decodable, Encodable {
   var name: String?
   var value: String?
   var ptype: PropertyType?
@@ -271,6 +337,10 @@ enum PropertyType: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try PropertyType(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
 enum TextAlign: String, Decodable, Encodable {
   case NATURAL = "NATURAL"
@@ -281,8 +351,12 @@ enum TextAlign: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try TextAlign(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct TriggerEventDef: Decodable {
+struct TriggerEventDef: Decodable, Encodable {
   var name: String?
 }
 enum TriggerEventNameDefs: String, Decodable, Encodable {
@@ -301,12 +375,16 @@ enum TriggerEventNameDefs: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try TriggerEventNameDefs(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct TriggerSetting: Decodable {
+struct TriggerSetting: Decodable, Encodable {
   var onTrigger: UIBlockEventDispatcher?
   var trigger: TriggerEventDef?
 }
-indirect enum UIBlock: Decodable {
+indirect enum UIBlock: Decodable, Encodable {
   case EUIRootBlock(UIRootBlock)
   case EUIPageBlock(UIPageBlock)
   case EUIFlexContainerBlock(UIFlexContainerBlock)
@@ -379,8 +457,49 @@ indirect enum UIBlock: Decodable {
       self = .unknown
     }
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+
+    switch self {
+    case .EUIRootBlock(let data):
+      try container.encode(Typename.__UIRootBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUIPageBlock(let data):
+      try container.encode(Typename.__UIPageBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUIFlexContainerBlock(let data):
+      try container.encode(Typename.__UIFlexContainerBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUITextBlock(let data):
+      try container.encode(Typename.__UITextBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUIImageBlock(let data):
+      try container.encode(Typename.__UIImageBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUICollectionBlock(let data):
+      try container.encode(Typename.__UICollectionBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUICarouselBlock(let data):
+      try container.encode(Typename.__UICarouselBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUITextInputBlock(let data):
+      try container.encode(Typename.__UITextInputBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUISelectInputBlock(let data):
+      try container.encode(Typename.__UISelectInputBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUIMultiSelectInputBlock(let data):
+      try container.encode(Typename.__UIMultiSelectInputBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .EUISwitchInputBlock(let data):
+      try container.encode(Typename.__UISwitchInputBlock.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .unknown:
+      try container.encode(Typename.unknown.rawValue, forKey: .__typename)
+    }
+  }
 }
-struct UIBlockEventDispatcher: Decodable {
+struct UIBlockEventDispatcher: Decodable, Encodable {
   var name: String?
   var destinationPageId: String?
   var deepLink: String?
@@ -388,21 +507,21 @@ struct UIBlockEventDispatcher: Decodable {
   var httpRequest: ApiHttpRequest?
   var httpResponseAssertion: ApiHttpResponseAssertion?
 }
-struct UICarouselBlock: Decodable {
+struct UICarouselBlock: Decodable, Encodable {
   var id: ID?
   var data: UICarouselBlockData?
 }
-struct UICarouselBlockData: Decodable {
+struct UICarouselBlockData: Decodable, Encodable {
   var children: [UIBlock]?
   var frame: FrameData?
   var gap: Int?
   var onClick: UIBlockEventDispatcher?
 }
-struct UICollectionBlock: Decodable {
+struct UICollectionBlock: Decodable, Encodable {
   var id: ID?
   var data: UICollectionBlockData?
 }
-struct UICollectionBlockData: Decodable {
+struct UICollectionBlockData: Decodable, Encodable {
   var children: [UIBlock]?
   var frame: FrameData?
   var gap: Int?
@@ -418,11 +537,11 @@ struct UICollectionBlockData: Decodable {
   var autoScrollInterval: Float?
   var onClick: UIBlockEventDispatcher?
 }
-struct UIFlexContainerBlock: Decodable {
+struct UIFlexContainerBlock: Decodable, Encodable {
   var id: ID?
   var data: UIFlexContainerBlockData?
 }
-struct UIFlexContainerBlockData: Decodable {
+struct UIFlexContainerBlockData: Decodable, Encodable {
   var children: [UIBlock]?
   var direction: FlexDirection?
   var justifyContent: JustifyContent?
@@ -432,21 +551,21 @@ struct UIFlexContainerBlockData: Decodable {
   var overflow: Overflow?
   var onClick: UIBlockEventDispatcher?
 }
-struct UIImageBlock: Decodable {
+struct UIImageBlock: Decodable, Encodable {
   var id: ID?
   var data: UIImageBlockData?
 }
-struct UIImageBlockData: Decodable {
+struct UIImageBlockData: Decodable, Encodable {
   var src: String?
   var contentMode: ImageContentMode?
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
 }
-struct UIMultiSelectInputBlock: Decodable {
+struct UIMultiSelectInputBlock: Decodable, Encodable {
   var id: ID?
   var data: UIMultiSelectInputBlockData?
 }
-struct UIMultiSelectInputBlockData: Decodable {
+struct UIMultiSelectInputBlockData: Decodable, Encodable {
   var key: String?
   var options: [UISelectInputOption]?
   var value: [String]?
@@ -458,12 +577,12 @@ struct UIMultiSelectInputBlockData: Decodable {
   var textAlign: TextAlign?
   var frame: FrameData?
 }
-struct UIPageBlock: Decodable {
+struct UIPageBlock: Decodable, Encodable {
   var id: ID?
   var name: String?
   var data: UIPageBlockData?
 }
-struct UIPageBlockData: Decodable {
+struct UIPageBlockData: Decodable, Encodable {
   var kind: PageKind?
   var modalPresentationStyle: ModalPresentationStyle?
   var modalScreenSize: ModalScreenSize?
@@ -473,26 +592,28 @@ struct UIPageBlockData: Decodable {
   var renderAs: UIBlock?
   var position: UIPageBlockPosition?
   var httpRequest: ApiHttpRequest?
+  var tooltipSize: UITooltipSize?
+  var tooltipAnchor: String?
   var props: [Property]?
   var query: String?
 }
-struct UIPageBlockPosition: Decodable {
+struct UIPageBlockPosition: Decodable, Encodable {
   var x: Int?
   var y: Int?
 }
-struct UIRootBlock: Decodable {
+struct UIRootBlock: Decodable, Encodable {
   var id: ID?
   var data: UIRootBlockData?
 }
-struct UIRootBlockData: Decodable {
+struct UIRootBlockData: Decodable, Encodable {
   var pages: [UIPageBlock]?
   var currentPageId: ID?
 }
-struct UISelectInputBlock: Decodable {
+struct UISelectInputBlock: Decodable, Encodable {
   var id: ID?
   var data: UISelectInputBlockData?
 }
-struct UISelectInputBlockData: Decodable {
+struct UISelectInputBlockData: Decodable, Encodable {
   var key: String?
   var options: [UISelectInputOption]?
   var value: String?
@@ -503,24 +624,24 @@ struct UISelectInputBlockData: Decodable {
   var textAlign: TextAlign?
   var frame: FrameData?
 }
-struct UISelectInputOption: Decodable {
+struct UISelectInputOption: Decodable, Encodable {
   var value: String?
   var label: String?
 }
-struct UISwitchInputBlock: Decodable {
+struct UISwitchInputBlock: Decodable, Encodable {
   var id: ID?
   var data: UISwitchInputBlockData?
 }
-struct UISwitchInputBlockData: Decodable {
+struct UISwitchInputBlockData: Decodable, Encodable {
   var key: String?
   var value: Boolean?
   var checkedColor: Color?
 }
-struct UITextBlock: Decodable {
+struct UITextBlock: Decodable, Encodable {
   var id: ID?
   var data: UITextBlockData?
 }
-struct UITextBlockData: Decodable {
+struct UITextBlockData: Decodable, Encodable {
   var value: String?
   var size: Int?
   var color: Color?
@@ -530,11 +651,11 @@ struct UITextBlockData: Decodable {
   var frame: FrameData?
   var onClick: UIBlockEventDispatcher?
 }
-struct UITextInputBlock: Decodable {
+struct UITextInputBlock: Decodable, Encodable {
   var id: ID?
   var data: UITextInputBlockData?
 }
-struct UITextInputBlockData: Decodable {
+struct UITextInputBlockData: Decodable, Encodable {
   var key: String?
   var value: String?
   var placeholder: String?
@@ -562,11 +683,19 @@ enum UITextInputKeyboardType: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try UITextInputKeyboardType(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
-struct UITooltipMessage: Decodable {
+struct UITooltipMessage: Decodable, Encodable {
   var title: String?
 }
-struct VariantConfig: Decodable {
+struct UITooltipSize: Decodable, Encodable {
+  var width: Int?
+  var height: Int?
+}
+struct VariantConfig: Decodable, Encodable {
   var key: String?
   var kind: VariantConfigKind?
   var value: String?
@@ -581,6 +710,10 @@ enum VariantConfigKind: String, Decodable, Encodable {
   init(from decoder: Decoder) throws {
     self = try VariantConfigKind(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
 enum Weekdays: String, Decodable, Encodable {
   case SUNDAY = "SUNDAY"
@@ -593,5 +726,9 @@ enum Weekdays: String, Decodable, Encodable {
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try Weekdays(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
   }
 }
