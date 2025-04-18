@@ -1,3 +1,4 @@
+import 'package:nativebrik_bridge/schema/generated.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:nativebrik_bridge/nativebrik_bridge.dart';
 
@@ -73,6 +74,21 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
       String channelId, String embeddingChannelId, dynamic arguments) {
     throw UnimplementedError(
         'connectEmbeddingInRemoteConfigValue() has not been implemented.');
+  }
+
+  Future<UIRootBlock?> connectTooltip(String name) {
+    throw UnimplementedError('connectTooltip() has not been implemented.');
+  }
+
+  Future<String?> connectTooltipEmbedding(
+      String channelId, UIRootBlock rootBlock) {
+    throw UnimplementedError(
+        'connectTooltipEmbedding() has not been implemented.');
+  }
+
+  Future<String?> disconnectTooltipEmbedding(String channelId) {
+    throw UnimplementedError(
+        'disconnectTooltipEmbedding() has not been implemented.');
   }
 
   Future<String?> dispatch(String name) {

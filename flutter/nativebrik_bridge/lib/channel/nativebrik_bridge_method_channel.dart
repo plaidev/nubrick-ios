@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:nativebrik_bridge/nativebrik_bridge.dart';
+import 'package:nativebrik_bridge/schema/generated.dart';
 
 import './nativebrik_bridge_platform_interface.dart';
 
@@ -124,6 +127,47 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
         'embeddingChannelId': embeddingChannelId,
         'arguments': arguments,
       },
+    );
+    return result;
+  }
+
+  @override
+  Future<UIRootBlock?> connectTooltip(String name) async {
+    final result = await methodChannel.invokeMethod<String>(
+      'connectTooltip',
+      name,
+    );
+    print("MethodChannelNativebrikBridge connectTooltip: $result");
+    if (result == null) {
+      return null;
+    }
+    if (result.startsWith("error")) {
+      return null;
+    }
+    var decoded = UIRootBlock.decode(jsonDecode(result));
+    print("MethodChannelNativebrikBridge connectTooltip: $decoded");
+    return decoded;
+  }
+
+  @override
+  Future<String?> connectTooltipEmbedding(
+      String channelId, UIRootBlock rootBlock) async {
+    var json = jsonEncode(rootBlock.encode());
+    final result = await methodChannel.invokeMethod<String>(
+      'connectTooltipEmbedding',
+      <String, dynamic>{
+        'channelId': channelId,
+        'json': json,
+      },
+    );
+    return result;
+  }
+
+  @override
+  Future<String?> disconnectTooltipEmbedding(String channelId) async {
+    final result = await methodChannel.invokeMethod<String>(
+      'disconnectTooltipEmbedding',
+      channelId,
     );
     return result;
   }
