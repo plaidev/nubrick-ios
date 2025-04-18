@@ -12,7 +12,7 @@ import Combine
 // for development
 public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
-public let nativebrikSdkVersion = "0.9.1"
+public let nativebrikSdkVersion = "0.9.2"
 
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
@@ -312,7 +312,8 @@ public class NativebrikExperiment {
     public func __do_not_use__render_uiview(
         json: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        onNextTooltip: ((_ anchorId: String) -> Void)? = nil
+        onNextTooltip: ((_ anchorId: String) -> Void)? = nil,
+        onDismiss: (() -> Void)? = nil
     ) -> UIView {
         if !isNativebrikAvailable {
             return UIView()
@@ -328,7 +329,8 @@ public class NativebrikExperiment {
                 onEvent: { event in
                     onEvent?(convertEvent(event))
                 },
-                onNextTooltip: onNextTooltip
+                onNextTooltip: onNextTooltip,
+                onDismiss: onDismiss
             )
         } catch {
             return UIView()
