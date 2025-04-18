@@ -80,17 +80,25 @@ class _MyAppState extends State<MyApp> {
                   onEvent: (event) {
                 print("Nativebrik Embedding Event: ${event.payload}");
               }),
+              const NativebrikAnchor("TOOLTIP_1", child: Text("Tooltip 1")),
               const Text("Message:"),
               Text(_message),
               const Text("User ID:"),
               Text(_userId),
               const Text("Prefecture:"),
               Text(_prefecture),
+              const NativebrikAnchor("TOOLTIP_2", child: Text("Tooltip 2")),
               ElevatedButton(
                 onPressed: () {
-                  NativebrikDispatcher().dispatch(NativebrikEvent("my-event"));
+                  NativebrikDispatcher()
+                      .dispatch(NativebrikEvent("DEMO_ON_CLICK"));
                 },
                 child: const Text('dispatch custom event'),
+              ),
+              const SizedBox(height: 200),
+              const NativebrikAnchor(
+                "TOOLTIP_3",
+                child: Text("Tooltip 3"),
               ),
             ],
           ),
