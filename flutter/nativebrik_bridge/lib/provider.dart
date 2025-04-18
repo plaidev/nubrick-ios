@@ -1,15 +1,40 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:nativebrik_bridge/tooltip.dart';
 
-class NativebrikProvider extends StatelessWidget {
+class NativebrikProvider extends StatefulWidget {
   final Widget child;
   const NativebrikProvider({super.key, required this.child});
 
   @override
+  State<NativebrikProvider> createState() => NativebrikProviderState();
+}
+
+class NativebrikProviderState extends State<NativebrikProvider> {
+  final Map<String, GlobalKey> _keys = {};
+
+  /// Get a global key by ID
+  GlobalKey? getKey(String id) => _keys[id];
+
+  /// Store a global key with an ID
+  void storeKey(String id, GlobalKey key) {
+    _keys[id] = key;
+  }
+
+  /// Remove a global key by ID
+  void removeKey(String id) {
+    _keys.remove(id);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Stack(
-      children: [child, _render(context)],
+      children: [
+        widget.child,
+        _render(context),
+        NativebrikTooltip(keysReference: _keys),
+      ],
     );
   }
 
@@ -34,5 +59,12 @@ class NativebrikProvider extends StatelessWidget {
       default:
         return const SizedBox.shrink();
     }
+  }
+}
+
+/// Extension to access NativebrikProvider from build context
+extension NativebrikProviderExtension on BuildContext {
+  NativebrikProviderState? get nativebrikProvider {
+    return findAncestorStateOfType<NativebrikProviderState>();
   }
 }
