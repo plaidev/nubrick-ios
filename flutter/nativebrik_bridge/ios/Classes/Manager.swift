@@ -199,6 +199,63 @@ class NativebrikBridgeManager {
         return variant.get(key)
     }
 
+    // tooltip
+    func connectTooltip(name: String, onFetch: @escaping (String) -> Void, onError: @escaping (String) -> Void) {
+        guard let nativebrikClient = self.nativebrikClient else {
+            onError("NativebrikClient is not set")
+            return
+        }
+        Task {
+            let result = await nativebrikClient.experiment.__do_not_use__fetch_tooltip_data(trigger: name)
+            switch result {
+            case .success(let data):
+                onFetch(data)
+            case .failure(let error):
+                onError(error.localizedDescription)
+            }
+        }
+    }
+
+    func connectTooltipEmbedding(channelId: String, rootBlock: String, messenger: FlutterBinaryMessenger) {
+        guard let nativebrikClient = self.nativebrikClient else {
+            return
+        }
+        let channel = FlutterMethodChannel(name: "Nativebrik/Embedding/\(channelId)", binaryMessenger: messenger)
+        let uiview = nativebrikClient.experiment.__do_not_use__render_uiview(
+            json: rootBlock,
+            onEvent: { event in
+                channel.invokeMethod(ON_EVENT_METHOD, arguments: [
+                    "name": event.name as Any?,
+                    "deepLink": event.deepLink as Any?,
+                    "payload": event.payload?.map({ prop in
+                        return [
+                            "name": prop.name,
+                            "value": prop.value,
+                            "type": prop.type
+                        ]
+                    }),
+                ])
+            },
+            onNextTooltip: { anchorId in
+                print("NativebrikBridgeManager onNextTooltip: \(anchorId)")
+                channel.invokeMethod(ON_NEXT_TOOLTIP_METHOD, arguments: anchorId)
+            },
+            onDismiss: {
+                channel.invokeMethod(ON_DISMISS_TOOLTIP_METHOD, arguments: nil)
+            }
+        )
+        let embeedingEntity = EmbeddingEntity(
+            uiview: uiview,
+            channel: channel
+        )
+        self.embeddingMaps[channelId] = embeedingEntity
+    }
+
+    func disconnectTooltipEmbedding(channelId: String) {
+        self.embeddingMaps[channelId] = nil
+    }
+
+    // trigger
     func dispatch(name: String) {
         guard let nativebrikClient = self.nativebrikClient else {
             return

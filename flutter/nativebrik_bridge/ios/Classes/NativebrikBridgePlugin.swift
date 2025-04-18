@@ -5,6 +5,9 @@ import Nativebrik
 let EMEBEDDING_VIEW_ID = "nativebrik-embedding-view"
 let EMBEDDING_PHASE_UPDATE_METHOD = "embedding-phase-update"
 let ON_EVENT_METHOD = "on-event"
+let ON_DISPATCH_METHOD = "on-dispatch"
+let ON_NEXT_TOOLTIP_METHOD = "on-next-tooltip"
+let ON_DISMISS_TOOLTIP_METHOD = "on-dismiss-tooltip"
 
 public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
     private let manager: NativebrikBridgeManager
@@ -40,19 +43,28 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             let staleTime = cachePolicy["staleTime"] as! Int
             let storage = cachePolicy["storage"] as! String
             let nativebrikCachePolicy = NativebrikCachePolicy(cacheTime: TimeInterval(cacheTime), staleTime: TimeInterval(staleTime), storage: storage == "inMemory" ? .INMEMORY : .INMEMORY)
-            self.manager.setNativebrikClient(nativebrik: NativebrikClient(projectId: projectId, onEvent: { [weak self] event in
-                self?.channel.invokeMethod(ON_EVENT_METHOD, arguments: [
-                    "name": event.name as Any?,
-                    "deepLink": event.deepLink as Any?,
-                    "payload": event.payload?.map({ prop in
-                        return [
-                            "name": prop.name,
-                            "value": prop.value,
-                            "type": prop.type
-                        ]
-                    }),
-                ])
-            }, cachePolicy: nativebrikCachePolicy))
+            self.manager.setNativebrikClient(nativebrik: NativebrikClient(
+                projectId: projectId,
+                onEvent: { [weak self] event in
+                    self?.channel.invokeMethod(ON_EVENT_METHOD, arguments: [
+                        "name": event.name as Any?,
+                        "deepLink": event.deepLink as Any?,
+                        "payload": event.payload?.map({ prop in
+                            return [
+                                "name": prop.name,
+                                "value": prop.value,
+                                "type": prop.type
+                            ]
+                        }),
+                    ])
+                },
+                cachePolicy: nativebrikCachePolicy,
+                onDispatch: { [weak self] event in
+                    self?.channel.invokeMethod(ON_DISPATCH_METHOD, arguments: [
+                        "name": event.name as Any?,
+                    ])
+                }
+            ))
             result("ok")
 
         // user
@@ -115,10 +127,39 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             let arguments = args["arguments"] as Any?
             self.manager.connectEmbeddingInRemoteConfigValue(key: key, channelId: channelId, arguments: arguments, embeddingChannelId: embeddingChannelId, messenger: self.messenger)
             result("ok")
+
+        // tooltip
+        case "connectTooltip":
+            let name = call.arguments as! String
+            self.manager.connectTooltip(
+                name: name,
+                onFetch: { data in
+                    result(data)
+                },
+                onError: { error in
+                    result("error: \(error)")
+                }
+            )
+
+        case "connectTooltipEmbedding":
+            let args = call.arguments as! [String:Any]
+            let channelId = args["channelId"] as! String
+            let rootBlock = args["json"] as! String
+            self.manager.connectTooltipEmbedding(channelId: channelId, rootBlock: rootBlock, messenger: self.messenger)
+            result("ok")
+
+        case "disconnectTooltipEmbedding":
+            let channelId = call.arguments as! String
+            self.manager.disconnectTooltipEmbedding(channelId: channelId)
+            result("ok")
+
+        // trigger
         case "dispatch":
             let name = call.arguments as! String
             self.manager.dispatch(name: name)
             result("ok")
+
+        // crash report
         case "recordCrash":
             do {
                 guard let errorData = call.arguments as? [String: Any] else {
