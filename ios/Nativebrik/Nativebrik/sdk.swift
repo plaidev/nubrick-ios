@@ -312,7 +312,8 @@ public class NativebrikExperiment {
     public func __do_not_use__render_uiview(
         json: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        onNextTooltip: ((_ anchorId: String) -> Void)? = nil
+        onNextTooltip: ((_ anchorId: String) -> Void)? = nil,
+        onDismiss: (() -> Void)? = nil
     ) -> UIView {
         if !isNativebrikAvailable {
             return UIView()
@@ -328,7 +329,8 @@ public class NativebrikExperiment {
                 onEvent: { event in
                     onEvent?(convertEvent(event))
                 },
-                onNextTooltip: onNextTooltip
+                onNextTooltip: onNextTooltip,
+                onDismiss: onDismiss
             )
         } catch {
             return UIView()
