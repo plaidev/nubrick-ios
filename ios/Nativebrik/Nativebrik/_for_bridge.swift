@@ -18,6 +18,12 @@ public class __DO_NOT_USE__NativebrikBridgedViewAccessor {
         self.rootOrUIView = uiview
     }
     
+    public var view: UIView {
+        get {
+            return self.rootOrUIView
+        }
+    }
+    
     // event must be UIBlockEventDispatcher with json format.
     // this method is used to forcefully dispatch an event from the page view.
     public func dispatch(event: String) throws {
