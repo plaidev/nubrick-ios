@@ -176,6 +176,10 @@ class PageView: UIView {
         self.addSubview(self.view)
         self.loadDataAndTransition()
     }
+    
+    func dispatch(event: UIBlockEventDispatcher) {
+        self.event?.dispatch(event: event)
+    }
 
     func loadDataAndTransition() {
         guard let httpRequest = self.page?.data?.httpRequest else {
