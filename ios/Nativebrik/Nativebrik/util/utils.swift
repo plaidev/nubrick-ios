@@ -106,13 +106,12 @@ func parseColorToCGColor(_ data: Color?) -> CGColor {
         CGFloat(color.red ?? 0),
         CGFloat(color.green ?? 0),
         CGFloat(color.blue ?? 0),
-        CGFloat(color.alpha ?? 0)
+        CGFloat(color.alpha ?? 0),
     ]
 
     return CGColor(colorSpace: colorSpace, components: components)
         ?? CGColor(gray: 0, alpha: 0)
 }
-
 
 func parseFontWeight(_ data: FontWeight?) -> UIFont.Weight {
     switch data {
@@ -297,10 +296,10 @@ func configurePadding(layout: YGLayout, frame: FrameData?) {
 
 func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDirection?) {
     if let height = frame?.height {
-        if height == 0 { // fill
+        if height == 0 {  // fill
             layout.height = .init(value: 100.0, unit: .percent)
             layout.minHeight = .init(value: 100.0, unit: .percent)
-        } else { // static
+        } else {  // static
             layout.height = YGValue(value: Float(height), unit: .point)
         }
     }
@@ -340,21 +339,24 @@ private struct BorderRadius {
     let bottomLeft: CGFloat
 }
 
-private func normalizeRadius(radius: BorderRadius, width: CGFloat, height: CGFloat) -> BorderRadius {
-    let (topLeft, topRight, bottomRight, bottomLeft) = (radius.topLeft, radius.topRight, radius.bottomRight, radius.bottomLeft)
+private func normalizeRadius(radius: BorderRadius, width: CGFloat, height: CGFloat) -> BorderRadius
+{
+    let (topLeft, topRight, bottomRight, bottomLeft) = (
+        radius.topLeft, radius.topRight, radius.bottomRight, radius.bottomLeft
+    )
     var f = 1.0
-    
+
     for (l, s) in [
         (width, topLeft + topRight),
         (height, topLeft + bottomLeft),
         (height, topRight + bottomRight),
-        (width, bottomLeft + bottomRight)
+        (width, bottomLeft + bottomRight),
     ] {
         if s > 0 && s > l {
             f = min(f, l / s)
         }
     }
-        
+
     return BorderRadius(
         topLeft: topLeft * f,
         topRight: topRight * f,
@@ -376,22 +378,24 @@ func configureBorder(view: UIView, frame: FrameData?) {
     if let bg = frame?.background {
         view.layer.backgroundColor = parseColorToCGColor(bg)
     }
-    
+
     let width = view.bounds.width
     let height = view.bounds.height
-    
+
     let isSingleRadius =
-    (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
+        (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
         && (frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius)
         && (frame?.borderTopLeftRadius == frame?.borderBottomRightRadius)
-    
+
     if isSingleRadius {
         // if radius is not set or single value
         view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
         if let bc = frame?.borderColor {
             view.layer.borderColor = parseColorToCGColor(bc)
         }
-        view.layer.cornerRadius = CGFloat(normalizeSingleRadius(radius: CGFloat(frame?.borderRadius ?? 0), width: width, height: height))
+        view.layer.cornerRadius = CGFloat(
+            normalizeSingleRadius(
+                radius: CGFloat(frame?.borderRadius ?? 0), width: width, height: height))
         return
     }
 
@@ -405,8 +409,10 @@ func configureBorder(view: UIView, frame: FrameData?) {
         width: width,
         height: height
     )
-    let (topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius) = (radius.topLeft, radius.topRight, radius.bottomRight, radius.bottomLeft)
-    
+    let (topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius) = (
+        radius.topLeft, radius.topRight, radius.bottomRight, radius.bottomLeft
+    )
+
     let topLeft = CGPoint(x: 0, y: 0)
     let topRight = CGPoint(x: width, y: 0)
     let bottomRight = CGPoint(x: width, y: height)
@@ -424,7 +430,8 @@ func configureBorder(view: UIView, frame: FrameData?) {
         clockwise: true)
     path.addLine(to: CGPoint(x: bottomRight.x, y: bottomRight.y - bottomRightRadius))
     path.addArc(
-        withCenter: CGPoint(x: bottomRight.x - bottomRightRadius, y: bottomRight.y - bottomRightRadius),
+        withCenter: CGPoint(
+            x: bottomRight.x - bottomRightRadius, y: bottomRight.y - bottomRightRadius),
         radius: bottomRightRadius,
         startAngle: 0,
         endAngle: .pi / 2,
