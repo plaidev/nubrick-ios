@@ -314,15 +314,15 @@ public class NativebrikExperiment {
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onNextTooltip: ((_ anchorId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
-    ) -> UIView {
+    ) -> __DO_NOT_USE__NativebrikBridgedViewAccessor {
         if !isNativebrikAvailable {
-            return UIView()
+            return __DO_NOT_USE__NativebrikBridgedViewAccessor(uiview: UIView())
         }
         do {
             let decoder = JSONDecoder()
             let data = Data(json.utf8)
             let decoded = try decoder.decode(UIRootBlock.self, from: data)
-            return RootView(
+            return __DO_NOT_USE__NativebrikBridgedViewAccessor(rootView: RootView(
                 root: decoded,
                 container: self.container,
                 modalViewController: self.overlayVC.modalViewController,
@@ -331,9 +331,9 @@ public class NativebrikExperiment {
                 },
                 onNextTooltip: onNextTooltip,
                 onDismiss: onDismiss
-            )
+            ))
         } catch {
-            return UIView()
+            return __DO_NOT_USE__NativebrikBridgedViewAccessor(uiview: UIView())
         }
     }
 }
