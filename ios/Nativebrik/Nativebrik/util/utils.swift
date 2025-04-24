@@ -97,15 +97,22 @@ func parseColor(_ data: Color?) -> UIColor {
 }
 
 func parseColorToCGColor(_ data: Color?) -> CGColor {
-    switch data {
-    case .none:
-        return CGColor.init(gray: 0, alpha: 0)
-    case .some(let color):
-        return CGColor.init(
-            red: CGFloat(color.red ?? 0), green: CGFloat(color.green ?? 0),
-            blue: CGFloat(color.blue ?? 0), alpha: CGFloat(color.alpha ?? 0))
-    }
+    guard
+        let color = data,
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)
+    else { return CGColor(gray: 0, alpha: 0) }
+
+    let components: [CGFloat] = [
+        CGFloat(color.red ?? 0),
+        CGFloat(color.green ?? 0),
+        CGFloat(color.blue ?? 0),
+        CGFloat(color.alpha ?? 0)
+    ]
+
+    return CGColor(colorSpace: colorSpace, components: components)
+        ?? CGColor(gray: 0, alpha: 0)
 }
+
 
 func parseFontWeight(_ data: FontWeight?) -> UIFont.Weight {
     switch data {
