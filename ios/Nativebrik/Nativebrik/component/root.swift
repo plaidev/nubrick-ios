@@ -128,6 +128,7 @@ class RootView: UIView {
     private var onNextTooltip: ((_ anchorId: String) -> Void) = { _ in }
     private var onDismiss: (() -> Void) = {}
     private var view: UIView? = nil
+    private var currentPageView: PageView? = nil
     private var modalViewController: ModalComponentViewController? = nil
     private let container: Container
 
@@ -177,6 +178,16 @@ class RootView: UIView {
             self.presentPage(pageId: destId, props: nil)
         }
     }
+    
+    func dispatch(event: UIBlockEventDispatcher) {
+        if let page = self.currentPageView {
+            // call event dispatch from the page view.
+            page.dispatch(event: event)
+        } else {
+            // fallback
+            self.event?.dispatch(event: event)
+        }
+    }
 
     func presentPage(pageId: String, props: [Property]?) {
         var page = self.pages.first { page in
@@ -201,6 +212,7 @@ class RootView: UIView {
 
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
+            self.currentPageView = nil
             self.modalViewController?.dismissModal()
             self.onDismiss()
             return
@@ -230,6 +242,7 @@ class RootView: UIView {
             event: self.event,
             modalViewController: self.modalViewController
         )
+        self.currentPageView = pageView
 
         switch page?.data?.kind {
         case .MODAL:
