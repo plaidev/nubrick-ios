@@ -125,7 +125,7 @@ class RootView: UIView {
     private var event: UIBlockEventManager? = nil
     private var currentEmbeddedPageId: String = ""
     private var currentTooltipAnchorId: String? = nil
-    private var onNextTooltip: ((_ anchorId: String) -> Void) = { _ in }
+    private var onNextTooltip: ((_ pageId: String, _ anchorId: String) -> Void) = { _,_  in }
     private var onDismiss: (() -> Void) = {}
     private var view: UIView? = nil
     private var currentPageView: PageView? = nil
@@ -145,7 +145,7 @@ class RootView: UIView {
         container: Container,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?,
-        onNextTooltip: ((_ anchorId: String) -> Void)? = nil,
+        onNextTooltip: ((_ pageId: String, _ anchorId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) {
         self.id = root?.id ?? ""
@@ -155,7 +155,7 @@ class RootView: UIView {
             return page.data?.kind == PageKind.TRIGGER
         }
         self.modalViewController = modalViewController
-        self.onNextTooltip = onNextTooltip ?? { _ in }
+        self.onNextTooltip = onNextTooltip ?? { _,_ in }
         self.onDismiss = onDismiss ?? {}
         super.init(frame: .zero)
 
@@ -229,7 +229,7 @@ class RootView: UIView {
             let anchorId = page?.data?.tooltipAnchor ?? ""
             if let currentAnchorId = self.currentTooltipAnchorId {
                 if currentAnchorId != anchorId { // when it's diffrent anchor, dismiss. and callback.
-                    self.onNextTooltip(anchorId)
+                    self.onNextTooltip(pageId, anchorId)
                 }
             }
             self.currentTooltipAnchorId = anchorId
