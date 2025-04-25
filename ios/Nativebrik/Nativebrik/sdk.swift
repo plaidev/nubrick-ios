@@ -312,7 +312,7 @@ public class NativebrikExperiment {
     public func __do_not_use__render_uiview(
         json: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        onNextTooltip: ((_ anchorId: String) -> Void)? = nil,
+        onNextTooltip: ((_ pageId: String, _ anchorId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> __DO_NOT_USE__NativebrikBridgedViewAccessor {
         if !isNativebrikAvailable {
