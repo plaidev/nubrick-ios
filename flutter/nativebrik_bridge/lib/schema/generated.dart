@@ -2606,6 +2606,8 @@ class UIPageBlockData {
   final ApiHttpRequest? httpRequest;
   final UITooltipSize? tooltipSize;
   final String? tooltipAnchor;
+  final UITooltipPlacement? tooltipPlacement;
+  final UITooltipTransitionTarget? tooltipTransitionTarget;
   final List<Property>? props;
   final String? query;
 
@@ -2621,6 +2623,8 @@ class UIPageBlockData {
     this.httpRequest,
     this.tooltipSize,
     this.tooltipAnchor,
+    this.tooltipPlacement,
+    this.tooltipTransitionTarget,
     this.props,
     this.query,
   });
@@ -2647,6 +2651,10 @@ class UIPageBlockData {
       httpRequest: ApiHttpRequest.decode(json['httpRequest']),
       tooltipSize: UITooltipSize.decode(json['tooltipSize']),
       tooltipAnchor: StringDecoder.decode(json['tooltipAnchor']),
+      tooltipPlacement:
+          UITooltipPlacementExtension.decode(json['tooltipPlacement']),
+      tooltipTransitionTarget: UITooltipTransitionTargetExtension.decode(
+          json['tooltipTransitionTarget']),
       props: ListDecoder.decode(
           json['props'], (element) => Property.decode(element)),
       query: StringDecoder.decode(json['query']),
@@ -2667,6 +2675,8 @@ class UIPageBlockData {
       'httpRequest': httpRequest?.encode(),
       'tooltipSize': tooltipSize?.encode(),
       'tooltipAnchor': tooltipAnchor,
+      'tooltipPlacement': tooltipPlacement?.encode(),
+      'tooltipTransitionTarget': tooltipTransitionTarget?.encode(),
       'props': props?.map((e) => e.encode()).toList(growable: false),
       'query': query,
     };
@@ -2719,7 +2729,6 @@ class UIRootBlock {
       return null;
     }
     if (json is! Map<String, dynamic>) {
-      print("json is not a map");
       return null;
     }
 
@@ -3263,6 +3272,106 @@ class UITooltipMessage {
   }
 }
 
+enum UITooltipPlacement {
+  // ignore: constant_identifier_names
+  TOP_CENTER,
+  // ignore: constant_identifier_names
+  TOP_START,
+  // ignore: constant_identifier_names
+  TOP_END,
+  // ignore: constant_identifier_names
+  BOTTOM_CENTER,
+  // ignore: constant_identifier_names
+  BOTTOM_START,
+  // ignore: constant_identifier_names
+  BOTTOM_END,
+  // ignore: constant_identifier_names
+  LEFT_CENTER,
+  // ignore: constant_identifier_names
+  LEFT_START,
+  // ignore: constant_identifier_names
+  LEFT_END,
+  // ignore: constant_identifier_names
+  RIGHT_CENTER,
+  // ignore: constant_identifier_names
+  RIGHT_START,
+  // ignore: constant_identifier_names
+  RIGHT_END,
+  // ignore: constant_identifier_names
+  UNKNOWN,
+}
+
+extension UITooltipPlacementExtension on UITooltipPlacement {
+  static UITooltipPlacement? decode(dynamic json) {
+    if (json == null) {
+      return null;
+    }
+    if (json is! String) {
+      return null;
+    }
+
+    switch (json) {
+      case 'TOP_CENTER':
+        return UITooltipPlacement.TOP_CENTER;
+      case 'TOP_START':
+        return UITooltipPlacement.TOP_START;
+      case 'TOP_END':
+        return UITooltipPlacement.TOP_END;
+      case 'BOTTOM_CENTER':
+        return UITooltipPlacement.BOTTOM_CENTER;
+      case 'BOTTOM_START':
+        return UITooltipPlacement.BOTTOM_START;
+      case 'BOTTOM_END':
+        return UITooltipPlacement.BOTTOM_END;
+      case 'LEFT_CENTER':
+        return UITooltipPlacement.LEFT_CENTER;
+      case 'LEFT_START':
+        return UITooltipPlacement.LEFT_START;
+      case 'LEFT_END':
+        return UITooltipPlacement.LEFT_END;
+      case 'RIGHT_CENTER':
+        return UITooltipPlacement.RIGHT_CENTER;
+      case 'RIGHT_START':
+        return UITooltipPlacement.RIGHT_START;
+      case 'RIGHT_END':
+        return UITooltipPlacement.RIGHT_END;
+      default:
+        return UITooltipPlacement.UNKNOWN;
+    }
+  }
+
+  String? encode() {
+    switch (this) {
+      case UITooltipPlacement.TOP_CENTER:
+        return 'TOP_CENTER';
+      case UITooltipPlacement.TOP_START:
+        return 'TOP_START';
+      case UITooltipPlacement.TOP_END:
+        return 'TOP_END';
+      case UITooltipPlacement.BOTTOM_CENTER:
+        return 'BOTTOM_CENTER';
+      case UITooltipPlacement.BOTTOM_START:
+        return 'BOTTOM_START';
+      case UITooltipPlacement.BOTTOM_END:
+        return 'BOTTOM_END';
+      case UITooltipPlacement.LEFT_CENTER:
+        return 'LEFT_CENTER';
+      case UITooltipPlacement.LEFT_START:
+        return 'LEFT_START';
+      case UITooltipPlacement.LEFT_END:
+        return 'LEFT_END';
+      case UITooltipPlacement.RIGHT_CENTER:
+        return 'RIGHT_CENTER';
+      case UITooltipPlacement.RIGHT_START:
+        return 'RIGHT_START';
+      case UITooltipPlacement.RIGHT_END:
+        return 'RIGHT_END';
+      case UITooltipPlacement.UNKNOWN:
+        return null;
+    }
+  }
+}
+
 class UITooltipSize {
   final int? width;
   final int? height;
@@ -3292,6 +3401,46 @@ class UITooltipSize {
       'width': width,
       'height': height,
     };
+  }
+}
+
+enum UITooltipTransitionTarget {
+  // ignore: constant_identifier_names
+  ANCHOR,
+  // ignore: constant_identifier_names
+  SCREEN,
+  // ignore: constant_identifier_names
+  UNKNOWN,
+}
+
+extension UITooltipTransitionTargetExtension on UITooltipTransitionTarget {
+  static UITooltipTransitionTarget? decode(dynamic json) {
+    if (json == null) {
+      return null;
+    }
+    if (json is! String) {
+      return null;
+    }
+
+    switch (json) {
+      case 'ANCHOR':
+        return UITooltipTransitionTarget.ANCHOR;
+      case 'SCREEN':
+        return UITooltipTransitionTarget.SCREEN;
+      default:
+        return UITooltipTransitionTarget.UNKNOWN;
+    }
+  }
+
+  String? encode() {
+    switch (this) {
+      case UITooltipTransitionTarget.ANCHOR:
+        return 'ANCHOR';
+      case UITooltipTransitionTarget.SCREEN:
+        return 'SCREEN';
+      case UITooltipTransitionTarget.UNKNOWN:
+        return null;
+    }
   }
 }
 
