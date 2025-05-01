@@ -7,6 +7,7 @@ import 'package:nativebrik_bridge/utils/random.dart';
 import 'package:nativebrik_bridge/utils/tooltip_position.dart';
 import 'package:nativebrik_bridge/schema/generated.dart' as schema;
 import 'package:nativebrik_bridge/utils/tooltip_animation.dart';
+import 'package:nativebrik_bridge/utils/retry.dart';
 
 class NativebrikTooltip extends StatefulWidget {
   final Map<String, GlobalKey> keysReference;
@@ -59,45 +60,51 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
           ),
         ));
     await Future.delayed(const Duration(milliseconds: 100));
-    await _onNextTooltip(destinationId);
+    retryUntilTrue(
+      fn: () => _onNextTooltip(destinationId),
+      retries: 30,
+      delay: const Duration(milliseconds: 100),
+    );
   }
 
-  Future<void> _onNextTooltip(String pageId) async {
+  Future<bool> _onNextTooltip(String pageId) async {
     // find the page
     var page =
         _rootBlock?.data?.pages?.firstWhere((element) => element.id == pageId);
     if (page == null) {
-      return;
+      return false;
     }
     _currentPage = page;
     var anchorId = page.data?.tooltipAnchor;
     if (anchorId == null) {
-      return;
+      return false;
     }
     print("NativebrikTooltipState _onNextTooltip: $pageId, $anchorId");
     final key = widget.keysReference[anchorId];
     if (key == null) {
-      return;
+      return false;
     }
     print("NativebrikTooltipState _onNextTooltip.key: $key");
     final context = key.currentContext;
     if (context == null) {
-      return;
+      return false;
     }
-    if (!context.mounted) return;
+    if (!context.mounted) return false;
     final tooltipSize = page.data?.tooltipSize;
     if (tooltipSize == null) {
-      return;
+      return false;
     }
     final tooltipSizeValue = (tooltipSize.width != null &&
             tooltipSize.height != null)
         ? Size(tooltipSize.width!.toDouble(), tooltipSize.height!.toDouble())
         : null;
-    if (tooltipSizeValue == null) return;
+    if (tooltipSizeValue == null) {
+      return false;
+    }
 
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) {
-      return;
+      return false;
     }
     final anchorPosition = box.localToGlobal(Offset.zero);
     final anchorSize = box.size;
@@ -123,6 +130,8 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
       _tooltipSize = tooltipSizeValue;
       _isAnimateHole = willAnimateHole;
     });
+
+    return true;
   }
 
   void _hideTooltip() {
@@ -168,7 +177,11 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     switch (call.method) {
       case 'on-next-tooltip':
         final pageId = call.arguments["pageId"] as String;
-        _onNextTooltip(pageId);
+        retryUntilTrue(
+          fn: () => _onNextTooltip(pageId),
+          retries: 30,
+          delay: const Duration(milliseconds: 100),
+        );
         return Future.value(true);
       case 'on-dismiss-tooltip':
         _hideTooltip();
