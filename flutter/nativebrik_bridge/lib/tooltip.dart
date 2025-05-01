@@ -21,6 +21,7 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
   schema.UIRootBlock? _rootBlock;
   final String _channelId = generateRandomString(16);
   schema.UIPageBlock? _currentPage;
+  bool _isAnimateHole = false;
   Offset? _anchorPosition;
   Size? _anchorSize;
   Offset? _tooltipPosition;
@@ -108,6 +109,11 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
       placement: page.data?.tooltipPlacement ??
           schema.UITooltipPlacement.BOTTOM_CENTER,
     );
+
+    final willAnimateHole =
+        getTransitionTarget(page) == schema.UITooltipTransitionTarget.ANCHOR &&
+            page.data?.triggerSetting?.onTrigger != null;
+
     print(
         "NativebrikTooltipState _onNextTooltip.tooltipPosition: $tooltipPosition");
     setState(() {
@@ -115,6 +121,7 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
       _anchorSize = anchorSize;
       _tooltipPosition = tooltipPosition;
       _tooltipSize = tooltipSizeValue;
+      _isAnimateHole = willAnimateHole;
     });
   }
 
@@ -135,12 +142,17 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
 
   void _onTransitionTargetTap(bool isInAnchor) {
     print("NativebrikTooltipState _onTransitionTargetTap: $isInAnchor");
-    final target = _currentPage?.data?.tooltipTransitionTarget ??
-        schema.UITooltipTransitionTarget.ANCHOR;
-    if (target == schema.UITooltipTransitionTarget.ANCHOR && !isInAnchor) {
+    if (_currentPage == null) {
       return;
     }
-
+    if (_currentPage?.data?.kind != schema.PageKind.TOOLTIP) {
+      return;
+    }
+    final target = getTransitionTarget(_currentPage);
+    if (target == schema.UITooltipTransitionTarget.ANCHOR && !isInAnchor) {
+      // if the transiation target is anchor, but the isInAnchor is not true, then do nothing.
+      return;
+    }
     var onTrigger = _currentPage?.data?.triggerSetting?.onTrigger;
     if (onTrigger == null) {
       return;
@@ -207,7 +219,7 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
       Widget tooltipWidget = AnimationFrame(
         position: _tooltipPosition!,
         size: _tooltipSize!,
-        builder: (context, position, size, fade, scale) {
+        builder: (context, position, size, fade, scale, _) {
           return Transform.translate(
             offset: position,
             child: FadeTransition(
@@ -246,7 +258,8 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
           AnimationFrame(
             position: _anchorPosition!,
             size: _anchorSize!,
-            builder: (context, position, size, fade, scale) {
+            animateHole: _isAnimateHole,
+            builder: (context, position, size, fade, scale, hole) {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTapDown: (details) {
@@ -274,7 +287,7 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
                       position.dy,
                       size.width,
                       size.height,
-                    ).inflate(8.0),
+                    ).inflate(8.0 * hole),
                     borderRadius: 8.0,
                     color: const Color.fromARGB(30, 0, 0, 0),
                   ),
@@ -338,4 +351,9 @@ class _BarrierWithHolePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+schema.UITooltipTransitionTarget getTransitionTarget(schema.UIPageBlock? page) {
+  return page?.data?.tooltipTransitionTarget ??
+      schema.UITooltipTransitionTarget.ANCHOR;
 }
