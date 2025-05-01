@@ -241,11 +241,10 @@ class NativebrikBridgeManager {
                     }),
                 ])
             },
-            onNextTooltip: { pageId, anchorId in
-                print("NativebrikBridgeManager onNextTooltip: \(pageId), \(anchorId)")
+            onNextTooltip: { pageId in
+                print("NativebrikBridgeManager onNextTooltip: \(pageId))")
                 channel.invokeMethod(ON_NEXT_TOOLTIP_METHOD, arguments: [
                     "pageId": pageId,
-                    "anchorId": anchorId
                 ])
             },
             onDismiss: {
