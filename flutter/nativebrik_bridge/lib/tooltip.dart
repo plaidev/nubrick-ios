@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:nativebrik_bridge/utils/random.dart';
 import 'package:nativebrik_bridge/utils/tooltip_position.dart';
 import 'package:nativebrik_bridge/schema/generated.dart' as schema;
-import 'package:nativebrik_bridge/utils/tooltip_animation_wrapper.dart';
+import 'package:nativebrik_bridge/utils/tooltip_animation.dart';
 
 class NativebrikTooltip extends StatefulWidget {
   final Map<String, GlobalKey> keysReference;
@@ -20,14 +20,11 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     with TickerProviderStateMixin {
   schema.UIRootBlock? _rootBlock;
   final String _channelId = generateRandomString(16);
-  String? _currentAnchorId;
+  schema.UIPageBlock? _currentPage;
   Offset? _anchorPosition;
   Size? _anchorSize;
-  Size? _lastTooltipSize;
-
-  Offset? _animStartPosition;
-  Size? _animStartSize;
-  bool _animateMove = false;
+  Offset? _tooltipPosition;
+  Size? _tooltipSize;
 
   void _onDispatch(String name) async {
     print("NativebrikTooltipState _onDispatch: $name");
@@ -51,73 +48,33 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     if (destinationId == null) {
       return;
     }
-    _setupTooltip(destinationId);
+    await NativebrikBridgePlatform.instance.connectTooltipEmbedding(
+        _channelId,
+        schema.UIRootBlock(
+          id: generateRandomString(16),
+          data: schema.UIRootBlockData(
+            currentPageId: destinationId,
+            pages: uiroot.data?.pages,
+          ),
+        ));
+    await Future.delayed(const Duration(milliseconds: 100));
+    await _onNextTooltip(destinationId);
   }
 
-  void _setupTooltip(String pageId) async {
-    var page = _rootBlock?.data?.pages?.firstWhere((page) => page.id == pageId);
+  Future<void> _onNextTooltip(String pageId) async {
+    // find the page
+    var page =
+        _rootBlock?.data?.pages?.firstWhere((element) => element.id == pageId);
     if (page == null) {
       return;
     }
+    _currentPage = page;
     var anchorId = page.data?.tooltipAnchor;
     if (anchorId == null) {
       return;
     }
-    var tooltipSize = page.data?.tooltipSize;
-    if (tooltipSize == null) {
-      return;
-    }
-    final tooltipSizeValue = (tooltipSize.width != null &&
-            tooltipSize.height != null)
-        ? Size(tooltipSize.width!.toDouble(), tooltipSize.height!.toDouble())
-        : null;
-    if (tooltipSizeValue == null) return;
-    print("NativebrikTooltipState _setupTooltip.anchorId: $anchorId");
+    print("NativebrikTooltipState _onNextTooltip: $pageId, $anchorId");
     final key = widget.keysReference[anchorId];
-    if (key == null) {
-      return;
-    }
-    final context = key.currentContext;
-    if (context == null) {
-      return;
-    }
-    if (!context.mounted) return;
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) {
-      return;
-    }
-    final position = box.localToGlobal(Offset.zero);
-    final size = box.size;
-
-    if (_channelId.isNotEmpty) {
-      await NativebrikBridgePlatform.instance
-          .disconnectTooltipEmbedding(_channelId);
-    }
-    await NativebrikBridgePlatform.instance.connectTooltipEmbedding(
-      _channelId,
-      schema.UIRootBlock(
-        id: generateRandomString(16),
-        data: schema.UIRootBlockData(
-          pages: _rootBlock?.data?.pages,
-          currentPageId: pageId,
-        ),
-      ),
-    );
-
-    setState(() {
-      _currentAnchorId = anchorId;
-      _anchorPosition = position;
-      _anchorSize = size;
-      _lastTooltipSize = tooltipSizeValue;
-      _animStartPosition = position;
-      _animStartSize = size;
-      _animateMove = false;
-    });
-  }
-
-  void _onNextTooltip(String nextAnchorId) async {
-    print("NativebrikTooltipState _onNextTooltip: $nextAnchorId");
-    final key = widget.keysReference[nextAnchorId];
     if (key == null) {
       return;
     }
@@ -127,51 +84,93 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
       return;
     }
     if (!context.mounted) return;
+    final tooltipSize = page.data?.tooltipSize;
+    if (tooltipSize == null) {
+      return;
+    }
+    final tooltipSizeValue = (tooltipSize.width != null &&
+            tooltipSize.height != null)
+        ? Size(tooltipSize.width!.toDouble(), tooltipSize.height!.toDouble())
+        : null;
+    if (tooltipSizeValue == null) return;
+
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) {
       return;
     }
-    final position = box.localToGlobal(Offset.zero);
-    final size = box.size;
-    // Animate from current to new position/size
-    _animStartPosition = _anchorPosition;
-    _animStartSize = _anchorSize;
+    final anchorPosition = box.localToGlobal(Offset.zero);
+    final anchorSize = box.size;
+    final tooltipPosition = calculateTooltipPosition(
+      anchorPosition: anchorPosition,
+      anchorSize: anchorSize,
+      tooltipSize: tooltipSizeValue,
+      screenSize: MediaQuery.of(context).size,
+      placement: page.data?.tooltipPlacement ??
+          schema.UITooltipPlacement.BOTTOM_CENTER,
+    );
+    print(
+        "NativebrikTooltipState _onNextTooltip.tooltipPosition: $tooltipPosition");
     setState(() {
-      _currentAnchorId = nextAnchorId;
-      _anchorPosition = position;
-      _anchorSize = size;
-      _animateMove = true;
+      _anchorPosition = anchorPosition;
+      _anchorSize = anchorSize;
+      _tooltipPosition = tooltipPosition;
+      _tooltipSize = tooltipSizeValue;
     });
   }
 
   void _hideTooltip() {
+    print("NativebrikTooltipState _hideTooltip");
     if (_channelId.isNotEmpty) {
       NativebrikBridgePlatform.instance.disconnectTooltipEmbedding(_channelId);
     }
     setState(() {
-      _currentAnchorId = null;
       _anchorPosition = null;
       _anchorSize = null;
+      _tooltipPosition = null;
+      _tooltipSize = null;
       _rootBlock = null;
+      _currentPage = null;
     });
   }
 
   void _onAnchorTap() {
     // Default behavior: hide the tooltip
-    _hideTooltip();
+    print("NativebrikTooltipState _onAnchorTap");
+    if (_currentPage?.data?.tooltipTransitionTarget ==
+        schema.UITooltipTransitionTarget.ANCHOR) {
+      _goToNextPage();
+    }
+  }
+
+  void _onScreenTap() {
+    // Default behavior: hide the tooltip
+    print("NativebrikTooltipState _onScreenTap");
+    if (_currentPage?.data?.tooltipTransitionTarget ==
+        schema.UITooltipTransitionTarget.SCREEN) {
+      _goToNextPage();
+    }
+  }
+
+  void _goToNextPage() {
+    print("NativebrikTooltipState _goToNextPage");
+    if (_channelId.isEmpty) {
+      return;
+    }
+    var onTrigger = _currentPage?.data?.triggerSetting?.onTrigger;
+    if (onTrigger == null) {
+      return;
+    }
+    NativebrikBridgePlatform.instance
+        .callTooltipEmbeddingDispatch(_channelId, onTrigger);
   }
 
   Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
       case 'on-next-tooltip':
-        final nextAnchorId = call.arguments as String?;
-        if (nextAnchorId == null) return Future.value(false);
-        print(
-            "NativebrikTooltipState _handleMethod on-next-tooltip: $nextAnchorId");
-        _onNextTooltip(nextAnchorId);
+        final pageId = call.arguments["pageId"] as String;
+        _onNextTooltip(pageId);
         return Future.value(true);
       case 'on-dismiss-tooltip':
-        print("NativebrikTooltipState _handleMethod on-dismiss-tooltip");
         _hideTooltip();
         return Future.value(true);
       default:
@@ -210,43 +209,30 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
   }
 
   Widget _renderTooltip(BuildContext context) {
-    Widget tooltipWidget = const SizedBox.shrink();
-
+    print(
+        "NativebrikTooltipState _renderTooltip: $_anchorPosition, $_anchorSize, $_tooltipPosition, $_tooltipSize");
     if (_anchorPosition != null &&
         _anchorSize != null &&
-        _currentAnchorId != null &&
-        _lastTooltipSize != null) {
+        _tooltipPosition != null &&
+        _tooltipSize != null) {
       final screenSize = MediaQuery.of(context).size;
-      tooltipWidget = TooltipAnimationWrapper(
-        anchorPosition: _anchorPosition!,
-        anchorSize: _anchorSize!,
-        tooltipSize: _lastTooltipSize!,
-        previousAnchorPosition: _animateMove ? _animStartPosition : null,
-        previousAnchorSize: _animateMove ? _animStartSize : null,
-        animateMove: _animateMove,
-        builder: (context, fadeAnim, scaleAnim, animatedAnchorPos,
-            animatedAnchorSize) {
-          final Offset tooltipPos = calculateTooltipPosition(
-            anchorPosition: animatedAnchorPos,
-            anchorSize: animatedAnchorSize,
-            tooltipSize: _lastTooltipSize!,
-            screenSize: screenSize,
-            preferBelow: true,
-            margin: 16,
-          );
+      Widget tooltipWidget = AnimationFrame(
+        position: _tooltipPosition!,
+        size: _tooltipSize!,
+        builder: (context, position, size, fade, scale) {
           return Transform.translate(
-            offset: tooltipPos,
+            offset: position,
             child: FadeTransition(
-              opacity: fadeAnim,
+              opacity: fade,
               child: ScaleTransition(
-                scale: scaleAnim,
+                scale: scale,
                 child: Material(
                   color: Colors.transparent,
                   elevation: 99999,
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    width: _lastTooltipSize!.width,
-                    height: _lastTooltipSize!.height,
+                    width: size.width,
+                    height: size.height,
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       boxShadow: [
@@ -269,29 +255,26 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
       // Custom barrier with transparent hole over anchor
       return Stack(
         children: [
-          TooltipAnimationWrapper(
-            anchorPosition: _anchorPosition!,
-            anchorSize: _anchorSize!,
-            tooltipSize: _lastTooltipSize!,
-            previousAnchorPosition: _animateMove ? _animStartPosition : null,
-            previousAnchorSize: _animateMove ? _animStartSize : null,
-            animateMove: _animateMove,
-            builder: (context, _fadeAnim, _scaleAnim, animatedAnchorPos,
-                animatedAnchorSize) {
+          AnimationFrame(
+            position: _anchorPosition!,
+            size: _anchorSize!,
+            builder: (context, position, size, fade, scale) {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTapDown: (details) {
                   final tapPos = details.globalPosition;
                   final anchorRect = Rect.fromLTWH(
-                    animatedAnchorPos.dx,
-                    animatedAnchorPos.dy,
-                    animatedAnchorSize.width,
-                    animatedAnchorSize.height,
+                    position.dx,
+                    position.dy,
+                    size.width,
+                    size.height,
                   ).inflate(8.0);
                   final anchorRRect = RRect.fromRectAndRadius(
                       anchorRect, const Radius.circular(8.0));
                   if (anchorRRect.contains(tapPos)) {
                     _onAnchorTap();
+                  } else {
+                    _onScreenTap();
                   }
                   // Else, absorb tap (do nothing)
                 },
@@ -299,10 +282,10 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
                   size: screenSize,
                   painter: _BarrierWithHolePainter(
                     anchorRect: Rect.fromLTWH(
-                      animatedAnchorPos.dx,
-                      animatedAnchorPos.dy,
-                      animatedAnchorSize.width,
-                      animatedAnchorSize.height,
+                      position.dx,
+                      position.dy,
+                      size.width,
+                      size.height,
                     ).inflate(8.0),
                     borderRadius: 8.0,
                     color: const Color.fromARGB(30, 0, 0, 0),
@@ -315,8 +298,7 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
         ],
       );
     }
-
-    return tooltipWidget;
+    return const SizedBox.shrink();
   }
 
   Widget _renderEmbedding(BuildContext context) {
