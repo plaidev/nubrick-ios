@@ -71,7 +71,7 @@ class ModalRootViewController: UIViewController {
             self.modalViewController?.dismissModal()
             return
         }
-        
+
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
             self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
@@ -125,7 +125,7 @@ class RootView: UIView {
     private var event: UIBlockEventManager? = nil
     private var currentEmbeddedPageId: String = ""
     private var currentTooltipAnchorId: String? = nil
-    private var onNextTooltip: ((_ pageId: String, _ anchorId: String) -> Void) = { _,_  in }
+    private var onNextTooltip: ((_ pageId: String) -> Void) = { _ in }
     private var onDismiss: (() -> Void) = {}
     private var view: UIView? = nil
     private var currentPageView: PageView? = nil
@@ -145,7 +145,7 @@ class RootView: UIView {
         container: Container,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?,
-        onNextTooltip: ((_ pageId: String, _ anchorId: String) -> Void)? = nil,
+        onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) {
         self.id = root?.id ?? ""
@@ -155,7 +155,7 @@ class RootView: UIView {
             return page.data?.kind == PageKind.TRIGGER
         }
         self.modalViewController = modalViewController
-        self.onNextTooltip = onNextTooltip ?? { _,_ in }
+        self.onNextTooltip = onNextTooltip ?? { _ in }
         self.onDismiss = onDismiss ?? {}
         super.init(frame: .zero)
 
@@ -178,7 +178,7 @@ class RootView: UIView {
             self.presentPage(pageId: destId, props: nil)
         }
     }
-    
+
     func dispatch(event: UIBlockEventDispatcher) {
         if let page = self.currentPageView {
             // call event dispatch from the page view.
@@ -217,19 +217,19 @@ class RootView: UIView {
             self.onDismiss()
             return
         }
-        
+
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
             self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
             return
         }
-        
+
         // when it's tooltip
         if page?.data?.kind == PageKind.TOOLTIP {
             let anchorId = page?.data?.tooltipAnchor ?? ""
             if let currentAnchorId = self.currentTooltipAnchorId {
                 if currentAnchorId != anchorId { // when it's diffrent anchor, dismiss. and callback.
-                    self.onNextTooltip(pageId, anchorId)
+                    self.onNextTooltip(pageId)
                 }
             }
             self.currentTooltipAnchorId = anchorId
