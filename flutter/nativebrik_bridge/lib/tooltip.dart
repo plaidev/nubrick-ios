@@ -133,31 +133,19 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     });
   }
 
-  void _onAnchorTap() {
-    // Default behavior: hide the tooltip
-    print("NativebrikTooltipState _onAnchorTap");
-    if (_currentPage?.data?.tooltipTransitionTarget ==
-        schema.UITooltipTransitionTarget.ANCHOR) {
-      _goToNextPage();
-    }
-  }
-
-  void _onScreenTap() {
-    // Default behavior: hide the tooltip
-    print("NativebrikTooltipState _onScreenTap");
-    if (_currentPage?.data?.tooltipTransitionTarget ==
-        schema.UITooltipTransitionTarget.SCREEN) {
-      _goToNextPage();
-    }
-  }
-
-  void _goToNextPage() {
-    print("NativebrikTooltipState _goToNextPage");
-    if (_channelId.isEmpty) {
+  void _onTransitionTargetTap(bool isInAnchor) {
+    print("NativebrikTooltipState _onTransitionTargetTap: $isInAnchor");
+    final target = _currentPage?.data?.tooltipTransitionTarget ??
+        schema.UITooltipTransitionTarget.ANCHOR;
+    if (target == schema.UITooltipTransitionTarget.ANCHOR && !isInAnchor) {
       return;
     }
+
     var onTrigger = _currentPage?.data?.triggerSetting?.onTrigger;
     if (onTrigger == null) {
+      return;
+    }
+    if (_channelId.isEmpty) {
       return;
     }
     NativebrikBridgePlatform.instance
@@ -272,9 +260,9 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
                   final anchorRRect = RRect.fromRectAndRadius(
                       anchorRect, const Radius.circular(8.0));
                   if (anchorRRect.contains(tapPos)) {
-                    _onAnchorTap();
+                    _onTransitionTargetTap(true);
                   } else {
-                    _onScreenTap();
+                    _onTransitionTargetTap(false);
                   }
                   // Else, absorb tap (do nothing)
                 },
