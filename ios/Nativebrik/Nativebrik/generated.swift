@@ -595,7 +595,7 @@ struct UIPageBlockData: Decodable, Encodable {
   var tooltipSize: UITooltipSize?
   var tooltipAnchor: String?
   var tooltipPlacement: UITooltipPlacement?
-  var tooltipTransition: UITooltipTransition?
+  var tooltipTransitionTarget: UITooltipTransitionTarget?
   var props: [Property]?
   var query: String?
 }
@@ -718,10 +718,6 @@ enum UITooltipPlacement: String, Decodable, Encodable {
 struct UITooltipSize: Decodable, Encodable {
   var width: Int?
   var height: Int?
-}
-struct UITooltipTransition: Decodable, Encodable {
-  var target: UITooltipTransitionTarget?
-  var action: UIBlockEventDispatcher?
 }
 enum UITooltipTransitionTarget: String, Decodable, Encodable {
   case ANCHOR = "ANCHOR"
