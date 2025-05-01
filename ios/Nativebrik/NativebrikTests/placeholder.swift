@@ -74,4 +74,38 @@ final class CompileTemplateTests: XCTestCase {
         let result = compile(template, json)
         XCTAssertEqual("{\"Key\":\"Value\"}", result)
     }
+    
+    func testShouldCompileTemplateWithJsonFmtString() throws {
+        let json: [String: Any] = [
+            "value": "hello"
+        ]
+        let template = "{{ value | json }}"
+        let result = compile(template, json)
+        XCTAssertEqual("\"hello\"", result)
+    }
+    
+    func testShouldCompileTemplateWithJsonFmtNumber() throws {
+        let json: [String: Any] = [
+            "value": 100
+        ]
+        let template = "{{ value | json }}"
+        let result = compile(template, json)
+        XCTAssertEqual("100", result)
+    }
+    
+    func testShouldCompileTemplateWithJsonFmtNull() throws {
+        let json: [String: Any] = [
+            "value": NSNull()
+        ]
+        let template = "{{ value | json }}"
+        let result = compile(template, json)
+        XCTAssertEqual("null", result)
+    }
+    
+    func testShouldCompileTemplateWithJsonFmtNull2() throws {
+        let json: [String: Any] = [:]
+        let template = "{{ value.test | json }}"
+        let result = compile(template, json)
+        XCTAssertEqual("null", result)
+    }
 }
