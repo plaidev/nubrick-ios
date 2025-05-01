@@ -13,6 +13,7 @@ import Nativebrik
 struct EmbeddingEntity {
     let uiview: UIView
     let channel: FlutterMethodChannel
+    let accessor: __DO_NOT_USE__NativebrikBridgedViewAccessor?
 }
 
 struct RemoteConfigEntity {
@@ -97,7 +98,8 @@ class NativebrikBridgeManager {
         }
         let embeedingEntity = EmbeddingEntity(
             uiview: uiview,
-            channel: channel
+            channel: channel,
+            accessor: nil
         )
         self.embeddingMaps[channelId] = embeedingEntity
     }
@@ -110,6 +112,7 @@ class NativebrikBridgeManager {
         guard let entity = self.embeddingMaps[channelId] else {
             return nil
         }
+        print("get embedding entity \(channelId)")
         return entity
     }
 
@@ -184,7 +187,8 @@ class NativebrikBridgeManager {
         }
         let embeedingEntity = EmbeddingEntity(
             uiview: uiview,
-            channel: channel
+            channel: channel,
+            accessor: nil
         )
         self.embeddingMaps[embeddingChannelId] = embeedingEntity
     }
@@ -221,7 +225,8 @@ class NativebrikBridgeManager {
             return
         }
         let channel = FlutterMethodChannel(name: "Nativebrik/Embedding/\(channelId)", binaryMessenger: messenger)
-        let uiview = nativebrikClient.experiment.__do_not_use__render_uiview(
+        print("connect tooltip embedding", channelId)
+        let accessor = nativebrikClient.experiment.__do_not_use__render_uiview(
             json: rootBlock,
             onEvent: { event in
                 channel.invokeMethod(ON_EVENT_METHOD, arguments: [
@@ -236,19 +241,37 @@ class NativebrikBridgeManager {
                     }),
                 ])
             },
-            onNextTooltip: { anchorId in
-                print("NativebrikBridgeManager onNextTooltip: \(anchorId)")
-                channel.invokeMethod(ON_NEXT_TOOLTIP_METHOD, arguments: anchorId)
+            onNextTooltip: { pageId, anchorId in
+                print("NativebrikBridgeManager onNextTooltip: \(pageId), \(anchorId)")
+                channel.invokeMethod(ON_NEXT_TOOLTIP_METHOD, arguments: [
+                    "pageId": pageId,
+                    "anchorId": anchorId
+                ])
             },
             onDismiss: {
                 channel.invokeMethod(ON_DISMISS_TOOLTIP_METHOD, arguments: nil)
             }
         )
+        print("accessor", accessor)
         let embeedingEntity = EmbeddingEntity(
-            uiview: uiview,
-            channel: channel
+            uiview: accessor.view,
+            channel: channel,
+            accessor: accessor
         )
+        print("add emedding: \(channelId)")
         self.embeddingMaps[channelId] = embeedingEntity
+    }
+    
+    func callTooltipEmbeddingDispatch(channelId: String, event: String) {
+        guard let entity = self.embeddingMaps[channelId] else {
+            return
+        }
+        guard let accessor = entity.accessor else {
+            return
+        }
+        do {
+            try accessor.dispatch(event: event)
+        } catch {}
     }
 
     func disconnectTooltipEmbedding(channelId: String) {

@@ -147,6 +147,12 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             let rootBlock = args["json"] as! String
             self.manager.connectTooltipEmbedding(channelId: channelId, rootBlock: rootBlock, messenger: self.messenger)
             result("ok")
+            
+        case "callTooltipEmbeddingDispatch":
+            let args = call.arguments as! [String:Any]
+            let channelId = args["channelId"] as! String
+            let event = args["event"] as! String
+            self.manager.callTooltipEmbeddingDispatch(channelId: channelId, event: event)
 
         case "disconnectTooltipEmbedding":
             let channelId = call.arguments as! String

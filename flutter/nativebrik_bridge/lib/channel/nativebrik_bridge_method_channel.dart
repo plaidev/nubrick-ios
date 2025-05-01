@@ -164,6 +164,18 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
   }
 
   @override
+  Future<void> callTooltipEmbeddingDispatch(
+      String channelId, UIBlockEventDispatcher event) async {
+    await methodChannel.invokeMethod<void>(
+      'callTooltipEmbeddingDispatch',
+      <String, dynamic>{
+        'channelId': channelId,
+        'event': jsonEncode(event.encode()),
+      },
+    );
+  }
+
+  @override
   Future<String?> disconnectTooltipEmbedding(String channelId) async {
     final result = await methodChannel.invokeMethod<String>(
       'disconnectTooltipEmbedding',

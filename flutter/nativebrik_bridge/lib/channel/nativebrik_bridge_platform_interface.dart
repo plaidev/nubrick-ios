@@ -86,6 +86,12 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
         'connectTooltipEmbedding() has not been implemented.');
   }
 
+  Future<void> callTooltipEmbeddingDispatch(
+      String channelId, UIBlockEventDispatcher event) {
+    throw UnimplementedError(
+        'callTooltipEmbeddingDispatch() has not been implemented.');
+  }
+
   Future<String?> disconnectTooltipEmbedding(String channelId) {
     throw UnimplementedError(
         'disconnectTooltipEmbedding() has not been implemented.');
