@@ -108,7 +108,7 @@ class TriggerViewController: UIViewController {
                     case .EUIRootBlock(let root):
                         let root = ModalRootViewController(
                             root: root,
-                            container: container,
+                            container: ContainerImpl(container as! ContainerImpl, arguments: nil),
                             modalViewController: self?.modalViewController
                         )
                         if let currentVC = self?.currentVC {
