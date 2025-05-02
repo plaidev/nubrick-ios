@@ -136,6 +136,8 @@ class TextInputView: UIView, UITextFieldDelegate {
         if let formKey = self.formKey {
             if let value = self.context?.getFormValueByKey(key: formKey) as? String {
                 initialValue = value
+            } else {
+                self.context?.writeToForm(key: formKey, value: initialValue ?? "")
             }
         }
         
@@ -295,6 +297,8 @@ class SelectInputView: UIControl {
                 if let found = found {
                     initialValue = found
                 }
+            } else {
+                self.context?.writeToForm(key: formKey, value: initialValue?.value ?? "None")
             }
         }
         
@@ -510,6 +514,8 @@ class MultiSelectInputView: UIControl {
         if let formKey = self.formKey {
             if let value = self.context?.getFormValueByKey(key: formKey) as? [String] {
                 self.values = value
+            } else {
+                self.context?.writeToForm(key: formKey, value: self.values)
             }
         }
         
@@ -602,6 +608,8 @@ class SwitchInputView: UIControl {
         if let formKey = self.formKey {
             if let value = self.context?.getFormValueByKey(key: formKey) as? Bool {
                 toggle.isOn = value
+            } else {
+                self.context?.writeToForm(key: formKey, value: toggle.isOn)
             }
         }
         
