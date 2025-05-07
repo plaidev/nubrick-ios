@@ -6,12 +6,13 @@
 //
 
 import Foundation
-import YogaKit
 import UIKit
+import YogaKit
 
 class FlexView: AnimatedUIControl {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
-    
+    private var isOverflowView = false
+
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
@@ -30,6 +31,8 @@ class FlexView: AnimatedUIControl {
 
     func initialize(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
         let direction = parseDirection(block.data?.direction)
+        self.isOverflowView =
+            block.data?.overflow == Overflow.SCROLL || block.data?.overflow == Overflow.HIDDEN
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.display = .flex
@@ -38,18 +41,25 @@ class FlexView: AnimatedUIControl {
             layout.alignItems = parseAlignItems(block.data?.alignItems)
             layout.justifyContent = parseJustifyContent(block.data?.justifyContent)
             configurePadding(layout: layout, frame: block.data?.frame)
-            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
+            configureSize(
+                layout: layout, frame: block.data?.frame,
+                parentDirection: context.getParentDireciton())
         }
 
-        let gesture = configureOnClickGesture(target: self, action: #selector(onClicked(sender:)), context: context, event: block.data?.onClick)
-        let children = block.data?.children?.map {
-            uiblockToUIView(data: $0, context: context.instanciateFrom(
-                UIBlockContextChildInit(
-                    parentClickListener: gesture,
-                    parentDirection: block.data?.direction
-                )
-            ))
-        } ?? []
+        let gesture = configureOnClickGesture(
+            target: self, action: #selector(onClicked(sender:)), context: context,
+            event: block.data?.onClick)
+        let children =
+            block.data?.children?.map {
+                uiblockToUIView(
+                    data: $0,
+                    context: context.instanciateFrom(
+                        UIBlockContextChildInit(
+                            parentClickListener: gesture,
+                            parentDirection: block.data?.direction
+                        )
+                    ))
+            } ?? []
         // somehow, a container.padding won't work when the container size is 100%.
         // so we adjust padding virtually with the margin of the last child.
         let enableAdjustingXAxisPadding = direction == .row && (block.data?.frame?.width == 0)
@@ -68,11 +78,15 @@ class FlexView: AnimatedUIControl {
                 }
                 if index == lastChildIndex {
                     if enableAdjustingXAxisPadding {
-                        layout.marginRight = parseInt((block.data?.frame?.paddingRight ?? 0) +  (block.data?.frame?.paddingLeft ?? 0))
+                        layout.marginRight = parseInt(
+                            (block.data?.frame?.paddingRight ?? 0)
+                                + (block.data?.frame?.paddingLeft ?? 0))
 
                     }
                     if enableAdjustingYAxisPadding {
-                        layout.marginBottom = parseInt((block.data?.frame?.paddingTop ?? 0) +  (block.data?.frame?.paddingBottom ?? 0))
+                        layout.marginBottom = parseInt(
+                            (block.data?.frame?.paddingTop ?? 0)
+                                + (block.data?.frame?.paddingBottom ?? 0))
                     }
                 }
 
@@ -87,7 +101,7 @@ class FlexView: AnimatedUIControl {
 
             self.addSubview(child)
         }
-        
+
         if childFlexShrink == nil {
             if let bgSrc = block.data?.frame?.backgroundSrc {
                 let bgSrc = compile(bgSrc, context.getVariable())
@@ -98,10 +112,13 @@ class FlexView: AnimatedUIControl {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        configureBorder(view: self, frame: self.block.data?.frame)
+        if !isOverflowView {
+            configureBorder(view: self, frame: self.block.data?.frame)
+        }
     }
 }
 
+// FlexOverflowView creates a scrollable view and contains FlexView inside as a child.
 class FlexOverflowView: UIScrollView {
     private var flexView: UIView = UIView()
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
@@ -127,15 +144,19 @@ class FlexOverflowView: UIScrollView {
                 layout.alignItems = .flexStart
                 layout.justifyContent = .center
             }
-            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
+            configureSize(
+                layout: layout, frame: block.data?.frame,
+                parentDirection: context.getParentDireciton())
         }
 
         self.showsVerticalScrollIndicator = false
         self.showsHorizontalScrollIndicator = false
         self.isScrollEnabled = (block.data?.overflow == Overflow.SCROLL) ? true : false
 
-        let _ = configureOnClickGesture(target: self, action: #selector(onClicked(sender:)), context: context, event: block.data?.onClick)
-        let flexView = FlexView(block: block, context: context, childFlexShrink: 0) // set child's size to shrink 0.
+        let _ = configureOnClickGesture(
+            target: self, action: #selector(onClicked(sender:)), context: context,
+            event: block.data?.onClick)
+        let flexView = FlexView(block: block, context: context, childFlexShrink: 0)  // set child's size to shrink 0.
         flexView.configureLayout { layout in
             if direction == .column {
                 layout.width = .init(value: 100, unit: .percent)
@@ -155,7 +176,7 @@ class FlexOverflowView: UIScrollView {
         flexView.layer.backgroundColor = .init(gray: 0, alpha: 0)
         self.flexView = flexView
         self.addSubview(flexView)
-        
+
         if let bgSrc = block.data?.frame?.backgroundSrc {
             let bgSrc = compile(bgSrc, context.getVariable())
             loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
