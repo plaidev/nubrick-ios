@@ -11,6 +11,7 @@ import YogaKit
 
 class FlexView: AnimatedUIControl {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
+    private var isOverflowView = false
 
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -30,6 +31,8 @@ class FlexView: AnimatedUIControl {
 
     func initialize(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
         let direction = parseDirection(block.data?.direction)
+        self.isOverflowView =
+            block.data?.overflow == Overflow.SCROLL || block.data?.overflow == Overflow.HIDDEN
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.display = .flex
@@ -109,19 +112,23 @@ class FlexView: AnimatedUIControl {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        configureBorder(view: self, frame: self.block.data?.frame)
+        if !isOverflowView {
+            configureBorder(view: self, frame: self.block.data?.frame)
+        }
     }
 }
 
 // FlexOverflowView creates a scrollable view and contains FlexView inside as a child.
 class FlexOverflowView: UIScrollView {
     private var flexView: UIView = UIView()
+    private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
 
     init(block: UIFlexContainerBlock, context: UIBlockContext) {
         super.init(frame: .zero)
+        self.block = block
 
         let direction = parseDirection(block.data?.direction)
         let overflow = parseOverflow(block.data?.overflow)
@@ -186,7 +193,7 @@ class FlexOverflowView: UIScrollView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        self.flexView.frame = self.bounds  // fit flexView to scrollView
         self.contentSize = self.flexView.bounds.size
+        configureBorder(view: self, frame: self.block.data?.frame)
     }
 }
