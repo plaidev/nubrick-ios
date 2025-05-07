@@ -193,8 +193,19 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         return client.experiment.container.fetchEmbedding(experimentId, componentId)
     }
 
+    suspend fun connectTooltip(trigger: String): Result<Any?> {
+        return client.experiment.container.fetchTooltip(trigger)
+    }
+
     @Composable
-    fun render(modifier: Modifier = Modifier, arguments: Any? = null, data: Any?, onEvent: ((event: Event) -> Unit)) {
+    fun render(
+        modifier: Modifier = Modifier,
+        arguments: Any? = null,
+        data: Any?,
+        onEvent: ((event: Event) -> Unit),
+        onNextTooltip: ((pageId: String) -> Unit) = {},
+        onDismiss: (() -> Unit) = {}
+    ) {
         val container = remember(arguments) {
             client.experiment.container.initWith(arguments)
         }
@@ -209,6 +220,10 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
                     container = container,
                     root = data.data,
                     onEvent = onEvent,
+                    onNextTooltip = onNextTooltip,
+                    onDismiss = {
+                        onDismiss()
+                    }
                 )
             }
         } else {
