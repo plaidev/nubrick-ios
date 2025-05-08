@@ -20,6 +20,7 @@ import com.nativebrik.sdk.component.TriggerViewModel
 import com.nativebrik.sdk.data.CacheStore
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.ContainerImpl
+import com.nativebrik.sdk.data.FormRepositoryImpl
 import com.nativebrik.sdk.data.database.NativebrikDbHelper
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
@@ -28,7 +29,7 @@ import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-const val VERSION = "0.4.1"
+const val VERSION = "0.4.2"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -141,6 +142,7 @@ public class NativebrikExperiment {
             }),
             user = user,
             db = db,
+            formRepository = FormRepositoryImpl(),
             cache = CacheStore(config.cachePolicy),
             context = context,
         )
