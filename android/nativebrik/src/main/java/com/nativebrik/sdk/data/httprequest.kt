@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+
 internal interface HttpRequestRepository {
     suspend fun request(req: ApiHttpRequest): Result<JsonElement>
 }
@@ -19,6 +20,7 @@ internal class HttpRequestRepositoryImpl(): HttpRequestRepository {
             }
             val method = req.method ?: ApiHttpRequestMethod.GET
             connection.requestMethod = method.toString()
+            connection.doInput = true
 
             // can send data as body
             if (method != ApiHttpRequestMethod.GET && method != ApiHttpRequestMethod.TRACE) run {
