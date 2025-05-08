@@ -123,6 +123,8 @@ internal fun createHttpUrlConnection(url: String): Result<HttpURLConnection> {
     try {
         val url = URL(url)
         val connection = url.openConnection() as HttpURLConnection
+        connection.connectTimeout = CONNECT_TIMEOUT
+        connection.readTimeout = READ_TIMEOUT
         return Result.success(connection)
     } catch (e: Exception) {
         return Result.failure(e)
@@ -144,7 +146,6 @@ internal fun setBody(connection: HttpURLConnection, body: String) {
 
 internal fun connectAndGetResponse(connection: HttpURLConnection): Result<String> {
     try {
-        connection.doInput = true
         connection.connect()
         val responseCode = connection.responseCode
         if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -154,7 +155,6 @@ internal fun connectAndGetResponse(connection: HttpURLConnection): Result<String
             while (br.readLine().also { line = it } != null) {
                 sb.append(line)
             }
-
             return Result.success(sb.toString())
         } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
             return Result.failure(NotFoundException())
@@ -164,7 +164,7 @@ internal fun connectAndGetResponse(connection: HttpURLConnection): Result<String
     } catch (e: IOException) {
         return Result.failure(e)
     } finally {
-        connection?.disconnect()
+        connection.disconnect()
     }
 }
 
