@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.nativebrik.example"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.nativebrik.example"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 

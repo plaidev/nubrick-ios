@@ -12,7 +12,7 @@ version = "0.4.2"
 
 android {
     namespace = "com.nativebrik.sdk"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 26
