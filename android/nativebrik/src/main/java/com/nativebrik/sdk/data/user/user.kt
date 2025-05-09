@@ -137,7 +137,7 @@ class NativebrikUser {
             this.packageName = packageName
             this.properties[BuiltinUserProperty.appId.toString()] = packageName
             val appVersion = context.packageManager.getPackageInfo(packageName, 0).versionName
-            this.properties[BuiltinUserProperty.appVersion.toString()] = appVersion
+            this.properties[BuiltinUserProperty.appVersion.toString()] = appVersion ?: "0.0.0"
             this.appVersion = appVersion
         } catch (_: Exception) {
             this.properties[BuiltinUserProperty.appVersion.toString()] = "0.0.0"
