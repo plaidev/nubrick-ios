@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -299,11 +300,16 @@ internal fun Root(
                             viewModel.handleModalDismiss()
                         },
                         properties = bottomSheetProps,
+                        dragHandle = {}
                     ) {
                         ModalBottomSheetBackHandler {
                             viewModel.back()
                         }
-                        Column {
+                        Column(
+                            modifier = Modifier
+                                .heightIn(max = LocalConfiguration.current.screenHeightDp.dp)
+                                .fillMaxHeight()
+                        ) {
                             AnimatedContent(
                                 targetState = viewModel.displayedModalIndex.intValue,
                                 transitionSpec = {
