@@ -165,10 +165,16 @@ public class NativebrikExperiment {
     }
 
     public func dispatch(_ event: NativebrikEvent) {
+        if !isNativebrikAvailable {
+            return
+        }
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
 
     public func record(exception: NSException) {
+        if !isNativebrikAvailable {
+            return
+        }
         self.container.record(exception)
     }
 
@@ -291,6 +297,9 @@ public class NativebrikExperiment {
 
     // for flutter integration
     public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NativebrikError> {
+        if !isNativebrikAvailable {
+            return .failure(.notFound)
+        }
         switch await self.container.fetchTooltip(trigger: trigger) {
         case .success(let result):
             do {
