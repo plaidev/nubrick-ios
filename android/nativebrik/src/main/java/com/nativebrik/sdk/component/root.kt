@@ -1,5 +1,6 @@
 package com.nativebrik.sdk.component
 
+import SetDialogDestinationToEdgeToEdge
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -10,22 +11,16 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetDefaults
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -38,10 +33,10 @@ import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockData
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockProvider
+import com.nativebrik.sdk.component.renderer.*
 import com.nativebrik.sdk.component.renderer.ModalBottomSheetBackHandler
 import com.nativebrik.sdk.component.renderer.NavigationHeader
 import com.nativebrik.sdk.component.renderer.Page
-import com.nativebrik.sdk.component.renderer.WebViewPage
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.schema.PageKind
 import com.nativebrik.sdk.schema.Property
@@ -334,18 +329,25 @@ internal fun Root(
 
                 if (viewModel.webviewUrl.value.isNotEmpty()) {
                     Dialog(
-                        properties = DialogProperties(usePlatformDefaultWidth = false),
+                        properties = DialogProperties(
+                            usePlatformDefaultWidth = true,
+                            decorFitsSystemWindows = false
+                        ),
                         onDismissRequest = {}
                     ) {
+                        val statusBarHeight = with(LocalDensity.current) {
+                            WindowInsets.statusBars.getTop(LocalDensity.current).toDp()
+                        }
+                        SetDialogDestinationToEdgeToEdge()
                         Box(
-                            Modifier.fillMaxSize()
+                            Modifier.fillMaxSize().background(Color.LightGray)
                         ) {
                             WebViewPage(
                                 url = viewModel.webviewUrl.value,
                                 onDismiss = {
                                     viewModel.handleWebviewDismiss()
                                 },
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize().padding(top = statusBarHeight)
                             )
                         }
                     }
