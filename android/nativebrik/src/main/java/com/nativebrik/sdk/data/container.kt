@@ -105,11 +105,12 @@ internal class ContainerImpl(
     }
 
     override suspend fun sendHttpRequest(req: ApiHttpRequest, variable: JsonElement?): Result<JsonElement> {
+        val mergedVariable = mergeJsonElements(variable, createVariableForTemplate())
         val compiledReq = ApiHttpRequest(
-            url = req.url?.let { compile(it, variable) },
+            url = req.url?.let { compile(it, mergedVariable) },
             method = req.method,
-            headers = req.headers?.map { ApiHttpHeader(compile(it.name ?: "", variable), compile(it.value ?: "", variable)) },
-            body = req.body?.let { compile(it, variable) },
+            headers = req.headers?.map { ApiHttpHeader(compile(it.name ?: "", mergedVariable), compile(it.value ?: "", mergedVariable)) },
+            body = req.body?.let { compile(it, mergedVariable) },
         )
         return this.httpRequestRepository.request(compiledReq)
     }

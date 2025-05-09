@@ -22,7 +22,9 @@ internal fun Switch(block: UISwitchInputBlock, modifier: Modifier = Modifier) {
                 is FormValue.Bool -> {
                     value = v.bool
                 }
-                else -> {}
+                else -> {
+                    container.setFormValue(key, FormValue.Bool(value))
+                }
             }
         }
         mutableStateOf(value)

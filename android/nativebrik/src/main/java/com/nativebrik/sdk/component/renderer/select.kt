@@ -45,7 +45,9 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
                 is FormValue.Str -> {
                     value = v.str
                 }
-                else -> {}
+                else -> {
+                    container.setFormValue(key, FormValue.Str(value))
+                }
             }
         }
 
@@ -148,7 +150,9 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                 is FormValue.StrList -> {
                     value = v.list
                 }
-                else -> {}
+                else -> {
+                    container.setFormValue(key, FormValue.StrList(value))
+                }
             }
         }
 

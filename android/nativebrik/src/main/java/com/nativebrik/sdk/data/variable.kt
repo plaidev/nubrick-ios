@@ -8,6 +8,36 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
+
+internal fun mergeJsonElements(a: JsonElement?, b: JsonElement?): JsonElement {
+    if (a == null && b == null) {
+        return JsonNull
+    }
+    if (a == null || b == null) {
+        return a ?: b as JsonElement
+    }
+    if (!(a is JsonObject && b is JsonObject)) {
+        return a
+    }
+
+    val objectA = a.jsonObject
+    val objectB = b.jsonObject
+    val result = mutableMapOf<String, JsonElement>()
+    for ((key, value) in objectA) {
+        result[key] = value
+    }
+    for ((key, valueB) in objectB) {
+        val valueA = result[key]
+        result[key] = if (valueA is JsonObject && valueB is JsonObject) {
+            mergeJsonElements(valueA, valueB)
+        } else {
+            valueB
+        }
+    }
+
+    return JsonObject(result)
+}
 
 internal fun createVariableForTemplate(
     user: NativebrikUser? = null,

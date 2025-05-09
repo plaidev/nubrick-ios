@@ -14,8 +14,6 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
@@ -24,7 +22,9 @@ import androidx.compose.ui.graphics.Color
 import com.nativebrik.sdk.component.provider.container.ContainerContext
 import com.nativebrik.sdk.component.provider.data.DataContext
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 private var LocalEventListener = compositionLocalOf<EventListenerState> {
@@ -43,7 +43,7 @@ internal data class EventListenerState(
 internal fun rememberEventListenerState(
     listener: (event: UIBlockEventDispatcher) -> Unit
 ): EventListenerState {
-    var state: EventListenerState by remember {
+    val state: EventListenerState by remember {
         mutableStateOf(EventListenerState(listener))
     }
     return remember(state) {
@@ -54,7 +54,7 @@ internal fun rememberEventListenerState(
 @Composable
 internal fun EventListenerProvider(
     listener: (event: UIBlockEventDispatcher) -> Unit,
-    content: @Composable() () -> Unit,
+    content: @Composable () -> Unit,
 ) {
     val state = rememberEventListenerState(listener)
     CompositionLocalProvider(
@@ -64,10 +64,10 @@ internal fun EventListenerProvider(
     }
 }
 
+@OptIn(DelicateCoroutinesApi::class)
 @Composable
 internal fun Modifier.eventDispatcher(eventDispatcher: UIBlockEventDispatcher?): Modifier {
     return composed {
-        val scope = rememberCoroutineScope()
         val container = ContainerContext.value
         val data = DataContext.state.data
         val eventListener = LocalEventListener.current
@@ -75,16 +75,16 @@ internal fun Modifier.eventDispatcher(eventDispatcher: UIBlockEventDispatcher?):
         this.clickable(true) {
             val req = event.httpRequest
             if (req != null) {
-                scope.launch(Dispatchers.IO) {
+                GlobalScope.launch(Dispatchers.IO) {
                     container
                         .sendHttpRequest(req, data)
                         .onSuccess {
-                            scope.launch(Dispatchers.Main) {
+                            GlobalScope.launch(Dispatchers.Main) {
                                 eventListener.dispatch(event)
                             }
                         }
                         .onFailure {
-                            scope.launch(Dispatchers.Main) {
+                            GlobalScope.launch(Dispatchers.Main) {
                                 eventListener.dispatch(event)
                             }
                         }

@@ -21,7 +21,7 @@ class TooltipViewController: UIViewController, UIPopoverPresentationControllerDe
         self.popoverPresentationController?.delegate = self
         self.popoverPresentationController?.permittedArrowDirections = UIPopoverArrowDirection([.down, .up])
     }
-    
+
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
@@ -35,14 +35,14 @@ class TooltipViewController: UIViewController, UIPopoverPresentationControllerDe
         label.text = self.message
         label.font = .systemFont(ofSize: 16, weight: .semibold)
         self.view.addSubview(label)
-        
+
         let labelHeight = label.intrinsicContentSize.height
         let labelWidth = label.intrinsicContentSize.width
         label.frame.size.height = labelHeight
         label.frame.size.width = labelWidth
         self.preferredContentSize = CGSize(width: 32 + labelWidth, height: 32 + labelHeight)
     }
-        
+
     // UIPopoverPresentationControllerDelegate
     func adaptivePresentationStyle(for controller: UIPresentationController, traitCollection: UITraitCollection) -> UIModalPresentationStyle {
         return .none
@@ -58,7 +58,7 @@ class InputIconView: UIControl {
         let size = size ?? 16
         let paddingRight = padding ?? 0
         let paddingLeft = padding ?? 4
-        
+
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.paddingLeft = .init(integerLiteral: paddingLeft)
@@ -68,7 +68,7 @@ class InputIconView: UIControl {
             layout.alignItems = .center
             layout.justifyContent = .center
         }
-        
+
         let iconView = UIImageView(image: UIImage(systemName: systemName))
         iconView.configureLayout { layout in
             layout.isEnabled = true
@@ -79,7 +79,7 @@ class InputIconView: UIControl {
         if let color = color {
             iconView.tintColor = color
         }
-        
+
         if #available(iOS 14.0, *), let message = message {
             self.addAction(.init { _ in
                 if #available(iOS 17.0, *) {
@@ -88,16 +88,16 @@ class InputIconView: UIControl {
                 }
             }, for: .touchDown)
         }
-                
+
         self.addSubview(iconView)
     }
-    
+
     deinit {
         if self.window?.rootViewController?.presentedViewController is TooltipViewController {
             self.window?.rootViewController?.dismiss(animated: true)
         }
     }
-    
+
     override func layoutSubviews() {
         super.layoutSubviews()
         self.yoga.applyLayout(preservingOrigin: true)
@@ -108,30 +108,30 @@ class TextInputView: UIView, UITextFieldDelegate {
     let formKey: String?
     let context: UIBlockContext?
     private var block = UITextInputBlock()
-    
+
     var textInput: UITextField? = nil
     var validateRegex: String? = nil
     var fontSize: Int? = nil
     var paddingRight: Int? = nil
     var errorMessage: UITooltipMessage? = nil
-    
+
     required init?(coder: NSCoder) {
         self.formKey = nil
         self.context = nil
         super.init(coder: coder)
     }
-    
+
     init(block: UITextInputBlock, context: UIBlockContext) {
         self.formKey = block.data?.key
         self.context = context
         super.init(frame: .zero)
-        
+
         self.block = block
         self.fontSize = block.data?.size
         self.paddingRight = block.data?.frame?.paddingRight
         self.errorMessage = block.data?.errorMessage
         self.validateRegex = block.data?.regex
-        
+
         var initialValue = block.data?.value
         if let formKey = self.formKey {
             if let value = self.context?.getFormValueByKey(key: formKey) as? String {
@@ -140,15 +140,14 @@ class TextInputView: UIView, UITextFieldDelegate {
                 self.context?.writeToForm(key: formKey, value: initialValue ?? "")
             }
         }
-        
+
         // wrap layout
         self.configureLayout { layout in
             layout.isEnabled = true
-            layout.height = YGValueUndefined
             layout.width = .init(value: 100.0, unit: .percent)
             layout.flexShrink = 1
         }
-        
+
         // toolbar for input
         let toolbar = UIToolbar()
         let space = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
@@ -177,7 +176,7 @@ class TextInputView: UIView, UITextFieldDelegate {
             textInput.rightView = UIView(frame: CGRect(x: 0, y: 0, width: paddingRight, height: 0))
             textInput.rightViewMode = .always
         }
-        
+
         if let color = block.data?.color {
             textInput.textColor = parseColor(color)
         } else {
@@ -205,16 +204,16 @@ class TextInputView: UIView, UITextFieldDelegate {
 
         self.addSubview(textInput)
     }
-    
+
     override func layoutSubviews() {
         super.layoutSubviews()
         configureBorder(view: self, frame: self.block.data?.frame)
     }
-    
+
     @objc func doneButtonTapped() {
         self.textInput?.resignFirstResponder()
     }
-    
+
     @objc func onEditingChanged(sender: UITextField) {
         guard let text = sender.text else {
             return
@@ -231,7 +230,7 @@ class TextInputView: UIView, UITextFieldDelegate {
             let view = InputIconView(systemName: "checkmark.circle", message: nil, color: .systemBlue, size: self.fontSize, padding: self.paddingRight)
             sender.rightView = view
             sender.rightViewMode = .always
-            
+
             if let formKey = self.formKey {
                 self.context?.writeToForm(key: formKey, value: text)
             }
@@ -240,14 +239,14 @@ class TextInputView: UIView, UITextFieldDelegate {
             let view = InputIconView(systemName: "info.circle.fill", message: self.errorMessage?.title, color: .systemRed, size: self.fontSize, padding: self.paddingRight)
             sender.rightView = view
             sender.rightViewMode = .always
-            
+
             if let formKey = self.formKey {
                 self.context?.writeToForm(key: formKey, value: "")
             }
         }
         return
     }
-    
+
     // UITextFieldDelegate
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
@@ -263,21 +262,20 @@ class SelectInputView: UIControl {
         self.context = nil
         super.init(coder: coder)
     }
-    
+
     init(block: UISelectInputBlock, context: UIBlockContext) {
         self.block = block
         self.formKey = block.data?.key
         self.context = context
         super.init(frame: .zero)
-        
+
         // wrap layout
         self.configureLayout { layout in
             layout.isEnabled = true
-            layout.width = YGValueUndefined
             layout.width = .init(value: 100.0, unit: .percent)
             layout.flexShrink = 1
         }
-        
+
         var initialValue = block.data?.options?.first(where: { option in
             if option.value == block.data?.value {
                 return true
@@ -301,7 +299,7 @@ class SelectInputView: UIControl {
                 self.context?.writeToForm(key: formKey, value: initialValue?.value ?? "None")
             }
         }
-        
+
         let button = UIButton(frame: .zero)
         button.configureLayout { layout in
             layout.isEnabled = true
@@ -312,7 +310,7 @@ class SelectInputView: UIControl {
             button.setTitleColor(.label, for: .normal)
         }
         button.contentHorizontalAlignment = parseTextAlignToHorizontalAlignment(block.data?.textAlign)
-        
+
         if #available(iOS 15.0, *) {
             var config = UIButton.Configuration.plain()
             let frame = block.data?.frame
@@ -335,7 +333,7 @@ class SelectInputView: UIControl {
             config.baseForegroundColor = .tertiaryLabel
             button.configuration = config
         }
-        
+
         if #available(iOS 14.0, *) {
             let handleSelect = { (action: UIAction) in
                 button.setTitle(action.title, for: .application)
@@ -358,13 +356,13 @@ class SelectInputView: UIControl {
                 button.changesSelectionAsPrimaryAction = true
             }
         }
-        
+
         self.addSubview(button)
     }
-    
+
     deinit {
     }
-    
+
     override func layoutSubviews() {
         super.layoutSubviews()
         configureBorder(view: self, frame: self.block.data?.frame)
@@ -399,7 +397,7 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
         self.options = options ?? []
         self.onSelect = onSelect
         var selected: [UISelectInputOption] = []
-        
+
         values?.forEach({ value in
             let _ = options?.first(where: { option in
                 guard let optionValue = option.value else {
@@ -415,7 +413,7 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
         })
         self.selectedOptions = selected
         super.init(nibName: nil, bundle: nil)
-        
+
         self.modalPresentationStyle = .formSheet
         if #available(iOS 15.0, *) {
             if let sheet = self.sheetPresentationController {
@@ -423,7 +421,7 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
             }
         }
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         let tableView = UITableView(frame: .init(x: 0, y: 0, width: self.view.frame.width, height: self.view.frame.height), style: .insetGrouped)
@@ -432,11 +430,11 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
         tableView.delegate = self
         self.view.addSubview(tableView)
     }
-    
+
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         return "Select"
     }
-    
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard let cell = tableView.cellForRow(at: indexPath) else {
             return
@@ -444,7 +442,7 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
         let cellOption = self.options[indexPath.row]
         if cell.accessoryType == .none {
             cell.accessoryType = .checkmark
-            
+
             self.selectedOptions = self.selectedOptions.filter({ option in
                 if option.value == cellOption.value {
                     return false
@@ -455,7 +453,7 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
             self.selectedOptions.append(cellOption)
         } else {
             cell.accessoryType = .none
-            
+
             self.selectedOptions = self.selectedOptions.filter({ option in
                 if option.value == cellOption.value {
                     return false
@@ -464,7 +462,7 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
                 }
             })
         }
-        
+
         self.onSelect(self.selectedOptions)
     }
 
@@ -486,7 +484,7 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
         if selectedCellOption != nil {
             cell.accessoryType = .checkmark
         }
-        
+
         return cell
     }
 }
@@ -503,13 +501,13 @@ class MultiSelectInputView: UIControl {
         self.context = nil
         super.init(coder: coder)
     }
-    
+
     init(block: UIMultiSelectInputBlock, context: UIBlockContext) {
         self.block = block
         self.formKey = block.data?.key
         self.context = context
         super.init(frame: .zero)
-        
+
         self.values = block.data?.value ?? []
         if let formKey = self.formKey {
             if let value = self.context?.getFormValueByKey(key: formKey) as? [String] {
@@ -518,18 +516,17 @@ class MultiSelectInputView: UIControl {
                 self.context?.writeToForm(key: formKey, value: self.values)
             }
         }
-        
+
         // wrap layout
         self.configureLayout { layout in
             layout.isEnabled = true
-            layout.height = YGValueUndefined
             layout.width = .init(value: 100.0, unit: .percent)
             layout.flexShrink = 1
             layout.flexDirection = .row
             layout.alignItems = .center
             configurePadding(layout: layout, frame: block.data?.frame)
         }
-        
+
         let label = UILabel(frame: .zero)
         self.label = label
         label.configureLayout { layout in
@@ -557,10 +554,10 @@ class MultiSelectInputView: UIControl {
             layout.marginLeft = .init(integerLiteral: 4)
         }
         iconView.tintColor = .tertiaryLabel
-        
+
         self.addSubview(label)
         self.addSubview(iconView)
-        
+
         if #available(iOS 14.0, *) {
             self.addAction(.init { _ in
                 let tableView = MultiSelectTableViewController(values: self.values, options: block.data?.options) { [weak self] options in
@@ -573,7 +570,7 @@ class MultiSelectInputView: UIControl {
                     }
                     self?.values = values
                     self?.label?.text = getMultiSelectText(self?.values) ?? block.data?.placeholder ?? "None"
-                    
+
                     if let formKey = self?.formKey {
                         self?.context?.writeToForm(key: formKey, value: values)
                     }
@@ -582,7 +579,7 @@ class MultiSelectInputView: UIControl {
             }, for: .touchDown)
         }
     }
-    
+
     override func layoutSubviews() {
         super.layoutSubviews()
         configureBorder(view: self, frame: self.block.data?.frame)
@@ -597,14 +594,14 @@ class SwitchInputView: UIControl {
         self.formKey = nil
         super.init(coder: coder)
     }
-    
+
     init(block: UISwitchInputBlock, context: UIBlockContext) {
         self.formKey = block.data?.key
         self.context = context
         super.init(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
         let toggle = UISwitch(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
         toggle.isOn = block.data?.value ?? false
-        
+
         if let formKey = self.formKey {
             if let value = self.context?.getFormValueByKey(key: formKey) as? Bool {
                 toggle.isOn = value
@@ -612,7 +609,7 @@ class SwitchInputView: UIControl {
                 self.context?.writeToForm(key: formKey, value: toggle.isOn)
             }
         }
-        
+
         if #available(iOS 14.0, *) {
             toggle.addAction(.init(handler: { _ in
                 self.handleValueChange(toggle)
@@ -622,18 +619,16 @@ class SwitchInputView: UIControl {
         }
         self.configureLayout { layout in
             layout.isEnabled = true
-            layout.width = YGValueUndefined
-            layout.height = YGValueUndefined
         }
         self.addSubview(toggle)
     }
-    
+
     @objc func handleValueChange(_ sender:UISwitch!) {
         if let formKey = self.formKey {
             self.context?.writeToForm(key: formKey, value: sender.isOn)
         }
     }
-    
+
     override func layoutSubviews() {
         super.layoutSubviews()
     }

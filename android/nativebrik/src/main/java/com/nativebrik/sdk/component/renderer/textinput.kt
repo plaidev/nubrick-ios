@@ -24,7 +24,9 @@ internal fun TextInput(block: UITextInputBlock, modifier: Modifier = Modifier) {
                 is FormValue.Str -> {
                     value = v.str
                 }
-                else -> {}
+                else -> {
+                    container.setFormValue(key, FormValue.Str(value))
+                }
             }
         }
 
