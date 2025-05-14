@@ -14,15 +14,21 @@ fileprivate func defaultFormatter(_ value: Any?) -> String {
 fileprivate func jsonFormatter(_ value: Any?) -> String {
     do {
         guard let value = value else {
-            return ""
+            return "null"
         }
-        let jsonData = try JSONSerialization.data(withJSONObject: value)
-        return String(decoding: jsonData, as: UTF8.self)
+        if (JSONSerialization.isValidJSONObject(value)) {
+            let jsonData = try JSONSerialization.data(withJSONObject: value)
+            return String(decoding: jsonData, as: UTF8.self)
+        } else {
+            let jsonData = try JSONSerialization.data(withJSONObject: [value])
+            let jsonStr = String(decoding: jsonData, as: UTF8.self)
+            let trimmed = jsonStr.dropFirst().dropLast().trimmingCharacters(in: .whitespaces)
+            return trimmed
+        }
     } catch {
-        return defaultFormatter(value)
+        return "null"
     }
 }
-
 fileprivate func uppercaseFormatter(_ value: Any?) -> String {
     let str = defaultFormatter(value)
     return str.uppercased()

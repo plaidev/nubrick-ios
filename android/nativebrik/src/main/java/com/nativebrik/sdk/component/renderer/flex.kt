@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -123,34 +124,10 @@ private fun normalizeRadius(radius: BorderRadius, size: Size): BorderRadius {
 }
 
 @Composable
-internal fun Modifier.frameSize(frame: FrameData?): Modifier {
-    var mod = this
-    // size should be set most lastly to make padding insets.
-    // width should be content fit by default
-    if (frame?.width != null) {
-        mod = if (frame.width == 0) {
-            // parent fit
-            mod.fillMaxWidth()
-        } else {
-            // fixed size
-            mod.width(frame.width.dp)
-        }
-    }
-
-    // height should be content fit by default
-    if (frame?.height != null) {
-        mod = if (frame.height == 0) {
-            // parent fit
-            mod.fillMaxHeight()
-        } else {
-            // fixed size
-            mod.height(frame.height.dp)
-        }
-    }
-
+private fun createRoundedShape(frame: FrameData?): Shape {
     val isSingleRadius = frame?.borderTopLeftRadius == frame?.borderTopRightRadius &&
-        frame?.borderBottomLeftRadius == frame?.borderBottomRightRadius &&
-        frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius
+            frame?.borderBottomLeftRadius == frame?.borderBottomRightRadius &&
+            frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius
 
     val roundedShape = if (isSingleRadius) {
         RoundedCornerShape(frame?.borderRadius?.dp ?: 0.dp)
@@ -161,22 +138,22 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
         val bottomLeftRadiusPx = toPx(frame?.borderBottomLeftRadius?.dp ?: 0.dp)
 
         GenericShape {
-            size, _ ->
+                size, _ ->
             val width = size.width
             val height = size.height
 
             val (topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius) = normalizeRadius(
-                    BorderRadius(
-                        topLeft = topLeftRadiusPx,
-                        topRight = topRightRadiusPx,
-                        bottomRight = bottomRightRadiusPx,
-                        bottomLeft = bottomLeftRadiusPx
-                    ),
-                    Size(
-                        width = width,
-                        height = height,
-                    )
+                BorderRadius(
+                    topLeft = topLeftRadiusPx,
+                    topRight = topRightRadiusPx,
+                    bottomRight = bottomRightRadiusPx,
+                    bottomLeft = bottomLeftRadiusPx
+                ),
+                Size(
+                    width = width,
+                    height = height,
                 )
+            )
 
             val topLeft = Offset(0f, 0f)
             val topRight = Offset(width, 0f)
@@ -236,7 +213,47 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
             close()
         }
     }
+
+    return roundedShape
+}
+
+@Composable
+internal fun Modifier.borderRadius(frame: FrameData?): Modifier {
+    var mod = this
+    val roundedShape = createRoundedShape(frame)
     mod = mod.clip(roundedShape)
+    return mod
+}
+
+@Composable
+internal fun Modifier.frameSize(frame: FrameData?): Modifier {
+    var mod = this
+    // size should be set most lastly to make padding insets.
+    // width should be content fit by default
+    if (frame?.width != null) {
+        mod = if (frame.width == 0) {
+            // parent fit
+            mod.fillMaxWidth()
+        } else {
+            // fixed size
+            mod.width(frame.width.dp)
+        }
+    }
+
+    // height should be content fit by default
+    if (frame?.height != null) {
+        mod = if (frame.height == 0) {
+            // parent fit
+            mod.fillMaxHeight()
+        } else {
+            // fixed size
+            mod.height(frame.height.dp)
+        }
+    }
+
+    val roundedShape = createRoundedShape(frame)
+    mod = mod.clip(roundedShape)
+
     if (frame?.background != null) {
         mod = mod.background(parseColor(frame.background))
     }
@@ -248,6 +265,8 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
 
     return mod
 }
+
+
 
 @Composable
 internal fun Modifier.framePadding(frame: FrameData?): Modifier {
@@ -364,7 +383,8 @@ internal fun Flex(
             AsyncImage(
                 modifier = Modifier
                     .zIndex(0f)
-                    .matchParentSize(),
+                    .matchParentSize()
+                    .borderRadius(block.data.frame),
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(src)
                     .crossfade(true)

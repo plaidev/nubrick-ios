@@ -85,7 +85,7 @@ class ContainerImpl: Container {
         self.experimentRepository = ExperimentRepositoryImpl(config: config, cache: cache)
         self.componentRepository = ComponentRepositoryImpl(config: config, cache: cache)
         self.trackRepository = TrackRespositoryImpl(config: config, user: user)
-        self.formRepository = nil
+        self.formRepository = FormRepositoryImpl()
         self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
         self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: intercepter)
 

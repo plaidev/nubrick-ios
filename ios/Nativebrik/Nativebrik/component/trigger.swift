@@ -52,7 +52,7 @@ class TriggerViewController: UIViewController {
         // dispatch retention event
         self.callWhenUserComeBack()
 
-        // dipatch retention event when user come back to foreground from background
+        // Dispatch a retention event when the user returns to the foreground from the background
         NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
@@ -108,7 +108,7 @@ class TriggerViewController: UIViewController {
                     case .EUIRootBlock(let root):
                         let root = ModalRootViewController(
                             root: root,
-                            container: container,
+                            container: ContainerImpl(container as! ContainerImpl, arguments: nil),
                             modalViewController: self?.modalViewController
                         )
                         if let currentVC = self?.currentVC {

@@ -12,7 +12,7 @@ import Combine
 // for development
 public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
-public let nativebrikSdkVersion = "0.9.2"
+public let nativebrikSdkVersion = "0.9.12"
 
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
@@ -165,10 +165,16 @@ public class NativebrikExperiment {
     }
 
     public func dispatch(_ event: NativebrikEvent) {
+        if !isNativebrikAvailable {
+            return
+        }
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
 
     public func record(exception: NSException) {
+        if !isNativebrikAvailable {
+            return
+        }
         self.container.record(exception)
     }
 
@@ -291,6 +297,9 @@ public class NativebrikExperiment {
 
     // for flutter integration
     public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NativebrikError> {
+        if !isNativebrikAvailable {
+            return .failure(.notFound)
+        }
         switch await self.container.fetchTooltip(trigger: trigger) {
         case .success(let result):
             do {
@@ -312,17 +321,17 @@ public class NativebrikExperiment {
     public func __do_not_use__render_uiview(
         json: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        onNextTooltip: ((_ anchorId: String) -> Void)? = nil,
+        onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
-    ) -> UIView {
+    ) -> __DO_NOT_USE__NativebrikBridgedViewAccessor {
         if !isNativebrikAvailable {
-            return UIView()
+            return __DO_NOT_USE__NativebrikBridgedViewAccessor(uiview: UIView())
         }
         do {
             let decoder = JSONDecoder()
             let data = Data(json.utf8)
             let decoded = try decoder.decode(UIRootBlock.self, from: data)
-            return RootView(
+            return __DO_NOT_USE__NativebrikBridgedViewAccessor(rootView: RootView(
                 root: decoded,
                 container: self.container,
                 modalViewController: self.overlayVC.modalViewController,
@@ -331,9 +340,9 @@ public class NativebrikExperiment {
                 },
                 onNextTooltip: onNextTooltip,
                 onDismiss: onDismiss
-            )
+            ))
         } catch {
-            return UIView()
+            return __DO_NOT_USE__NativebrikBridgedViewAccessor(uiview: UIView())
         }
     }
 }

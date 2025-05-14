@@ -6,9 +6,9 @@
 //
 
 import Foundation
+import SwiftUI
 import UIKit
 import YogaKit
-import SwiftUI
 
 // For InAppMessage Experiment.
 class ModalRootViewController: UIViewController {
@@ -17,7 +17,9 @@ class ModalRootViewController: UIViewController {
     private var event: UIBlockEventManager? = nil
     private let container: Container
 
-    init(root: UIRootBlock?, container: Container, modalViewController: ModalComponentViewController?) {
+    init(
+        root: UIRootBlock?, container: Container, modalViewController: ModalComponentViewController?
+    ) {
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
             return page.data?.kind == PageKind.TRIGGER
@@ -27,7 +29,7 @@ class ModalRootViewController: UIViewController {
         self.container = container
         super.init(nibName: nil, bundle: nil)
 
-        self.event = UIBlockEventManager(on: { [weak self] event in
+        self.event = UIBlockEventManager(on: { [weak self] event, _ in
             if let destPageId = event.destinationPageId {
                 self?.presentPage(
                     pageId: destPageId,
@@ -71,7 +73,7 @@ class ModalRootViewController: UIViewController {
             self.modalViewController?.dismissModal()
             return
         }
-        
+
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
             self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
@@ -109,7 +111,9 @@ struct RootViewRepresentable: UIViewRepresentable {
     let onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?
 
     func makeUIView(context: Self.Context) -> Self.UIViewType {
-        return RootView(root: root, container: container, modalViewController: modalViewController, onEvent: onEvent)
+        return RootView(
+            root: root, container: container, modalViewController: modalViewController,
+            onEvent: onEvent)
     }
 
     // データの更新に応じてラップしている UIView を更新する
@@ -125,9 +129,10 @@ class RootView: UIView {
     private var event: UIBlockEventManager? = nil
     private var currentEmbeddedPageId: String = ""
     private var currentTooltipAnchorId: String? = nil
-    private var onNextTooltip: ((_ anchorId: String) -> Void) = { _ in }
+    private var onNextTooltip: ((_ pageId: String) -> Void) = { _ in }
     private var onDismiss: (() -> Void) = {}
     private var view: UIView? = nil
+    private var currentPageView: PageView? = nil
     private var modalViewController: ModalComponentViewController? = nil
     private let container: Container
 
@@ -144,7 +149,7 @@ class RootView: UIView {
         container: Container,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?,
-        onNextTooltip: ((_ anchorId: String) -> Void)? = nil,
+        onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) {
         self.id = root?.id ?? ""
@@ -162,7 +167,7 @@ class RootView: UIView {
             layout.isEnabled = true
         }
 
-        self.event = UIBlockEventManager(on: { [weak self] event in
+        self.event = UIBlockEventManager(on: { [weak self] event, _ in
             if let destPageId = event.destinationPageId {
                 self?.presentPage(
                     pageId: destPageId,
@@ -175,6 +180,16 @@ class RootView: UIView {
 
         if let destId = trigger?.data?.triggerSetting?.onTrigger?.destinationPageId {
             self.presentPage(pageId: destId, props: nil)
+        }
+    }
+
+    func dispatch(event: UIBlockEventDispatcher) {
+        if let page = self.currentPageView {
+            // call event dispatch from the page view.
+            page.dispatch(event: event)
+        } else {
+            // fallback
+            self.event?.dispatch(event: event)
         }
     }
 
@@ -201,23 +216,24 @@ class RootView: UIView {
 
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
+            self.currentPageView = nil
             self.modalViewController?.dismissModal()
             self.onDismiss()
             return
         }
-        
+
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
             self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
             return
         }
-        
+
         // when it's tooltip
         if page?.data?.kind == PageKind.TOOLTIP {
             let anchorId = page?.data?.tooltipAnchor ?? ""
             if let currentAnchorId = self.currentTooltipAnchorId {
-                if currentAnchorId != anchorId { // when it's diffrent anchor, dismiss. and callback.
-                    self.onNextTooltip(anchorId)
+                if currentAnchorId != anchorId {  // when it's diffrent anchor, dismiss. and callback.
+                    self.onNextTooltip(pageId)
                 }
             }
             self.currentTooltipAnchorId = anchorId
@@ -230,6 +246,7 @@ class RootView: UIView {
             event: self.event,
             modalViewController: self.modalViewController
         )
+        self.currentPageView = pageView
 
         switch page?.data?.kind {
         case .MODAL:
@@ -258,8 +275,7 @@ class RootView: UIView {
     }
 }
 
-
-func findTopPresenting(_ viewContorller: UIViewController) ->  UIViewController {
+func findTopPresenting(_ viewContorller: UIViewController) -> UIViewController {
     if let presented = viewContorller.presentedViewController {
         if presented.isBeingDismissed {
             return viewContorller

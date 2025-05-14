@@ -42,36 +42,52 @@ class AnimatedUIControl: UIControl {
 }
 
 class ClickListener: UITapGestureRecognizer {
-    var onClick : (() -> Void)? = nil
-    var onTouchBegan : (() -> Void)? = nil
+    var onClick: (() -> Void)? = nil
+    var onTouchBegan: (() -> Void)? = nil
     var onTouchEnded: (() -> Void)? = nil
     var onTouchCanceled: (() -> Void)? = nil
 }
 
-func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockContext, event: UIBlockEventDispatcher?) -> ClickListener {
+// configureOnClickGesture sets up a click listener for the target view.
+func configureOnClickGesture(
+    target: UIView, action: Selector, context: UIBlockContext, event: UIBlockEventDispatcher?
+) -> ClickListener {
     let gesture = ClickListener(target: target, action: action)
     gesture.onClick = {
-        if let event = event {
-            let variable = context.getVariable()
-            let deepLink = event.deepLink
-            let name = event.name
-            let compiledEvent = UIBlockEventDispatcher(
-                name: (name != nil) ? compile(name ?? "", variable) : nil,
-                destinationPageId: event.destinationPageId,
-                deepLink: (deepLink != nil) ? compile(deepLink ?? "", variable) : nil,
-                payload: event.payload?.map({ prop in
-                    return Property(
-                        name: prop.name ?? "",
-                        value: compile(prop.value ?? "", variable),
-                        ptype: prop.ptype ?? PropertyType.STRING
-                    )
-                }),
-                httpRequest: event.httpRequest,
-                httpResponseAssertion: event.httpResponseAssertion
-            )
-            
-            context.dipatch(event: compiledEvent)
+        guard let event = event else { return }
+
+        let variable = context.getVariable()
+        let deepLink = event.deepLink
+        let name = event.name
+        let compiledEvent = UIBlockEventDispatcher(
+            name: (name != nil) ? compile(name ?? "", variable) : nil,
+            destinationPageId: event.destinationPageId,
+            deepLink: (deepLink != nil) ? compile(deepLink ?? "", variable) : nil,
+            payload: event.payload?.map({ prop in
+                return Property(
+                    name: prop.name ?? "",
+                    value: compile(prop.value ?? "", variable),
+                    ptype: prop.ptype ?? PropertyType.STRING
+                )
+            }),
+            httpRequest: event.httpRequest,
+            httpResponseAssertion: event.httpResponseAssertion
+        )
+
+        if event.httpRequest != nil {
+            // set loading UI
+            target.isUserInteractionEnabled = false
+            target.alpha = 0.8
         }
+        context.dispatch(
+            event: compiledEvent,
+            options: UIBlockEventDispatchOptions(
+                onHttpSettled: {
+                    // reset loading UI
+                    target.isUserInteractionEnabled = true
+                    target.alpha = 1
+                }
+            ))
     }
     if event != nil {
         target.addGestureRecognizer(gesture)
@@ -85,7 +101,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
                 options: .curveEaseInOut,
                 animations: { [weak target] in
                     target?.transform = CGAffineTransform(scaleX: 0.984, y: 0.984)
-            })
+                })
         } else {
             if let onTouchBegan = context.getParentClickListener()?.onTouchBegan {
                 onTouchBegan()
@@ -100,7 +116,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
                 options: .curveEaseInOut,
                 animations: { [weak target] in
                     target?.transform = CGAffineTransform(scaleX: 1, y: 1)
-            })
+                })
         } else {
             if let onTouchBegan = context.getParentClickListener()?.onTouchEnded {
                 onTouchBegan()
@@ -116,7 +132,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
                 options: .curveEaseInOut,
                 animations: { [weak target] in
                     target?.transform = CGAffineTransform(scaleX: 1, y: 1)
-            })
+                })
         } else {
             if let onTouchBegan = context.getParentClickListener()?.onTouchCanceled {
                 onTouchBegan()

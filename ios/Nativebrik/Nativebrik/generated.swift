@@ -594,6 +594,8 @@ struct UIPageBlockData: Decodable, Encodable {
   var httpRequest: ApiHttpRequest?
   var tooltipSize: UITooltipSize?
   var tooltipAnchor: String?
+  var tooltipPlacement: UITooltipPlacement?
+  var tooltipTransitionTarget: UITooltipTransitionTarget?
   var props: [Property]?
   var query: String?
 }
@@ -691,9 +693,43 @@ enum UITextInputKeyboardType: String, Decodable, Encodable {
 struct UITooltipMessage: Decodable, Encodable {
   var title: String?
 }
+enum UITooltipPlacement: String, Decodable, Encodable {
+  case TOP_CENTER = "TOP_CENTER"
+  case TOP_START = "TOP_START"
+  case TOP_END = "TOP_END"
+  case BOTTOM_CENTER = "BOTTOM_CENTER"
+  case BOTTOM_START = "BOTTOM_START"
+  case BOTTOM_END = "BOTTOM_END"
+  case LEFT_CENTER = "LEFT_CENTER"
+  case LEFT_START = "LEFT_START"
+  case LEFT_END = "LEFT_END"
+  case RIGHT_CENTER = "RIGHT_CENTER"
+  case RIGHT_START = "RIGHT_START"
+  case RIGHT_END = "RIGHT_END"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try UITooltipPlacement(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
+}
 struct UITooltipSize: Decodable, Encodable {
   var width: Int?
   var height: Int?
+}
+enum UITooltipTransitionTarget: String, Decodable, Encodable {
+  case ANCHOR = "ANCHOR"
+  case SCREEN = "SCREEN"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try UITooltipTransitionTarget(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
 struct VariantConfig: Decodable, Encodable {
   var key: String?
