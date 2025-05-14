@@ -14,18 +14,21 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.nativebrik.sdk.component.provider.container.ContainerContext
 import com.nativebrik.sdk.component.provider.data.DataContext
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 private var LocalEventListener = compositionLocalOf<EventListenerState> {
     error("LocalEventListener is not found")
@@ -64,36 +67,47 @@ internal fun EventListenerProvider(
     }
 }
 
-@OptIn(DelicateCoroutinesApi::class)
 @Composable
-internal fun Modifier.eventDispatcher(eventDispatcher: UIBlockEventDispatcher?): Modifier {
-    return composed {
-        val container = ContainerContext.value
-        val data = DataContext.state.data
-        val eventListener = LocalEventListener.current
-        val event = eventDispatcher ?: return@composed this
-        this.clickable(true) {
+internal fun Modifier.eventDispatcher(
+    eventDispatcher: UIBlockEventDispatcher?
+): Modifier = composed {
+    val container      = ContainerContext.value
+    val data           = DataContext.state.data
+    val eventListener  = LocalEventListener.current
+    val event          = eventDispatcher ?: return@composed this
+
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    this
+        .alpha(if (isLoading) 0.8f else 1f)
+        .clickable(enabled = !isLoading) {
             val req = event.httpRequest
-            if (req != null) {
-                GlobalScope.launch(Dispatchers.IO) {
-                    container
-                        .sendHttpRequest(req, data)
-                        .onSuccess {
-                            GlobalScope.launch(Dispatchers.Main) {
-                                eventListener.dispatch(event)
-                            }
-                        }
-                        .onFailure {
-                            GlobalScope.launch(Dispatchers.Main) {
-                                eventListener.dispatch(event)
-                            }
-                        }
-                }
-            } else {
+            if (req == null) {
                 eventListener.dispatch(event)
+                return@clickable
+            }
+
+            isLoading = true
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        container.sendHttpRequest(req, data).getOrThrow()
+                    }
+                    // onSuccess
+                    eventListener.dispatch(event)
+                } catch (ce: CancellationException) {
+                    // propagate cancellation to parent
+                    throw ce
+                } catch (e: Exception) {
+                    // onError
+                    eventListener.dispatch(event)
+                } finally {
+                    // unlock ui
+                    isLoading = false
+                }
             }
         }
-    }
 }
 
 @Composable
