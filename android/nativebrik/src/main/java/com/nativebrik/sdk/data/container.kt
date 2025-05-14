@@ -37,6 +37,7 @@ internal interface Container {
     suspend fun sendHttpRequest(req: ApiHttpRequest, variable: JsonElement? = null): Result<JsonElement>
     suspend fun fetchEmbedding(experimentId: String, componentId: String? = null): Result<UIBlock>
     suspend fun fetchInAppMessage(trigger: String): Result<UIBlock>
+    suspend fun fetchTooltip(trigger: String): Result<UIBlock>
     suspend fun fetchRemoteConfig(experimentId: String): Result<ExperimentVariant>
 
     fun record(throwable: Throwable)
@@ -152,6 +153,27 @@ internal class ContainerImpl(
             return Result.failure(it)
         }
         val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.POPUP).getOrElse {
+            return Result.failure(it)
+        }
+        val variantId = variant.id ?: return Result.failure(NotFoundException())
+        this.trackRepository.trackExperimentEvent(TrackExperimentEvent(
+            experimentId = experimentId,
+            variantId = variantId
+        ))
+        this.databaseRepository.appendExperimentHistory(experimentId)
+        val componentId = extractComponentId(variant) ?: return Result.failure(NotFoundException())
+        val component = this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
+            return Result.failure(it)
+        }
+        return Result.success(component)
+    }
+
+    override suspend fun fetchTooltip(trigger: String): Result<UIBlock> {
+        // fetch config from cdn
+        val configs = this.experimentRepository.fetchTriggerExperimentConfigs(trigger).getOrElse {
+            return Result.failure(it)
+        }
+        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.TOOLTIP).getOrElse {
             return Result.failure(it)
         }
         val variantId = variant.id ?: return Result.failure(NotFoundException())

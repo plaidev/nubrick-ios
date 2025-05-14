@@ -65,6 +65,8 @@ import com.nativebrik.sdk.schema.UIRootBlock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
+import kotlinx.coroutines.Dispatchers
 
 private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     return Event(
@@ -95,7 +97,9 @@ internal class RootViewModel: ViewModel {
     val displayedModalIndex = mutableIntStateOf(-1)
     val modalVisibility = mutableStateOf(false)
     val webviewUrl = mutableStateOf("")
+    var currentTooltipAnchorId = mutableStateOf("")
     private val onDismiss: ((root: UIRootBlock) -> Unit)
+    private val onNextTooltip: ((pageId: String) -> Unit)
     private val scope: CoroutineScope
     @OptIn(ExperimentalMaterial3Api::class)
     private val sheetState: SheetState
@@ -105,11 +109,13 @@ internal class RootViewModel: ViewModel {
         root: UIRootBlock,
         scope: CoroutineScope,
         sheetState: SheetState,
+        onNextTooltip: ((pageId: String) -> Unit) = {},
         onDismiss: ((root: UIRootBlock) -> Unit) = {},
         context: Context,
     ) {
         this.context = context
         this.root = root
+        this.onNextTooltip = onNextTooltip
         this.onDismiss = onDismiss
         this.scope = scope
         this.sheetState = sheetState
@@ -143,7 +149,7 @@ internal class RootViewModel: ViewModel {
     }
 
     private fun openDeepLink(link: String) {
-        val data = Uri.parse(link) ?: return
+        val data = link.toUri()
         val intent = Intent(Intent.ACTION_VIEW).apply {
             this.data = data
             this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -158,7 +164,6 @@ internal class RootViewModel: ViewModel {
             it.id == destId
         }
         if (destBlock == null) {
-            this.dismiss()
             return
         }
 
@@ -170,8 +175,16 @@ internal class RootViewModel: ViewModel {
         }
 
         if (destBlock.data?.kind == PageKind.WEBVIEW_MODAL) {
-            this.webviewUrl.value = destBlock.data?.webviewUrl ?: ""
+            this.webviewUrl.value = destBlock.data.webviewUrl ?: ""
             return
+        }
+
+        if (destBlock.data?.kind == PageKind.TOOLTIP) {
+            val anchorId = destBlock.data.tooltipAnchor ?: ""
+            if (this.currentTooltipAnchorId.value != anchorId) {
+                this.onNextTooltip(destId)
+            }
+            this.currentTooltipAnchorId.value = anchorId
         }
 
         if (destBlock.data?.kind == PageKind.MODAL) {
@@ -270,6 +283,7 @@ internal fun Root(
     root: UIRootBlock,
     embeddingVisibility: Boolean = true,
     onEvent: (event: Event) -> Unit = {},
+    onNextTooltip: (pageId: String) -> Unit = {},
     onDismiss: ((root: UIRootBlock) -> Unit) = {},
     eventBridge: UIBlockEventBridgeViewModel? = null,
 ) {
@@ -279,7 +293,7 @@ internal fun Root(
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     val viewModel = remember(root, sheetState, scope, onDismiss, context) {
-        RootViewModel(root, scope, sheetState, onDismiss, context)
+        RootViewModel(root, scope, sheetState, onNextTooltip, onDismiss, context)
     }
     val bottomSheetProps = remember {
         ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false)

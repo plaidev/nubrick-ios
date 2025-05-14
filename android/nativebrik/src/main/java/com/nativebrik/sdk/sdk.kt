@@ -197,6 +197,14 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         return client.experiment.container.fetchEmbedding(experimentId, componentId)
     }
 
+    suspend fun connectTooltip(trigger: String): Result<Any?> {
+        return client.experiment.container.fetchTooltip(trigger)
+    }
+
+    suspend fun connectTooltip(trigger: String): Result<Any?> {
+        return client.experiment.container.fetchTooltip(trigger)
+    }
+
     @DelicateCoroutinesApi
     @Composable
     fun render(
@@ -204,6 +212,8 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         arguments: Any? = null,
         data: Any?,
         onEvent: ((event: Event) -> Unit),
+        onNextTooltip: ((pageId: String) -> Unit) = {},
+        onDismiss: (() -> Unit) = {},
         eventBridge: UIBlockEventBridgeViewModel? = null,
     ) {
         val container = remember(arguments) {
@@ -220,6 +230,10 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
                     container = container,
                     root = data.data,
                     onEvent = onEvent,
+                    onNextTooltip = onNextTooltip,
+                    onDismiss = {
+                        onDismiss()
+                    },
                     eventBridge = eventBridge,
                 )
             }
