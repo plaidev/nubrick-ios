@@ -79,7 +79,7 @@ func configureOnClickGesture(
             target.isUserInteractionEnabled = false
             target.alpha = 0.8
         }
-        context.dipatch(
+        context.dispatch(
             event: compiledEvent,
             options: UIBlockEventDispatchOptions(
                 onHttpSettled: {

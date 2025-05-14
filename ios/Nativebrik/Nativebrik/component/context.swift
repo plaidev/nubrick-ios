@@ -104,7 +104,7 @@ class UIBlockContext {
         return self.parentDirection
     }
 
-    func dipatch(event: UIBlockEventDispatcher, options: UIBlockEventDispatchOptions? = nil) {
+    func dispatch(event: UIBlockEventDispatcher, options: UIBlockEventDispatchOptions? = nil) {
         self.event?.dispatch(event: event, options: options)
     }
 
