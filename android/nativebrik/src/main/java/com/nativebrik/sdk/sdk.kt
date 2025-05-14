@@ -201,10 +201,6 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         return client.experiment.container.fetchTooltip(trigger)
     }
 
-    suspend fun connectTooltip(trigger: String): Result<Any?> {
-        return client.experiment.container.fetchTooltip(trigger)
-    }
-
     @DelicateCoroutinesApi
     @Composable
     fun render(
