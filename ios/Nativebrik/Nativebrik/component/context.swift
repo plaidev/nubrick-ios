@@ -7,14 +7,21 @@
 
 import Foundation
 
+struct UIBlockEventDispatchOptions {
+    var onHttpSuccess: (() -> Void)? = nil
+    var onHttpError: (() -> Void)? = nil
+    var onHttpSettled: (() -> Void)? = nil
+}
+    
+
 class UIBlockEventManager {
-    private let callback: (_ event: UIBlockEventDispatcher) -> Void
-    init(on: @escaping (_ event: UIBlockEventDispatcher) -> Void) {
+    private let callback: (_ event: UIBlockEventDispatcher, _ options: UIBlockEventDispatchOptions?) -> Void
+    init(on: @escaping (_ event: UIBlockEventDispatcher, _ options: UIBlockEventDispatchOptions?) -> Void) {
         self.callback = on
     }
 
-    func dispatch(event: UIBlockEventDispatcher) {
-        self.callback(event)
+    func dispatch(event: UIBlockEventDispatcher, options: UIBlockEventDispatchOptions? = nil) {
+        self.callback(event, options)
     }
 }
 
@@ -48,7 +55,7 @@ class UIBlockContext {
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
     private var loading: Bool = false
-    
+
     init(_ args: UIBlockContextInit) {
         self.variable = args.variable
         self.properties = args.properties
@@ -74,7 +81,7 @@ class UIBlockContext {
             loading: args.loading ?? self.loading
         ))
     }
-    
+
     func getVariable() -> Any? {
         return self.variable
     }
@@ -91,14 +98,14 @@ class UIBlockContext {
         return self.parentDirection
     }
 
-    func dipatch(event: UIBlockEventDispatcher) {
-        self.event?.dispatch(event: event)
+    func dipatch(event: UIBlockEventDispatcher, options: UIBlockEventDispatchOptions? = nil) {
+        self.event?.dispatch(event: event, options: options)
     }
-    
+
     func writeToForm(key: String, value: Any) {
         self.container?.setFormValue(key: key, value: value)
     }
-    
+
     func getFormValueByKey(key: String) -> Any? {
         return self.container?.getFormValue(key: key)
     }

@@ -48,30 +48,42 @@ class ClickListener: UITapGestureRecognizer {
     var onTouchCanceled: (() -> Void)? = nil
 }
 
+// configureOnClickGesture sets up a click listener for the target view.
 func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockContext, event: UIBlockEventDispatcher?) -> ClickListener {
     let gesture = ClickListener(target: target, action: action)
     gesture.onClick = {
-        if let event = event {
-            let variable = context.getVariable()
-            let deepLink = event.deepLink
-            let name = event.name
-            let compiledEvent = UIBlockEventDispatcher(
-                name: (name != nil) ? compile(name ?? "", variable) : nil,
-                destinationPageId: event.destinationPageId,
-                deepLink: (deepLink != nil) ? compile(deepLink ?? "", variable) : nil,
-                payload: event.payload?.map({ prop in
-                    return Property(
-                        name: prop.name ?? "",
-                        value: compile(prop.value ?? "", variable),
-                        ptype: prop.ptype ?? PropertyType.STRING
-                    )
-                }),
-                httpRequest: event.httpRequest,
-                httpResponseAssertion: event.httpResponseAssertion
-            )
-            
-            context.dipatch(event: compiledEvent)
+        guard let event = event else { return }
+
+        let variable = context.getVariable()
+        let deepLink = event.deepLink
+        let name = event.name
+        let compiledEvent = UIBlockEventDispatcher(
+            name: (name != nil) ? compile(name ?? "", variable) : nil,
+            destinationPageId: event.destinationPageId,
+            deepLink: (deepLink != nil) ? compile(deepLink ?? "", variable) : nil,
+            payload: event.payload?.map({ prop in
+                return Property(
+                    name: prop.name ?? "",
+                    value: compile(prop.value ?? "", variable),
+                    ptype: prop.ptype ?? PropertyType.STRING
+                )
+            }),
+            httpRequest: event.httpRequest,
+            httpResponseAssertion: event.httpResponseAssertion
+        )
+
+        if event.httpRequest != nil {
+            // set loading UI
+            target.isUserInteractionEnabled = false
+            target.alpha = 0.8
         }
+        context.dipatch(event: compiledEvent, options: UIBlockEventDispatchOptions(
+            onHttpSettled: {
+                // reset loading UI
+                target.isUserInteractionEnabled = true
+                target.alpha = 1
+            }
+        ))
     }
     if event != nil {
         target.addGestureRecognizer(gesture)

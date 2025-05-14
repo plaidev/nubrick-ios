@@ -27,7 +27,7 @@ class ModalRootViewController: UIViewController {
         self.container = container
         super.init(nibName: nil, bundle: nil)
 
-        self.event = UIBlockEventManager(on: { [weak self] event in
+        self.event = UIBlockEventManager(on: { [weak self] event, _ in
             if let destPageId = event.destinationPageId {
                 self?.presentPage(
                     pageId: destPageId,
@@ -163,7 +163,7 @@ class RootView: UIView {
             layout.isEnabled = true
         }
 
-        self.event = UIBlockEventManager(on: { [weak self] event in
+        self.event = UIBlockEventManager(on: { [weak self] event, _ in
             if let destPageId = event.destinationPageId {
                 self?.presentPage(
                     pageId: destPageId,

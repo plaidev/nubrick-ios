@@ -136,7 +136,7 @@ class PageView: UIView {
         let parentEventManager = event
         // handle events that has http request, and then dispatch the event to parent.
         // here, we only process http request.
-        self.event = UIBlockEventManager(on: { [weak self] dispatchedEvent in
+        self.event = UIBlockEventManager(on: { [weak self] dispatchedEvent, options in
             let variable = _mergeVariable(
                 base: self?.data,
                 self?.container.createVariableForTemplate(data: nil, properties: self?.props)
@@ -158,7 +158,17 @@ class PageView: UIView {
                         )
                         switch result {
                         case .success:
+                            await MainActor.run {
+                                options?.onHttpSettled?()
+                                options?.onHttpSuccess?()
+                            }
                             handleEvent()
+                        case .failure:
+                            await MainActor.run {
+                                options?.onHttpSettled?()
+                                options?.onHttpError?()
+                            }
+                            // TODO: handle error
                         default:
                             break
                         }
