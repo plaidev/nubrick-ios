@@ -12,10 +12,26 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -28,15 +44,17 @@ import androidx.lifecycle.ViewModel
 import com.nativebrik.sdk.Event
 import com.nativebrik.sdk.EventProperty
 import com.nativebrik.sdk.EventPropertyType
+import com.nativebrik.sdk.component.bridge.UIBlockEventBridgeCollector
+import com.nativebrik.sdk.component.bridge.UIBlockEventBridgeViewModel
 import com.nativebrik.sdk.component.provider.container.ContainerProvider
 import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockData
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockProvider
-import com.nativebrik.sdk.component.renderer.*
 import com.nativebrik.sdk.component.renderer.ModalBottomSheetBackHandler
 import com.nativebrik.sdk.component.renderer.NavigationHeader
 import com.nativebrik.sdk.component.renderer.Page
+import com.nativebrik.sdk.component.renderer.WebViewPage
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.schema.PageKind
 import com.nativebrik.sdk.schema.Property
@@ -45,6 +63,7 @@ import com.nativebrik.sdk.schema.UIBlockEventDispatcher
 import com.nativebrik.sdk.schema.UIPageBlock
 import com.nativebrik.sdk.schema.UIRootBlock
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 
 private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
@@ -70,6 +89,7 @@ internal class RootViewModel: ViewModel {
     private val root: UIRootBlock
     private val pages: List<UIPageBlock>
     private val context: Context
+    val currentPageBlock = mutableStateOf<UIPageBlock?>(null)
     val displayedPageBlock = mutableStateOf<PageBlockData?>(null)
     val modalStack = mutableStateOf<List<PageBlockData>>(listOf())
     val displayedModalIndex = mutableIntStateOf(-1)
@@ -142,6 +162,8 @@ internal class RootViewModel: ViewModel {
             return
         }
 
+        this.currentPageBlock.value = destBlock
+
         if (destBlock.data?.kind == PageKind.DISMISSED) {
             this.dismiss()
             return
@@ -194,6 +216,7 @@ internal class RootViewModel: ViewModel {
 
     @OptIn(ExperimentalMaterial3Api::class)
     private fun dismiss() {
+        this.currentPageBlock.value = null
         this.displayedModalIndex.intValue = 0;
         val self = this
         if (self.sheetState.currentValue == SheetValue.Expanded && self.sheetState.hasPartiallyExpandedState) {
@@ -216,21 +239,29 @@ internal class RootViewModel: ViewModel {
     }
 }
 
+@DelicateCoroutinesApi
 @Composable
 internal fun ModalPage(
     container: Container,
     blockData: PageBlockData,
+    eventBridge: UIBlockEventBridgeViewModel?,
+    currentPageBlock: UIPageBlock?,
     modifier: Modifier = Modifier
 ) {
     PageBlockProvider(
         blockData,
     ) {
         PageDataProvider(container = container, request = blockData.block.data?.httpRequest) {
+            UIBlockEventBridgeCollector(
+                events = eventBridge?.events,
+                isCurrentPage = blockData.block.id == currentPageBlock?.id
+            )
             Page(block = blockData.block, modifier)
         }
     }
 }
 
+@DelicateCoroutinesApi
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun Root(
@@ -240,6 +271,7 @@ internal fun Root(
     embeddingVisibility: Boolean = true,
     onEvent: (event: Event) -> Unit = {},
     onDismiss: ((root: UIRootBlock) -> Unit) = {},
+    eventBridge: UIBlockEventBridgeViewModel? = null,
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -263,6 +295,7 @@ internal fun Root(
         }
     }
 
+    val currentPageBlock = viewModel.currentPageBlock.value
     val displayedPageBlock = viewModel.displayedPageBlock.value
     val modalStack = viewModel.modalStack.value
 
@@ -280,6 +313,10 @@ internal fun Root(
                     ) {
                         PageBlockProvider(it) {
                             PageDataProvider(container = container, request = it.block.data?.httpRequest) {
+                                UIBlockEventBridgeCollector(
+                                    events = eventBridge?.events,
+                                    isCurrentPage = it.block.id == currentPageBlock?.id
+                                )
                                 Page(block = it.block)
                             }
                         }
@@ -321,6 +358,8 @@ internal fun Root(
                                 ModalPage(
                                     container = container,
                                     blockData = stack,
+                                    eventBridge = eventBridge,
+                                    currentPageBlock = currentPageBlock,
                                 )
                             }
                         }
