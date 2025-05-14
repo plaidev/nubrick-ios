@@ -6,9 +6,9 @@
 //
 
 import Foundation
+import SwiftUI
 import UIKit
 import YogaKit
-import SwiftUI
 
 // For InAppMessage Experiment.
 class ModalRootViewController: UIViewController {
@@ -17,7 +17,9 @@ class ModalRootViewController: UIViewController {
     private var event: UIBlockEventManager? = nil
     private let container: Container
 
-    init(root: UIRootBlock?, container: Container, modalViewController: ModalComponentViewController?) {
+    init(
+        root: UIRootBlock?, container: Container, modalViewController: ModalComponentViewController?
+    ) {
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
             return page.data?.kind == PageKind.TRIGGER
@@ -27,7 +29,7 @@ class ModalRootViewController: UIViewController {
         self.container = container
         super.init(nibName: nil, bundle: nil)
 
-        self.event = UIBlockEventManager(on: { [weak self] event in
+        self.event = UIBlockEventManager(on: { [weak self] event, _ in
             if let destPageId = event.destinationPageId {
                 self?.presentPage(
                     pageId: destPageId,
@@ -109,7 +111,9 @@ struct RootViewRepresentable: UIViewRepresentable {
     let onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?
 
     func makeUIView(context: Self.Context) -> Self.UIViewType {
-        return RootView(root: root, container: container, modalViewController: modalViewController, onEvent: onEvent)
+        return RootView(
+            root: root, container: container, modalViewController: modalViewController,
+            onEvent: onEvent)
     }
 
     // データの更新に応じてラップしている UIView を更新する
@@ -163,7 +167,7 @@ class RootView: UIView {
             layout.isEnabled = true
         }
 
-        self.event = UIBlockEventManager(on: { [weak self] event in
+        self.event = UIBlockEventManager(on: { [weak self] event, _ in
             if let destPageId = event.destinationPageId {
                 self?.presentPage(
                     pageId: destPageId,
@@ -228,7 +232,7 @@ class RootView: UIView {
         if page?.data?.kind == PageKind.TOOLTIP {
             let anchorId = page?.data?.tooltipAnchor ?? ""
             if let currentAnchorId = self.currentTooltipAnchorId {
-                if currentAnchorId != anchorId { // when it's diffrent anchor, dismiss. and callback.
+                if currentAnchorId != anchorId {  // when it's diffrent anchor, dismiss. and callback.
                     self.onNextTooltip(pageId)
                 }
             }
@@ -271,8 +275,7 @@ class RootView: UIView {
     }
 }
 
-
-func findTopPresenting(_ viewContorller: UIViewController) ->  UIViewController {
+func findTopPresenting(_ viewContorller: UIViewController) -> UIViewController {
     if let presented = viewContorller.presentedViewController {
         if presented.isBeingDismissed {
             return viewContorller

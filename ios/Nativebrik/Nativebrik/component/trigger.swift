@@ -52,7 +52,7 @@ class TriggerViewController: UIViewController {
         // dispatch retention event
         self.callWhenUserComeBack()
 
-        // dipatch retention event when user come back to foreground from background
+        // Dispatch a retention event when the user returns to the foreground from the background
         NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 

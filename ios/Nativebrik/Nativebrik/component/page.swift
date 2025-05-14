@@ -118,17 +118,19 @@ class PageView: UIView {
 
         // build placeholder input. init.props is passed from other pages, and page.data.props are the page.props.
         // so merge them and create self.props.
-        self.props = page?.data?.props?.enumerated().map { (index, property) in
-            let propIndexInEvent = props?.firstIndex(where: { prop in
-                return property.name == prop.name
-            }) ?? -1
-            let propInEvent = propIndexInEvent >= 0 ? props![propIndexInEvent] : nil
-            return Property(
-                name: property.name ?? "",
-                value: propInEvent?.value ?? property.value ?? "",
-                ptype: property.ptype ?? PropertyType.STRING
-            )
-        } ?? []
+        self.props =
+            page?.data?.props?.enumerated().map { (index, property) in
+                let propIndexInEvent =
+                    props?.firstIndex(where: { prop in
+                        return property.name == prop.name
+                    }) ?? -1
+                let propInEvent = propIndexInEvent >= 0 ? props![propIndexInEvent] : nil
+                return Property(
+                    name: property.name ?? "",
+                    value: propInEvent?.value ?? property.value ?? "",
+                    ptype: property.ptype ?? PropertyType.STRING
+                )
+            } ?? []
 
         self.data = container.createVariableForTemplate(data: nil, properties: self.props)
         super.init(frame: .zero)
@@ -136,14 +138,14 @@ class PageView: UIView {
         let parentEventManager = event
         // handle events that has http request, and then dispatch the event to parent.
         // here, we only process http request.
-        self.event = UIBlockEventManager(on: { [weak self] dispatchedEvent in
+        self.event = UIBlockEventManager(on: { [weak self] dispatchedEvent, options in
             let variable = _mergeVariable(
                 base: self?.data,
                 self?.container.createVariableForTemplate(data: nil, properties: self?.props)
             )
 
             let assertion = dispatchedEvent.httpResponseAssertion
-            let handleEvent = { () -> () in
+            let handleEvent = { () -> Void in
                 DispatchQueue.main.async {
                     parentEventManager?.dispatch(event: dispatchedEvent)
                 }
@@ -158,7 +160,17 @@ class PageView: UIView {
                         )
                         switch result {
                         case .success:
+                            await MainActor.run {
+                                options?.onHttpSettled?()
+                                options?.onHttpSuccess?()
+                            }
                             handleEvent()
+                        case .failure:
+                            await MainActor.run {
+                                options?.onHttpSettled?()
+                                options?.onHttpError?()
+                            }
+                        // TODO: handle error
                         default:
                             break
                         }
@@ -176,7 +188,7 @@ class PageView: UIView {
         self.addSubview(self.view)
         self.loadDataAndTransition()
     }
-    
+
     func dispatch(event: UIBlockEventDispatcher) {
         self.event?.dispatch(event: event)
     }
@@ -193,14 +205,17 @@ class PageView: UIView {
         self.renderView()
 
         Task {
-            let variable = self.container.createVariableForTemplate(data: nil, properties: self.props)
+            let variable = self.container.createVariableForTemplate(
+                data: nil, properties: self.props)
             let result = await Task.detached {
-                return await self.container.sendHttpRequest(req: httpRequest, assertion: nil, variable: variable)
+                return await self.container.sendHttpRequest(
+                    req: httpRequest, assertion: nil, variable: variable)
             }.value
             await MainActor.run { [weak self] in
                 switch result {
                 case .success(let response):
-                    self?.data = self?.container.createVariableForTemplate(data: response.data?.value, properties: self?.props)
+                    self?.data = self?.container.createVariableForTemplate(
+                        data: response.data?.value, properties: self?.props)
                 default:
                     break
                 }
