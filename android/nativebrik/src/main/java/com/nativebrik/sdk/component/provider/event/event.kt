@@ -27,7 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-private var LocalEventListener = compositionLocalOf<EventListenerState> {
+internal var LocalEventListener = compositionLocalOf<EventListenerState> {
     error("LocalEventListener is not found")
 }
 
