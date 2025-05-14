@@ -150,6 +150,14 @@ class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
                 this.manager.connectEmbeddingInRemoteConfigValue(channelId, key, embeddingChannelId)
                 result.success("ok")
             }
+
+            // tooltip
+            "connectTooltip" -> {}
+            "connectTooltipEmbedding" -> {}
+            "callTooltipEmbeddingDispatch" -> {}
+            "disconnectTooltipEmbedding" -> {}
+
+
             "dispatch" -> {
                 val event = call.arguments as String
                 this.manager.dispatch(event)

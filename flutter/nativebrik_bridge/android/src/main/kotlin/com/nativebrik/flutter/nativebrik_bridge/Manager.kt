@@ -162,6 +162,19 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
         this.connectEmbedding(embeddingChannelId, experimentId, componentId)
     }
 
+    // tooltip
+    suspend fun connectTooltip(name: String): Result<String> {
+        if (name.isEmpty()) {
+            return Result.success("error: the name is empty")
+        }
+        val client = this.bridgeClient ?: return Result.success("error: the client is not initialized")
+        val tooltip = client.connectTooltip(name).getOrElse {
+            return Result.success("error: not found")
+        }
+        return Result.success("")
+    }
+
+
     fun dispatch(name: String) {
         this.nativebrikClient?.experiment?.dispatch(NativebrikEvent(name))
     }
