@@ -12,11 +12,14 @@ struct UIBlockEventDispatchOptions {
     var onHttpError: (() -> Void)? = nil
     var onHttpSettled: (() -> Void)? = nil
 }
-    
 
 class UIBlockEventManager {
-    private let callback: (_ event: UIBlockEventDispatcher, _ options: UIBlockEventDispatchOptions?) -> Void
-    init(on: @escaping (_ event: UIBlockEventDispatcher, _ options: UIBlockEventDispatchOptions?) -> Void) {
+    private let callback:
+        (_ event: UIBlockEventDispatcher, _ options: UIBlockEventDispatchOptions?) -> Void
+    init(
+        on: @escaping (_ event: UIBlockEventDispatcher, _ options: UIBlockEventDispatchOptions?) ->
+            Void
+    ) {
         self.callback = on
     }
 
@@ -69,17 +72,20 @@ class UIBlockContext {
     func instanciateFrom(_ args: UIBlockContextChildInit) -> UIBlockContext {
         var v = self.variable
         if let childData = args.childData {
-            v = _mergeVariable(base: v, self.container?.createVariableForTemplate(data: childData, properties: nil))
+            v = _mergeVariable(
+                base: v, self.container?.createVariableForTemplate(data: childData, properties: nil)
+            )
         }
-        return UIBlockContext(UIBlockContextInit(
-            container: self.container,
-            variable: v,
-            properties: args.properties ?? self.properties,
-            event: args.event ?? self.event,
-            parentClickListener: args.parentClickListener ?? self.parentClickListener,
-            parentDirection: args.parentDirection ?? self.parentDirection,
-            loading: args.loading ?? self.loading
-        ))
+        return UIBlockContext(
+            UIBlockContextInit(
+                container: self.container,
+                variable: v,
+                properties: args.properties ?? self.properties,
+                event: args.event ?? self.event,
+                parentClickListener: args.parentClickListener ?? self.parentClickListener,
+                parentDirection: args.parentDirection ?? self.parentDirection,
+                loading: args.loading ?? self.loading
+            ))
     }
 
     func getVariable() -> Any? {

@@ -42,14 +42,16 @@ class AnimatedUIControl: UIControl {
 }
 
 class ClickListener: UITapGestureRecognizer {
-    var onClick : (() -> Void)? = nil
-    var onTouchBegan : (() -> Void)? = nil
+    var onClick: (() -> Void)? = nil
+    var onTouchBegan: (() -> Void)? = nil
     var onTouchEnded: (() -> Void)? = nil
     var onTouchCanceled: (() -> Void)? = nil
 }
 
 // configureOnClickGesture sets up a click listener for the target view.
-func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockContext, event: UIBlockEventDispatcher?) -> ClickListener {
+func configureOnClickGesture(
+    target: UIView, action: Selector, context: UIBlockContext, event: UIBlockEventDispatcher?
+) -> ClickListener {
     let gesture = ClickListener(target: target, action: action)
     gesture.onClick = {
         guard let event = event else { return }
@@ -77,13 +79,15 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
             target.isUserInteractionEnabled = false
             target.alpha = 0.8
         }
-        context.dipatch(event: compiledEvent, options: UIBlockEventDispatchOptions(
-            onHttpSettled: {
-                // reset loading UI
-                target.isUserInteractionEnabled = true
-                target.alpha = 1
-            }
-        ))
+        context.dipatch(
+            event: compiledEvent,
+            options: UIBlockEventDispatchOptions(
+                onHttpSettled: {
+                    // reset loading UI
+                    target.isUserInteractionEnabled = true
+                    target.alpha = 1
+                }
+            ))
     }
     if event != nil {
         target.addGestureRecognizer(gesture)
@@ -97,7 +101,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
                 options: .curveEaseInOut,
                 animations: { [weak target] in
                     target?.transform = CGAffineTransform(scaleX: 0.984, y: 0.984)
-            })
+                })
         } else {
             if let onTouchBegan = context.getParentClickListener()?.onTouchBegan {
                 onTouchBegan()
@@ -112,7 +116,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
                 options: .curveEaseInOut,
                 animations: { [weak target] in
                     target?.transform = CGAffineTransform(scaleX: 1, y: 1)
-            })
+                })
         } else {
             if let onTouchBegan = context.getParentClickListener()?.onTouchEnded {
                 onTouchBegan()
@@ -128,7 +132,7 @@ func configureOnClickGesture(target: UIView, action: Selector, context: UIBlockC
                 options: .curveEaseInOut,
                 animations: { [weak target] in
                     target?.transform = CGAffineTransform(scaleX: 1, y: 1)
-            })
+                })
         } else {
             if let onTouchBegan = context.getParentClickListener()?.onTouchCanceled {
                 onTouchBegan()
