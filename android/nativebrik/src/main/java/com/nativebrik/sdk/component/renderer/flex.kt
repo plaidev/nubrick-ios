@@ -362,10 +362,11 @@ internal fun Flex(
     val data = DataContext.state
     val direction: FlexDirection = block.data?.direction ?: FlexDirection.ROW
     val flexModifier = modifier
+        .eventDispatcher(block.data?.onClick)
         .frameSize(block.data?.frame)
         .framePadding(block.data?.frame)
         .flexOverflow(direction, block.data?.overflow)
-        .eventDispatcher(block.data?.onClick)
+        .zIndex(1f)
 
     val gap = block.data?.gap
     val justifyContent = block.data?.justifyContent
@@ -396,7 +397,7 @@ internal fun Flex(
         }
         if (direction == FlexDirection.ROW) {
             Row(
-                modifier = flexModifier.zIndex(1f),
+                modifier = flexModifier,
                 horizontalArrangement = parseHorizontalJustifyContent(gap, justifyContent),
                 verticalAlignment = parseVerticalAlignItems(alignItems),
             ) {
@@ -407,7 +408,7 @@ internal fun Flex(
             }
         } else {
             Column(
-                modifier = flexModifier.zIndex(1f),
+                modifier = flexModifier,
                 horizontalAlignment = parseHorizontalAlignItems(alignItems),
                 verticalArrangement = parseVerticalJustifyContent(gap, justifyContent)
             ) {

@@ -83,10 +83,10 @@ internal fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
         skeleton = loading
         value = if (loading) block.data?.value ?: "" else compile(block.data?.value ?: "", data.data)
     }
-    var modifier = modifier
+    val containerModifier = modifier
+        .eventDispatcher(block.data?.onClick)
         .styleByFrame(block.data?.frame)
         .skeleton(skeleton)
-        .eventDispatcher(block.data?.onClick)
 
     val fontStyle = parseFontStyle(
         size = block.data?.size,
@@ -101,7 +101,7 @@ internal fun Text(block: UITextBlock, modifier: Modifier = Modifier) {
         maxLines = Int.MAX_VALUE
     }
 
-    Box(modifier = modifier) {
+    Box(modifier = containerModifier) {
         if (block.data?.frame?.backgroundSrc != null) {
             val src = compile(block.data.frame.backgroundSrc, data.data)
             val fallback = parseImageFallbackToBlurhash(src)

@@ -56,8 +56,8 @@ internal fun Image(block: UIImageBlock, modifier: Modifier = Modifier) {
     }
 
     val modifier = modifier
-        .styleByFrame(block.data?.frame)
         .eventDispatcher(block.data?.onClick)
+        .styleByFrame(block.data?.frame)
         .skeleton(skeleton)
 
     val fallback = parseImageFallbackToBlurhash(src)
@@ -65,7 +65,7 @@ internal fun Image(block: UIImageBlock, modifier: Modifier = Modifier) {
         blurHash = fallback.blurhash,
         height = fallback.height,
         width = fallback.width
-    ) ?: null
+    )
     val contentScale = parseContentModeToContentScale(block.data?.contentMode)
 
     AsyncImage(
