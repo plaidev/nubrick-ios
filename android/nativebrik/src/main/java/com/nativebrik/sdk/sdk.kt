@@ -27,6 +27,8 @@ import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 import com.nativebrik.sdk.schema.UIBlock
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -197,8 +199,10 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         return client.experiment.container.fetchEmbedding(experimentId, componentId)
     }
 
-    suspend fun connectTooltip(trigger: String): Result<Any?> {
-        return client.experiment.container.fetchTooltip(trigger)
+    suspend fun connectTooltip(trigger: String): Result<String?> {
+        return client.experiment.container.fetchTooltip(trigger).mapCatching { it ->
+            it.let { Json.encodeToString(UIBlock.encode(it)) }
+        }
     }
 
     @DelicateCoroutinesApi
