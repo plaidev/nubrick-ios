@@ -17,6 +17,7 @@ import com.nativebrik.sdk.component.EmbeddingLoadingState
 import com.nativebrik.sdk.component.Root
 import com.nativebrik.sdk.component.Trigger
 import com.nativebrik.sdk.component.TriggerViewModel
+import com.nativebrik.sdk.component.bridge.UIBlockEventBridgeViewModel
 import com.nativebrik.sdk.data.CacheStore
 import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.ContainerImpl
@@ -25,6 +26,7 @@ import com.nativebrik.sdk.data.database.NativebrikDbHelper
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 import com.nativebrik.sdk.schema.UIBlock
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -195,8 +197,15 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         return client.experiment.container.fetchEmbedding(experimentId, componentId)
     }
 
+    @DelicateCoroutinesApi
     @Composable
-    fun render(modifier: Modifier = Modifier, arguments: Any? = null, data: Any?, onEvent: ((event: Event) -> Unit)) {
+    fun render(
+        modifier: Modifier = Modifier,
+        arguments: Any? = null,
+        data: Any?,
+        onEvent: ((event: Event) -> Unit),
+        eventBridge: UIBlockEventBridgeViewModel? = null,
+    ) {
         val container = remember(arguments) {
             client.experiment.container.initWith(arguments)
         }
@@ -211,6 +220,7 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
                     container = container,
                     root = data.data,
                     onEvent = onEvent,
+                    eventBridge = eventBridge,
                 )
             }
         } else {
