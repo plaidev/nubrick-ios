@@ -1,5 +1,6 @@
 package com.nativebrik.sdk.schema
 
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import org.junit.Assert.assertEquals
@@ -11,10 +12,12 @@ class SchemaUnitTest {
             "__typename": "UIFlexContainerBlock",
             "id": "1",
             "data": {
+                "__typename": "UIFlexContainerBlockData",
                 "children": [{
                     "__typename": "UITextBlock",
                     "id": "2",
                     "data": {
+                        "__typename": "UITextBlockData",
                         "value": "Hello World"
                     }
                 }],
@@ -36,5 +39,35 @@ class SchemaUnitTest {
         } else {
             assert(false)
         }
+    }
+
+    @Test
+    fun shouldEncode() {
+        val data = UIFlexContainerBlock(
+            id = "1",
+            data = UIFlexContainerBlockData(
+                children = listOf(UIBlock.UnionUITextBlock(
+                    UITextBlock(
+                        id = "2",
+                        data = UITextBlockData(
+                            value = "Hello World"
+                        )
+                    )
+                )),
+                gap = 16
+            )
+        )
+        val jsonElement = UIFlexContainerBlock.encode(data)
+        val actual = Json.encodeToString(jsonElement)
+        val expected = Json.encodeToString(Json.decodeFromString<JsonElement>(this.json))
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun shouldEncodeEnum() {
+        val data = AlignItems.START
+        val actual = Json.encodeToString(AlignItems.encode(data))
+        val expected = "\"START\""
+        assertEquals(expected, actual)
     }
 }
