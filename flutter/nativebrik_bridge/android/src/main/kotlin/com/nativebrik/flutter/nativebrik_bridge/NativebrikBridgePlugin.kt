@@ -13,10 +13,12 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import com.nativebrik.sdk.VERSION
 import com.nativebrik.sdk.NativebrikClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -84,19 +86,28 @@ class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
                     Config(
                         projectId,
                         onEvent = { it ->
-                            this.channel.invokeMethod(ON_EVENT_METHOD, mapOf(
-                                "name" to it.name,
-                                "deepLink" to it.deepLink,
-                                "payload" to it.payload?.map { prop ->
-                                    mapOf(
-                                        "name" to prop.name,
-                                        "value" to prop.value,
-                                        "type" to prop.type,
-                                    )
-                                }
-                            ))
+                            GlobalScope.launch(Dispatchers.Main) {
+                                channel.invokeMethod(ON_EVENT_METHOD, mapOf(
+                                    "name" to it.name,
+                                    "deepLink" to it.deepLink,
+                                    "payload" to it.payload?.map { prop ->
+                                        mapOf(
+                                            "name" to prop.name,
+                                            "value" to prop.value,
+                                            "type" to prop.type,
+                                        )
+                                    }
+                                ))
+                            }
                         },
                         cachePolicy = nativebrikCachePolicy,
+                        onDispatch = { it ->
+                            GlobalScope.launch(Dispatchers.Main) {
+                                channel.invokeMethod(ON_DISPATCH_METHOD, mapOf(
+                                    "name" to it.name
+                                ))
+                            }
+                        }
                     ), context)
                 this.manager.setNativebrikClient(client)
                 result.success("ok")
@@ -175,7 +186,7 @@ class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
             "callTooltipEmbeddingDispatch" -> {
                 val channelId = call.argument<String>("channelId") as String
                 val event = call.argument<String>("event") as String
-                GlobalScope.launch {
+                GlobalScope.launch(Dispatchers.IO) {
                     manager.callTooltipEmbeddingDispatch(channelId, event)
                     result.success("ok")
                 }
