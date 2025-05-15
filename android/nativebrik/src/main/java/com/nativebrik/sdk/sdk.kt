@@ -26,6 +26,7 @@ import com.nativebrik.sdk.data.database.NativebrikDbHelper
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 import com.nativebrik.sdk.schema.UIBlock
+import com.nativebrik.sdk.schema.UIRootBlock
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -33,7 +34,7 @@ import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-const val VERSION = "0.4.5"
+const val VERSION = "0.4.6"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -220,7 +221,13 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         val container = remember(arguments) {
             client.experiment.container.initWith(arguments)
         }
-        if (data is UIBlock.UnionUIRootBlock) {
+        val rootBlock: UIRootBlock? = when (data) {
+            is UIBlock.UnionUIRootBlock -> data.data
+            is UIRootBlock -> data
+            is String -> UIRootBlock.decode(Json.decodeFromString(data))
+            else -> null
+        }
+        rootBlock?.let {
             Row(
                 modifier = modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.Center,
@@ -229,7 +236,7 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
                 Root(
                     modifier = Modifier.fillMaxSize(),
                     container = container,
-                    root = data.data,
+                    root = it,
                     onEvent = onEvent,
                     onNextTooltip = onNextTooltip,
                     onDismiss = {
@@ -238,7 +245,7 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
                     eventBridge = eventBridge,
                 )
             }
-        } else {
+        } ?: {
             Unit
         }
     }
