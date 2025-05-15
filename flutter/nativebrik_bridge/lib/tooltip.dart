@@ -216,6 +216,8 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
         return _renderTooltip(context);
+      case TargetPlatform.android:
+        return _renderTooltip(context);
       default:
         return const SizedBox.shrink();
     }
@@ -328,6 +330,13 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
         return UiKitView(
+          viewType: viewType,
+          layoutDirection: TextDirection.ltr,
+          creationParams: creationParams,
+          creationParamsCodec: const StandardMessageCodec(),
+        );
+      case TargetPlatform.android:
+        return AndroidView(
           viewType: viewType,
           layoutDirection: TextDirection.ltr,
           creationParams: creationParams,
