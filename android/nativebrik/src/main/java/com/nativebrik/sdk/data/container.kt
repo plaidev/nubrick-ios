@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import com.nativebrik.sdk.Config
 import com.nativebrik.sdk.Event
+import com.nativebrik.sdk.NativebrikEvent
 import com.nativebrik.sdk.data.database.DatabaseRepository
 import com.nativebrik.sdk.data.database.DatabaseRepositoryImpl
 import com.nativebrik.sdk.data.extraction.extractComponentId
@@ -41,6 +42,7 @@ internal interface Container {
     suspend fun fetchRemoteConfig(experimentId: String): Result<ExperimentVariant>
 
     fun record(throwable: Throwable)
+    fun handleNativebrikEvent(it: NativebrikEvent)
 }
 
 internal class ContainerImpl(
@@ -232,4 +234,9 @@ internal class ContainerImpl(
         this.trackRepository.record(throwable)
     }
 
+    override fun handleNativebrikEvent(it: NativebrikEvent) {
+        this.config.onDispatch?.let { handle ->
+            handle(it)
+        }
+    }
 }

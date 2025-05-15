@@ -33,7 +33,7 @@ import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-const val VERSION = "0.4.4"
+const val VERSION = "0.4.5"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -62,7 +62,8 @@ public data class Config(
     val projectId: String,
     val endpoint: Endpoint = Endpoint(),
     val onEvent: ((event: Event) -> Unit)? = null,
-    val cachePolicy: CachePolicy = CachePolicy()
+    val cachePolicy: CachePolicy = CachePolicy(),
+    val onDispatch: ((event: NativebrikEvent) -> Unit)? = null,
 )
 
 public enum class CacheStorage {
