@@ -62,7 +62,8 @@ public data class Config(
     val projectId: String,
     val endpoint: Endpoint = Endpoint(),
     val onEvent: ((event: Event) -> Unit)? = null,
-    val cachePolicy: CachePolicy = CachePolicy()
+    val cachePolicy: CachePolicy = CachePolicy(),
+    val onDispatch: ((event: NativebrikEvent) -> Unit)? = null,
 )
 
 public enum class CacheStorage {

@@ -60,6 +60,7 @@ internal class TriggerViewModel(internal val container: Container, internal val 
     fun dispatch(event: NativebrikEvent) {
         val self = this
         GlobalScope.launch(Dispatchers.IO) {
+            self.container.handleNativebrikEvent(event)
             self.container.fetchInAppMessage(event.name).onSuccess {
                 GlobalScope.launch(Dispatchers.Main) {
                     if (it is UIBlock.UnionUIRootBlock) {
