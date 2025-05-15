@@ -1,6 +1,7 @@
 package com.nativebrik.flutter.nativebrik_bridge
 
 import android.content.Context
+import android.provider.Settings.Global
 import com.nativebrik.sdk.CachePolicy
 import com.nativebrik.sdk.CacheStorage
 import com.nativebrik.sdk.Config
@@ -23,6 +24,9 @@ internal const val EMBEDDING_VIEW_ID = "nativebrik-embedding-view"
 internal const val OVERLAY_VIEW_ID = "nativebrik-overlay-view"
 internal const val EMBEDDING_PHASE_UPDATE_METHOD = "embedding-phase-update"
 internal const val ON_EVENT_METHOD = "on-event"
+internal const val ON_DISPATCH_METHOD = "on-dispatch"
+internal const val ON_NEXT_TOOLTIP_METHOD = "on-next-tooltip"
+internal const val ON_DISMISS_TOOLTIP_METHOD = "on-dismiss-tooltip"
 
 /** NativebrikBridgePlugin */
 class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
@@ -152,11 +156,34 @@ class NativebrikBridgePlugin: FlutterPlugin, MethodCallHandler {
             }
 
             // tooltip
-            "connectTooltip" -> {}
-            "connectTooltipEmbedding" -> {}
-            "callTooltipEmbeddingDispatch" -> {}
-            "disconnectTooltipEmbedding" -> {}
-
+            "connectTooltip" -> {
+                val name = call.arguments as String
+                GlobalScope.launch {
+                    manager.connectTooltip(name = name).onSuccess {
+                        result.success(it)
+                    }.onFailure {
+                        result.success("error: ${it.message}")
+                    }
+                }
+            }
+            "connectTooltipEmbedding" -> {
+                val channelId = call.argument<String>("channelId") as String
+                val rootBlock = call.argument<String>("json") as String
+                this.manager.connectTooltipEmbedding(channelId, rootBlock)
+                result.success("ok")
+            }
+            "callTooltipEmbeddingDispatch" -> {
+                val channelId = call.argument<String>("channelId") as String
+                val event = call.argument<String>("event") as String
+                GlobalScope.launch {
+                    manager.callTooltipEmbeddingDispatch(channelId, event)
+                    result.success("ok")
+                }
+            }
+            "disconnectTooltipEmbedding" -> {
+                val channelId = call.arguments as String
+                this.manager.disconnectTooltip(channelId)
+            }
 
             "dispatch" -> {
                 val event = call.arguments as String

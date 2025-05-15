@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import com.nativebrik.sdk.NativebrikEvent
+import com.nativebrik.sdk.component.bridge.UIBlockEventBridgeViewModel
 import com.nativebrik.sdk.remoteconfig.RemoteConfigVariant
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
@@ -29,6 +30,7 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
     private var bridgeClient: __DO_NOT_USE_THIS_INTERNAL_BRIDGE? = null
 
     private var embeddingMap: MutableMap<String, Any?> = mutableMapOf()
+    private var eventBridgeViewMap: MutableMap<String, UIBlockEventBridgeViewModel> = mutableMapOf()
     private var configMap: MutableMap<String, ConfigEntity> = mutableMapOf()
 
     fun setNativebrikClient(client: NativebrikClient) {
@@ -96,19 +98,34 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
             MethodChannel(this.binaryMessenger, "Nativebrik/Embedding/$channelId")
         }
         val data = this.embeddingMap[channelId]
-        bridgeClient.render(modifier, arguments, data, onEvent = { event ->
-            methodChannel.invokeMethod(ON_EVENT_METHOD, mapOf(
-                "name" to event.name,
-                "deepLink" to event.deepLink,
-                "payload" to event.payload?.map { prop ->
-                    mapOf(
-                        "name" to prop.name,
-                        "value" to prop.value,
-                        "type" to prop.type,
-                    )
-                }
-            ))
-        })
+        val eventBridge = this.eventBridgeViewMap[channelId]
+        bridgeClient.render(
+            modifier,
+            arguments,
+            data,
+            onEvent = { event ->
+                methodChannel.invokeMethod(ON_EVENT_METHOD, mapOf(
+                    "name" to event.name,
+                    "deepLink" to event.deepLink,
+                    "payload" to event.payload?.map { prop ->
+                        mapOf(
+                            "name" to prop.name,
+                            "value" to prop.value,
+                            "type" to prop.type,
+                        )
+                    }
+                ))
+            },
+            onNextTooltip = { pageId ->
+                methodChannel.invokeMethod(ON_NEXT_TOOLTIP_METHOD, mapOf(
+                    "pageId" to pageId,
+                ))
+            },
+            onDismiss = {
+                methodChannel.invokeMethod(ON_DISMISS_TOOLTIP_METHOD, null)
+            },
+            eventBridge = eventBridge
+        )
     }
 
     @Composable
@@ -170,10 +187,27 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
         val client = this.bridgeClient ?: return Result.success("error: the client is not initialized")
         val tooltip = client.connectTooltip(name).getOrElse {
             return Result.success("error: not found")
-        }
-        return Result.success("")
+        } ?: return Result.success("error: not found")
+        return Result.success(tooltip)
     }
 
+    fun connectTooltipEmbedding(channelId: String, rootBlock: String) {
+        if (channelId.isEmpty()) return
+        embeddingMap[channelId] = rootBlock
+        eventBridgeViewMap[channelId] = UIBlockEventBridgeViewModel()
+    }
+
+    suspend fun callTooltipEmbeddingDispatch(channelId: String, event: String) {
+        if (channelId.isEmpty() || event.isEmpty()) return
+        val eventBridge = eventBridgeViewMap[channelId] ?: return
+        eventBridge.dispatch(event)
+    }
+
+    fun disconnectTooltip(channelId: String) {
+        if (channelId.isEmpty()) return
+        embeddingMap.remove(channelId)
+        eventBridgeViewMap.remove(channelId)
+    }
 
     fun dispatch(name: String) {
         this.nativebrikClient?.experiment?.dispatch(NativebrikEvent(name))
