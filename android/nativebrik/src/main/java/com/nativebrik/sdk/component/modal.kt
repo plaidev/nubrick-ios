@@ -59,19 +59,17 @@ internal class ModalViewModel(
     }
 
     fun close() {
-        modalState.value = modalState.value.copy(displayedModalIndex = 0)
         scope.launch { sheetState.hide() }
             .invokeOnCompletion { dismiss() }
     }
 
-    fun dismiss() {
+    private fun dismiss() {
         modalState.value = ModalState() // reset the modal state
         scope.launch {
             if (sheetState.currentValue == SheetValue.Expanded && sheetState.hasPartiallyExpandedState) {
                 sheetState.partialExpand()
             } else {
                 // Is expanded without collapsed state or is collapsed.
-                sheetState.hide()
                 onDismiss()
             }
         }

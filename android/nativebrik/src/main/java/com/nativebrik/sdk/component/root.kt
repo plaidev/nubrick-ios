@@ -175,7 +175,7 @@ internal class RootViewModel(
 
     private fun dismiss() {
         this.currentPageBlock.value = null
-        modalViewModel.dismiss()
+        modalViewModel.close()
     }
 
     fun handleWebviewDismiss() {
