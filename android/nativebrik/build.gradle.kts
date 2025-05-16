@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.nativebrik"
-version = "0.4.6"
+version = "0.4.7"
 
 android {
     namespace = "com.nativebrik.sdk"
@@ -97,7 +97,8 @@ afterEvaluate {
 
                 pom {
                     name = "Nativebrik SDK"
-                    description = "Nativebrik is a tool that helps you to build/manage your mobile application."
+                    description =
+                        "Nativebrik is a tool that helps you to build/manage your mobile application."
                     url = "https://github.com/plaidev/nativebrik-sdk"
                     licenses {
                         license {
