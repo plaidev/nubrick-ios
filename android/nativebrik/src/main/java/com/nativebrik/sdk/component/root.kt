@@ -66,7 +66,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers
+import com.nativebrik.sdk.schema.ModalPresentationStyle
+import com.nativebrik.sdk.schema.ModalScreenSize
 
 private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     return Event(
@@ -96,6 +97,8 @@ internal class RootViewModel: ViewModel {
     val modalStack = mutableStateOf<List<PageBlockData>>(listOf())
     val displayedModalIndex = mutableIntStateOf(-1)
     val modalVisibility = mutableStateOf(false)
+    val modalPresentationStyle = mutableStateOf(ModalPresentationStyle.UNKNOWN)
+    val modalScreenSize = mutableStateOf(ModalScreenSize.UNKNOWN)
     val webviewUrl = mutableStateOf("")
     var currentTooltipAnchorId = mutableStateOf("")
     private val onDismiss: ((root: UIRootBlock) -> Unit)
@@ -202,6 +205,8 @@ internal class RootViewModel: ViewModel {
             modalStack.add(PageBlockData(destBlock, properties))
             this.modalStack.value = modalStack
             this.displayedModalIndex.intValue = modalStack.size - 1
+            this.modalPresentationStyle.value = destBlock.data.modalPresentationStyle ?: ModalPresentationStyle.UNKNOWN
+            this.modalScreenSize.value = destBlock.data.modalScreenSize ?: ModalScreenSize.UNKNOWN
             this.modalVisibility.value = true
             return
         }
@@ -288,9 +293,7 @@ internal fun Root(
     eventBridge: UIBlockEventBridgeViewModel? = null,
 ) {
     val context = LocalContext.current
-    val scrollState = rememberScrollState()
-    val webviewSheetState = rememberModalBottomSheetState()
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState() // TODO: set skipPartiallyExpanded true for large modal
     val scope = rememberCoroutineScope()
     val viewModel = remember(root, sheetState, scope, onDismiss, context) {
         RootViewModel(root, scope, sheetState, onNextTooltip, onDismiss, context)
