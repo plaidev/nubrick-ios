@@ -1,6 +1,6 @@
 name: nativebrik_bridge
 description: "Nativebrik bridge sdk for flutter"
-version: 0.7.4
+version: 0.7.5
 homepage: "https://nativebrik.com"
 repository: "https://github.com/plaidev/nativebrik-sdk"
 
