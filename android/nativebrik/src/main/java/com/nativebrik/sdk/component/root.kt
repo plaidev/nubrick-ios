@@ -330,7 +330,7 @@ internal fun Root(
                         properties = bottomSheetProps,
                         dragHandle = {},
                         windowInsets = WindowInsets(0, 0, 0, 0),
-                        shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp), // FIXME: remove rounded corner shape for fullscreen
+                        shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
                     ) {
                         ModalBottomSheetBackHandler {
                             viewModel.back()

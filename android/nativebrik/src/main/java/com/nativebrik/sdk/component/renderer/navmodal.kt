@@ -11,7 +11,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.zIndex
 import com.nativebrik.sdk.schema.UIPageBlock
 @Composable
 internal fun ModalBottomSheetBackHandler(handler: () -> Unit) {
@@ -34,7 +36,7 @@ internal fun ModalBottomSheetBackHandler(handler: () -> Unit) {
 @Composable
 internal fun NavigationHeader(index: Int, block: UIPageBlock, onClose: () -> Unit, onBack: () -> Unit) {
     val visibility = block.data?.modalNavigationBackButton?.visible ?: true
-    Box {
+    Box(modifier = Modifier.zIndex(10f)) {
         if (visibility) {
             if (index > 0) {
                 IconButton(onClick = { onBack() }) {
