@@ -66,10 +66,15 @@ private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     )
 }
 
-internal class RootViewModel: ViewModel {
-    private val root: UIRootBlock
-    private val pages: List<UIPageBlock>
-    private val context: Context
+internal class RootViewModel @OptIn(ExperimentalMaterial3Api::class) constructor(
+    private val root: UIRootBlock,
+    private val scope: CoroutineScope,
+    private val sheetState: SheetState,
+    private val onNextTooltip: ((pageId: String) -> Unit) = {},
+    private val onDismiss: ((root: UIRootBlock) -> Unit) = {},
+    private val onOpenDeepLink: (link: String) -> Unit = {},
+) : ViewModel() {
+    private val pages: List<UIPageBlock> = root.data?.pages ?: emptyList()
     val currentPageBlock = mutableStateOf<UIPageBlock?>(null)
     val displayedPageBlock = mutableStateOf<PageBlockData?>(null)
     val modalStack = mutableStateOf<List<PageBlockData>>(listOf())
@@ -79,44 +84,22 @@ internal class RootViewModel: ViewModel {
     val modalScreenSize = mutableStateOf(ModalScreenSize.UNKNOWN)
     val webviewUrl = mutableStateOf("")
     var currentTooltipAnchorId = mutableStateOf("")
-    private val onDismiss: ((root: UIRootBlock) -> Unit)
-    private val onNextTooltip: ((pageId: String) -> Unit)
-    private val scope: CoroutineScope
-    @OptIn(ExperimentalMaterial3Api::class)
-    private val sheetState: SheetState
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    constructor(
-        root: UIRootBlock,
-        scope: CoroutineScope,
-        sheetState: SheetState,
-        onNextTooltip: ((pageId: String) -> Unit) = {},
-        onDismiss: ((root: UIRootBlock) -> Unit) = {},
-        context: Context,
-    ) {
-        this.context = context
-        this.root = root
-        this.onNextTooltip = onNextTooltip
-        this.onDismiss = onDismiss
-        this.scope = scope
-        this.sheetState = sheetState
-
-        val pages: List<UIPageBlock> = root.data?.pages ?: emptyList()
-        this.pages = pages
-
+    fun initialize() {
         val trigger = pages.firstOrNull {
             it.data?.kind == PageKind.TRIGGER
-        }
-        if (trigger == null) {
+        } ?: run {
             onDismiss(root)
             return
         }
+
         val destId = trigger.data?.triggerSetting?.onTrigger?.destinationPageId
         if (destId == null) {
             onDismiss(root)
             return
         }
-        this.render(destId)
+
+        render(destId)
     }
 
     fun handleUIEvent(it: UIBlockEventDispatcher) {
@@ -125,19 +108,8 @@ internal class RootViewModel: ViewModel {
         if (destId.isNotEmpty()) {
             this.render(destId)
         } else if (deepLink.isNotEmpty()) {
-            this.openDeepLink(deepLink)
+            onOpenDeepLink(deepLink)
         }
-    }
-
-    private fun openDeepLink(link: String) {
-        val data = link.toUri()
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            this.data = data
-            this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        try {
-            this.context.startActivity(intent)
-        } catch (_: Throwable) {}
     }
 
     private fun render(destId: String, properties: List<Property>? = null) {
@@ -163,7 +135,7 @@ internal class RootViewModel: ViewModel {
         if (destBlock.data?.kind == PageKind.TOOLTIP) {
             val anchorId = destBlock.data.tooltipAnchor ?: ""
             if (this.currentTooltipAnchorId.value != anchorId) {
-                this.onNextTooltip(destId)
+                onNextTooltip(destId)
             }
             this.currentTooltipAnchorId.value = anchorId
         }
@@ -183,7 +155,8 @@ internal class RootViewModel: ViewModel {
             modalStack.add(PageBlockData(destBlock, properties))
             this.modalStack.value = modalStack
             this.displayedModalIndex.intValue = modalStack.size - 1
-            this.modalPresentationStyle.value = destBlock.data.modalPresentationStyle ?: ModalPresentationStyle.UNKNOWN
+            this.modalPresentationStyle.value =
+                destBlock.data.modalPresentationStyle ?: ModalPresentationStyle.UNKNOWN
             this.modalScreenSize.value = destBlock.data.modalScreenSize ?: ModalScreenSize.UNKNOWN
             this.modalVisibility.value = true
             return
@@ -218,7 +191,8 @@ internal class RootViewModel: ViewModel {
         if (self.sheetState.currentValue == SheetValue.Expanded && self.sheetState.hasPartiallyExpandedState) {
             this.scope.launch { self.sheetState.partialExpand() }
         } else { // Is expanded without collapsed state or is collapsed.
-            this.scope.launch { self.sheetState.hide() }.invokeOnCompletion { self.handleModalDismiss() }
+            this.scope.launch { self.sheetState.hide() }
+                .invokeOnCompletion { self.handleModalDismiss() }
         }
     }
 
