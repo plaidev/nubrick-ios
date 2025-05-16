@@ -173,14 +173,6 @@ internal class RootViewModel(
         this.displayedPageBlock.value = PageBlockData(destBlock, properties)
     }
 
-    fun back() {
-        modalViewModel.back()
-    }
-
-    fun close() {
-        modalViewModel.close()
-    }
-
     private fun dismiss() {
         this.currentPageBlock.value = null
         modalViewModel.dismiss()
@@ -226,13 +218,14 @@ internal fun Root(
     onDismiss: ((root: UIRootBlock) -> Unit) = {},
     eventBridge: UIBlockEventBridgeViewModel? = null,
 ) {
-    val context = LocalContext.current
+    // TODO: set skipPartiallyExpanded true for large modal
     val sheetState =
-        rememberModalBottomSheetState() // TODO: set skipPartiallyExpanded true for large modal
+        rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     val modalViewModel = remember(sheetState, scope) {
         ModalViewModel(sheetState, scope, onDismiss = { onDismiss(root) })
     }
+    val context = LocalContext.current
     val viewModel = remember(root, modalViewModel, onDismiss, context) {
         RootViewModel(
             root,
@@ -300,12 +293,12 @@ internal fun Root(
 
                 if (modalState.modalVisibility) {
                     BackHandler(true) {
-                        viewModel.back()
+                        modalViewModel.back()
                     }
                     ModalBottomSheet(
                         sheetState = sheetState,
                         onDismissRequest = {
-                            viewModel.close()
+                            modalViewModel.close()
                         },
                         properties = bottomSheetProps,
                         dragHandle = {},
@@ -313,7 +306,7 @@ internal fun Root(
                         shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
                     ) {
                         ModalBottomSheetBackHandler {
-                            viewModel.back()
+                            modalViewModel.back()
                         }
                         Column(
                             modifier = if (modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN) {
@@ -345,8 +338,8 @@ internal fun Root(
                                 NavigationHeader(
                                     it,
                                     stack.block,
-                                    onClose = { viewModel.close() },
-                                    onBack = { viewModel.back() })
+                                    onClose = { modalViewModel.close() },
+                                    onBack = { modalViewModel.back() })
                                 ModalPage(
                                     container = container,
                                     blockData = stack,

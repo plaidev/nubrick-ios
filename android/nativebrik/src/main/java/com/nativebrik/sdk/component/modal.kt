@@ -51,8 +51,7 @@ internal class ModalViewModel(
     fun back() {
         val index = modalState.value.displayedModalIndex
         if (index <= 0) {
-            // if the stack size is zero, just dismiss it. maybe unreachable
-            dismiss()
+            close()
             return
         }
         // pop the stack
