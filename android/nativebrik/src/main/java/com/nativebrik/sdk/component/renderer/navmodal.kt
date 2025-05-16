@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.zIndex
 import com.nativebrik.sdk.schema.UIPageBlock
+
 @Composable
 internal fun ModalBottomSheetBackHandler(handler: () -> Unit) {
     val view = rememberUpdatedState(LocalView.current)

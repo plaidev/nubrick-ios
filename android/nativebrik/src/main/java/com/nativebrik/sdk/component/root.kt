@@ -21,12 +21,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetDefaults
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -65,7 +62,6 @@ import com.nativebrik.sdk.schema.UIPageBlock
 import com.nativebrik.sdk.schema.UIRootBlock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.launch
 
 private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     return Event(
@@ -86,10 +82,10 @@ private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     )
 }
 
-internal class RootViewModel @OptIn(ExperimentalMaterial3Api::class) constructor(
+internal class RootViewModel constructor(
     private val root: UIRootBlock,
     private val scope: CoroutineScope,
-    private val sheetState: SheetState,
+    private val modalViewModel: ModalViewModel,
     private val onNextTooltip: ((pageId: String) -> Unit) = {},
     private val onDismiss: ((root: UIRootBlock) -> Unit) = {},
     private val onOpenDeepLink: ((link: String) -> Unit) = {},
@@ -97,11 +93,6 @@ internal class RootViewModel @OptIn(ExperimentalMaterial3Api::class) constructor
     private val pages: List<UIPageBlock> = root.data?.pages ?: emptyList()
     val currentPageBlock = mutableStateOf<UIPageBlock?>(null)
     val displayedPageBlock = mutableStateOf<PageBlockData?>(null)
-    val modalStack = mutableStateOf<List<PageBlockData>>(listOf())
-    val displayedModalIndex = mutableIntStateOf(-1)
-    val modalVisibility = mutableStateOf(false)
-    val modalPresentationStyle = mutableStateOf(ModalPresentationStyle.UNKNOWN)
-    val modalScreenSize = mutableStateOf(ModalScreenSize.UNKNOWN)
     val webviewUrl = mutableStateOf("")
     var currentTooltipAnchorId = mutableStateOf("")
 
@@ -161,24 +152,22 @@ internal class RootViewModel @OptIn(ExperimentalMaterial3Api::class) constructor
         }
 
         if (destBlock.data?.kind == PageKind.MODAL) {
-            val index = this.modalStack.value.indexOfFirst {
+            modalViewModel.modalState.value
+            val index = modalViewModel.modalState.value.modalStack.indexOfFirst {
                 it.block.id == destId
             }
             if (index > 0) {
                 // if it's already in modal stack, jump to the target stack
-                this.displayedModalIndex.intValue = index
+                modalViewModel.backTo(index)
                 return
             }
 
-            val modalStack = mutableListOf<PageBlockData>()
-            modalStack.addAll(this.modalStack.value)
-            modalStack.add(PageBlockData(destBlock, properties))
-            this.modalStack.value = modalStack
-            this.displayedModalIndex.intValue = modalStack.size - 1
-            this.modalPresentationStyle.value =
-                destBlock.data.modalPresentationStyle ?: ModalPresentationStyle.UNKNOWN
-            this.modalScreenSize.value = destBlock.data.modalScreenSize ?: ModalScreenSize.UNKNOWN
-            this.modalVisibility.value = true
+            modalViewModel.show(
+                block = PageBlockData(destBlock, properties),
+                modalPresentationStyle = destBlock.data.modalPresentationStyle
+                    ?: ModalPresentationStyle.UNKNOWN,
+                modalScreenSize = destBlock.data.modalScreenSize ?: ModalScreenSize.UNKNOWN
+            )
             return
         }
 
@@ -187,42 +176,16 @@ internal class RootViewModel @OptIn(ExperimentalMaterial3Api::class) constructor
     }
 
     fun back() {
-        // if the stack size is zero, just dismiss it
-        if (this.displayedModalIndex.intValue <= 0) {
-            this.dismiss()
-            return
-        }
-        // pop the stack
-        this.displayedModalIndex.intValue--;
+        modalViewModel.back()
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     fun close() {
-        this.displayedModalIndex.intValue = 0;
-        val self = this
-        this.scope.launch { self.sheetState.hide() }
-            .invokeOnCompletion { self.handleModalDismiss() }
+        modalViewModel.close()
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     private fun dismiss() {
         this.currentPageBlock.value = null
-        this.displayedModalIndex.intValue = 0;
-        val self = this
-        if (self.sheetState.currentValue == SheetValue.Expanded && self.sheetState.hasPartiallyExpandedState) {
-            this.scope.launch { self.sheetState.partialExpand() }
-        } else { // Is expanded without collapsed state or is collapsed.
-            this.scope.launch { self.sheetState.hide() }
-                .invokeOnCompletion { self.handleModalDismiss() }
-        }
-    }
-
-    fun handleModalDismiss() {
-        this.webviewUrl.value = ""
-        this.modalStack.value = emptyList()
-        this.displayedModalIndex.intValue = -1
-        this.modalVisibility.value = false
-        this.onDismiss(this.root)
+        modalViewModel.dismiss()
     }
 
     fun handleWebviewDismiss() {
@@ -272,16 +235,22 @@ internal fun Root(
     val modalViewModel = remember(sheetState, scope) {
         ModalViewModel(sheetState, scope, onDismiss = { onDismiss(root) })
     }
-    val viewModel = remember(root, modalViewModel, sheetState, scope, onDismiss, context) {
-        RootViewModel(root, scope, sheetState, onNextTooltip, onDismiss, onOpenDeepLink = { link ->
-            val intent = Intent(Intent.ACTION_VIEW, link.toUri()).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            try {
-                context.startActivity(intent)
-            } catch (_: Throwable) {
-            }
-        })
+    val viewModel = remember(root, modalViewModel, scope, onDismiss, context) {
+        RootViewModel(
+            root,
+            scope,
+            modalViewModel,
+            onNextTooltip,
+            onDismiss,
+            onOpenDeepLink = { link ->
+                val intent = Intent(Intent.ACTION_VIEW, link.toUri()).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                try {
+                    context.startActivity(intent)
+                } catch (_: Throwable) {
+                }
+            })
     }
     LaunchedEffect(Unit) {
         viewModel.initialize()
@@ -303,7 +272,7 @@ internal fun Root(
 
     val currentPageBlock = viewModel.currentPageBlock.value
     val displayedPageBlock = viewModel.displayedPageBlock.value
-    val modalStack = viewModel.modalStack.value
+    val modalState = modalViewModel.modalState.value
 
     ContainerProvider(container = container) {
         EventListenerProvider(listener = listener) {
@@ -332,14 +301,14 @@ internal fun Root(
                     }
                 }
 
-                if (viewModel.modalVisibility.value) {
+                if (modalState.modalVisibility) {
                     BackHandler(true) {
                         viewModel.back()
                     }
                     ModalBottomSheet(
                         sheetState = sheetState,
                         onDismissRequest = {
-                            viewModel.handleModalDismiss()
+                            viewModel.close()
                         },
                         properties = bottomSheetProps,
                         dragHandle = {},
@@ -350,10 +319,10 @@ internal fun Root(
                             viewModel.back()
                         }
                         Column(
-                            modifier = if (viewModel.modalPresentationStyle.value == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN) {
+                            modifier = if (modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN) {
                                 Modifier.fillMaxSize()
                             } else {
-                                if (viewModel.modalScreenSize.value == ModalScreenSize.MEDIUM) {
+                                if (modalState.modalScreenSize == ModalScreenSize.MEDIUM) {
                                     Modifier.height(LocalConfiguration.current.screenHeightDp.dp * 0.5f)
                                 } else {
                                     Modifier.height(
@@ -365,7 +334,7 @@ internal fun Root(
                             }
                         ) {
                             AnimatedContent(
-                                targetState = viewModel.displayedModalIndex.intValue,
+                                targetState = modalState.displayedModalIndex,
                                 transitionSpec = {
                                     if (targetState > initialState) {
                                         slideInHorizontally { it } togetherWith slideOutHorizontally { -it } + fadeOut()
@@ -375,7 +344,7 @@ internal fun Root(
                                 },
                                 label = "Bottom Sheet"
                             ) {
-                                val stack = modalStack[it]
+                                val stack = modalState.modalStack[it]
                                 NavigationHeader(
                                     it,
                                     stack.block,
