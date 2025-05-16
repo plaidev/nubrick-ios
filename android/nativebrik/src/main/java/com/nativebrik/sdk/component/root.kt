@@ -60,14 +60,13 @@ import com.nativebrik.sdk.schema.PropertyType
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
 import com.nativebrik.sdk.schema.UIPageBlock
 import com.nativebrik.sdk.schema.UIRootBlock
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 
 private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     return Event(
         name = event.name,
         deepLink = event.deepLink,
-        payload = event?.payload?.map { p ->
+        payload = event.payload?.map { p ->
             EventProperty(
                 name = p.name ?: "",
                 value = p.value ?: "",
@@ -82,9 +81,8 @@ private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     )
 }
 
-internal class RootViewModel constructor(
+internal class RootViewModel(
     private val root: UIRootBlock,
-    private val scope: CoroutineScope,
     private val modalViewModel: ModalViewModel,
     private val onNextTooltip: ((pageId: String) -> Unit) = {},
     private val onDismiss: ((root: UIRootBlock) -> Unit) = {},
@@ -235,10 +233,9 @@ internal fun Root(
     val modalViewModel = remember(sheetState, scope) {
         ModalViewModel(sheetState, scope, onDismiss = { onDismiss(root) })
     }
-    val viewModel = remember(root, modalViewModel, scope, onDismiss, context) {
+    val viewModel = remember(root, modalViewModel, onDismiss, context) {
         RootViewModel(
             root,
-            scope,
             modalViewModel,
             onNextTooltip,
             onDismiss,
