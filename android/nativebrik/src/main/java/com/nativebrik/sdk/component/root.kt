@@ -336,6 +336,7 @@ internal fun Root(
                         }
                     }
                 }
+
                 if (viewModel.modalVisibility.value) {
                     BackHandler(true) {
                         viewModel.back()
@@ -346,7 +347,9 @@ internal fun Root(
                             viewModel.handleModalDismiss()
                         },
                         properties = bottomSheetProps,
-                        dragHandle = {}
+                        dragHandle = {},
+                        windowInsets = WindowInsets(0, 0, 0, 0),
+                        shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp), // FIXME: remove rounded corner shape for fullscreen
                     ) {
                         ModalBottomSheetBackHandler {
                             viewModel.back()
