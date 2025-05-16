@@ -53,6 +53,7 @@ public data class EventProperty(
     val value: String,
     val type: EventPropertyType
 )
+
 public data class Event(
     val name: String?,
     val deepLink: String?,
@@ -99,7 +100,7 @@ public object Nativebrik {
 public fun NativebrikProvider(
     client: NativebrikClient,
     content: @Composable() () -> Unit
-    ) {
+) {
     CompositionLocalProvider(
         LocalNativebrikClient provides client
     ) {
@@ -137,7 +138,12 @@ public class NativebrikExperiment {
     internal val container: Container
     private val trigger: TriggerViewModel
 
-    internal constructor(config: Config, user: NativebrikUser, db: SQLiteDatabase, context: Context) {
+    internal constructor(
+        config: Config,
+        user: NativebrikUser,
+        db: SQLiteDatabase,
+        context: Context
+    ) {
         this.container = ContainerImpl(
             config = config.copy(onEvent = { event ->
                 val name = event.name ?: ""
@@ -176,7 +182,13 @@ public class NativebrikExperiment {
         onEvent: ((event: Event) -> Unit)? = null,
         content: (@Composable() (state: EmbeddingLoadingState) -> Unit)? = null
     ) {
-        Embedding(container = this.container.initWith(arguments), id, modifier = modifier, onEvent = onEvent, content = content)
+        Embedding(
+            container = this.container.initWith(arguments),
+            id,
+            modifier = modifier,
+            onEvent = onEvent,
+            content = content
+        )
     }
 
     @Composable
@@ -239,14 +251,10 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
                     root = it,
                     onEvent = onEvent,
                     onNextTooltip = onNextTooltip,
-                    onDismiss = {
-                        onDismiss()
-                    },
+                    onDismiss = { onDismiss() },
                     eventBridge = eventBridge,
                 )
             }
-        } ?: {
-            Unit
         }
     }
 }
