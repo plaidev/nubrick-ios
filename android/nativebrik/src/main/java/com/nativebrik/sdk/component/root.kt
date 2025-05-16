@@ -3,35 +3,13 @@ package com.nativebrik.sdk.component
 import SetDialogDestinationToEdgeToEdge
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetDefaults
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -358,9 +336,15 @@ internal fun Root(
                             viewModel.back()
                         }
                         Column(
-                            modifier = Modifier
-                                .heightIn(max = LocalConfiguration.current.screenHeightDp.dp)
-                                .fillMaxHeight()
+                            modifier = if (viewModel.modalPresentationStyle.value == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN) {
+                                Modifier.fillMaxSize()
+                            } else {
+                                if (viewModel.modalScreenSize.value == ModalScreenSize.MEDIUM) {
+                                    Modifier.height(LocalConfiguration.current.screenHeightDp.dp * 0.5f)
+                                } else {
+                                    Modifier.height(LocalConfiguration.current.screenHeightDp.dp - WindowInsets.statusBars.getTop(LocalDensity.current).dp)
+                                }
+                            }
                         ) {
                             AnimatedContent(
                                 targetState = viewModel.displayedModalIndex.intValue,
