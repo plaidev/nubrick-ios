@@ -137,8 +137,7 @@ private fun createRoundedShape(frame: FrameData?): Shape {
         val bottomRightRadiusPx = toPx(frame?.borderBottomRightRadius?.dp ?: 0.dp)
         val bottomLeftRadiusPx = toPx(frame?.borderBottomLeftRadius?.dp ?: 0.dp)
 
-        GenericShape {
-                size, _ ->
+        GenericShape { size, _ ->
             val width = size.width
             val height = size.height
 
@@ -257,15 +256,19 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
     if (frame?.background != null) {
         mod = mod.background(parseColor(frame.background))
     }
+
+    if (frame?.borderWidth == 0 || frame?.borderWidth == null) {
+        return mod
+    }
+
     mod = mod.border(
-        width = frame?.borderWidth?.dp ?: 1.dp,
-        color = parseColor(frame?.borderColor),
+        width = frame.borderWidth.dp,
+        color = parseColor(frame.borderColor),
         shape = roundedShape,
     )
 
     return mod
 }
-
 
 
 @Composable
@@ -287,6 +290,7 @@ internal fun parseFramePadding(frame: FrameData?): PaddingValues {
         bottom = frame?.paddingBottom?.dp ?: 0.dp,
     )
 }
+
 @Composable
 internal fun Modifier.flexOverflow(direction: FlexDirection, overflow: Overflow?): Modifier {
     val overflow = overflow ?: return this
@@ -332,7 +336,10 @@ internal fun parseVerticalAlignItems(alignItems: AlignItems?): Alignment.Vertica
     }
 }
 
-internal fun parseHorizontalJustifyContent(gap: Int?, justifyContent: JustifyContent?): Arrangement.Horizontal {
+internal fun parseHorizontalJustifyContent(
+    gap: Int?,
+    justifyContent: JustifyContent?
+): Arrangement.Horizontal {
     val gap = gap?.dp ?: 0.dp
     return when (justifyContent) {
         JustifyContent.START -> Arrangement.spacedBy(gap, Alignment.Start)
@@ -343,7 +350,10 @@ internal fun parseHorizontalJustifyContent(gap: Int?, justifyContent: JustifyCon
     }
 }
 
-internal fun parseVerticalJustifyContent(gap: Int?, justifyContent: JustifyContent?): Arrangement.Vertical {
+internal fun parseVerticalJustifyContent(
+    gap: Int?,
+    justifyContent: JustifyContent?
+): Arrangement.Vertical {
     val gap = gap?.dp ?: 0.dp
     return when (justifyContent) {
         JustifyContent.START -> Arrangement.spacedBy(gap, Alignment.Top)
