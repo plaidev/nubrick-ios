@@ -251,14 +251,10 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
                     root = it,
                     onEvent = onEvent,
                     onNextTooltip = onNextTooltip,
-                    onDismiss = {
-                        onDismiss()
-                    },
+                    onDismiss = { onDismiss() },
                     eventBridge = eventBridge,
                 )
             }
-        } ?: {
-            Unit
         }
     }
 }
