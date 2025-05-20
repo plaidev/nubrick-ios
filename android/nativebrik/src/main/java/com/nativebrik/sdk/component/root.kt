@@ -217,12 +217,11 @@ internal fun Root(
     onDismiss: ((root: UIRootBlock) -> Unit) = {},
     eventBridge: UIBlockEventBridgeViewModel? = null,
 ) {
-    // TODO: set skipPartiallyExpanded true for large modal
-    val sheetState =
-        rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState()
+    val largeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val modalViewModel = remember(sheetState, scope) {
-        ModalViewModel(sheetState, scope, onDismiss = { onDismiss(root) })
+        ModalViewModel(sheetState, largeSheetState, scope, onDismiss = { onDismiss(root) })
     }
     val context = LocalContext.current
     val viewModel = remember(root, modalViewModel, onDismiss, context) {
@@ -294,8 +293,11 @@ internal fun Root(
                     BackHandler(true) {
                         modalViewModel.back()
                     }
+                    val isLarge =
+                        modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN
+                                || modalState.modalScreenSize == ModalScreenSize.LARGE
                     ModalBottomSheet(
-                        sheetState = sheetState,
+                        sheetState = if (isLarge) largeSheetState else sheetState,
                         onDismissRequest = {
                             modalViewModel.close()
                         },

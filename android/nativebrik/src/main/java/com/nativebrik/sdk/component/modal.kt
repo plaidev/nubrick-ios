@@ -21,6 +21,8 @@ internal data class ModalState(
 @OptIn(ExperimentalMaterial3Api::class)
 internal class ModalViewModel(
     private val sheetState: SheetState,
+    // NOTE: This is a workaround for the issue where the skipPartiallyExpanded can not be conditionally set.
+    private val largeSheetState: SheetState,
     private val scope: CoroutineScope,
     private val onDismiss: () -> Unit,
 ) {
@@ -59,19 +61,18 @@ internal class ModalViewModel(
     }
 
     fun close() {
-        scope.launch { sheetState.hide() }
-            .invokeOnCompletion { dismiss() }
-    }
-
-    private fun dismiss() {
-        modalState.value = ModalState() // reset the modal state
         scope.launch {
             if (sheetState.currentValue == SheetValue.Expanded && sheetState.hasPartiallyExpandedState) {
+                // shrink form large to medium
                 sheetState.partialExpand()
-            } else {
-                // Is expanded without collapsed state or is collapsed.
-                onDismiss()
+                return@launch
             }
+
+            // hide and reset state
+            sheetState.hide()
+            largeSheetState.hide()
+            modalState.value = ModalState()
+            onDismiss()
         }
     }
 }
