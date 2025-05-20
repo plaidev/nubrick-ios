@@ -150,7 +150,6 @@ internal class RootViewModel(
         }
 
         if (destBlock.data?.kind == PageKind.MODAL) {
-            modalViewModel.modalState.value
             val index = modalViewModel.modalState.value.modalStack.indexOfFirst {
                 it.block.id == destId
             }
