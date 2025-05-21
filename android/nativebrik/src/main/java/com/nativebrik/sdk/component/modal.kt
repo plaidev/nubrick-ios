@@ -3,7 +3,9 @@ package com.nativebrik.sdk.component
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockData
 import com.nativebrik.sdk.schema.ModalPresentationStyle
 import com.nativebrik.sdk.schema.ModalScreenSize
@@ -26,7 +28,7 @@ internal class ModalViewModel(
     private val scope: CoroutineScope,
     private val onDismiss: () -> Unit,
 ) {
-    var modalState = mutableStateOf(ModalState()).value
+    var modalState by mutableStateOf(ModalState())
         private set
 
     fun show(
@@ -51,11 +53,13 @@ internal class ModalViewModel(
     }
 
     fun back() {
+        println("back() called")
         val index = modalState.displayedModalIndex
         if (index <= 0) {
             close()
             return
         }
+        println("back() stack")
         // pop the stack
         modalState = modalState.copy(displayedModalIndex = index - 1)
     }
