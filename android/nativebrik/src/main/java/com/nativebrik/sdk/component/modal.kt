@@ -3,7 +3,9 @@ package com.nativebrik.sdk.component
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockData
 import com.nativebrik.sdk.schema.ModalPresentationStyle
 import com.nativebrik.sdk.schema.ModalScreenSize
@@ -21,10 +23,12 @@ internal data class ModalState(
 @OptIn(ExperimentalMaterial3Api::class)
 internal class ModalViewModel(
     private val sheetState: SheetState,
+    // NOTE: This is a workaround for the issue where the skipPartiallyExpanded can not be conditionally set.
+    private val largeSheetState: SheetState,
     private val scope: CoroutineScope,
     private val onDismiss: () -> Unit,
 ) {
-    var modalState = mutableStateOf(ModalState())
+    var modalState by mutableStateOf(ModalState())
         private set
 
     fun show(
@@ -32,46 +36,45 @@ internal class ModalViewModel(
         modalPresentationStyle: ModalPresentationStyle,
         modalScreenSize: ModalScreenSize,
     ) {
-        modalState.value = modalState.value.copy(
-            modalStack = modalState.value.modalStack + block,
-            displayedModalIndex = modalState.value.modalStack.size,
+        modalState = modalState.copy(
+            modalStack = modalState.modalStack + block,
+            displayedModalIndex = modalState.modalStack.size,
             modalVisibility = true,
-            modalPresentationStyle = modalPresentationStyle,
-            modalScreenSize = modalScreenSize
+            modalPresentationStyle = if (modalState.modalVisibility) modalState.modalPresentationStyle else modalPresentationStyle,
+            modalScreenSize = if (modalState.modalVisibility) modalState.modalScreenSize else modalScreenSize
         )
     }
 
     fun backTo(index: Int) {
-        if (index < 0 || index >= modalState.value.modalStack.size) {
+        if (index < 0 || index >= modalState.modalStack.size) {
             return
         }
-        modalState.value = modalState.value.copy(displayedModalIndex = index)
+        modalState = modalState.copy(displayedModalIndex = index)
     }
 
     fun back() {
-        val index = modalState.value.displayedModalIndex
+        val index = modalState.displayedModalIndex
         if (index <= 0) {
             close()
             return
         }
         // pop the stack
-        modalState.value = modalState.value.copy(displayedModalIndex = index - 1)
+        modalState = modalState.copy(displayedModalIndex = index - 1)
     }
 
     fun close() {
-        scope.launch { sheetState.hide() }
-            .invokeOnCompletion { dismiss() }
-    }
-
-    private fun dismiss() {
-        modalState.value = ModalState() // reset the modal state
         scope.launch {
             if (sheetState.currentValue == SheetValue.Expanded && sheetState.hasPartiallyExpandedState) {
+                // shrink form large to medium
                 sheetState.partialExpand()
-            } else {
-                // Is expanded without collapsed state or is collapsed.
-                onDismiss()
+                return@launch
             }
+
+            // hide and reset state
+            sheetState.hide()
+            largeSheetState.hide()
+            modalState = ModalState()
+            onDismiss()
         }
     }
 }

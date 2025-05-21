@@ -150,7 +150,7 @@ internal class RootViewModel(
         }
 
         if (destBlock.data?.kind == PageKind.MODAL) {
-            val index = modalViewModel.modalState.value.modalStack.indexOfFirst {
+            val index = modalViewModel.modalState.modalStack.indexOfFirst {
                 it.block.id == destId
             }
             if (index > 0) {
@@ -217,12 +217,11 @@ internal fun Root(
     onDismiss: ((root: UIRootBlock) -> Unit) = {},
     eventBridge: UIBlockEventBridgeViewModel? = null,
 ) {
-    // TODO: set skipPartiallyExpanded true for large modal
-    val sheetState =
-        rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState()
+    val largeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val modalViewModel = remember(sheetState, scope) {
-        ModalViewModel(sheetState, scope, onDismiss = { onDismiss(root) })
+        ModalViewModel(sheetState, largeSheetState, scope, onDismiss = { onDismiss(root) })
     }
     val context = LocalContext.current
     val viewModel = remember(root, modalViewModel, onDismiss, context) {
@@ -261,7 +260,7 @@ internal fun Root(
 
     val currentPageBlock = viewModel.currentPageBlock.value
     val displayedPageBlock = viewModel.displayedPageBlock.value
-    val modalState = modalViewModel.modalState.value
+    val modalState = modalViewModel.modalState
 
     ContainerProvider(container = container) {
         EventListenerProvider(listener = listener) {
@@ -294,8 +293,14 @@ internal fun Root(
                     BackHandler(true) {
                         modalViewModel.back()
                     }
+                    val isLarge =
+                        modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN
+                                || modalState.modalScreenSize == ModalScreenSize.LARGE
+                    val insetTop = with(LocalDensity.current) {
+                        WindowInsets.statusBars.getTop(this).toDp()
+                    }
                     ModalBottomSheet(
-                        sheetState = sheetState,
+                        sheetState = if (isLarge) largeSheetState else sheetState,
                         onDismissRequest = {
                             modalViewModel.close()
                         },
@@ -315,9 +320,7 @@ internal fun Root(
                                     Modifier.height(LocalConfiguration.current.screenHeightDp.dp * 0.5f)
                                 } else {
                                     Modifier.height(
-                                        LocalConfiguration.current.screenHeightDp.dp - WindowInsets.statusBars.getTop(
-                                            LocalDensity.current
-                                        ).dp
+                                        LocalConfiguration.current.screenHeightDp.dp - insetTop
                                     )
                                 }
                             }
@@ -338,7 +341,9 @@ internal fun Root(
                                     it,
                                     stack.block,
                                     onClose = { modalViewModel.close() },
-                                    onBack = { modalViewModel.back() })
+                                    onBack = { modalViewModel.back() },
+                                    isFullscreen = modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN,
+                                )
                                 ModalPage(
                                     container = container,
                                     blockData = stack,
@@ -359,7 +364,7 @@ internal fun Root(
                         onDismissRequest = {}
                     ) {
                         val statusBarHeight = with(LocalDensity.current) {
-                            WindowInsets.statusBars.getTop(LocalDensity.current).toDp()
+                            WindowInsets.statusBars.getTop(this).toDp()
                         }
                         SetDialogDestinationToEdgeToEdge()
                         Box(
