@@ -259,6 +259,7 @@ class SelectInputView: UIControl {
     let context: UIBlockContext?
     private var block = UISelectInputBlock()
     
+    private let button = UIButton(frame: .zero)
     private var initialValue: UISelectInputOption?
     
     required init?(coder: NSCoder) {
@@ -276,57 +277,15 @@ class SelectInputView: UIControl {
         setupLayout()
         setupFormValue()
 
-        let button = UIButton(frame: .zero)
-        button.configureLayout { layout in
-            layout.isEnabled = true
-        }
-        if let color = block.data?.color {
-            button.setTitleColor(parseColor(color), for: .normal)
-        } else {
-            button.setTitleColor(.label, for: .normal)
-        }
+        button.configureLayout { $0.isEnabled = true }
+        let color = block.data?.color.flatMap(parseColor) ?? .label
+        button.setTitleColor(color, for: .normal)
         button.contentHorizontalAlignment = parseTextAlignToHorizontalAlignment(block.data?.textAlign)
 
-        var config = UIButton.Configuration.plain()
-        let frame = block.data?.frame
-        config.contentInsets = .init(
-            top: CGFloat(frame?.paddingTop ?? 0),
-            leading: CGFloat(frame?.paddingLeft ?? 0),
-            bottom: CGFloat(frame?.paddingBottom ?? 0),
-            trailing: CGFloat(frame?.paddingRight ?? 0)
-        )
-        var foregroundColor: UIColor = .label
-        if let color = block.data?.color {
-            foregroundColor = parseColor(color)
-        }
-        config.titleTextAttributesTransformer = .init({ _ in
-            return .init([
-                .font: parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design),
-                .foregroundColor: foregroundColor
-            ])
-        })
-        config.baseForegroundColor = .tertiaryLabel
-        button.configuration = config
-    
-        let handleSelect = { (action: UIAction) in
-            button.setTitle(action.title, for: .application)
-            if let formKey = self.formKey {
-                let identifer = action.identifier.rawValue
-                self.context?.writeToForm(key: formKey, value: identifer)
-            }
-        }
-        let actions: [UIAction] = block.data?.options?.map({ option in
-            return UIAction(
-                title: option.label ?? option.value ?? "None",
-                identifier: UIAction.Identifier(option.value ?? "None"),
-                state: option.value == initialValue?.value ? .on : .off,
-                handler: handleSelect
-            )
-        }) ?? []
-        button.menu = UIMenu(children: actions)
+        button.configuration = buttonConfig()
+        button.menu = UIMenu(children: createMenuActions())
         button.showsMenuAsPrimaryAction = true
-        button.changesSelectionAsPrimaryAction = true
-        
+        button.changesSelectionAsPrimaryAction = true        
 
         self.addSubview(button)
     }
@@ -348,6 +307,49 @@ class SelectInputView: UIControl {
         } else {
             context?.writeToForm(key: formKey ?? "", value: initialValue?.value ?? "None")
         }
+    }
+    
+    private func buttonConfig() -> UIButton.Configuration {
+        var config = UIButton.Configuration.plain()
+        let frame = block.data?.frame
+        config.contentInsets = .init(
+            top: CGFloat(frame?.paddingTop ?? 0),
+            leading: CGFloat(frame?.paddingLeft ?? 0),
+            bottom: CGFloat(frame?.paddingBottom ?? 0),
+            trailing: CGFloat(frame?.paddingRight ?? 0)
+        )
+        var foregroundColor: UIColor = .label
+        if let color = block.data?.color {
+            foregroundColor = parseColor(color)
+        }
+        config.titleTextAttributesTransformer = .init({ [self] _ in
+            return .init([
+                .font: parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design),
+                .foregroundColor: foregroundColor
+            ])
+        })
+        config.baseForegroundColor = .tertiaryLabel
+        return config
+    }
+    
+    private func createMenuActions() -> [UIAction] {
+        let handleSelect = { (action: UIAction) in
+            self.button.setTitle(action.title, for: .application)
+            if let formKey = self.formKey {
+                let identifer = action.identifier.rawValue
+                self.context?.writeToForm(key: formKey, value: identifer)
+            }
+        }
+        let actions: [UIAction] = block.data?.options?.map({ option in
+            return UIAction(
+                title: option.label ?? option.value ?? "None",
+                identifier: UIAction.Identifier(option.value ?? "None"),
+                state: option.value == initialValue?.value ? .on : .off,
+                handler: handleSelect
+            )
+        }) ?? []
+        
+        return actions
     }
 
     override func layoutSubviews() {
