@@ -296,6 +296,9 @@ internal fun Root(
                     val isLarge =
                         modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN
                                 || modalState.modalScreenSize == ModalScreenSize.LARGE
+                    val insetTop = with(LocalDensity.current) {
+                        WindowInsets.statusBars.getTop(this).toDp()
+                    }
                     ModalBottomSheet(
                         sheetState = if (isLarge) largeSheetState else sheetState,
                         onDismissRequest = {
@@ -317,9 +320,7 @@ internal fun Root(
                                     Modifier.height(LocalConfiguration.current.screenHeightDp.dp * 0.5f)
                                 } else {
                                     Modifier.height(
-                                        LocalConfiguration.current.screenHeightDp.dp - WindowInsets.statusBars.getTop(
-                                            LocalDensity.current
-                                        ).dp
+                                        LocalConfiguration.current.screenHeightDp.dp - insetTop
                                     )
                                 }
                             }
@@ -361,7 +362,7 @@ internal fun Root(
                         onDismissRequest = {}
                     ) {
                         val statusBarHeight = with(LocalDensity.current) {
-                            WindowInsets.statusBars.getTop(LocalDensity.current).toDp()
+                            WindowInsets.statusBars.getTop(this).toDp()
                         }
                         SetDialogDestinationToEdgeToEdge()
                         Box(
