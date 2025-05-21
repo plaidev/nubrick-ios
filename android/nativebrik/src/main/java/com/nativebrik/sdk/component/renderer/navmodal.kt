@@ -19,7 +19,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.nativebrik.sdk.schema.ModalPresentationStyle
 import com.nativebrik.sdk.schema.UIPageBlock
 
 @Composable
@@ -45,21 +44,18 @@ internal fun NavigationHeader(
     index: Int,
     block: UIPageBlock,
     onClose: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    isFullscreen: Boolean,
 ) {
     val visibility = block.data?.modalNavigationBackButton?.visible ?: true
-    val offset =
-        if (block.data?.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN) {
-
-            with(LocalDensity.current) {
-                WindowInsets.statusBars.getTop(this).toDp()
-            }
-        } else 0.dp
+    val insetTop = with(LocalDensity.current) {
+        WindowInsets.statusBars.getTop(this).toDp()
+    }
 
     Box(
         modifier = Modifier
             .zIndex(10f)
-            .offset(y = offset)
+            .offset(y = if (isFullscreen) insetTop else 0.dp)
     ) {
         if (visibility) {
             if (index > 0) {

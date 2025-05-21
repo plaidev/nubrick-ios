@@ -341,7 +341,9 @@ internal fun Root(
                                     it,
                                     stack.block,
                                     onClose = { modalViewModel.close() },
-                                    onBack = { modalViewModel.back() })
+                                    onBack = { modalViewModel.back() },
+                                    isFullscreen = modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN,
+                                )
                                 ModalPage(
                                     container = container,
                                     blockData = stack,
