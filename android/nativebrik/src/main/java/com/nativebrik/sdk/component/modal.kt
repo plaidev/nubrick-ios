@@ -53,13 +53,11 @@ internal class ModalViewModel(
     }
 
     fun back() {
-        println("back() called")
         val index = modalState.displayedModalIndex
         if (index <= 0) {
             close()
             return
         }
-        println("back() stack")
         // pop the stack
         modalState = modalState.copy(displayedModalIndex = index - 1)
     }
