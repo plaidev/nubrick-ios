@@ -278,13 +278,15 @@ class SelectInputView: UIControl {
         setupFormValue()
 
         button.configureLayout { $0.isEnabled = true }
-        let color = block.data?.color.flatMap(parseColor) ?? .label
         button.contentHorizontalAlignment = parseTextAlignToHorizontalAlignment(block.data?.textAlign)
         button.configuration = buttonConfig()
         
         button.menu = UIMenu(children: createMenuActions())
         button.showsMenuAsPrimaryAction = true
         button.changesSelectionAsPrimaryAction = true
+        
+        let initialLabel = initialValue?.label ?? initialValue?.value ?? "None"
+        button.setTitle(initialLabel, for: .normal)
         
         self.addSubview(button)
     }
@@ -319,10 +321,8 @@ class SelectInputView: UIControl {
             bottom: CGFloat(frame?.paddingBottom ?? 0),
             trailing: CGFloat(frame?.paddingRight ?? 0)
         )
-        var foregroundColor: UIColor = .label
-        if let color = block.data?.color {
-            foregroundColor = parseColor(color)
-        }
+        
+        let foregroundColor = block.data?.color.flatMap(parseColor) ?? .label
         config.titleTextAttributesTransformer = .init({ _ in
             return .init([
                 .font: parseTextBlockDataToUIFont(self.block.data?.size, self.block.data?.weight, self.block.data?.design),
