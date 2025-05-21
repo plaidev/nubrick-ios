@@ -150,7 +150,7 @@ internal class RootViewModel(
         }
 
         if (destBlock.data?.kind == PageKind.MODAL) {
-            val index = modalViewModel.modalState.value.modalStack.indexOfFirst {
+            val index = modalViewModel.modalState.modalStack.indexOfFirst {
                 it.block.id == destId
             }
             if (index > 0) {
@@ -260,7 +260,7 @@ internal fun Root(
 
     val currentPageBlock = viewModel.currentPageBlock.value
     val displayedPageBlock = viewModel.displayedPageBlock.value
-    val modalState = modalViewModel.modalState.value
+    val modalState = modalViewModel.modalState
 
     ContainerProvider(container = container) {
         EventListenerProvider(listener = listener) {

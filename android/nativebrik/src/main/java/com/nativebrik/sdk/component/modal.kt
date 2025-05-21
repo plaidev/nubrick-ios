@@ -26,7 +26,7 @@ internal class ModalViewModel(
     private val scope: CoroutineScope,
     private val onDismiss: () -> Unit,
 ) {
-    var modalState = mutableStateOf(ModalState())
+    var modalState = mutableStateOf(ModalState()).value
         private set
 
     fun show(
@@ -34,30 +34,30 @@ internal class ModalViewModel(
         modalPresentationStyle: ModalPresentationStyle,
         modalScreenSize: ModalScreenSize,
     ) {
-        modalState.value = modalState.value.copy(
-            modalStack = modalState.value.modalStack + block,
-            displayedModalIndex = modalState.value.modalStack.size,
+        modalState = modalState.copy(
+            modalStack = modalState.modalStack + block,
+            displayedModalIndex = modalState.modalStack.size,
             modalVisibility = true,
-            modalPresentationStyle = modalPresentationStyle,
-            modalScreenSize = modalScreenSize
+            modalPresentationStyle = if (modalState.modalVisibility) modalState.modalPresentationStyle else modalPresentationStyle,
+            modalScreenSize = if (modalState.modalVisibility) modalState.modalScreenSize else modalScreenSize
         )
     }
 
     fun backTo(index: Int) {
-        if (index < 0 || index >= modalState.value.modalStack.size) {
+        if (index < 0 || index >= modalState.modalStack.size) {
             return
         }
-        modalState.value = modalState.value.copy(displayedModalIndex = index)
+        modalState = modalState.copy(displayedModalIndex = index)
     }
 
     fun back() {
-        val index = modalState.value.displayedModalIndex
+        val index = modalState.displayedModalIndex
         if (index <= 0) {
             close()
             return
         }
         // pop the stack
-        modalState.value = modalState.value.copy(displayedModalIndex = index - 1)
+        modalState = modalState.copy(displayedModalIndex = index - 1)
     }
 
     fun close() {
@@ -71,7 +71,7 @@ internal class ModalViewModel(
             // hide and reset state
             sheetState.hide()
             largeSheetState.hide()
-            modalState.value = ModalState()
+            modalState = ModalState()
             onDismiss()
         }
     }
