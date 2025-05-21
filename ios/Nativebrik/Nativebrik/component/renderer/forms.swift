@@ -285,7 +285,7 @@ class SelectInputView: UIControl {
         button.configuration = buttonConfig()
         button.menu = UIMenu(children: createMenuActions())
         button.showsMenuAsPrimaryAction = true
-        button.changesSelectionAsPrimaryAction = true        
+        button.changesSelectionAsPrimaryAction = true
 
         self.addSubview(button)
     }
@@ -302,10 +302,12 @@ class SelectInputView: UIControl {
     private func setupFormValue() {
         initialValue = block.data?.options?.first { $0.value == block.data?.value }
         
-        if let formKey, let value = context?.getFormValueByKey(key: formKey) as? String {
+        guard let formKey else { return }
+        
+        if let value = context?.getFormValueByKey(key: formKey) as? String {
             initialValue = block.data?.options?.first { $0.value == value }
         } else {
-            context?.writeToForm(key: formKey ?? "", value: initialValue?.value ?? "None")
+            context?.writeToForm(key: formKey, value: initialValue?.value ?? "None")
         }
     }
     
