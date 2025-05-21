@@ -279,14 +279,13 @@ class SelectInputView: UIControl {
 
         button.configureLayout { $0.isEnabled = true }
         let color = block.data?.color.flatMap(parseColor) ?? .label
-        button.setTitleColor(color, for: .normal)
         button.contentHorizontalAlignment = parseTextAlignToHorizontalAlignment(block.data?.textAlign)
-
         button.configuration = buttonConfig()
+        
         button.menu = UIMenu(children: createMenuActions())
         button.showsMenuAsPrimaryAction = true
         button.changesSelectionAsPrimaryAction = true
-
+        
         self.addSubview(button)
     }
     
@@ -324,9 +323,9 @@ class SelectInputView: UIControl {
         if let color = block.data?.color {
             foregroundColor = parseColor(color)
         }
-        config.titleTextAttributesTransformer = .init({ [self] _ in
+        config.titleTextAttributesTransformer = .init({ _ in
             return .init([
-                .font: parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design),
+                .font: parseTextBlockDataToUIFont(self.block.data?.size, self.block.data?.weight, self.block.data?.design),
                 .foregroundColor: foregroundColor
             ])
         })
