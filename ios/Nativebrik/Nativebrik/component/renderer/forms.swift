@@ -258,6 +258,9 @@ class SelectInputView: UIControl {
     let formKey: String?
     let context: UIBlockContext?
     private var block = UISelectInputBlock()
+    
+    private var initialValue: UISelectInputOption?
+    
     required init?(coder: NSCoder) {
         self.formKey = nil
         self.context = nil
@@ -270,36 +273,8 @@ class SelectInputView: UIControl {
         self.context = context
         super.init(frame: .zero)
 
-        // wrap layout
-        self.configureLayout { layout in
-            layout.isEnabled = true
-            layout.width = .init(value: 100.0, unit: .percent)
-            layout.flexShrink = 1
-        }
-
-        var initialValue = block.data?.options?.first(where: { option in
-            if option.value == block.data?.value {
-                return true
-            } else {
-                return false
-            }
-        })
-        if let formKey = self.formKey {
-            if let value = self.context?.getFormValueByKey(key: formKey) as? String {
-                let found = block.data?.options?.first(where: { option in
-                    if option.value == value {
-                        return true
-                    } else {
-                        return false
-                    }
-                })
-                if let found = found {
-                    initialValue = found
-                }
-            } else {
-                self.context?.writeToForm(key: formKey, value: initialValue?.value ?? "None")
-            }
-        }
+        setupLayout()
+        setupFormValue()
 
         let button = UIButton(frame: .zero)
         button.configureLayout { layout in
@@ -354,6 +329,25 @@ class SelectInputView: UIControl {
         
 
         self.addSubview(button)
+    }
+    
+    private func setupLayout() {
+        // wrap layout
+        self.configureLayout { layout in
+            layout.isEnabled = true
+            layout.width = .init(value: 100.0, unit: .percent)
+            layout.flexShrink = 1
+        }
+    }
+    
+    private func setupFormValue() {
+        initialValue = block.data?.options?.first { $0.value == block.data?.value }
+        
+        if let formKey, let value = context?.getFormValueByKey(key: formKey) as? String {
+            initialValue = block.data?.options?.first { $0.value == value }
+        } else {
+            context?.writeToForm(key: formKey ?? "", value: initialValue?.value ?? "None")
+        }
     }
 
     override func layoutSubviews() {
