@@ -1,6 +1,5 @@
 package com.nativebrik.sdk.component
 
-import android.util.Log
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
@@ -63,7 +62,7 @@ internal class ModalViewModel(
         modalState = modalState.copy(displayedModalIndex = index - 1)
     }
 
-    fun close(forceReset: Boolean = false) {
+    fun close(forceReset: Boolean = false, emitDispatch: Boolean = true) {
         scope.launch {
             if (!forceReset && sheetState.currentValue == SheetValue.Expanded && sheetState.hasPartiallyExpandedState) {
                 // shrink form large to medium
@@ -75,7 +74,10 @@ internal class ModalViewModel(
             sheetState.hide()
             largeSheetState.hide()
             modalState = ModalState()
-            onDismiss()
+
+            if (emitDispatch) {
+                onDismiss()
+            }
         }
     }
 }
