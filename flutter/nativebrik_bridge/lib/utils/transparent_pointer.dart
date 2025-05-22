@@ -12,7 +12,8 @@ class TransparentPointer extends SingleChildRenderObjectWidget {
   });
 
   @override
-  RenderObject createRenderObject(BuildContext _) => RenderTransparentPointer(
+  RenderObject createRenderObject(BuildContext context) =>
+      RenderTransparentPointer(
         transparent: transparent,
         transparentRect: transparentRect,
       );
