@@ -137,7 +137,6 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
       'connectTooltip',
       name,
     );
-    print("MethodChannelNativebrikBridge connectTooltip: $result");
     if (result == null) {
       return null;
     }
@@ -145,7 +144,6 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
       return null;
     }
     var decoded = UIRootBlock.decode(jsonDecode(result));
-    print("MethodChannelNativebrikBridge connectTooltip: $decoded");
     return decoded;
   }
 
