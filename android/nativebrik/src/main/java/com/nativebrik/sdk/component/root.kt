@@ -1,9 +1,7 @@
 package com.nativebrik.sdk.component
 
 import SetDialogDestinationToEdgeToEdge
-import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -15,20 +13,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetDefaults
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,6 +35,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import com.nativebrik.sdk.Event
 import com.nativebrik.sdk.EventProperty
@@ -56,23 +52,21 @@ import com.nativebrik.sdk.component.renderer.NavigationHeader
 import com.nativebrik.sdk.component.renderer.Page
 import com.nativebrik.sdk.component.renderer.WebViewPage
 import com.nativebrik.sdk.data.Container
+import com.nativebrik.sdk.schema.ModalPresentationStyle
+import com.nativebrik.sdk.schema.ModalScreenSize
 import com.nativebrik.sdk.schema.PageKind
 import com.nativebrik.sdk.schema.Property
 import com.nativebrik.sdk.schema.PropertyType
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
 import com.nativebrik.sdk.schema.UIPageBlock
 import com.nativebrik.sdk.schema.UIRootBlock
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.launch
-import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers
 
 private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     return Event(
         name = event.name,
         deepLink = event.deepLink,
-        payload = event?.payload?.map { p ->
+        payload = event.payload?.map { p ->
             EventProperty(
                 name = p.name ?: "",
                 value = p.value ?: "",
@@ -87,55 +81,36 @@ private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     )
 }
 
-internal class RootViewModel: ViewModel {
-    private val root: UIRootBlock
-    private val pages: List<UIPageBlock>
-    private val context: Context
-    val currentPageBlock = mutableStateOf<UIPageBlock?>(null)
+internal class RootViewModel(
+    private val root: UIRootBlock,
+    private val modalViewModel: ModalViewModel,
+    private val onNextTooltip: ((pageId: String) -> Unit) = {},
+    private val onDismiss: ((root: UIRootBlock) -> Unit) = {},
+    private val onOpenDeepLink: ((link: String) -> Unit) = {},
+) : ViewModel() {
+    private val pages: List<UIPageBlock> = root.data?.pages ?: emptyList()
     val displayedPageBlock = mutableStateOf<PageBlockData?>(null)
-    val modalStack = mutableStateOf<List<PageBlockData>>(listOf())
-    val displayedModalIndex = mutableIntStateOf(-1)
-    val modalVisibility = mutableStateOf(false)
     val webviewUrl = mutableStateOf("")
+
+    // We use them for sdk bridge between flutter <-> android.
+    val currentPageBlock = mutableStateOf<UIPageBlock?>(null)
     var currentTooltipAnchorId = mutableStateOf("")
-    private val onDismiss: ((root: UIRootBlock) -> Unit)
-    private val onNextTooltip: ((pageId: String) -> Unit)
-    private val scope: CoroutineScope
-    @OptIn(ExperimentalMaterial3Api::class)
-    private val sheetState: SheetState
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    constructor(
-        root: UIRootBlock,
-        scope: CoroutineScope,
-        sheetState: SheetState,
-        onNextTooltip: ((pageId: String) -> Unit) = {},
-        onDismiss: ((root: UIRootBlock) -> Unit) = {},
-        context: Context,
-    ) {
-        this.context = context
-        this.root = root
-        this.onNextTooltip = onNextTooltip
-        this.onDismiss = onDismiss
-        this.scope = scope
-        this.sheetState = sheetState
-
-        val pages: List<UIPageBlock> = root.data?.pages ?: emptyList()
-        this.pages = pages
-
+    fun initialize() {
         val trigger = pages.firstOrNull {
             it.data?.kind == PageKind.TRIGGER
-        }
-        if (trigger == null) {
+        } ?: run {
             onDismiss(root)
             return
         }
+
         val destId = trigger.data?.triggerSetting?.onTrigger?.destinationPageId
         if (destId == null) {
             onDismiss(root)
             return
         }
-        this.render(destId)
+
+        render(destId)
     }
 
     fun handleUIEvent(it: UIBlockEventDispatcher) {
@@ -144,19 +119,8 @@ internal class RootViewModel: ViewModel {
         if (destId.isNotEmpty()) {
             this.render(destId)
         } else if (deepLink.isNotEmpty()) {
-            this.openDeepLink(deepLink)
+            onOpenDeepLink(deepLink)
         }
-    }
-
-    private fun openDeepLink(link: String) {
-        val data = link.toUri()
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            this.data = data
-            this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        try {
-            this.context.startActivity(intent)
-        } catch (_: Throwable) {}
     }
 
     private fun render(destId: String, properties: List<Property>? = null) {
@@ -182,69 +146,38 @@ internal class RootViewModel: ViewModel {
         if (destBlock.data?.kind == PageKind.TOOLTIP) {
             val anchorId = destBlock.data.tooltipAnchor ?: ""
             if (this.currentTooltipAnchorId.value != anchorId) {
-                this.onNextTooltip(destId)
+                onNextTooltip(destId)
             }
             this.currentTooltipAnchorId.value = anchorId
         }
 
         if (destBlock.data?.kind == PageKind.MODAL) {
-            val index = this.modalStack.value.indexOfFirst {
+            val index = modalViewModel.modalState.modalStack.indexOfFirst {
                 it.block.id == destId
             }
             if (index > 0) {
                 // if it's already in modal stack, jump to the target stack
-                this.displayedModalIndex.intValue = index
+                modalViewModel.backTo(index)
                 return
             }
 
-            val modalStack = mutableListOf<PageBlockData>()
-            modalStack.addAll(this.modalStack.value)
-            modalStack.add(PageBlockData(destBlock, properties))
-            this.modalStack.value = modalStack
-            this.displayedModalIndex.intValue = modalStack.size - 1
-            this.modalVisibility.value = true
+            modalViewModel.show(
+                block = PageBlockData(destBlock, properties),
+                modalPresentationStyle = destBlock.data.modalPresentationStyle
+                    ?: ModalPresentationStyle.UNKNOWN,
+                modalScreenSize = destBlock.data.modalScreenSize ?: ModalScreenSize.UNKNOWN
+            )
             return
         }
 
-        this.dismiss()
+        // Before displaying the page, we close displayed modals. but never emit dismiss event.
+        modalViewModel.close(forceReset = true, emitDispatch = false)
         this.displayedPageBlock.value = PageBlockData(destBlock, properties)
     }
 
-    fun back() {
-        // if the stack size is zero, just dismiss it
-        if (this.displayedModalIndex.intValue <= 0) {
-            this.dismiss()
-            return
-        }
-        // pop the stack
-        this.displayedModalIndex.intValue--;
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    fun close() {
-        this.displayedModalIndex.intValue = 0;
-        val self = this
-        this.scope.launch { self.sheetState.hide() }.invokeOnCompletion { self.handleModalDismiss() }
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    private fun dismiss() {
+    private fun dismiss(emitDispatch: Boolean = true) {
         this.currentPageBlock.value = null
-        this.displayedModalIndex.intValue = 0;
-        val self = this
-        if (self.sheetState.currentValue == SheetValue.Expanded && self.sheetState.hasPartiallyExpandedState) {
-            this.scope.launch { self.sheetState.partialExpand() }
-        } else { // Is expanded without collapsed state or is collapsed.
-            this.scope.launch { self.sheetState.hide() }.invokeOnCompletion { self.handleModalDismiss() }
-        }
-    }
-
-    fun handleModalDismiss() {
-        this.webviewUrl.value = ""
-        this.modalStack.value = emptyList()
-        this.displayedModalIndex.intValue = -1
-        this.modalVisibility.value = false
-        this.onDismiss(this.root)
+        modalViewModel.close(forceReset = true, emitDispatch = emitDispatch)
     }
 
     fun handleWebviewDismiss() {
@@ -287,31 +220,50 @@ internal fun Root(
     onDismiss: ((root: UIRootBlock) -> Unit) = {},
     eventBridge: UIBlockEventBridgeViewModel? = null,
 ) {
-    val context = LocalContext.current
-    val scrollState = rememberScrollState()
-    val webviewSheetState = rememberModalBottomSheetState()
     val sheetState = rememberModalBottomSheetState()
+    val largeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-    val viewModel = remember(root, sheetState, scope, onDismiss, context) {
-        RootViewModel(root, scope, sheetState, onNextTooltip, onDismiss, context)
+    val modalViewModel = remember(sheetState, scope) {
+        ModalViewModel(sheetState, largeSheetState, scope, onDismiss = { onDismiss(root) })
+    }
+    val context = LocalContext.current
+    val viewModel = remember(root, modalViewModel, onDismiss, context) {
+        RootViewModel(
+            root,
+            modalViewModel,
+            onNextTooltip,
+            onDismiss,
+            onOpenDeepLink = { link ->
+                val intent = Intent(Intent.ACTION_VIEW, link.toUri()).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                try {
+                    context.startActivity(intent)
+                } catch (_: Throwable) {
+                }
+            })
+    }
+    LaunchedEffect(Unit) {
+        viewModel.initialize()
     }
     val bottomSheetProps = remember {
         ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false)
     }
-    val listener = remember<(event: UIBlockEventDispatcher) -> Unit>(viewModel, onEvent, container) {
-        return@remember {
-            viewModel.handleUIEvent(it)
+    val listener =
+        remember<(event: UIBlockEventDispatcher) -> Unit>(viewModel, onEvent, container) {
+            return@remember {
+                viewModel.handleUIEvent(it)
 
-            // send event to listeners
-            val event = parseUIEventToEvent(it)
-            onEvent(event)
-            container.handleEvent(event)
+                // send event to listeners
+                val event = parseUIEventToEvent(it)
+                onEvent(event)
+                container.handleEvent(event)
+            }
         }
-    }
 
     val currentPageBlock = viewModel.currentPageBlock.value
     val displayedPageBlock = viewModel.displayedPageBlock.value
-    val modalStack = viewModel.modalStack.value
+    val modalState = modalViewModel.modalState
 
     ContainerProvider(container = container) {
         EventListenerProvider(listener = listener) {
@@ -326,7 +278,10 @@ internal fun Root(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         PageBlockProvider(it) {
-                            PageDataProvider(container = container, request = it.block.data?.httpRequest) {
+                            PageDataProvider(
+                                container = container,
+                                request = it.block.data?.httpRequest
+                            ) {
                                 UIBlockEventBridgeCollector(
                                     events = eventBridge?.events,
                                     isCurrentPage = it.block.id == currentPageBlock?.id
@@ -336,28 +291,45 @@ internal fun Root(
                         }
                     }
                 }
-                if (viewModel.modalVisibility.value) {
+
+                if (modalState.modalVisibility) {
                     BackHandler(true) {
-                        viewModel.back()
+                        modalViewModel.back()
+                    }
+                    val isLarge =
+                        modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN
+                                || modalState.modalScreenSize == ModalScreenSize.LARGE
+                    val insetTop = with(LocalDensity.current) {
+                        WindowInsets.statusBars.getTop(this).toDp()
                     }
                     ModalBottomSheet(
-                        sheetState = sheetState,
+                        sheetState = if (isLarge) largeSheetState else sheetState,
                         onDismissRequest = {
-                            viewModel.handleModalDismiss()
+                            modalViewModel.close()
                         },
                         properties = bottomSheetProps,
-                        dragHandle = {}
+                        dragHandle = {},
+                        windowInsets = WindowInsets(0, 0, 0, 0),
+                        shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
                     ) {
                         ModalBottomSheetBackHandler {
-                            viewModel.back()
+                            modalViewModel.back()
                         }
                         Column(
-                            modifier = Modifier
-                                .heightIn(max = LocalConfiguration.current.screenHeightDp.dp)
-                                .fillMaxHeight()
+                            modifier = if (modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN) {
+                                Modifier.fillMaxSize()
+                            } else {
+                                if (modalState.modalScreenSize == ModalScreenSize.MEDIUM) {
+                                    Modifier.height(LocalConfiguration.current.screenHeightDp.dp * 0.5f)
+                                } else {
+                                    Modifier.height(
+                                        LocalConfiguration.current.screenHeightDp.dp - insetTop
+                                    )
+                                }
+                            }
                         ) {
                             AnimatedContent(
-                                targetState = viewModel.displayedModalIndex.intValue,
+                                targetState = modalState.displayedModalIndex,
                                 transitionSpec = {
                                     if (targetState > initialState) {
                                         slideInHorizontally { it } togetherWith slideOutHorizontally { -it } + fadeOut()
@@ -367,8 +339,14 @@ internal fun Root(
                                 },
                                 label = "Bottom Sheet"
                             ) {
-                                val stack = modalStack[it]
-                                NavigationHeader(it, stack.block, onClose = { viewModel.close() }, onBack = { viewModel.back() })
+                                val stack = modalState.modalStack[it]
+                                NavigationHeader(
+                                    it,
+                                    stack.block,
+                                    onClose = { modalViewModel.close() },
+                                    onBack = { modalViewModel.back() },
+                                    isFullscreen = modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN,
+                                )
                                 ModalPage(
                                     container = container,
                                     blockData = stack,
@@ -389,18 +367,22 @@ internal fun Root(
                         onDismissRequest = {}
                     ) {
                         val statusBarHeight = with(LocalDensity.current) {
-                            WindowInsets.statusBars.getTop(LocalDensity.current).toDp()
+                            WindowInsets.statusBars.getTop(this).toDp()
                         }
                         SetDialogDestinationToEdgeToEdge()
                         Box(
-                            Modifier.fillMaxSize().background(Color.LightGray)
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.LightGray)
                         ) {
                             WebViewPage(
                                 url = viewModel.webviewUrl.value,
                                 onDismiss = {
                                     viewModel.handleWebviewDismiss()
                                 },
-                                modifier = Modifier.fillMaxSize().padding(top = statusBarHeight)
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(top = statusBarHeight)
                             )
                         }
                     }

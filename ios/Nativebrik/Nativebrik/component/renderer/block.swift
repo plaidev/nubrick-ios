@@ -37,7 +37,11 @@ func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
     case .EUITextInputBlock(let input):
         return TextInputView(block: input, context: context)
     case .EUISelectInputBlock(let input):
-        return SelectInputView(block: input, context: context)
+        if #available(iOS 15.0, *) {
+            return SelectInputView(block: input, context: context)
+        } else {
+            return UIView(frame: .zero)
+        }
     case .EUIMultiSelectInputBlock(let block):
         return MultiSelectInputView(block: block, context: context)
     case .EUISwitchInputBlock(let block):

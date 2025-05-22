@@ -42,6 +42,17 @@ internal class StringDecoder {
 	}
 }
 
+internal class StringEncoder {
+	companion object {
+		fun encode(data: String?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return JsonPrimitive(data)
+		}
+	}
+}
+
 internal class IntDecoder {
 	companion object {
 		fun decode(element: JsonElement?): Int? {
@@ -62,6 +73,17 @@ internal class IntDecoder {
 			} catch (e: Exception) {
 				return null
 			}
+		}
+	}
+}
+
+internal class IntEncoder {
+	companion object {
+		fun encode(data: Int?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return JsonPrimitive(data)
 		}
 	}
 }
@@ -90,6 +112,17 @@ internal class FloatDecoder {
 	}
 }
 
+internal class FloatEncoder {
+	companion object {
+		fun encode(data: Float?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return JsonPrimitive(data)
+		}
+	}
+}
+
 internal class BooleanDecoder {
 	companion object {
 		fun decode(element: JsonElement?): Boolean? {
@@ -110,6 +143,17 @@ internal class BooleanDecoder {
 			} catch (e: Exception) {
 				return null
 			}
+		}
+	}
+}
+
+internal class BooleanEncoder {
+	companion object {
+		fun encode(data: Boolean?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return JsonPrimitive(data)
 		}
 	}
 }
@@ -138,6 +182,22 @@ internal class ListDecoder {
 	}
 }
 
+internal class ListEncoder {
+	companion object {
+		fun <T> encode(data: List<T>?, encoder: (data: T?) -> JsonElement?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			val list = mutableListOf<JsonElement>()
+			for (item in data) {
+				val encoded = encoder(item) ?: continue
+				list.add(encoded)
+			}
+			return JsonArray(list)
+		}
+	}
+}
+
 internal class DateTimeDecoder {
 	companion object {
 		fun decode(element: JsonElement?): ZonedDateTime? {
@@ -158,6 +218,17 @@ internal class DateTimeDecoder {
 			} catch (e: Exception) {
 				return null
 			}
+		}
+	}
+}
+
+internal class DateTimeEncoder {
+	companion object {
+		fun encode(data: ZonedDateTime?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return JsonPrimitive(data.toString())
 		}
 	}
 }
@@ -190,6 +261,18 @@ internal enum class AlignItems {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: AlignItems?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				START -> JsonPrimitive("START")
+				CENTER -> JsonPrimitive("CENTER")
+				END -> JsonPrimitive("END")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -211,6 +294,23 @@ internal class ApiHttpHeader (
 				name = StringDecoder.decode(element.jsonObject["name"]),
 				value = StringDecoder.decode(element.jsonObject["value"]),
 			)
+		}
+
+		fun encode(data: ApiHttpHeader?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("ApiHttpHeader")
+			data.name?.let { value ->
+				StringEncoder.encode(value)?.let { map["name"] = it }
+			}
+			data.value?.let { value ->
+				StringEncoder.encode(value)?.let { map["value"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -238,6 +338,31 @@ internal class ApiHttpRequest (
 			},
 				body = StringDecoder.decode(element.jsonObject["body"]),
 			)
+		}
+
+		fun encode(data: ApiHttpRequest?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("ApiHttpRequest")
+			data.url?.let { value ->
+				StringEncoder.encode(value)?.let { map["url"] = it }
+			}
+			data.method?.let { value ->
+				ApiHttpRequestMethod.encode(value)?.let { map["method"] = it }
+			}
+			data.headers?.let { value ->
+				ListEncoder.encode(value) { item ->
+					ApiHttpHeader.encode(item)
+				}?.let { map["headers"] = it }
+			}
+			data.body?.let { value ->
+				StringEncoder.encode(value)?.let { map["body"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -277,6 +402,22 @@ internal enum class ApiHttpRequestMethod {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: ApiHttpRequestMethod?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				GET -> JsonPrimitive("GET")
+				POST -> JsonPrimitive("POST")
+				PUT -> JsonPrimitive("PUT")
+				DELETE -> JsonPrimitive("DELETE")
+				PATCH -> JsonPrimitive("PATCH")
+				HEAD -> JsonPrimitive("HEAD")
+				TRACE -> JsonPrimitive("TRACE")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -298,6 +439,22 @@ internal class ApiHttpResponseAssertion (
 				IntDecoder.decode(element)
 			},
 			)
+		}
+
+		fun encode(data: ApiHttpResponseAssertion?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("ApiHttpResponseAssertion")
+			data.statusCodes?.let { value ->
+				ListEncoder.encode(value) { item ->
+					IntEncoder.encode(item)
+				}?.let { map["statusCodes"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -323,6 +480,29 @@ internal class BoxShadow (
 				offsetY = IntDecoder.decode(element.jsonObject["offsetY"]),
 				radius = IntDecoder.decode(element.jsonObject["radius"]),
 			)
+		}
+
+		fun encode(data: BoxShadow?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("BoxShadow")
+			data.color?.let { value ->
+				Color.encode(value)?.let { map["color"] = it }
+			}
+			data.offsetX?.let { value ->
+				IntEncoder.encode(value)?.let { map["offsetX"] = it }
+			}
+			data.offsetY?.let { value ->
+				IntEncoder.encode(value)?.let { map["offsetY"] = it }
+			}
+			data.radius?.let { value ->
+				IntEncoder.encode(value)?.let { map["radius"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -392,6 +572,37 @@ internal enum class BuiltinUserProperty {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: BuiltinUserProperty?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				userId -> JsonPrimitive("userId")
+				userRnd -> JsonPrimitive("userRnd")
+				languageCode -> JsonPrimitive("languageCode")
+				regionCode -> JsonPrimitive("regionCode")
+				currentTime -> JsonPrimitive("currentTime")
+				firstBootTime -> JsonPrimitive("firstBootTime")
+				lastBootTime -> JsonPrimitive("lastBootTime")
+				retentionPeriod -> JsonPrimitive("retentionPeriod")
+				bootingTime -> JsonPrimitive("bootingTime")
+				sdkVersion -> JsonPrimitive("sdkVersion")
+				osVersion -> JsonPrimitive("osVersion")
+				osName -> JsonPrimitive("osName")
+				appId -> JsonPrimitive("appId")
+				appVersion -> JsonPrimitive("appVersion")
+				cfBundleVersion -> JsonPrimitive("cfBundleVersion")
+				localYear -> JsonPrimitive("localYear")
+				localMonth -> JsonPrimitive("localMonth")
+				localWeekday -> JsonPrimitive("localWeekday")
+				localDay -> JsonPrimitive("localDay")
+				localHour -> JsonPrimitive("localHour")
+				localMinute -> JsonPrimitive("localMinute")
+				localSecond -> JsonPrimitive("localSecond")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -423,6 +634,18 @@ internal enum class CollectionKind {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: CollectionKind?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				CAROUSEL -> JsonPrimitive("CAROUSEL")
+				SCROLL -> JsonPrimitive("SCROLL")
+				GRID -> JsonPrimitive("GRID")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -448,6 +671,29 @@ internal class Color (
 				blue = FloatDecoder.decode(element.jsonObject["blue"]),
 				alpha = FloatDecoder.decode(element.jsonObject["alpha"]),
 			)
+		}
+
+		fun encode(data: Color?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("Color")
+			data.red?.let { value ->
+				FloatEncoder.encode(value)?.let { map["red"] = it }
+			}
+			data.green?.let { value ->
+				FloatEncoder.encode(value)?.let { map["green"] = it }
+			}
+			data.blue?.let { value ->
+				FloatEncoder.encode(value)?.let { map["blue"] = it }
+			}
+			data.alpha?.let { value ->
+				FloatEncoder.encode(value)?.let { map["alpha"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -493,6 +739,25 @@ internal enum class ConditionOperator {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: ConditionOperator?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				Regex -> JsonPrimitive("Regex")
+				Equal -> JsonPrimitive("Equal")
+				NotEqual -> JsonPrimitive("NotEqual")
+				GreaterThan -> JsonPrimitive("GreaterThan")
+				GreaterThanOrEqual -> JsonPrimitive("GreaterThanOrEqual")
+				LessThan -> JsonPrimitive("LessThan")
+				LessThanOrEqual -> JsonPrimitive("LessThanOrEqual")
+				In -> JsonPrimitive("In")
+				NotIn -> JsonPrimitive("NotIn")
+				Between -> JsonPrimitive("Between")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -516,6 +781,26 @@ internal class ExperimentCondition (
 				operator = StringDecoder.decode(element.jsonObject["operator"]),
 				value = StringDecoder.decode(element.jsonObject["value"]),
 			)
+		}
+
+		fun encode(data: ExperimentCondition?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("ExperimentCondition")
+			data.property?.let { value ->
+				StringEncoder.encode(value)?.let { map["property"] = it }
+			}
+			data.operator?.let { value ->
+				StringEncoder.encode(value)?.let { map["operator"] = it }
+			}
+			data.value?.let { value ->
+				StringEncoder.encode(value)?.let { map["value"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -556,6 +841,48 @@ internal class ExperimentConfig (
 				endedAt = DateTimeDecoder.decode(element.jsonObject["endedAt"]),
 			)
 		}
+
+		fun encode(data: ExperimentConfig?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("ExperimentConfig")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.kind?.let { value ->
+				ExperimentKind.encode(value)?.let { map["kind"] = it }
+			}
+			data.distribution?.let { value ->
+				ListEncoder.encode(value) { item ->
+					ExperimentCondition.encode(item)
+				}?.let { map["distribution"] = it }
+			}
+			data.baseline?.let { value ->
+				ExperimentVariant.encode(value)?.let { map["baseline"] = it }
+			}
+			data.variants?.let { value ->
+				ListEncoder.encode(value) { item ->
+					ExperimentVariant.encode(item)
+				}?.let { map["variants"] = it }
+			}
+			data.seed?.let { value ->
+				IntEncoder.encode(value)?.let { map["seed"] = it }
+			}
+			data.frequency?.let { value ->
+				ExperimentFrequency.encode(value)?.let { map["frequency"] = it }
+			}
+			data.startedAt?.let { value ->
+				DateTimeEncoder.encode(value)?.let { map["startedAt"] = it }
+			}
+			data.endedAt?.let { value ->
+				DateTimeEncoder.encode(value)?.let { map["endedAt"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -577,6 +904,22 @@ internal class ExperimentConfigs (
 			},
 			)
 		}
+
+		fun encode(data: ExperimentConfigs?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("ExperimentConfigs")
+			data.configs?.let { value ->
+				ListEncoder.encode(value) { item ->
+					ExperimentConfig.encode(item)
+				}?.let { map["configs"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -597,6 +940,23 @@ internal class ExperimentFrequency (
 				period = IntDecoder.decode(element.jsonObject["period"]),
 				unit = FrequencyUnit.decode(element.jsonObject["unit"]),
 			)
+		}
+
+		fun encode(data: ExperimentFrequency?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("ExperimentFrequency")
+			data.period?.let { value ->
+				IntEncoder.encode(value)?.let { map["period"] = it }
+			}
+			data.unit?.let { value ->
+				FrequencyUnit.encode(value)?.let { map["unit"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -630,6 +990,19 @@ internal enum class ExperimentKind {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: ExperimentKind?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				EMBED -> JsonPrimitive("EMBED")
+				POPUP -> JsonPrimitive("POPUP")
+				TOOLTIP -> JsonPrimitive("TOOLTIP")
+				CONFIG -> JsonPrimitive("CONFIG")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -655,6 +1028,28 @@ internal class ExperimentVariant (
 			},
 				weight = IntDecoder.decode(element.jsonObject["weight"]),
 			)
+		}
+
+		fun encode(data: ExperimentVariant?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("ExperimentVariant")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.configs?.let { value ->
+				ListEncoder.encode(value) { item ->
+					VariantConfig.encode(item)
+				}?.let { map["configs"] = it }
+			}
+			data.weight?.let { value ->
+				IntEncoder.encode(value)?.let { map["weight"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -682,6 +1077,17 @@ internal enum class FlexDirection {
 				"ROW" -> ROW
 				"COLUMN" -> COLUMN
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: FlexDirection?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				ROW -> JsonPrimitive("ROW")
+				COLUMN -> JsonPrimitive("COLUMN")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}
@@ -715,6 +1121,19 @@ internal enum class FontDesign {
 				"ROUNDED" -> ROUNDED
 				"SERIF" -> SERIF
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: FontDesign?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				DEFAULT -> JsonPrimitive("DEFAULT")
+				MONOSPACE -> JsonPrimitive("MONOSPACE")
+				ROUNDED -> JsonPrimitive("ROUNDED")
+				SERIF -> JsonPrimitive("SERIF")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}
@@ -758,6 +1177,24 @@ internal enum class FontWeight {
 				"HEAVY" -> HEAVY
 				"BLACK" -> BLACK
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: FontWeight?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				ULTRA_LIGHT -> JsonPrimitive("ULTRA_LIGHT")
+				THIN -> JsonPrimitive("THIN")
+				LIGHT -> JsonPrimitive("LIGHT")
+				REGULAR -> JsonPrimitive("REGULAR")
+				MEDIUM -> JsonPrimitive("MEDIUM")
+				SEMI_BOLD -> JsonPrimitive("SEMI_BOLD")
+				BOLD -> JsonPrimitive("BOLD")
+				HEAVY -> JsonPrimitive("HEAVY")
+				BLACK -> JsonPrimitive("BLACK")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}
@@ -810,6 +1247,65 @@ internal class FrameData (
 				shadow = BoxShadow.decode(element.jsonObject["shadow"]),
 			)
 		}
+
+		fun encode(data: FrameData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("FrameData")
+			data.width?.let { value ->
+				IntEncoder.encode(value)?.let { map["width"] = it }
+			}
+			data.height?.let { value ->
+				IntEncoder.encode(value)?.let { map["height"] = it }
+			}
+			data.paddingLeft?.let { value ->
+				IntEncoder.encode(value)?.let { map["paddingLeft"] = it }
+			}
+			data.paddingRight?.let { value ->
+				IntEncoder.encode(value)?.let { map["paddingRight"] = it }
+			}
+			data.paddingTop?.let { value ->
+				IntEncoder.encode(value)?.let { map["paddingTop"] = it }
+			}
+			data.paddingBottom?.let { value ->
+				IntEncoder.encode(value)?.let { map["paddingBottom"] = it }
+			}
+			data.borderRadius?.let { value ->
+				IntEncoder.encode(value)?.let { map["borderRadius"] = it }
+			}
+			data.borderTopLeftRadius?.let { value ->
+				IntEncoder.encode(value)?.let { map["borderTopLeftRadius"] = it }
+			}
+			data.borderTopRightRadius?.let { value ->
+				IntEncoder.encode(value)?.let { map["borderTopRightRadius"] = it }
+			}
+			data.borderBottomRightRadius?.let { value ->
+				IntEncoder.encode(value)?.let { map["borderBottomRightRadius"] = it }
+			}
+			data.borderBottomLeftRadius?.let { value ->
+				IntEncoder.encode(value)?.let { map["borderBottomLeftRadius"] = it }
+			}
+			data.borderWidth?.let { value ->
+				IntEncoder.encode(value)?.let { map["borderWidth"] = it }
+			}
+			data.borderColor?.let { value ->
+				Color.encode(value)?.let { map["borderColor"] = it }
+			}
+			data.background?.let { value ->
+				Color.encode(value)?.let { map["background"] = it }
+			}
+			data.backgroundSrc?.let { value ->
+				StringEncoder.encode(value)?.let { map["backgroundSrc"] = it }
+			}
+			data.shadow?.let { value ->
+				BoxShadow.encode(value)?.let { map["shadow"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -834,6 +1330,16 @@ internal enum class FrequencyUnit {
 			return when (element.jsonPrimitive.content) {
 				"DAY" -> DAY
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: FrequencyUnit?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				DAY -> JsonPrimitive("DAY")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}
@@ -863,6 +1369,17 @@ internal enum class ImageContentMode {
 				"FIT" -> FIT
 				"FILL" -> FILL
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: ImageContentMode?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				FIT -> JsonPrimitive("FIT")
+				FILL -> JsonPrimitive("FILL")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}
@@ -898,6 +1415,19 @@ internal enum class JustifyContent {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: JustifyContent?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				START -> JsonPrimitive("START")
+				CENTER -> JsonPrimitive("CENTER")
+				END -> JsonPrimitive("END")
+				SPACE_BETWEEN -> JsonPrimitive("SPACE_BETWEEN")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -925,6 +1455,17 @@ internal enum class ModalPresentationStyle {
 				"DEPENDS_ON_CONTEXT_OR_FULL_SCREEN" -> DEPENDS_ON_CONTEXT_OR_FULL_SCREEN
 				"DEPENDS_ON_CONTEXT_OR_PAGE_SHEET" -> DEPENDS_ON_CONTEXT_OR_PAGE_SHEET
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: ModalPresentationStyle?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				DEPENDS_ON_CONTEXT_OR_FULL_SCREEN -> JsonPrimitive("DEPENDS_ON_CONTEXT_OR_FULL_SCREEN")
+				DEPENDS_ON_CONTEXT_OR_PAGE_SHEET -> JsonPrimitive("DEPENDS_ON_CONTEXT_OR_PAGE_SHEET")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}
@@ -958,6 +1499,18 @@ internal enum class ModalScreenSize {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: ModalScreenSize?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				MEDIUM -> JsonPrimitive("MEDIUM")
+				LARGE -> JsonPrimitive("LARGE")
+				MEDIUM_AND_LARGE -> JsonPrimitive("MEDIUM_AND_LARGE")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -981,6 +1534,26 @@ internal class NavigationBackButton (
 				color = Color.decode(element.jsonObject["color"]),
 				visible = BooleanDecoder.decode(element.jsonObject["visible"]),
 			)
+		}
+
+		fun encode(data: NavigationBackButton?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("NavigationBackButton")
+			data.title?.let { value ->
+				StringEncoder.encode(value)?.let { map["title"] = it }
+			}
+			data.color?.let { value ->
+				Color.encode(value)?.let { map["color"] = it }
+			}
+			data.visible?.let { value ->
+				BooleanEncoder.encode(value)?.let { map["visible"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1010,6 +1583,18 @@ internal enum class Overflow {
 				"HIDDEN" -> HIDDEN
 				"SCROLL" -> SCROLL
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: Overflow?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				VISIBLE -> JsonPrimitive("VISIBLE")
+				HIDDEN -> JsonPrimitive("HIDDEN")
+				SCROLL -> JsonPrimitive("SCROLL")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}
@@ -1051,6 +1636,22 @@ internal enum class PageKind {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: PageKind?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				COMPONENT -> JsonPrimitive("COMPONENT")
+				MODAL -> JsonPrimitive("MODAL")
+				WEBVIEW_MODAL -> JsonPrimitive("WEBVIEW_MODAL")
+				TOOLTIP -> JsonPrimitive("TOOLTIP")
+				TRIGGER -> JsonPrimitive("TRIGGER")
+				LOAD_BALANCER -> JsonPrimitive("LOAD_BALANCER")
+				DISMISSED -> JsonPrimitive("DISMISSED")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -1074,6 +1675,26 @@ internal class Property (
 				value = StringDecoder.decode(element.jsonObject["value"]),
 				ptype = PropertyType.decode(element.jsonObject["ptype"]),
 			)
+		}
+
+		fun encode(data: Property?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("Property")
+			data.name?.let { value ->
+				StringEncoder.encode(value)?.let { map["name"] = it }
+			}
+			data.value?.let { value ->
+				StringEncoder.encode(value)?.let { map["value"] = it }
+			}
+			data.ptype?.let { value ->
+				PropertyType.encode(value)?.let { map["ptype"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1103,6 +1724,18 @@ internal enum class PropertyType {
 				"STRING" -> STRING
 				"TIMESTAMPZ" -> TIMESTAMPZ
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: PropertyType?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				INTEGER -> JsonPrimitive("INTEGER")
+				STRING -> JsonPrimitive("STRING")
+				TIMESTAMPZ -> JsonPrimitive("TIMESTAMPZ")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}
@@ -1138,6 +1771,19 @@ internal enum class TextAlign {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: TextAlign?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				NATURAL -> JsonPrimitive("NATURAL")
+				LEFT -> JsonPrimitive("LEFT")
+				CENTER -> JsonPrimitive("CENTER")
+				RIGHT -> JsonPrimitive("RIGHT")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -1157,6 +1803,20 @@ internal class TriggerEventDef (
 			return TriggerEventDef(
 				name = StringDecoder.decode(element.jsonObject["name"]),
 			)
+		}
+
+		fun encode(data: TriggerEventDef?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("TriggerEventDef")
+			data.name?.let { value ->
+				StringEncoder.encode(value)?.let { map["name"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1204,6 +1864,26 @@ internal enum class TriggerEventNameDefs {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: TriggerEventNameDefs?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				RETENTION_1 -> JsonPrimitive("RETENTION_1")
+				RETENTION_2_3 -> JsonPrimitive("RETENTION_2_3")
+				RETENTION_4_7 -> JsonPrimitive("RETENTION_4_7")
+				RETENTION_8_14 -> JsonPrimitive("RETENTION_8_14")
+				RETENTION_15 -> JsonPrimitive("RETENTION_15")
+				USER_BOOT_APP -> JsonPrimitive("USER_BOOT_APP")
+				USER_ENTER_TO_APP -> JsonPrimitive("USER_ENTER_TO_APP")
+				USER_ENTER_TO_APP_FIRSTLY -> JsonPrimitive("USER_ENTER_TO_APP_FIRSTLY")
+				USER_ENTER_TO_FOREGROUND -> JsonPrimitive("USER_ENTER_TO_FOREGROUND")
+				N_ERROR_RECORD -> JsonPrimitive("N_ERROR_RECORD")
+				N_ERROR_IN_SDK_RECORD -> JsonPrimitive("N_ERROR_IN_SDK_RECORD")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -1225,6 +1905,23 @@ internal class TriggerSetting (
 				onTrigger = UIBlockEventDispatcher.decode(element.jsonObject["onTrigger"]),
 				trigger = TriggerEventDef.decode(element.jsonObject["trigger"]),
 			)
+		}
+
+		fun encode(data: TriggerSetting?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("TriggerSetting")
+			data.onTrigger?.let { value ->
+				UIBlockEventDispatcher.encode(value)?.let { map["onTrigger"] = it }
+			}
+			data.trigger?.let { value ->
+				TriggerEventDef.encode(value)?.let { map["trigger"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1276,6 +1973,97 @@ internal sealed class UIBlock {
 				else -> null
 			}
 		}
+
+		fun encode(data: UIBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+
+			when (data) {
+				is UnionUIRootBlock -> {
+					UIRootBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUIPageBlock -> {
+					UIPageBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUIFlexContainerBlock -> {
+					UIFlexContainerBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUITextBlock -> {
+					UITextBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUIImageBlock -> {
+					UIImageBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUICollectionBlock -> {
+					UICollectionBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUICarouselBlock -> {
+					UICarouselBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUITextInputBlock -> {
+					UITextInputBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUISelectInputBlock -> {
+					UISelectInputBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUIMultiSelectInputBlock -> {
+					UIMultiSelectInputBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				is UnionUISwitchInputBlock -> {
+					UISwitchInputBlock.encode(data.data)?.let {
+						if (it is JsonObject) {
+							map.putAll(it.jsonObject)
+						}
+					}
+				}
+				else -> return JsonNull
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1308,6 +2096,37 @@ internal class UIBlockEventDispatcher (
 				httpResponseAssertion = ApiHttpResponseAssertion.decode(element.jsonObject["httpResponseAssertion"]),
 			)
 		}
+
+		fun encode(data: UIBlockEventDispatcher?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIBlockEventDispatcher")
+			data.name?.let { value ->
+				StringEncoder.encode(value)?.let { map["name"] = it }
+			}
+			data.destinationPageId?.let { value ->
+				StringEncoder.encode(value)?.let { map["destinationPageId"] = it }
+			}
+			data.deepLink?.let { value ->
+				StringEncoder.encode(value)?.let { map["deepLink"] = it }
+			}
+			data.payload?.let { value ->
+				ListEncoder.encode(value) { item ->
+					Property.encode(item)
+				}?.let { map["payload"] = it }
+			}
+			data.httpRequest?.let { value ->
+				ApiHttpRequest.encode(value)?.let { map["httpRequest"] = it }
+			}
+			data.httpResponseAssertion?.let { value ->
+				ApiHttpResponseAssertion.encode(value)?.let { map["httpResponseAssertion"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1328,6 +2147,23 @@ internal class UICarouselBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UICarouselBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UICarouselBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UICarouselBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UICarouselBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1356,6 +2192,31 @@ internal class UICarouselBlockData (
 				onClick = UIBlockEventDispatcher.decode(element.jsonObject["onClick"]),
 			)
 		}
+
+		fun encode(data: UICarouselBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UICarouselBlockData")
+			data.children?.let { value ->
+				ListEncoder.encode(value) { item ->
+					UIBlock.encode(item)
+				}?.let { map["children"] = it }
+			}
+			data.frame?.let { value ->
+				FrameData.encode(value)?.let { map["frame"] = it }
+			}
+			data.gap?.let { value ->
+				IntEncoder.encode(value)?.let { map["gap"] = it }
+			}
+			data.onClick?.let { value ->
+				UIBlockEventDispatcher.encode(value)?.let { map["onClick"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1376,6 +2237,23 @@ internal class UICollectionBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UICollectionBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UICollectionBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UICollectionBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UICollectionBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1424,6 +2302,61 @@ internal class UICollectionBlockData (
 				onClick = UIBlockEventDispatcher.decode(element.jsonObject["onClick"]),
 			)
 		}
+
+		fun encode(data: UICollectionBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UICollectionBlockData")
+			data.children?.let { value ->
+				ListEncoder.encode(value) { item ->
+					UIBlock.encode(item)
+				}?.let { map["children"] = it }
+			}
+			data.frame?.let { value ->
+				FrameData.encode(value)?.let { map["frame"] = it }
+			}
+			data.gap?.let { value ->
+				IntEncoder.encode(value)?.let { map["gap"] = it }
+			}
+			data.kind?.let { value ->
+				CollectionKind.encode(value)?.let { map["kind"] = it }
+			}
+			data.direction?.let { value ->
+				FlexDirection.encode(value)?.let { map["direction"] = it }
+			}
+			data.reference?.let { value ->
+				StringEncoder.encode(value)?.let { map["reference"] = it }
+			}
+			data.gridSize?.let { value ->
+				IntEncoder.encode(value)?.let { map["gridSize"] = it }
+			}
+			data.itemWidth?.let { value ->
+				IntEncoder.encode(value)?.let { map["itemWidth"] = it }
+			}
+			data.itemHeight?.let { value ->
+				IntEncoder.encode(value)?.let { map["itemHeight"] = it }
+			}
+			data.fullItemWidth?.let { value ->
+				BooleanEncoder.encode(value)?.let { map["fullItemWidth"] = it }
+			}
+			data.pageControl?.let { value ->
+				BooleanEncoder.encode(value)?.let { map["pageControl"] = it }
+			}
+			data.autoScroll?.let { value ->
+				BooleanEncoder.encode(value)?.let { map["autoScroll"] = it }
+			}
+			data.autoScrollInterval?.let { value ->
+				FloatEncoder.encode(value)?.let { map["autoScrollInterval"] = it }
+			}
+			data.onClick?.let { value ->
+				UIBlockEventDispatcher.encode(value)?.let { map["onClick"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1444,6 +2377,23 @@ internal class UIFlexContainerBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UIFlexContainerBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UIFlexContainerBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIFlexContainerBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UIFlexContainerBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1480,6 +2430,43 @@ internal class UIFlexContainerBlockData (
 				onClick = UIBlockEventDispatcher.decode(element.jsonObject["onClick"]),
 			)
 		}
+
+		fun encode(data: UIFlexContainerBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIFlexContainerBlockData")
+			data.children?.let { value ->
+				ListEncoder.encode(value) { item ->
+					UIBlock.encode(item)
+				}?.let { map["children"] = it }
+			}
+			data.direction?.let { value ->
+				FlexDirection.encode(value)?.let { map["direction"] = it }
+			}
+			data.justifyContent?.let { value ->
+				JustifyContent.encode(value)?.let { map["justifyContent"] = it }
+			}
+			data.alignItems?.let { value ->
+				AlignItems.encode(value)?.let { map["alignItems"] = it }
+			}
+			data.gap?.let { value ->
+				IntEncoder.encode(value)?.let { map["gap"] = it }
+			}
+			data.frame?.let { value ->
+				FrameData.encode(value)?.let { map["frame"] = it }
+			}
+			data.overflow?.let { value ->
+				Overflow.encode(value)?.let { map["overflow"] = it }
+			}
+			data.onClick?.let { value ->
+				UIBlockEventDispatcher.encode(value)?.let { map["onClick"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1500,6 +2487,23 @@ internal class UIImageBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UIImageBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UIImageBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIImageBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UIImageBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1526,6 +2530,29 @@ internal class UIImageBlockData (
 				onClick = UIBlockEventDispatcher.decode(element.jsonObject["onClick"]),
 			)
 		}
+
+		fun encode(data: UIImageBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIImageBlockData")
+			data.src?.let { value ->
+				StringEncoder.encode(value)?.let { map["src"] = it }
+			}
+			data.contentMode?.let { value ->
+				ImageContentMode.encode(value)?.let { map["contentMode"] = it }
+			}
+			data.frame?.let { value ->
+				FrameData.encode(value)?.let { map["frame"] = it }
+			}
+			data.onClick?.let { value ->
+				UIBlockEventDispatcher.encode(value)?.let { map["onClick"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1546,6 +2573,23 @@ internal class UIMultiSelectInputBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UIMultiSelectInputBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UIMultiSelectInputBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIMultiSelectInputBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UIMultiSelectInputBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1588,6 +2632,51 @@ internal class UIMultiSelectInputBlockData (
 				frame = FrameData.decode(element.jsonObject["frame"]),
 			)
 		}
+
+		fun encode(data: UIMultiSelectInputBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIMultiSelectInputBlockData")
+			data.key?.let { value ->
+				StringEncoder.encode(value)?.let { map["key"] = it }
+			}
+			data.options?.let { value ->
+				ListEncoder.encode(value) { item ->
+					UISelectInputOption.encode(item)
+				}?.let { map["options"] = it }
+			}
+			data.value?.let { value ->
+				ListEncoder.encode(value) { item ->
+					StringEncoder.encode(item)
+				}?.let { map["value"] = it }
+			}
+			data.placeholder?.let { value ->
+				StringEncoder.encode(value)?.let { map["placeholder"] = it }
+			}
+			data.size?.let { value ->
+				IntEncoder.encode(value)?.let { map["size"] = it }
+			}
+			data.color?.let { value ->
+				Color.encode(value)?.let { map["color"] = it }
+			}
+			data.design?.let { value ->
+				FontDesign.encode(value)?.let { map["design"] = it }
+			}
+			data.weight?.let { value ->
+				FontWeight.encode(value)?.let { map["weight"] = it }
+			}
+			data.textAlign?.let { value ->
+				TextAlign.encode(value)?.let { map["textAlign"] = it }
+			}
+			data.frame?.let { value ->
+				FrameData.encode(value)?.let { map["frame"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1610,6 +2699,26 @@ internal class UIPageBlock (
 				name = StringDecoder.decode(element.jsonObject["name"]),
 				data = UIPageBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UIPageBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIPageBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.name?.let { value ->
+				StringEncoder.encode(value)?.let { map["name"] = it }
+			}
+			data.data?.let { value ->
+				UIPageBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1660,6 +2769,64 @@ internal class UIPageBlockData (
 				query = StringDecoder.decode(element.jsonObject["query"]),
 			)
 		}
+
+		fun encode(data: UIPageBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIPageBlockData")
+			data.kind?.let { value ->
+				PageKind.encode(value)?.let { map["kind"] = it }
+			}
+			data.modalPresentationStyle?.let { value ->
+				ModalPresentationStyle.encode(value)?.let { map["modalPresentationStyle"] = it }
+			}
+			data.modalScreenSize?.let { value ->
+				ModalScreenSize.encode(value)?.let { map["modalScreenSize"] = it }
+			}
+			data.modalNavigationBackButton?.let { value ->
+				NavigationBackButton.encode(value)?.let { map["modalNavigationBackButton"] = it }
+			}
+			data.webviewUrl?.let { value ->
+				StringEncoder.encode(value)?.let { map["webviewUrl"] = it }
+			}
+			data.triggerSetting?.let { value ->
+				TriggerSetting.encode(value)?.let { map["triggerSetting"] = it }
+			}
+			data.renderAs?.let { value ->
+				UIBlock.encode(value)?.let { map["renderAs"] = it }
+			}
+			data.position?.let { value ->
+				UIPageBlockPosition.encode(value)?.let { map["position"] = it }
+			}
+			data.httpRequest?.let { value ->
+				ApiHttpRequest.encode(value)?.let { map["httpRequest"] = it }
+			}
+			data.tooltipSize?.let { value ->
+				UITooltipSize.encode(value)?.let { map["tooltipSize"] = it }
+			}
+			data.tooltipAnchor?.let { value ->
+				StringEncoder.encode(value)?.let { map["tooltipAnchor"] = it }
+			}
+			data.tooltipPlacement?.let { value ->
+				UITooltipPlacement.encode(value)?.let { map["tooltipPlacement"] = it }
+			}
+			data.tooltipTransitionTarget?.let { value ->
+				UITooltipTransitionTarget.encode(value)?.let { map["tooltipTransitionTarget"] = it }
+			}
+			data.props?.let { value ->
+				ListEncoder.encode(value) { item ->
+					Property.encode(item)
+				}?.let { map["props"] = it }
+			}
+			data.query?.let { value ->
+				StringEncoder.encode(value)?.let { map["query"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1681,6 +2848,23 @@ internal class UIPageBlockPosition (
 				y = IntDecoder.decode(element.jsonObject["y"]),
 			)
 		}
+
+		fun encode(data: UIPageBlockPosition?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIPageBlockPosition")
+			data.x?.let { value ->
+				IntEncoder.encode(value)?.let { map["x"] = it }
+			}
+			data.y?.let { value ->
+				IntEncoder.encode(value)?.let { map["y"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1701,6 +2885,23 @@ internal class UIRootBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UIRootBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UIRootBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIRootBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UIRootBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1725,6 +2926,25 @@ internal class UIRootBlockData (
 				currentPageId = StringDecoder.decode(element.jsonObject["currentPageId"]),
 			)
 		}
+
+		fun encode(data: UIRootBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UIRootBlockData")
+			data.pages?.let { value ->
+				ListEncoder.encode(value) { item ->
+					UIPageBlock.encode(item)
+				}?.let { map["pages"] = it }
+			}
+			data.currentPageId?.let { value ->
+				StringEncoder.encode(value)?.let { map["currentPageId"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1745,6 +2965,23 @@ internal class UISelectInputBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UISelectInputBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UISelectInputBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UISelectInputBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UISelectInputBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1783,6 +3020,46 @@ internal class UISelectInputBlockData (
 				frame = FrameData.decode(element.jsonObject["frame"]),
 			)
 		}
+
+		fun encode(data: UISelectInputBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UISelectInputBlockData")
+			data.key?.let { value ->
+				StringEncoder.encode(value)?.let { map["key"] = it }
+			}
+			data.options?.let { value ->
+				ListEncoder.encode(value) { item ->
+					UISelectInputOption.encode(item)
+				}?.let { map["options"] = it }
+			}
+			data.value?.let { value ->
+				StringEncoder.encode(value)?.let { map["value"] = it }
+			}
+			data.size?.let { value ->
+				IntEncoder.encode(value)?.let { map["size"] = it }
+			}
+			data.color?.let { value ->
+				Color.encode(value)?.let { map["color"] = it }
+			}
+			data.design?.let { value ->
+				FontDesign.encode(value)?.let { map["design"] = it }
+			}
+			data.weight?.let { value ->
+				FontWeight.encode(value)?.let { map["weight"] = it }
+			}
+			data.textAlign?.let { value ->
+				TextAlign.encode(value)?.let { map["textAlign"] = it }
+			}
+			data.frame?.let { value ->
+				FrameData.encode(value)?.let { map["frame"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1804,6 +3081,23 @@ internal class UISelectInputOption (
 				label = StringDecoder.decode(element.jsonObject["label"]),
 			)
 		}
+
+		fun encode(data: UISelectInputOption?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UISelectInputOption")
+			data.value?.let { value ->
+				StringEncoder.encode(value)?.let { map["value"] = it }
+			}
+			data.label?.let { value ->
+				StringEncoder.encode(value)?.let { map["label"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1824,6 +3118,23 @@ internal class UISwitchInputBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UISwitchInputBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UISwitchInputBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UISwitchInputBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UISwitchInputBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1848,6 +3159,26 @@ internal class UISwitchInputBlockData (
 				checkedColor = Color.decode(element.jsonObject["checkedColor"]),
 			)
 		}
+
+		fun encode(data: UISwitchInputBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UISwitchInputBlockData")
+			data.key?.let { value ->
+				StringEncoder.encode(value)?.let { map["key"] = it }
+			}
+			data.value?.let { value ->
+				BooleanEncoder.encode(value)?.let { map["value"] = it }
+			}
+			data.checkedColor?.let { value ->
+				Color.encode(value)?.let { map["checkedColor"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1868,6 +3199,23 @@ internal class UITextBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UITextBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UITextBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UITextBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UITextBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1902,6 +3250,41 @@ internal class UITextBlockData (
 				onClick = UIBlockEventDispatcher.decode(element.jsonObject["onClick"]),
 			)
 		}
+
+		fun encode(data: UITextBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UITextBlockData")
+			data.value?.let { value ->
+				StringEncoder.encode(value)?.let { map["value"] = it }
+			}
+			data.size?.let { value ->
+				IntEncoder.encode(value)?.let { map["size"] = it }
+			}
+			data.color?.let { value ->
+				Color.encode(value)?.let { map["color"] = it }
+			}
+			data.design?.let { value ->
+				FontDesign.encode(value)?.let { map["design"] = it }
+			}
+			data.weight?.let { value ->
+				FontWeight.encode(value)?.let { map["weight"] = it }
+			}
+			data.maxLines?.let { value ->
+				IntEncoder.encode(value)?.let { map["maxLines"] = it }
+			}
+			data.frame?.let { value ->
+				FrameData.encode(value)?.let { map["frame"] = it }
+			}
+			data.onClick?.let { value ->
+				UIBlockEventDispatcher.encode(value)?.let { map["onClick"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -1922,6 +3305,23 @@ internal class UITextInputBlock (
 				id = StringDecoder.decode(element.jsonObject["id"]),
 				data = UITextInputBlockData.decode(element.jsonObject["data"]),
 			)
+		}
+
+		fun encode(data: UITextInputBlock?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UITextInputBlock")
+			data.id?.let { value ->
+				StringEncoder.encode(value)?.let { map["id"] = it }
+			}
+			data.data?.let { value ->
+				UITextInputBlockData.encode(value)?.let { map["data"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -1968,6 +3368,59 @@ internal class UITextInputBlockData (
 				frame = FrameData.decode(element.jsonObject["frame"]),
 			)
 		}
+
+		fun encode(data: UITextInputBlockData?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UITextInputBlockData")
+			data.key?.let { value ->
+				StringEncoder.encode(value)?.let { map["key"] = it }
+			}
+			data.value?.let { value ->
+				StringEncoder.encode(value)?.let { map["value"] = it }
+			}
+			data.placeholder?.let { value ->
+				StringEncoder.encode(value)?.let { map["placeholder"] = it }
+			}
+			data.regex?.let { value ->
+				StringEncoder.encode(value)?.let { map["regex"] = it }
+			}
+			data.errorMessage?.let { value ->
+				UITooltipMessage.encode(value)?.let { map["errorMessage"] = it }
+			}
+			data.keyboardType?.let { value ->
+				UITextInputKeyboardType.encode(value)?.let { map["keyboardType"] = it }
+			}
+			data.secure?.let { value ->
+				BooleanEncoder.encode(value)?.let { map["secure"] = it }
+			}
+			data.autocorrect?.let { value ->
+				BooleanEncoder.encode(value)?.let { map["autocorrect"] = it }
+			}
+			data.size?.let { value ->
+				IntEncoder.encode(value)?.let { map["size"] = it }
+			}
+			data.color?.let { value ->
+				Color.encode(value)?.let { map["color"] = it }
+			}
+			data.design?.let { value ->
+				FontDesign.encode(value)?.let { map["design"] = it }
+			}
+			data.weight?.let { value ->
+				FontWeight.encode(value)?.let { map["weight"] = it }
+			}
+			data.textAlign?.let { value ->
+				TextAlign.encode(value)?.let { map["textAlign"] = it }
+			}
+			data.frame?.let { value ->
+				FrameData.encode(value)?.let { map["frame"] = it }
+			}
+
+			return JsonObject(map)
+		}
 	}
 }
 
@@ -2006,6 +3459,22 @@ internal enum class UITextInputKeyboardType {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: UITextInputKeyboardType?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				DEFAULT -> JsonPrimitive("DEFAULT")
+				ASCII -> JsonPrimitive("ASCII")
+				EMAIL -> JsonPrimitive("EMAIL")
+				DECIMAL -> JsonPrimitive("DECIMAL")
+				NUMBER -> JsonPrimitive("NUMBER")
+				URI -> JsonPrimitive("URI")
+				ALPHABET -> JsonPrimitive("ALPHABET")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -2025,6 +3494,20 @@ internal class UITooltipMessage (
 			return UITooltipMessage(
 				title = StringDecoder.decode(element.jsonObject["title"]),
 			)
+		}
+
+		fun encode(data: UITooltipMessage?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UITooltipMessage")
+			data.title?.let { value ->
+				StringEncoder.encode(value)?.let { map["title"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -2074,6 +3557,27 @@ internal enum class UITooltipPlacement {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: UITooltipPlacement?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				TOP_CENTER -> JsonPrimitive("TOP_CENTER")
+				TOP_START -> JsonPrimitive("TOP_START")
+				TOP_END -> JsonPrimitive("TOP_END")
+				BOTTOM_CENTER -> JsonPrimitive("BOTTOM_CENTER")
+				BOTTOM_START -> JsonPrimitive("BOTTOM_START")
+				BOTTOM_END -> JsonPrimitive("BOTTOM_END")
+				LEFT_CENTER -> JsonPrimitive("LEFT_CENTER")
+				LEFT_START -> JsonPrimitive("LEFT_START")
+				LEFT_END -> JsonPrimitive("LEFT_END")
+				RIGHT_CENTER -> JsonPrimitive("RIGHT_CENTER")
+				RIGHT_START -> JsonPrimitive("RIGHT_START")
+				RIGHT_END -> JsonPrimitive("RIGHT_END")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -2095,6 +3599,23 @@ internal class UITooltipSize (
 				width = IntDecoder.decode(element.jsonObject["width"]),
 				height = IntDecoder.decode(element.jsonObject["height"]),
 			)
+		}
+
+		fun encode(data: UITooltipSize?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UITooltipSize")
+			data.width?.let { value ->
+				IntEncoder.encode(value)?.let { map["width"] = it }
+			}
+			data.height?.let { value ->
+				IntEncoder.encode(value)?.let { map["height"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -2124,6 +3645,17 @@ internal enum class UITooltipTransitionTarget {
 				else -> UNKNOWN
 			}
 		}
+
+		fun encode(data: UITooltipTransitionTarget?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				ANCHOR -> JsonPrimitive("ANCHOR")
+				SCREEN -> JsonPrimitive("SCREEN")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
 	}
 }
 
@@ -2147,6 +3679,26 @@ internal class VariantConfig (
 				kind = VariantConfigKind.decode(element.jsonObject["kind"]),
 				value = StringDecoder.decode(element.jsonObject["value"]),
 			)
+		}
+
+		fun encode(data: VariantConfig?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("VariantConfig")
+			data.key?.let { value ->
+				StringEncoder.encode(value)?.let { map["key"] = it }
+			}
+			data.kind?.let { value ->
+				VariantConfigKind.encode(value)?.let { map["kind"] = it }
+			}
+			data.value?.let { value ->
+				StringEncoder.encode(value)?.let { map["value"] = it }
+			}
+
+			return JsonObject(map)
 		}
 	}
 }
@@ -2180,6 +3732,20 @@ internal enum class VariantConfigKind {
 				"BOOLEAN" -> BOOLEAN
 				"JSON" -> JSON
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: VariantConfigKind?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				COMPONENT -> JsonPrimitive("COMPONENT")
+				STRING -> JsonPrimitive("STRING")
+				NUMBER -> JsonPrimitive("NUMBER")
+				BOOLEAN -> JsonPrimitive("BOOLEAN")
+				JSON -> JsonPrimitive("JSON")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}
@@ -2219,6 +3785,22 @@ internal enum class Weekdays {
 				"FRIDAY" -> FRIDAY
 				"SATURDAY" -> SATURDAY
 				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: Weekdays?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				SUNDAY -> JsonPrimitive("SUNDAY")
+				MONDAY -> JsonPrimitive("MONDAY")
+				TUESDAY -> JsonPrimitive("TUESDAY")
+				WEDNESDAY -> JsonPrimitive("WEDNESDAY")
+				THURSDAY -> JsonPrimitive("THURSDAY")
+				FRIDAY -> JsonPrimitive("FRIDAY")
+				SATURDAY -> JsonPrimitive("SATURDAY")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
 	}

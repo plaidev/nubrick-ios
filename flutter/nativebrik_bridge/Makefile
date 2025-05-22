@@ -10,6 +10,11 @@ reinstall:
 	cd example && flutter clean && rm -rf ./ios/Pods && rm ./ios/Podfile.lock && pod repo update && flutter build ios --simulator && flutter build apk --debug
 	cd e2e && flutter clean && rm -rf ./ios/Pods && rm ./ios/Podfile.lock && pod repo update && flutter build ios --simulator && flutter build apk --debug
 
+.PHONY: reinstall-android
+reinstall-android:
+	cd example && flutter clean && flutter build apk --debug
+	cd e2e && flutter clean && flutter build apk --debug
+
 define bump_version
 	@NEW_VERSION=$$(echo "$(VERSION)" | awk -F. '{print $(1)}') && \
 	sed -i '' "s/^version: .*/version: $$NEW_VERSION/" pubspec.yaml && \

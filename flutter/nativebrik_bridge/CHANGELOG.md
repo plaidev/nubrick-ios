@@ -84,3 +84,12 @@
 ## 0.7.3
 
 - Update Nativebrik to 0.9.11
+
+## 0.7.4
+
+- Update Nativebrik to 0.9.13
+- Update com.nativebrik.sdk to 0.4.4
+
+## 0.7.5
+
+- Update com.nativebrik.sdk to 0.4.7

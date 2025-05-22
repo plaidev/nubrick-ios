@@ -26,12 +26,15 @@ import com.nativebrik.sdk.data.database.NativebrikDbHelper
 import com.nativebrik.sdk.data.user.NativebrikUser
 import com.nativebrik.sdk.remoteconfig.RemoteConfigLoadingState
 import com.nativebrik.sdk.schema.UIBlock
+import com.nativebrik.sdk.schema.UIRootBlock
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-const val VERSION = "0.4.3"
+const val VERSION = "0.4.8"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
@@ -50,6 +53,7 @@ public data class EventProperty(
     val value: String,
     val type: EventPropertyType
 )
+
 public data class Event(
     val name: String?,
     val deepLink: String?,
@@ -60,7 +64,8 @@ public data class Config(
     val projectId: String,
     val endpoint: Endpoint = Endpoint(),
     val onEvent: ((event: Event) -> Unit)? = null,
-    val cachePolicy: CachePolicy = CachePolicy()
+    val cachePolicy: CachePolicy = CachePolicy(),
+    val onDispatch: ((event: NativebrikEvent) -> Unit)? = null,
 )
 
 public enum class CacheStorage {
@@ -95,7 +100,7 @@ public object Nativebrik {
 public fun NativebrikProvider(
     client: NativebrikClient,
     content: @Composable() () -> Unit
-    ) {
+) {
     CompositionLocalProvider(
         LocalNativebrikClient provides client
     ) {
@@ -133,7 +138,12 @@ public class NativebrikExperiment {
     internal val container: Container
     private val trigger: TriggerViewModel
 
-    internal constructor(config: Config, user: NativebrikUser, db: SQLiteDatabase, context: Context) {
+    internal constructor(
+        config: Config,
+        user: NativebrikUser,
+        db: SQLiteDatabase,
+        context: Context
+    ) {
         this.container = ContainerImpl(
             config = config.copy(onEvent = { event ->
                 val name = event.name ?: ""
@@ -172,7 +182,13 @@ public class NativebrikExperiment {
         onEvent: ((event: Event) -> Unit)? = null,
         content: (@Composable() (state: EmbeddingLoadingState) -> Unit)? = null
     ) {
-        Embedding(container = this.container.initWith(arguments), id, modifier = modifier, onEvent = onEvent, content = content)
+        Embedding(
+            container = this.container.initWith(arguments),
+            id,
+            modifier = modifier,
+            onEvent = onEvent,
+            content = content
+        )
     }
 
     @Composable
@@ -197,8 +213,10 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         return client.experiment.container.fetchEmbedding(experimentId, componentId)
     }
 
-    suspend fun connectTooltip(trigger: String): Result<Any?> {
-        return client.experiment.container.fetchTooltip(trigger)
+    suspend fun connectTooltip(trigger: String): Result<String?> {
+        return client.experiment.container.fetchTooltip(trigger).mapCatching { it ->
+            it.let { Json.encodeToString(UIBlock.encode(it)) }
+        }
     }
 
     @DelicateCoroutinesApi
@@ -215,7 +233,13 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
         val container = remember(arguments) {
             client.experiment.container.initWith(arguments)
         }
-        if (data is UIBlock.UnionUIRootBlock) {
+        val rootBlock: UIRootBlock? = when (data) {
+            is UIBlock.UnionUIRootBlock -> data.data
+            is UIRootBlock -> data
+            is String -> UIRootBlock.decode(Json.decodeFromString(data))
+            else -> null
+        }
+        rootBlock?.let {
             Row(
                 modifier = modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.Center,
@@ -224,17 +248,13 @@ public class __DO_NOT_USE_THIS_INTERNAL_BRIDGE(private val client: NativebrikCli
                 Root(
                     modifier = Modifier.fillMaxSize(),
                     container = container,
-                    root = data.data,
+                    root = it,
                     onEvent = onEvent,
                     onNextTooltip = onNextTooltip,
-                    onDismiss = {
-                        onDismiss()
-                    },
+                    onDismiss = { onDismiss() },
                     eventBridge = eventBridge,
                 )
             }
-        } else {
-            Unit
         }
     }
 }
