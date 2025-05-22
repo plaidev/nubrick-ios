@@ -107,7 +107,7 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
         ) {
             BasicText(
                 text = selectedOption?.label ?: selectedOption?.value ?: block.data.placeholder
-                ?: "-- Select --",
+                ?: "Please select",
                 style = fontStyle,
                 modifier = Modifier.weight(2f)
             )
@@ -149,9 +149,9 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
     }
 }
 
-internal fun selectedOptionsToText(options: List<UISelectInputOption>): String {
+internal fun selectedOptionsToText(options: List<UISelectInputOption>): String? {
     return when (options.size) {
-        0 -> NONE_VALUE
+        0 -> null
         1 -> {
             val first = options[0]
             first.label ?: first.value ?: NONE_VALUE
@@ -221,7 +221,8 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BasicText(
-                text = selectedOptionsToText(selectedOptions),
+                text = selectedOptionsToText(selectedOptions) ?: block.data?.placeholder
+                ?: "Please select",
                 style = fontStyle,
                 modifier = Modifier.weight(2f)
             )
