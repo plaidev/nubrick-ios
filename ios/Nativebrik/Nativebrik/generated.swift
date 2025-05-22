@@ -619,6 +619,7 @@ struct UISelectInputBlockData: Decodable, Encodable {
   var key: String?
   var options: [UISelectInputOption]?
   var value: String?
+  var placeholder: String?
   var size: Int?
   var color: Color?
   var design: FontDesign?
