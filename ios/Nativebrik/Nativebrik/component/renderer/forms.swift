@@ -285,7 +285,7 @@ class SelectInputView: UIControl {
         button.showsMenuAsPrimaryAction = true
         button.changesSelectionAsPrimaryAction = true
         
-        button.setTitle(initialValue?.value ?? "-- Select --", for: .normal)
+        button.setTitle(initialValue?.value ?? block.data?.placeholder ?? "-- Select --", for: .normal)
         
         self.addSubview(button)
     }
@@ -334,7 +334,7 @@ class SelectInputView: UIControl {
     
     private func createMenuActions() -> [UIAction] {
         let handleSelect = { (action: UIAction) in
-            self.button.configuration = self.buttonConfig(hasValue: false)
+            self.button.configuration = self.buttonConfig(hasValue: true)
 
             if let formKey = self.formKey {
                 let identifer = action.identifier.rawValue
