@@ -279,14 +279,13 @@ class SelectInputView: UIControl {
 
         button.configureLayout { $0.isEnabled = true }
         button.contentHorizontalAlignment = parseTextAlignToHorizontalAlignment(block.data?.textAlign)
-        button.configuration = buttonConfig()
+        button.configuration = buttonConfig(hasValue: self.initialValue != nil)
         
         button.menu = UIMenu(children: createMenuActions())
         button.showsMenuAsPrimaryAction = true
         button.changesSelectionAsPrimaryAction = true
         
-        let initialLabel = initialValue?.label ?? initialValue?.value ?? "None"
-        button.setTitle(initialLabel, for: .normal)
+        button.setTitle(initialValue?.value ?? "-- Select --", for: .normal)
         
         self.addSubview(button)
     }
@@ -312,7 +311,7 @@ class SelectInputView: UIControl {
         }
     }
     
-    private func buttonConfig() -> UIButton.Configuration {
+    private func buttonConfig(hasValue: Bool) -> UIButton.Configuration {
         var config = UIButton.Configuration.plain()
         let frame = block.data?.frame
         config.contentInsets = .init(
@@ -326,7 +325,7 @@ class SelectInputView: UIControl {
         config.titleTextAttributesTransformer = .init({ _ in
             return .init([
                 .font: parseTextBlockDataToUIFont(self.block.data?.size, self.block.data?.weight, self.block.data?.design),
-                .foregroundColor: foregroundColor
+                .foregroundColor: hasValue ? foregroundColor : UIColor.placeholderText
             ])
         })
         config.baseForegroundColor = .tertiaryLabel
@@ -335,20 +334,32 @@ class SelectInputView: UIControl {
     
     private func createMenuActions() -> [UIAction] {
         let handleSelect = { (action: UIAction) in
-            self.button.setTitle(action.title, for: .application)
+            self.button.configuration = self.buttonConfig(hasValue: false)
+
             if let formKey = self.formKey {
                 let identifer = action.identifier.rawValue
                 self.context?.writeToForm(key: formKey, value: identifer)
             }
         }
-        let actions: [UIAction] = block.data?.options?.map({ option in
+
+        var actions: [UIAction] = block.data?.options?.map({ option in
             return UIAction(
                 title: option.label ?? option.value ?? "None",
-                identifier: UIAction.Identifier(option.value ?? "None"),
+                identifier: .init(option.value ?? "None"),
                 state: option.value == initialValue?.value ? .on : .off,
                 handler: handleSelect
             )
         }) ?? []
+        
+        if initialValue == nil {
+            actions.insert(UIAction(
+                title: block.data?.placeholder ?? "-- Select --",
+                identifier: .init("None"),
+                attributes: [.hidden],
+                state: .off,
+                handler: {_ in }
+            ), at: 0)
+        }
         
         return actions
     }
