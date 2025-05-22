@@ -69,41 +69,150 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: NativebrikProvider(
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Plugin example app'),
-          ),
-          body: Column(
-            children: [
-              NativebrikEmbedding("TOP_COMPONENT", height: 270,
-                  onEvent: (event) {
-                print("Nativebrik Embedding Event: ${event.payload}");
-              }),
-              const NativebrikAnchor("TOOLTIP_1", child: Text("Tooltip 1")),
-              const Text("Message:"),
-              Text(_message),
-              const Text("User ID:"),
-              Text(_userId),
-              const Text("Prefecture:"),
-              Text(_prefecture),
-              const NativebrikAnchor("TOOLTIP_2", child: Text("Tooltip 2")),
-              ElevatedButton(
+      initialRoute: '/',
+      builder: (context, child) {
+        return NativebrikProvider(child: child!);
+      },
+      routes: {
+        '/': (context) => PageA(
+              message: _message,
+              userId: _userId,
+              prefecture: _prefecture,
+            ),
+        '/pageB': (context) => const PageB(),
+      },
+    );
+  }
+}
+
+class PageA extends StatelessWidget {
+  final String message;
+  final String userId;
+  final String prefecture;
+
+  const PageA({
+    super.key,
+    required this.message,
+    required this.userId,
+    required this.prefecture,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Page A'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            NativebrikEmbedding("TOP_COMPONENT", height: 270, onEvent: (event) {
+              print("Nativebrik Embedding Event: ${event.payload}");
+            }),
+            const NativebrikAnchor("TOOLTIP_1", child: Text("Tooltip 1")),
+            const Text("Message:"),
+            Text(message),
+            const Text("User ID:"),
+            Text(userId),
+            const Text("Prefecture:"),
+            Text(prefecture),
+            ElevatedButton(
+              onPressed: () {
+                NativebrikDispatcher()
+                    .dispatch(NativebrikEvent("DEMO_ON_CLICK"));
+              },
+              child: const Text('dispatch custom event'),
+            ),
+            const SizedBox(height: 200),
+            NativebrikAnchor(
+              "TOOLTIP_2",
+              child: ElevatedButton(
                 onPressed: () {
-                  NativebrikDispatcher()
-                      .dispatch(NativebrikEvent("DEMO_ON_CLICK"));
+                  print("Tooltip 2 anchor button pressed");
                 },
-                child: const Text('dispatch custom event'),
+                child: Text('Tooltip 2 anchor'),
               ),
-              const SizedBox(height: 200),
-              const NativebrikAnchor(
-                "TOOLTIP_3",
-                child: Text("Tooltip 3"),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+      bottomNavigationBar: const NativebrikAnchor(
+        "NAV_BAR",
+        child: CustomBottomNavBar(
+          currentIndex: 0,
+          onTap: "/pageB",
+        ),
+      ),
+    );
+  }
+}
+
+class PageB extends StatelessWidget {
+  const PageB({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Page B'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const NativebrikAnchor("TOOLTIP_4",
+                child: Text('Welcome to Page B!')),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+      bottomNavigationBar: const NativebrikAnchor(
+        "NAV_BAR",
+        child: CustomBottomNavBar(
+          currentIndex: 1,
+          onTap: "/",
+        ),
+      ),
+    );
+  }
+}
+
+class CustomBottomNavBar extends StatelessWidget {
+  final int currentIndex;
+  final String onTap;
+
+  const CustomBottomNavBar({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      currentIndex: currentIndex,
+      items: [
+        BottomNavigationBarItem(
+          icon: const NativebrikAnchor(
+            "NAV_ITEM_A",
+            child: Icon(Icons.home),
+          ),
+          label: 'Page A',
+        ),
+        BottomNavigationBarItem(
+          icon: const NativebrikAnchor(
+            "NAV_ITEM_B",
+            child: Icon(Icons.business),
+          ),
+          label: 'Page B',
+        ),
+      ],
+      onTap: (index) {
+        if ((currentIndex == 0 && index == 1) ||
+            (currentIndex == 1 && index == 0)) {
+          Navigator.pushReplacementNamed(context, onTap);
+        }
+      },
     );
   }
 }
