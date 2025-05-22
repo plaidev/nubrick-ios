@@ -280,10 +280,8 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
                       position.dy,
                       size.width,
                       size.height,
-                    ).inflate(8.0);
-                    final anchorRRect = RRect.fromRectAndRadius(
-                        anchorRect, const Radius.circular(8.0));
-                    if (anchorRRect.contains(tapPos)) {
+                    );
+                    if (anchorRect.contains(tapPos)) {
                       _onTransitionTargetTap(true);
                     } else {
                       _onTransitionTargetTap(false);
