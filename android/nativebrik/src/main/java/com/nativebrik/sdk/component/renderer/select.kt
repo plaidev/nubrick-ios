@@ -107,7 +107,7 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
         ) {
             BasicText(
                 text = selectedOption?.label ?: selectedOption?.value ?: block.data.placeholder
-                ?: NONE_VALUE,
+                ?: "Please select",
                 style = fontStyle,
                 modifier = Modifier.weight(2f)
             )
@@ -149,15 +149,15 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
     }
 }
 
-internal fun selectedOptionsToText(options: List<UISelectInputOption>): String {
+internal fun selectedOptionsToText(options: List<UISelectInputOption>): String? {
     return when (options.size) {
-        0 -> NONE_VALUE
+        0 -> null
         1 -> {
             val first = options[0]
             first.label ?: first.value ?: NONE_VALUE
         }
 
-        else -> "Mixed"
+        else -> "${options.size} items"
     }
 }
 
@@ -169,7 +169,7 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
     var expanded by remember { mutableStateOf(false) }
     var value by remember {
         var value = block.data?.value ?: emptyList()
-        val key = block?.data?.key
+        val key = block.data?.key
         if (key != null) {
             when (val v = container.getFormValue(key)) {
                 is FormValue.StrList -> {
@@ -206,13 +206,17 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
     val selectModifier = Modifier
         .styleByFrame(block.data?.frame)
         .fillMaxWidth()
-    val fontStyle = parseFontStyle(
+    var fontStyle = parseFontStyle(
         size = block.data?.size,
         color = block.data?.color,
         fontWeight = block.data?.weight,
         fontDesign = block.data?.design,
         alignment = block.data?.textAlign,
     )
+    if (value.isEmpty()) {
+        val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        fontStyle = fontStyle.copy(color = placeholderColor)
+    }
 
     Box(modifier) {
         Row(
@@ -221,7 +225,8 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BasicText(
-                text = selectedOptionsToText(selectedOptions),
+                text = selectedOptionsToText(selectedOptions) ?: block.data?.placeholder
+                ?: "Please select",
                 style = fontStyle,
                 modifier = Modifier.weight(2f)
             )
@@ -245,7 +250,7 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                         }
                     }
 
-                    val key = block?.data?.key
+                    val key = block.data?.key
                     if (key != null) {
                         container.setFormValue(key, FormValue.StrList(value))
                     }
@@ -263,9 +268,9 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                     },
                     onClick = {
                         handleSelect()
-                    } // onClick
+                    }
                 )
             }
-        } // DropdownMenu
+        }
     }
 }
