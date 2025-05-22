@@ -279,14 +279,13 @@ class SelectInputView: UIControl {
 
         button.configureLayout { $0.isEnabled = true }
         button.contentHorizontalAlignment = parseTextAlignToHorizontalAlignment(block.data?.textAlign)
-        button.configuration = buttonConfig()
+        button.configuration = buttonConfig(hasValue: self.initialValue != nil)
         
         button.menu = UIMenu(children: createMenuActions())
         button.showsMenuAsPrimaryAction = true
         button.changesSelectionAsPrimaryAction = true
         
-        let initialLabel = initialValue?.value ?? "-- Select --"
-        button.setTitle(initialLabel, for: .normal)
+        button.setTitle(initialValue?.value ?? "-- Select --", for: .normal)
         
         self.addSubview(button)
     }
@@ -312,7 +311,7 @@ class SelectInputView: UIControl {
         }
     }
     
-    private func buttonConfig() -> UIButton.Configuration {
+    private func buttonConfig(hasValue: Bool) -> UIButton.Configuration {
         var config = UIButton.Configuration.plain()
         let frame = block.data?.frame
         config.contentInsets = .init(
@@ -326,7 +325,7 @@ class SelectInputView: UIControl {
         config.titleTextAttributesTransformer = .init({ _ in
             return .init([
                 .font: parseTextBlockDataToUIFont(self.block.data?.size, self.block.data?.weight, self.block.data?.design),
-                .foregroundColor: self.initialValue != nil ? foregroundColor : UIColor.placeholderText
+                .foregroundColor: hasValue ? foregroundColor : UIColor.placeholderText
             ])
         })
         config.baseForegroundColor = .tertiaryLabel
@@ -335,15 +334,7 @@ class SelectInputView: UIControl {
     
     private func createMenuActions() -> [UIAction] {
         let handleSelect = { (action: UIAction) in
-            let newColor = self.block.data?.color.flatMap(parseColor) ?? .label
-            var newConfig = self.button.configuration ?? UIButton.Configuration.plain()
-            newConfig.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { _ in
-                return .init([
-                    .font: parseTextBlockDataToUIFont(self.block.data?.size, self.block.data?.weight, self.block.data?.design),
-                    .foregroundColor: newColor
-                ])
-            }
-            self.button.configuration = newConfig
+            self.button.configuration = self.buttonConfig(hasValue: false)
 
             if let formKey = self.formKey {
                 let identifer = action.identifier.rawValue
