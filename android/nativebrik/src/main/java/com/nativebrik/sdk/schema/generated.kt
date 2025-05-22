@@ -2990,6 +2990,7 @@ internal class UISelectInputBlockData (
 	val key: String? = null,
 	val options: List<UISelectInputOption>? = null,
 	val value: String? = null,
+	val placeholder: String? = null,
 	val size: Int? = null,
 	val color: Color? = null,
 	val design: FontDesign? = null,
@@ -3012,6 +3013,7 @@ internal class UISelectInputBlockData (
 				UISelectInputOption.decode(element)
 			},
 				value = StringDecoder.decode(element.jsonObject["value"]),
+				placeholder = StringDecoder.decode(element.jsonObject["placeholder"]),
 				size = IntDecoder.decode(element.jsonObject["size"]),
 				color = Color.decode(element.jsonObject["color"]),
 				design = FontDesign.decode(element.jsonObject["design"]),
@@ -3038,6 +3040,9 @@ internal class UISelectInputBlockData (
 			}
 			data.value?.let { value ->
 				StringEncoder.encode(value)?.let { map["value"] = it }
+			}
+			data.placeholder?.let { value ->
+				StringEncoder.encode(value)?.let { map["placeholder"] = it }
 			}
 			data.size?.let { value ->
 				IntEncoder.encode(value)?.let { map["size"] = it }
