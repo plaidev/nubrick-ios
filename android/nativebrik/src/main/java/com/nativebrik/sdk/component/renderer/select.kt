@@ -107,7 +107,7 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
         ) {
             BasicText(
                 text = selectedOption?.label ?: selectedOption?.value ?: block.data.placeholder
-                ?: NONE_VALUE,
+                ?: "-- Select --",
                 style = fontStyle,
                 modifier = Modifier.weight(2f)
             )
