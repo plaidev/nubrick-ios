@@ -8,6 +8,7 @@ import 'package:nativebrik_bridge/utils/tooltip_position.dart';
 import 'package:nativebrik_bridge/schema/generated.dart' as schema;
 import 'package:nativebrik_bridge/utils/tooltip_animation.dart';
 import 'package:nativebrik_bridge/utils/retry.dart';
+import 'package:nativebrik_bridge/utils/transparent_pointer.dart';
 
 class NativebrikTooltip extends StatefulWidget {
   final Map<String, GlobalKey> keysReference;
@@ -275,36 +276,38 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
             size: _anchorSize!,
             animateHole: _isAnimateHole,
             builder: (context, position, size, fade, scale, hole) {
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapDown: (details) {
-                  final tapPos = details.globalPosition;
-                  final anchorRect = Rect.fromLTWH(
-                    position.dx,
-                    position.dy,
-                    size.width,
-                    size.height,
-                  ).inflate(8.0);
-                  final anchorRRect = RRect.fromRectAndRadius(
-                      anchorRect, const Radius.circular(8.0));
-                  if (anchorRRect.contains(tapPos)) {
-                    _onTransitionTargetTap(true);
-                  } else {
-                    _onTransitionTargetTap(false);
-                  }
-                  // Else, absorb tap (do nothing)
-                },
-                child: CustomPaint(
-                  size: screenSize,
-                  painter: _BarrierWithHolePainter(
-                    anchorRect: Rect.fromLTWH(
+              return TransparentPointer(
+                transparent: _isAnimateHole,
+                child: Listener(
+                  behavior: HitTestBehavior.translucent,
+                  onPointerUp: (details) {
+                    final tapPos = details.position;
+                    final anchorRect = Rect.fromLTWH(
                       position.dx,
                       position.dy,
                       size.width,
                       size.height,
-                    ).inflate(8.0 * hole),
-                    borderRadius: 8.0,
-                    color: const Color.fromARGB(30, 0, 0, 0),
+                    ).inflate(8.0);
+                    final anchorRRect = RRect.fromRectAndRadius(
+                        anchorRect, const Radius.circular(8.0));
+                    if (anchorRRect.contains(tapPos)) {
+                      _onTransitionTargetTap(true);
+                    } else {
+                      _onTransitionTargetTap(false);
+                    }
+                  },
+                  child: CustomPaint(
+                    size: screenSize,
+                    painter: _BarrierWithHolePainter(
+                      anchorRect: Rect.fromLTWH(
+                        position.dx,
+                        position.dy,
+                        size.width,
+                        size.height,
+                      ).inflate(8.0 * hole),
+                      borderRadius: 8.0,
+                      color: const Color.fromARGB(30, 0, 0, 0),
+                    ),
                   ),
                 ),
               );
