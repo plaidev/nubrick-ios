@@ -30,9 +30,7 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
   Size? _tooltipSize;
 
   void _onDispatch(String name) async {
-    print("NativebrikTooltipState _onDispatch: $name");
     var uiroot = await NativebrikBridgePlatform.instance.connectTooltip(name);
-    print("NativebrikTooltipState _onDispatch: $uiroot");
     if (uiroot == null) {
       return;
     }
@@ -41,7 +39,6 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     if (currentPageId == null) {
       return;
     }
-    print("NativebrikTooltipState _onDispatch.currentPageId: $currentPageId");
     var page =
         uiroot.data?.pages?.firstWhere((page) => page.id == currentPageId);
     if (page == null) {
@@ -80,12 +77,10 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     if (anchorId == null) {
       return false;
     }
-    print("NativebrikTooltipState _onNextTooltip: $pageId, $anchorId");
     final key = widget.keysReference[anchorId];
     if (key == null) {
       return false;
     }
-    print("NativebrikTooltipState _onNextTooltip.key: $key");
     final context = key.currentContext;
     if (context == null) {
       return false;
@@ -122,8 +117,6 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
         getTransitionTarget(page) == schema.UITooltipTransitionTarget.ANCHOR &&
             page.data?.triggerSetting?.onTrigger != null;
 
-    print(
-        "NativebrikTooltipState _onNextTooltip.tooltipPosition: $tooltipPosition");
     setState(() {
       _anchorPosition = anchorPosition;
       _anchorSize = anchorSize;
@@ -136,7 +129,6 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
   }
 
   void _hideTooltip() {
-    print("NativebrikTooltipState _hideTooltip");
     if (_channelId.isNotEmpty) {
       NativebrikBridgePlatform.instance.disconnectTooltipEmbedding(_channelId);
     }
@@ -151,7 +143,6 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
   }
 
   void _onTransitionTargetTap(bool isInAnchor) {
-    print("NativebrikTooltipState _onTransitionTargetTap: $isInAnchor");
     if (_currentPage == null) {
       return;
     }
@@ -195,7 +186,6 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
   @override
   void initState() {
     super.initState();
-    print("NativebrikTooltipState initState add ons dispatch listener");
     final MethodChannel channel =
         MethodChannel("Nativebrik/Embedding/$_channelId");
     channel.setMethodCallHandler(_handleMethod);
@@ -204,7 +194,6 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
 
   @override
   void dispose() {
-    print("NativebrikTooltipState dispose remove on dispatch listener");
     NativebrikBridge.instance?.removeOnDispatchListener(_onDispatch);
     if (_channelId.isNotEmpty) {
       NativebrikBridgePlatform.instance.disconnectTooltipEmbedding(_channelId);
@@ -225,8 +214,6 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
   }
 
   Widget _renderTooltip(BuildContext context) {
-    print(
-        "NativebrikTooltipState _renderTooltip: $_anchorPosition, $_anchorSize, $_tooltipPosition, $_tooltipSize");
     if (_anchorPosition != null &&
         _anchorSize != null &&
         _tooltipPosition != null &&
@@ -327,7 +314,6 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
   }
 
   Widget _renderEmbedding(BuildContext context) {
-    print("NativebrikTooltipState _renderEmbedding: $_channelId");
     if (_channelId.isEmpty) {
       return const SizedBox.shrink();
     }

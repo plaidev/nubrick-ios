@@ -1,7 +1,6 @@
 package com.nativebrik.flutter.nativebrik_bridge
 
 import android.content.Context
-import android.util.Log
 import com.nativebrik.sdk.NativebrikClient
 import com.nativebrik.sdk.__DO_NOT_USE_THIS_INTERNAL_BRIDGE
 import com.nativebrik.sdk.data.NotFoundException
@@ -99,7 +98,6 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
             MethodChannel(this.binaryMessenger, "Nativebrik/Embedding/$channelId")
         }
         val data = this.embeddingMap[channelId]
-        Log.d("BRIDGE", "Bridge.Render: $channelId, $data")
         val eventBridge = this.eventBridgeViewMap[channelId]
         bridgeClient.render(
             modifier,
@@ -195,7 +193,6 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
 
     fun connectTooltipEmbedding(channelId: String, rootBlock: String) {
         if (channelId.isEmpty()) return
-        Log.d("BRIDGE", "connect tooltip embedding: $channelId, $rootBlock")
         embeddingMap[channelId] = rootBlock
         eventBridgeViewMap[channelId] = UIBlockEventBridgeViewModel()
     }

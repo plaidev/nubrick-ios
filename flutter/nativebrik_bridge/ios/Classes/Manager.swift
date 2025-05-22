@@ -112,7 +112,6 @@ class NativebrikBridgeManager {
         guard let entity = self.embeddingMaps[channelId] else {
             return nil
         }
-        print("get embedding entity \(channelId)")
         return entity
     }
 
@@ -225,7 +224,6 @@ class NativebrikBridgeManager {
             return
         }
         let channel = FlutterMethodChannel(name: "Nativebrik/Embedding/\(channelId)", binaryMessenger: messenger)
-        print("connect tooltip embedding", channelId)
         let accessor = nativebrikClient.experiment.__do_not_use__render_uiview(
             json: rootBlock,
             onEvent: { event in
@@ -242,7 +240,6 @@ class NativebrikBridgeManager {
                 ])
             },
             onNextTooltip: { pageId in
-                print("NativebrikBridgeManager onNextTooltip: \(pageId))")
                 channel.invokeMethod(ON_NEXT_TOOLTIP_METHOD, arguments: [
                     "pageId": pageId,
                 ])
@@ -251,16 +248,14 @@ class NativebrikBridgeManager {
                 channel.invokeMethod(ON_DISMISS_TOOLTIP_METHOD, arguments: nil)
             }
         )
-        print("accessor", accessor)
         let embeedingEntity = EmbeddingEntity(
             uiview: accessor.view,
             channel: channel,
             accessor: accessor
         )
-        print("add emedding: \(channelId)")
         self.embeddingMaps[channelId] = embeedingEntity
     }
-    
+
     func callTooltipEmbeddingDispatch(channelId: String, event: String) {
         guard let entity = self.embeddingMaps[channelId] else {
             return
