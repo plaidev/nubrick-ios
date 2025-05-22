@@ -157,7 +157,7 @@ internal fun selectedOptionsToText(options: List<UISelectInputOption>): String {
             first.label ?: first.value ?: NONE_VALUE
         }
 
-        else -> "Mixed"
+        else -> "${options.size} items"
     }
 }
 
@@ -169,7 +169,7 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
     var expanded by remember { mutableStateOf(false) }
     var value by remember {
         var value = block.data?.value ?: emptyList()
-        val key = block?.data?.key
+        val key = block.data?.key
         if (key != null) {
             when (val v = container.getFormValue(key)) {
                 is FormValue.StrList -> {
@@ -245,7 +245,7 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                         }
                     }
 
-                    val key = block?.data?.key
+                    val key = block.data?.key
                     if (key != null) {
                         container.setFormValue(key, FormValue.StrList(value))
                     }
@@ -263,9 +263,9 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                     },
                     onClick = {
                         handleSelect()
-                    } // onClick
+                    }
                 )
             }
-        } // DropdownMenu
+        }
     }
 }
