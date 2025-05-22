@@ -43,7 +43,7 @@ class SelectInputView: UIControl {
         button.showsMenuAsPrimaryAction = true
         button.changesSelectionAsPrimaryAction = true
 
-        button.setTitle(initialValue?.value ?? block.data?.placeholder ?? "-- Select --", for: .normal)
+        button.setTitle(initialValue?.value ?? block.data?.placeholder ?? "Please select", for: .normal)
 
         self.addSubview(button)
     }
@@ -111,7 +111,7 @@ class SelectInputView: UIControl {
 
         if initialValue == nil {
             actions.insert(UIAction(
-                title: block.data?.placeholder ?? "-- Select --",
+                title: block.data?.placeholder ?? "None",
                 identifier: .init("None"),
                 attributes: [.hidden],
                 state: .off,
@@ -137,7 +137,7 @@ func getMultiSelectText(_ values: [String]?) -> String? {
     case 1:
         return values?[0] ?? nil
     default:
-        return "\(values?.count ?? 0)"
+        return "\(values?.count ?? 0) items"
     }
 }
 
@@ -296,9 +296,10 @@ class MultiSelectInputView: UIControl {
         if let color = block.data?.color {
             textColor = parseColor(color)
         }
-        label.textColor = textColor
+        let text = getMultiSelectText(self.values)
         label.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
-        label.text = getMultiSelectText(self.values) ?? block.data?.placeholder ?? "None"
+        label.text = text ?? block.data?.placeholder ?? "Please select"
+        label.textColor = text != nil ? textColor : .placeholderText
         label.numberOfLines = 0
         label.textAlignment = parseTextAlign(block.data?.textAlign)
 
@@ -328,7 +329,9 @@ class MultiSelectInputView: UIControl {
                         values.append(value)
                     }
                     self?.values = values
-                    self?.label?.text = getMultiSelectText(self?.values) ?? block.data?.placeholder ?? "None"
+                    let text = getMultiSelectText(self?.values)
+                    self?.label?.text = text ?? block.data?.placeholder ?? "Please select"
+                    self?.label?.textColor = text != nil ? textColor : .placeholderText
 
                     if let formKey = self?.formKey {
                         self?.context?.writeToForm(key: formKey, value: values)
