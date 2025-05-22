@@ -36,8 +36,8 @@ internal const val NONE_VALUE = "None"
 
 // resolveInitialValue retrieves the value from the form context.
 // If not found, it returns the default block.data.value and sets it in the form.
-private fun resolveInitialValue(data: UISelectInputBlockData, container: Container): String {
-    val initialValue = data.options?.find { it.value == data.value }?.value ?: NONE_VALUE
+private fun resolveInitialValue(data: UISelectInputBlockData, container: Container): String? {
+    val initialValue = data.options?.find { it.value == data.value }?.value
     if (data.key == null) {
         return initialValue
     }
@@ -48,7 +48,7 @@ private fun resolveInitialValue(data: UISelectInputBlockData, container: Contain
         }
 
         else -> {
-            container.setFormValue(data.key, FormValue.Str(initialValue))
+            container.setFormValue(data.key, FormValue.Str(initialValue ?: NONE_VALUE))
             return initialValue
         }
     }
@@ -94,7 +94,7 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
         fontDesign = block.data.design,
         alignment = block.data.textAlign,
     )
-    if (selectedOption?.value == null) {
+    if (value == null) {
         val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         fontStyle = fontStyle.copy(color = placeholderColor)
     }
@@ -125,7 +125,7 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
 
                     val key = block.data.key
                     if (key != null) {
-                        container.setFormValue(key, FormValue.Str(value))
+                        container.setFormValue(key, FormValue.Str(value ?: NONE_VALUE))
                     }
                 }
 
