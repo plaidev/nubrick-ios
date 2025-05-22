@@ -74,7 +74,7 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
     val options: List<UISelectInputOption> =
         block.data.options ?: listOf(UISelectInputOption(NONE_VALUE))
     val selectedOption =
-        options.firstOrNull { it.value == value } ?: UISelectInputOption(NONE_VALUE)
+        options.firstOrNull { it.value == value }
 
     val modifier = modifier
         .clickable {
@@ -101,7 +101,8 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BasicText(
-                text = selectedOption.label ?: selectedOption.value ?: NONE_VALUE,
+                text = selectedOption?.label ?: selectedOption?.value ?: block.data.placeholder
+                ?: NONE_VALUE,
                 style = fontStyle,
                 modifier = Modifier.weight(2f)
             )
