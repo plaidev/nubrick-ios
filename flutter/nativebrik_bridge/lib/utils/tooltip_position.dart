@@ -73,15 +73,11 @@ Offset calculateTooltipPosition({
       break;
 
     case UITooltipPlacement.UNKNOWN:
-    default:
       // Default to BOTTOM_CENTER if unknown
       left = anchorPosition.dx + (anchorSize.width - tooltipSize.width) / 2;
       top = anchorPosition.dy + anchorSize.height + offset;
       break;
   }
-
-  // Auto adjustment for screen edges
-  UITooltipPlacement adjustedPlacement = placement;
 
   // Check if tooltip would be offscreen and adjust accordingly
 
@@ -93,11 +89,6 @@ Offset calculateTooltipPosition({
         placement == UITooltipPlacement.LEFT_END) {
       // Recalculate using RIGHT placement
       left = anchorPosition.dx + anchorSize.width + offset;
-      adjustedPlacement = placement == UITooltipPlacement.LEFT_CENTER
-          ? UITooltipPlacement.RIGHT_CENTER
-          : placement == UITooltipPlacement.LEFT_START
-              ? UITooltipPlacement.RIGHT_START
-              : UITooltipPlacement.RIGHT_END;
     } else {
       left = margin;
     }
@@ -111,11 +102,6 @@ Offset calculateTooltipPosition({
         placement == UITooltipPlacement.RIGHT_END) {
       // Recalculate using LEFT placement
       left = anchorPosition.dx - tooltipSize.width - offset;
-      adjustedPlacement = placement == UITooltipPlacement.RIGHT_CENTER
-          ? UITooltipPlacement.LEFT_CENTER
-          : placement == UITooltipPlacement.RIGHT_START
-              ? UITooltipPlacement.LEFT_START
-              : UITooltipPlacement.LEFT_END;
     } else {
       left = screenSize.width - tooltipSize.width - margin;
     }
@@ -129,11 +115,6 @@ Offset calculateTooltipPosition({
         placement == UITooltipPlacement.TOP_END) {
       // Recalculate using BOTTOM placement
       top = anchorPosition.dy + anchorSize.height + offset;
-      adjustedPlacement = placement == UITooltipPlacement.TOP_CENTER
-          ? UITooltipPlacement.BOTTOM_CENTER
-          : placement == UITooltipPlacement.TOP_START
-              ? UITooltipPlacement.BOTTOM_START
-              : UITooltipPlacement.BOTTOM_END;
     } else {
       top = margin;
     }
@@ -147,11 +128,6 @@ Offset calculateTooltipPosition({
         placement == UITooltipPlacement.BOTTOM_END) {
       // Recalculate using TOP placement
       top = anchorPosition.dy - tooltipSize.height - offset;
-      adjustedPlacement = placement == UITooltipPlacement.BOTTOM_CENTER
-          ? UITooltipPlacement.TOP_CENTER
-          : placement == UITooltipPlacement.BOTTOM_START
-              ? UITooltipPlacement.TOP_START
-              : UITooltipPlacement.TOP_END;
     } else {
       top = screenSize.height - tooltipSize.height - margin;
     }
