@@ -62,9 +62,9 @@ internal class ModalViewModel(
         modalState = modalState.copy(displayedModalIndex = index - 1)
     }
 
-    fun close() {
+    fun close(forceReset: Boolean = false, emitDispatch: Boolean = true) {
         scope.launch {
-            if (sheetState.currentValue == SheetValue.Expanded && sheetState.hasPartiallyExpandedState) {
+            if (!forceReset && sheetState.currentValue == SheetValue.Expanded && sheetState.hasPartiallyExpandedState) {
                 // shrink form large to medium
                 sheetState.partialExpand()
                 return@launch
@@ -74,7 +74,10 @@ internal class ModalViewModel(
             sheetState.hide()
             largeSheetState.hide()
             modalState = ModalState()
-            onDismiss()
+
+            if (emitDispatch) {
+                onDismiss()
+            }
         }
     }
 }

@@ -89,9 +89,11 @@ internal class RootViewModel(
     private val onOpenDeepLink: ((link: String) -> Unit) = {},
 ) : ViewModel() {
     private val pages: List<UIPageBlock> = root.data?.pages ?: emptyList()
-    val currentPageBlock = mutableStateOf<UIPageBlock?>(null)
     val displayedPageBlock = mutableStateOf<PageBlockData?>(null)
     val webviewUrl = mutableStateOf("")
+
+    // We use them for sdk bridge between flutter <-> android.
+    val currentPageBlock = mutableStateOf<UIPageBlock?>(null)
     var currentTooltipAnchorId = mutableStateOf("")
 
     fun initialize() {
@@ -168,13 +170,14 @@ internal class RootViewModel(
             return
         }
 
-        this.dismiss()
+        // Before displaying the page, we close displayed modals. but never emit dismiss event.
+        modalViewModel.close(forceReset = true, emitDispatch = false)
         this.displayedPageBlock.value = PageBlockData(destBlock, properties)
     }
 
-    private fun dismiss() {
+    private fun dismiss(emitDispatch: Boolean = true) {
         this.currentPageBlock.value = null
-        modalViewModel.close()
+        modalViewModel.close(forceReset = true, emitDispatch = emitDispatch)
     }
 
     fun handleWebviewDismiss() {
