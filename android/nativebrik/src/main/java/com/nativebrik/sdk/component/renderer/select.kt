@@ -12,6 +12,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -86,13 +87,17 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
             }
         }
     val selectModifier = modifier.styleByFrame(block.data.frame)
-    val fontStyle = parseFontStyle(
+    var fontStyle = parseFontStyle(
         size = block.data.size,
         color = block.data.color,
         fontWeight = block.data.weight,
         fontDesign = block.data.design,
         alignment = block.data.textAlign,
     )
+    if (selectedOption?.value == null) {
+        val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        fontStyle = fontStyle.copy(color = placeholderColor)
+    }
 
     Box(modifier) {
         Row(
