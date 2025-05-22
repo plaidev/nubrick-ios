@@ -12,6 +12,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,40 +25,58 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.nativebrik.sdk.component.provider.container.ContainerContext
+import com.nativebrik.sdk.data.Container
 import com.nativebrik.sdk.data.FormValue
 import com.nativebrik.sdk.schema.UIMultiSelectInputBlock
 import com.nativebrik.sdk.schema.UISelectInputBlock
+import com.nativebrik.sdk.schema.UISelectInputBlockData
 import com.nativebrik.sdk.schema.UISelectInputOption
 
 internal const val NONE_VALUE = "None"
 
+// resolveInitialValue retrieves the value from the form context.
+// If not found, it returns the default block.data.value and sets it in the form.
+private fun resolveInitialValue(data: UISelectInputBlockData, container: Container): String? {
+    val initialValue = data.options?.find { it.value == data.value }?.value
+    if (data.key == null) {
+        return initialValue
+    }
+
+    when (val v = container.getFormValue(data.key)) {
+        is FormValue.Str -> {
+            return v.str
+        }
+
+        else -> {
+            container.setFormValue(data.key, FormValue.Str(initialValue ?: NONE_VALUE))
+            return initialValue
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
+    if (block.data == null) {
+        return
+    }
+
     val localDensity = LocalDensity.current
     val container = ContainerContext.value
+
     var expanded by remember { mutableStateOf(false) }
     var value by remember {
-        var value = block.data?.value ?: NONE_VALUE
-        val key = block?.data?.key
-        if (key != null) {
-            when (val v = container.getFormValue(key)) {
-                is FormValue.Str -> {
-                    value = v.str
-                }
-                else -> {
-                    container.setFormValue(key, FormValue.Str(value))
-                }
-            }
-        }
-
-        mutableStateOf(value)
+        mutableStateOf(resolveInitialValue(block.data, container))
     }
     var widthDp by remember {
         mutableStateOf(0.dp)
     }
-    val options: List<UISelectInputOption> = block.data?.options ?: listOf(UISelectInputOption(NONE_VALUE))
-    val selectedOption = options.firstOrNull { it.value == value } ?: UISelectInputOption(NONE_VALUE)
+
+    val options: List<UISelectInputOption> =
+        block.data.options ?: listOf(UISelectInputOption(NONE_VALUE))
+    val selectedOption =
+        options.firstOrNull { it.value == value }
+
     val modifier = modifier
         .clickable {
             expanded = true
@@ -67,14 +86,18 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
                 (it.width.toFloat() / this.density).dp
             }
         }
-    val selectModifier = modifier.styleByFrame(block.data?.frame)
-    val fontStyle = parseFontStyle(
-        size = block.data?.size,
-        color = block.data?.color,
-        fontWeight = block.data?.weight,
-        fontDesign = block.data?.design,
-        alignment = block.data?.textAlign,
+    val selectModifier = modifier.styleByFrame(block.data.frame)
+    var fontStyle = parseFontStyle(
+        size = block.data.size,
+        color = block.data.color,
+        fontWeight = block.data.weight,
+        fontDesign = block.data.design,
+        alignment = block.data.textAlign,
     )
+    if (value == null) {
+        val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        fontStyle = fontStyle.copy(color = placeholderColor)
+    }
 
     Box(modifier) {
         Row(
@@ -83,7 +106,8 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BasicText(
-                text = selectedOption?.label ?: selectedOption?.value ?: NONE_VALUE,
+                text = selectedOption?.label ?: selectedOption?.value ?: block.data.placeholder
+                ?: NONE_VALUE,
                 style = fontStyle,
                 modifier = Modifier.weight(2f)
             )
@@ -99,9 +123,9 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
                     value = option.value ?: NONE_VALUE
                     expanded = false
 
-                    val key = block?.data?.key
+                    val key = block.data.key
                     if (key != null) {
-                        container.setFormValue(key, FormValue.Str(value))
+                        container.setFormValue(key, FormValue.Str(value ?: NONE_VALUE))
                     }
                 }
 
@@ -126,12 +150,13 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
 }
 
 internal fun selectedOptionsToText(options: List<UISelectInputOption>): String {
-    return when(options.size) {
+    return when (options.size) {
         0 -> NONE_VALUE
         1 -> {
             val first = options[0]
             first.label ?: first.value ?: NONE_VALUE
         }
+
         else -> "Mixed"
     }
 }
@@ -150,6 +175,7 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                 is FormValue.StrList -> {
                     value = v.list
                 }
+
                 else -> {
                     container.setFormValue(key, FormValue.StrList(value))
                 }
@@ -161,7 +187,8 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
     var widthDp by remember {
         mutableStateOf(0.dp)
     }
-    val options: List<UISelectInputOption> = block.data?.options ?: listOf(UISelectInputOption(NONE_VALUE))
+    val options: List<UISelectInputOption> =
+        block.data?.options ?: listOf(UISelectInputOption(NONE_VALUE))
     val selectedOptions = options.filter { option ->
         value.any {
             option.value == it
@@ -176,7 +203,8 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                 (it.width.toFloat() / this.density).dp
             }
         }
-    val selectModifier = Modifier.styleByFrame(block.data?.frame)
+    val selectModifier = Modifier
+        .styleByFrame(block.data?.frame)
         .fillMaxWidth()
     val fontStyle = parseFontStyle(
         size = block.data?.size,
