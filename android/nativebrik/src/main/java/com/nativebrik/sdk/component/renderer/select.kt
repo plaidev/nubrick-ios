@@ -206,13 +206,17 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
     val selectModifier = Modifier
         .styleByFrame(block.data?.frame)
         .fillMaxWidth()
-    val fontStyle = parseFontStyle(
+    var fontStyle = parseFontStyle(
         size = block.data?.size,
         color = block.data?.color,
         fontWeight = block.data?.weight,
         fontDesign = block.data?.design,
         alignment = block.data?.textAlign,
     )
+    if (value.isEmpty()) {
+        val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        fontStyle = fontStyle.copy(color = placeholderColor)
+    }
 
     Box(modifier) {
         Row(
