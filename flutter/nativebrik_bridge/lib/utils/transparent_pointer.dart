@@ -12,21 +12,21 @@ class TransparentPointer extends SingleChildRenderObjectWidget {
   });
 
   @override
-  RenderObject createRenderObject(BuildContext _) => _RenderTransparentPointer(
+  RenderObject createRenderObject(BuildContext _) => RenderTransparentPointer(
         transparent: transparent,
         transparentRect: transparentRect,
       );
 
   @override
   void updateRenderObject(
-      BuildContext context, covariant _RenderTransparentPointer renderObject) {
+      BuildContext context, covariant RenderTransparentPointer renderObject) {
     renderObject.transparent = transparent;
     renderObject.transparentRect = transparentRect;
   }
 }
 
-class _RenderTransparentPointer extends RenderProxyBox {
-  _RenderTransparentPointer({
+class RenderTransparentPointer extends RenderProxyBox {
+  RenderTransparentPointer({
     required bool transparent,
     Rect? transparentRect,
   })  : _transparent = transparent,
