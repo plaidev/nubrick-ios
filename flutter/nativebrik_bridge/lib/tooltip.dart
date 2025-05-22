@@ -278,6 +278,12 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
             builder: (context, position, size, fade, scale, hole) {
               return TransparentPointer(
                 transparent: _isAnimateHole,
+                transparentRect: Rect.fromLTWH(
+                  position.dx,
+                  position.dy,
+                  size.width,
+                  size.height,
+                ),
                 child: Listener(
                   behavior: HitTestBehavior.translucent,
                   onPointerUp: (details) {
