@@ -240,7 +240,7 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
                       color: Colors.transparent,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
+                          color: Colors.black.withAlpha(20),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                           spreadRadius: 16,
