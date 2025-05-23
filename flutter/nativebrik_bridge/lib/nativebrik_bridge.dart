@@ -10,6 +10,7 @@ export 'package:nativebrik_bridge/embedding.dart';
 export 'package:nativebrik_bridge/provider.dart';
 export 'package:nativebrik_bridge/remote_config.dart';
 export 'package:nativebrik_bridge/user.dart';
+export 'package:nativebrik_bridge/anchor/anchor.dart';
 
 /// A bridge client to the nativebrik SDK.
 ///
@@ -39,13 +40,17 @@ export 'package:nativebrik_bridge/user.dart';
 /// }
 /// ```
 class NativebrikBridge {
+  static NativebrikBridge? instance;
+
   final String projectId;
   final NativebrikCachePolicy cachePolicy;
   final List<EventHandler> _listeners = [];
+  final List<void Function(String)> _onDispatchListeners = [];
   final MethodChannel _channel = const MethodChannel("nativebrik_bridge");
 
   NativebrikBridge(this.projectId,
       {this.cachePolicy = const NativebrikCachePolicy()}) {
+    NativebrikBridge.instance = this;
     NativebrikBridgePlatform.instance.connectClient(projectId, cachePolicy);
     _channel.setMethodCallHandler(_handleMethod);
   }
@@ -62,12 +67,28 @@ class NativebrikBridge {
     _listeners.remove(listener);
   }
 
+  void addOnDispatchListener(void Function(String) listener) {
+    _onDispatchListeners.add(listener);
+  }
+
+  void removeOnDispatchListener(void Function(String) listener) {
+    _onDispatchListeners.remove(listener);
+  }
+
   Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
       case 'on-event':
         final event = parseEvent(call.arguments);
         for (var listener in _listeners) {
           listener(event);
+        }
+        return Future.value(true);
+      case 'on-dispatch':
+        final name = call.arguments["name"] as String?;
+        if (name != null) {
+          for (var listener in _onDispatchListeners) {
+            listener(name);
+          }
         }
         return Future.value(true);
       default:
