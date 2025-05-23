@@ -93,3 +93,8 @@
 ## 0.7.5
 
 - Update com.nativebrik.sdk to 0.4.7
+
+## 0.8.0
+
+- Preview Feature: Product Tour
+- Update com.nativebrik.sdk to 0.4.8
