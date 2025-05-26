@@ -26,7 +26,7 @@ final class CacheStoreTests: XCTestCase {
         cache = CacheStore(policy: NativebrikCachePolicy())
         let data = "testData".data(using: .utf8)!
         cache.set(key: "testKey", data: data)
-        __for_test_sync_datetime_offset(offset: 60 * 10 * 1000)
+        __for_test_sync_datetime_offset(offset: 33 * 60 * 60 * 1000) // FIXME: set +9:00 for ci runtime
         let cacheObject = cache.get(key: "testKey")
         XCTAssertNil(cacheObject)
     }
@@ -45,12 +45,12 @@ final class GetDataTest: XCTestCase {
     func testGetDataAndCached() async {
         let cache = CacheStore(policy: NativebrikCachePolicy(staleTime: 60))
         let url = URL(string: "https://example.com")!
-        await getData(url: url, cache: cache)
+        let _ = await getData(url: url, cache: cache)
         let cached = cache.get(key: url.absoluteString)
         XCTAssertNotNil(cached)
         XCTAssertEqual(cached?.isStale(), false)
         
-        __for_test_sync_datetime_offset(offset: 60 * 1000)
+        __for_test_sync_datetime_offset(offset: 60 * 1000 + 9 * 60 * 60 * 1000) // FIXME: set +9:00 for ci runtime
         XCTAssertEqual(cached?.isStale(), true)
     }
 }

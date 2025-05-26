@@ -63,6 +63,8 @@
 		C1FFFD7A2B22E98B00ACD132 /* yoga.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C136344F2AEB7D5800B9F437 /* yoga.xcframework */; };
 		C1FFFD7D2B22E98C00ACD132 /* YogaKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13634522AEB7D6600B9F437 /* YogaKit.xcframework */; };
 		F412635E2D82D45D0008FB4E /* network.swift in Sources */ = {isa = PBXBuildFile; fileRef = F412635D2D82D45B0008FB4E /* network.swift */; };
+		F47543A02DDF718C0076EDDD /* select.swift in Sources */ = {isa = PBXBuildFile; fileRef = F475439F2DDF718B0076EDDD /* select.swift */; };
+		F47F22D72D83F87400EDD159 /* network.swift in Sources */ = {isa = PBXBuildFile; fileRef = F47F22D62D83F86F00EDD159 /* network.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -133,6 +135,8 @@
 		C1FB6EFC2DA7BEA00088EF76 /* encode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = encode.swift; sourceTree = "<group>"; };
 		C1FB6EFE2DB9DDE10088EF76 /* _for_bridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _for_bridge.swift; sourceTree = "<group>"; };
 		F412635D2D82D45B0008FB4E /* network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = network.swift; sourceTree = "<group>"; };
+		F475439F2DDF718B0076EDDD /* select.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = select.swift; sourceTree = "<group>"; };
+		F47F22D62D83F86F00EDD159 /* network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = network.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -193,15 +197,16 @@
 		C1219DC82B9B0F84005F487E /* renderer */ = {
 			isa = PBXGroup;
 			children = (
-				C1219DD82B9B0F85005F487E /* modal-component.swift */,
-				C1219DC92B9B0F84005F487E /* carousel.swift */,
-				C1219DCA2B9B0F84005F487E /* forms.swift */,
-				C1219DCB2B9B0F84005F487E /* collection.swift */,
-				C1219DCC2B9B0F84005F487E /* navigation.swift */,
 				C1219DCD2B9B0F84005F487E /* block.swift */,
-				C1219DCE2B9B0F84005F487E /* image.swift */,
+				C1219DC92B9B0F84005F487E /* carousel.swift */,
+				C1219DCB2B9B0F84005F487E /* collection.swift */,
 				C1219DCF2B9B0F84005F487E /* flex.swift */,
+				C1219DCA2B9B0F84005F487E /* forms.swift */,
 				C1219DD02B9B0F84005F487E /* grid.swift */,
+				C1219DCE2B9B0F84005F487E /* image.swift */,
+				C1219DD82B9B0F85005F487E /* modal-component.swift */,
+				C1219DCC2B9B0F84005F487E /* navigation.swift */,
+				F475439F2DDF718B0076EDDD /* select.swift */,
 				C1219DD12B9B0F84005F487E /* text.swift */,
 			);
 			path = renderer;
@@ -293,6 +298,7 @@
 		C13633A92AEB769800B9F437 /* NativebrikTests */ = {
 			isa = PBXGroup;
 			children = (
+				F47F22D62D83F86F00EDD159 /* network.swift */,
 				C14FEF522CF95D8300D243A0 /* ios-compat.swift */,
 				C13633AA2AEB769800B9F437 /* sdk.swift */,
 				C13634552AEB81EC00B9F437 /* experiment-test.swift */,
@@ -449,6 +455,7 @@
 				C1219E042B9B0F85005F487E /* modal-component.swift in Sources */,
 				C1219E052B9B0F85005F487E /* context.swift in Sources */,
 				C1219E0C2B9B0F85005F487E /* experiment.swift in Sources */,
+				F47543A02DDF718C0076EDDD /* select.swift in Sources */,
 				C1219DEF2B9B0F85005F487E /* ios-compat.swift in Sources */,
 				C1219DF72B9B0F85005F487E /* collection.swift in Sources */,
 				C1219DF22B9B0F85005F487E /* template.swift in Sources */,
@@ -484,6 +491,7 @@
 			files = (
 				C13634562AEB81EC00B9F437 /* experiment-test.swift in Sources */,
 				C13634622AEBBC6500B9F437 /* remote-config.swift in Sources */,
+				F47F22D72D83F87400EDD159 /* network.swift in Sources */,
 				C14FEF532CF95D8B00D243A0 /* ios-compat.swift in Sources */,
 				C13633AB2AEB769800B9F437 /* sdk.swift in Sources */,
 				C13634642AEF92F700B9F437 /* embedding.swift in Sources */,
