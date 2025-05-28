@@ -54,7 +54,6 @@ func configureOnClickGesture(
 ) -> ClickListener {
     if let requiredFields = event?.requiredFields, !requiredFields.isEmpty {
         let handleChange: ([String: Any]) -> Void = { values in
-            print(values)
             var disabled = false
             for field in requiredFields {
                 if let value = values[field] as? String, value.isEmpty {
