@@ -23,6 +23,7 @@ protocol Container {
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
 
     func getFormValue(key: String) -> Any?
+    func getFormValues() -> [String: Any]
     func setFormValue(key: String, value: Any)
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError>
@@ -42,6 +43,9 @@ class ContainerEmptyImpl: Container {
     }
     func getFormValue(key: String) -> Any? {
         return nil
+    }
+    func getFormValues() -> [String: Any] {
+        return [:]
     }
     func setFormValue(key: String, value: Any) {
     }
@@ -126,6 +130,10 @@ class ContainerImpl: Container {
 
     func getFormValue(key: String) -> Any? {
         return self.formRepository?.getValue(key: key)
+    }
+    
+    func getFormValues() -> [String: Any] {
+        return self.formRepository?.getFormData() ?? [:]
     }
 
     func setFormValue(key: String, value: Any) {

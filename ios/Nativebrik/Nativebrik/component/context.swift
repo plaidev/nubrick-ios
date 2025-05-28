@@ -58,6 +58,9 @@ class UIBlockContext {
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
     private var loading: Bool = false
+    
+    // form value listener
+    private var formValueListeners: [([String: Any]) -> Void] = []
 
     init(_ args: UIBlockContextInit) {
         self.variable = args.variable
@@ -110,10 +113,19 @@ class UIBlockContext {
 
     func writeToForm(key: String, value: Any) {
         self.container?.setFormValue(key: key, value: value)
+        // notify all listeners
+        let values = self.container?.getFormValues() ?? [:]
+        for callback in self.formValueListeners {
+            callback(values)
+        }
     }
 
     func getFormValueByKey(key: String) -> Any? {
         return self.container?.getFormValue(key: key)
+    }
+    
+    func addFormValueListenerByKey(callback: @escaping ([String: Any]) -> Void) {
+        self.formValueListeners.append(callback)
     }
 
     /**
