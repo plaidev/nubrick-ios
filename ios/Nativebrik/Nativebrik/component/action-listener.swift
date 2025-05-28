@@ -61,12 +61,14 @@ func configureOnClickGesture(
                     break
                 }
             }
-            if disabled {
-                target.isUserInteractionEnabled = false
-                target.alpha = 0.5
-            } else {
-                target.isUserInteractionEnabled = true
-                target.alpha = 1.0
+            DispatchQueue.main.async {
+                if disabled {
+                    target.isUserInteractionEnabled = false
+                    target.alpha = 0.5
+                } else {
+                    target.isUserInteractionEnabled = true
+                    target.alpha = 1.0
+                }
             }
         }
         context.addFormValueListenerByKey(handleChange)
