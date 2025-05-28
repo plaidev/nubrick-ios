@@ -26,6 +26,7 @@ internal interface FormRepository {
     fun setValue(key: String, value: FormValue)
     fun getValue(key: String): FormValue?
     fun addListener(listener: FormValueListener)
+    fun removeListener(listener: FormValueListener)
 }
 
 internal class FormRepositoryImpl : FormRepository {
@@ -50,5 +51,9 @@ internal class FormRepositoryImpl : FormRepository {
 
     override fun addListener(listener: FormValueListener) {
         this.listeners.add(listener)
+    }
+
+    override fun removeListener(listener: FormValueListener) {
+        this.listeners.remove(listener)
     }
 }
