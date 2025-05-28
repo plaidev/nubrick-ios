@@ -7,14 +7,18 @@
 
 import Foundation
 
+typealias FormValueListener = ([String: Any]) -> Void
+
 protocol FormRepository {
     func getFormData() -> [String:Any]
     func setValue(key: String, value: Any)
     func getValue(key: String) -> Any?
+    func addFormValueListener(listener: @escaping FormValueListener)
 }
 
 class FormRepositoryImpl: FormRepository {
     private var map: [String:Any] = [:]
+    private var listeners: [FormValueListener] = []
     
     func getFormData() -> [String : Any] {
         return self.map
@@ -26,5 +30,12 @@ class FormRepositoryImpl: FormRepository {
     
     func setValue(key: String, value: Any) {
         self.map[key] = value
+        for callback in self.listeners {
+            callback(map)
+        }
+    }
+    
+    func addFormValueListener(listener: @escaping FormValueListener) {
+        self.listeners.append(listener)
     }
 }

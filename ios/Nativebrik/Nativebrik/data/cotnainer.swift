@@ -25,6 +25,7 @@ protocol Container {
     func getFormValue(key: String) -> Any?
     func getFormValues() -> [String: Any]
     func setFormValue(key: String, value: Any)
+    func addFormValueListener(_ listener: @escaping FormValueListener)
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NativebrikError>
@@ -49,6 +50,9 @@ class ContainerEmptyImpl: Container {
     }
     func setFormValue(key: String, value: Any) {
     }
+    func addFormValueListener(_ listener: @escaping FormValueListener) {
+    }
+    
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError> {
         return Result.failure(NativebrikError.skipRequest)
     }
@@ -138,6 +142,10 @@ class ContainerImpl: Container {
 
     func setFormValue(key: String, value: Any) {
         self.formRepository?.setValue(key: key, value: value)
+    }
+    
+    func addFormValueListener(_ listener: @escaping FormValueListener) {
+        self.formRepository?.addFormValueListener(listener: listener)
     }
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError> {
