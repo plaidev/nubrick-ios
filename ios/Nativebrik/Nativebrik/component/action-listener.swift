@@ -52,6 +52,28 @@ class ClickListener: UITapGestureRecognizer {
 func configureOnClickGesture(
     target: UIView, action: Selector, context: UIBlockContext, event: UIBlockEventDispatcher?
 ) -> ClickListener {
+    if let requiredFields = event?.requiredFields, !requiredFields.isEmpty {
+        let handleChange: ([String: Any]) -> Void = { values in
+            print(values)
+            var disabled = false
+            for field in requiredFields {
+                if let value = values[field] as? String, value.isEmpty {
+                    disabled = true
+                    break
+                }
+            }
+            if disabled {
+                target.isUserInteractionEnabled = false
+                target.alpha = 0.5
+            } else {
+                target.isUserInteractionEnabled = true
+                target.alpha = 1.0
+            }
+        }
+        context.addFormValueListenerByKey(handleChange)
+        handleChange(context.getFormValues())
+    }
+    
     let gesture = ClickListener(target: target, action: action)
     gesture.onClick = {
         guard let event = event else { return }
