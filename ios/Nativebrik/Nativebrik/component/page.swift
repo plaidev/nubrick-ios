@@ -170,7 +170,8 @@ class PageView: UIView {
                                 options?.onHttpSettled?()
                                 options?.onHttpError?()
                             }
-                        // TODO: handle error
+	                        // TODO: handle error
+                            handleEvent()
                         default:
                             break
                         }
