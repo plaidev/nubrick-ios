@@ -104,6 +104,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         self.data = nil
         super.init(coder: aDecoder)
     }
+    
     init(block: UICollectionBlock, context: UIBlockContext) {
         self.block = block
         self.context = context
@@ -181,10 +182,20 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                 self.timer = Timer.scheduledTimer(timeInterval: TimeInterval(timeInterval), target: self, selector: #selector(automaticScroll), userInfo: nil, repeats: true)
             }
         }
+        
+        let handleDisabled = configureDisabled(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)
+        
+        guard let id = block.id, let handleDisabled = handleDisabled else {
+            return
+        }
+        context.addFormValueListener(id, { values in
+            handleDisabled(values)
+        })
     }
     
     deinit {
         self.timer?.invalidate()
+        self.context.removeFormValueListener(self.block?.id ?? "")
     }
 
     override func layoutSubviews() {

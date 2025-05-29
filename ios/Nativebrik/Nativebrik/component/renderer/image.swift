@@ -12,6 +12,7 @@ import YogaKit
 class ImageView: AnimatedUIControl {
     private let image: UIImageView = UIImageView()
     private var block: UIImageBlock = UIImageBlock()
+    private var context: UIBlockContext?
 
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -20,6 +21,7 @@ class ImageView: AnimatedUIControl {
     init(block: UIImageBlock, context: UIBlockContext) {
         super.init(frame: .zero)
         self.block = block
+        self.context = context
 
         let showSkelton = context.isLoading() && hasPlaceholderPath(template: block.data?.src ?? "")
 
@@ -64,6 +66,19 @@ class ImageView: AnimatedUIControl {
         )
 
         loadAsyncImage(url: compiledSrc, view: self, image: self.image)
+        
+        let handleDisabled = configureDisabled(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)
+        
+        guard let id = block.id, let handleDisabled = handleDisabled else {
+            return
+        }
+        context.addFormValueListener(id, { values in
+            handleDisabled(values)
+        })
+    }
+    
+    deinit {
+        self.context?.removeFormValueListener(self.block.id ?? "")
     }
 
     override func layoutSubviews() {

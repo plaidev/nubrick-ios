@@ -11,6 +11,7 @@ import YogaKit
 
 class FlexView: AnimatedUIControl {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
+    private var context: UIBlockContext?
     private var isOverflowView = false
 
     required init?(coder aDecoder: NSCoder) {
@@ -20,6 +21,7 @@ class FlexView: AnimatedUIControl {
     init(block: UIFlexContainerBlock, context: UIBlockContext) {
         super.init(frame: .zero)
         self.block = block
+        self.context = context
         initialize(block: block, context: context, childFlexShrink: nil)
     }
 
@@ -108,6 +110,19 @@ class FlexView: AnimatedUIControl {
                 loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
             }
         }
+        
+        let handleDisabled = configureDisabled(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)
+        
+        guard let id = block.id, let handleDisabled = handleDisabled else {
+            return
+        }
+        context.addFormValueListener(id, { values in
+            handleDisabled(values)
+        })
+    }
+    
+    deinit {
+        self.context?.removeFormValueListener(self.block.id ?? "")
     }
 
     override func layoutSubviews() {
@@ -122,13 +137,17 @@ class FlexView: AnimatedUIControl {
 class FlexOverflowView: UIScrollView {
     private var flexView: UIView = UIView()
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
+    private var context: UIBlockContext?
+    
     required init?(coder aDecoder: NSCoder) {
+        self.context = nil
         super.init(coder: aDecoder)
     }
 
     init(block: UIFlexContainerBlock, context: UIBlockContext) {
         super.init(frame: .zero)
         self.block = block
+        self.context = context
 
         let direction = parseDirection(block.data?.direction)
         let overflow = parseOverflow(block.data?.overflow)
@@ -148,11 +167,11 @@ class FlexOverflowView: UIScrollView {
                 layout: layout, frame: block.data?.frame,
                 parentDirection: context.getParentDireciton())
         }
-
+        
         self.showsVerticalScrollIndicator = false
         self.showsHorizontalScrollIndicator = false
         self.isScrollEnabled = (block.data?.overflow == Overflow.SCROLL) ? true : false
-
+        
         let _ = configureOnClickGesture(
             target: self, action: #selector(onClicked(sender:)), context: context,
             event: block.data?.onClick)
@@ -181,6 +200,19 @@ class FlexOverflowView: UIScrollView {
             let bgSrc = compile(bgSrc, context.getVariable())
             loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
         }
+        
+        let handleDisabled = configureDisabled(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)
+        
+        guard let id = block.id, let handleDisabled = handleDisabled else {
+            return
+        }
+        context.addFormValueListener(id, { values in
+            handleDisabled(values)
+        })
+    }
+    
+    deinit {
+        self.context?.removeFormValueListener(self.block.id ?? "")
     }
 
     @objc func onClicked(sender: ClickListener) {

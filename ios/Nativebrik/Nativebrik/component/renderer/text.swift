@@ -5,6 +5,7 @@ import UIKit
 class TextView: AnimatedUIControl {
     var label: UILabel = UILabel()
     var block: UITextBlock = UITextBlock()
+    var context: UIBlockContext?
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
@@ -14,6 +15,7 @@ class TextView: AnimatedUIControl {
         let showSkelton = context.isLoading() && hasPlaceholderPath(template: block.data?.value ?? "")
 
         self.block = block
+        self.context = context
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.display = .flex
@@ -53,6 +55,19 @@ class TextView: AnimatedUIControl {
             let bgSrc = compile(bgSrc, context.getVariable())
             loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
         }
+        
+        let handleDisabled = configureDisabled(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)
+        
+        guard let id = block.id, let handleDisabled = handleDisabled else {
+            return
+        }
+        context.addFormValueListener(id, { values in
+            handleDisabled(values)
+        })
+    }
+    
+    deinit {
+        self.context?.removeFormValueListener(self.block.id ?? "")
     }
     
     override func layoutSubviews() {
