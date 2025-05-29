@@ -504,6 +504,7 @@ struct UIBlockEventDispatcher: Decodable, Encodable {
   var destinationPageId: String?
   var deepLink: String?
   var payload: [Property]?
+  var requiredFields: [String]?
   var httpRequest: ApiHttpRequest?
   var httpResponseAssertion: ApiHttpResponseAssertion?
 }

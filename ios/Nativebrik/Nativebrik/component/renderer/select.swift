@@ -43,7 +43,8 @@ class SelectInputView: UIControl {
         button.showsMenuAsPrimaryAction = true
         button.changesSelectionAsPrimaryAction = true
 
-        button.setTitle(initialValue?.value ?? block.data?.placeholder ?? "Please select", for: .normal)
+        let placeholder = (block.data?.placeholder ?? "").isEmpty ? "Please select" : block.data?.placeholder
+        button.setTitle(initialValue?.value ?? placeholder, for: .normal)
 
         self.addSubview(button)
     }

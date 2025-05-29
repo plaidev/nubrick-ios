@@ -58,7 +58,7 @@ class UIBlockContext {
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
     private var loading: Bool = false
-
+    
     init(_ args: UIBlockContextInit) {
         self.variable = args.variable
         self.properties = args.properties
@@ -114,6 +114,19 @@ class UIBlockContext {
 
     func getFormValueByKey(key: String) -> Any? {
         return self.container?.getFormValue(key: key)
+    }
+    
+    func getFormValues() -> [String: Any] {
+        return self.container?.getFormValues() ?? [:]
+    }
+        
+    
+    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
+        self.container?.addFormValueListener(id, listener)
+    }
+    
+    func removeFormValueListener(_ id: String) {
+        self.container?.removeFormValueListener(id)
     }
 
     /**

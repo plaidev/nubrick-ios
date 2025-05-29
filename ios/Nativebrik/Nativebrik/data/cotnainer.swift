@@ -23,7 +23,10 @@ protocol Container {
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
 
     func getFormValue(key: String) -> Any?
+    func getFormValues() -> [String: Any]
     func setFormValue(key: String, value: Any)
+    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener)
+    func removeFormValueListener(_ id: String)
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NativebrikError>
@@ -43,8 +46,15 @@ class ContainerEmptyImpl: Container {
     func getFormValue(key: String) -> Any? {
         return nil
     }
+    func getFormValues() -> [String: Any] {
+        return [:]
+    }
     func setFormValue(key: String, value: Any) {
     }
+    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) { }
+    func removeFormValueListener(_ id: String) { }
+    
+    
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError> {
         return Result.failure(NativebrikError.skipRequest)
     }
@@ -127,9 +137,20 @@ class ContainerImpl: Container {
     func getFormValue(key: String) -> Any? {
         return self.formRepository?.getValue(key: key)
     }
+    
+    func getFormValues() -> [String: Any] {
+        return self.formRepository?.getFormData() ?? [:]
+    }
 
     func setFormValue(key: String, value: Any) {
         self.formRepository?.setValue(key: key, value: value)
+    }
+    
+    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
+        self.formRepository?.addFormValueListener(id: id, listener: listener)
+    }
+    func removeFormValueListener(_ id: String) {
+        self.formRepository?.removeFormValueListener(id: id)
     }
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError> {
