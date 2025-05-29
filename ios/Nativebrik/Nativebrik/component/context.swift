@@ -121,8 +121,12 @@ class UIBlockContext {
     }
         
     
-    func addFormValueListenerByKey(_ listener: @escaping FormValueListener) {
-        self.container?.addFormValueListener(listener)
+    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
+        self.container?.addFormValueListener(id, listener)
+    }
+    
+    func removeFormValueListener(_ id: String) {
+        self.container?.removeFormValueListener(id)
     }
 
     /**

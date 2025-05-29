@@ -13,12 +13,13 @@ protocol FormRepository {
     func getFormData() -> [String:Any]
     func setValue(key: String, value: Any)
     func getValue(key: String) -> Any?
-    func addFormValueListener(listener: @escaping FormValueListener)
+    func addFormValueListener(id: String, listener: @escaping FormValueListener)
+    func removeFormValueListener(id: String)
 }
 
 class FormRepositoryImpl: FormRepository {
-    private var map: [String:Any] = [:]
-    private var listeners: [FormValueListener] = []
+    private var map: [String: Any] = [:]
+    private var listeners: [String: FormValueListener] = [:]
     
     func getFormData() -> [String : Any] {
         return self.map
@@ -30,12 +31,16 @@ class FormRepositoryImpl: FormRepository {
     
     func setValue(key: String, value: Any) {
         self.map[key] = value
-        for callback in self.listeners {
+        for callback in self.listeners.values {
             callback(map)
         }
     }
     
-    func addFormValueListener(listener: @escaping FormValueListener) {
-        self.listeners.append(listener)
+    func addFormValueListener(id: String, listener: @escaping FormValueListener) {
+        self.listeners.updateValue(listener, forKey: id)
+    }
+    
+    func removeFormValueListener(id: String) {
+        self.listeners.removeValue(forKey: id)
     }
 }

@@ -52,29 +52,6 @@ class ClickListener: UITapGestureRecognizer {
 func configureOnClickGesture(
     target: UIView, action: Selector, context: UIBlockContext, event: UIBlockEventDispatcher?
 ) -> ClickListener {
-    if let requiredFields = event?.requiredFields, !requiredFields.isEmpty {
-        let handleChange: ([String: Any]) -> Void = { values in
-            var disabled = false
-            for field in requiredFields {
-                if let value = values[field] as? String, value.isEmpty {
-                    disabled = true
-                    break
-                }
-            }
-            DispatchQueue.main.async {
-                if disabled {
-                    target.isUserInteractionEnabled = false
-                    target.alpha = 0.5
-                } else {
-                    target.isUserInteractionEnabled = true
-                    target.alpha = 1.0
-                }
-            }
-        }
-        context.addFormValueListenerByKey(handleChange)
-        handleChange(context.getFormValues())
-    }
-    
     let gesture = ClickListener(target: target, action: action)
     gesture.onClick = {
         guard let event = event else { return }
@@ -170,3 +147,38 @@ func configureOnClickGesture(
 
     return gesture
 }
+
+func getIsDisabled(requiredFields: [String]) -> (([String: Any]) -> Boolean) {
+    return { values in
+        return requiredFields.contains {
+            if let value = values[$0] as? String {
+                return value.isEmpty
+            }
+            return false
+        }
+    }
+}
+
+func configureDisabled(target: UIView, context: UIBlockContext, requiredFields: [String]?) -> FormValueListener? {
+    guard let requiredFields = requiredFields, !requiredFields.isEmpty else { return nil }
+    let isDisabled = getIsDisabled(requiredFields: requiredFields)
+    
+    let handleFormValueChange: FormValueListener = { values in
+        DispatchQueue.main.async {
+            if isDisabled(values) {
+                target.isUserInteractionEnabled = false
+                target.alpha = 0.5
+            } else {
+                target.isUserInteractionEnabled = true
+                target.alpha = 1.0
+            }
+        }
+    }
+    
+    // apply the initial state
+    let values = context.getFormValues()
+    handleFormValueChange(values)
+    
+    return handleFormValueChange
+}
+    
