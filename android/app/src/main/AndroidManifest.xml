@@ -23,6 +23,12 @@
             android:theme="@style/Theme.NativebrikAndroid">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="google.com"
+                    />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
