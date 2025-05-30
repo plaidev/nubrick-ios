@@ -31,7 +31,7 @@ internal interface FormRepository {
 
 internal class FormRepositoryImpl : FormRepository {
     private val map: MutableMap<String, FormValue> = mutableMapOf()
-    private val listeners: MutableList<FormValueListener> = mutableListOf()
+    private val listeners: MutableSet<FormValueListener> = mutableSetOf()
 
     override fun getFormData(): Map<String, JsonElement> {
         return this.map.entries.associate { it.key to it.value.toJsonElement() }
