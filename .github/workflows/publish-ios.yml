@@ -1,4 +1,5 @@
 name: "[ios] Publish Nativebrik SDK"
+
 on:
   workflow_dispatch:
   push:
@@ -11,12 +12,32 @@ jobs:
     environment:
       name: Only Main
     steps:
-    - uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '15.0'
-    - name: checkout
-      uses: actions/checkout@v3
-    - name: publish to cocoapods
-      run: pod trunk push --verbose Nativebrik.podspec
-      env:
-        COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.0'
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_ENV"
+
+      - name: Update version
+        run: |
+          echo "Updating sdk version to $VERSION"
+          sed -i '' "s/public let nativebrikSdkVersion = \".*\"/public let nativebrikSdkVersion = \"$VERSION\"/" ios/Nativebrik/Nativebrik/sdk.swift
+          sed -i '' "s/s.version *= *\".*\"/s.version = \"$VERSION\"/" Nativebrik.podspec
+
+      - name: Commit version changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ios/Nativebrik/Nativebrik/sdk.swift Nativebrik.podspec
+          git commit -m "chore(ios): bump version to $VERSION"
+          git push origin main
+
+      - name: Publish to Cocoapods
+        run: pod trunk push --verbose Nativebrik.podspec
+        env:
+          COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
