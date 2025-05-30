@@ -116,10 +116,11 @@ internal class RootViewModel(
     fun handleUIEvent(it: UIBlockEventDispatcher) {
         val destId = it.destinationPageId ?: ""
         val deepLink = it.deepLink ?: ""
+        if (deepLink.isNotEmpty()) {
+            onOpenDeepLink(deepLink)
+        }
         if (destId.isNotEmpty()) {
             this.render(destId)
-        } else if (deepLink.isNotEmpty()) {
-            onOpenDeepLink(deepLink)
         }
     }
 
