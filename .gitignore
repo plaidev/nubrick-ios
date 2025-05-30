@@ -1,11 +1,12 @@
-
 .DS_Store
 .build
 .dist
+
 .idea
 
 # Xcode
 build/
+.index-build
 *.pbxuser
 !default.pbxuser
 *.mode1v3

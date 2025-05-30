@@ -2073,6 +2073,7 @@ internal class UIBlockEventDispatcher (
 	val destinationPageId: String? = null,
 	val deepLink: String? = null,
 	val payload: List<Property>? = null,
+	val requiredFields: List<String>? = null,
 	val httpRequest: ApiHttpRequest? = null,
 	val httpResponseAssertion: ApiHttpResponseAssertion? = null,
 ) {
@@ -2091,6 +2092,9 @@ internal class UIBlockEventDispatcher (
 				deepLink = StringDecoder.decode(element.jsonObject["deepLink"]),
 				payload = ListDecoder.decode(element.jsonObject["payload"]) { element: JsonElement? ->
 				Property.decode(element)
+			},
+				requiredFields = ListDecoder.decode(element.jsonObject["requiredFields"]) { element: JsonElement? ->
+				StringDecoder.decode(element)
 			},
 				httpRequest = ApiHttpRequest.decode(element.jsonObject["httpRequest"]),
 				httpResponseAssertion = ApiHttpResponseAssertion.decode(element.jsonObject["httpResponseAssertion"]),
@@ -2117,6 +2121,11 @@ internal class UIBlockEventDispatcher (
 				ListEncoder.encode(value) { item ->
 					Property.encode(item)
 				}?.let { map["payload"] = it }
+			}
+			data.requiredFields?.let { value ->
+				ListEncoder.encode(value) { item ->
+					StringEncoder.encode(item)
+				}?.let { map["requiredFields"] = it }
 			}
 			data.httpRequest?.let { value ->
 				ApiHttpRequest.encode(value)?.let { map["httpRequest"] = it }

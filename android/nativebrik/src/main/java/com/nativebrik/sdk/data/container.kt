@@ -21,21 +21,31 @@ import com.nativebrik.sdk.schema.UIBlock
 import com.nativebrik.sdk.template.compile
 import kotlinx.serialization.json.JsonElement
 
-class NotFoundException: Exception("Not found")
-class FailedToDecodeException: Exception("Failed to decode")
-class SkipHttpRequestException: Exception("Skip http request")
+class NotFoundException : Exception("Not found")
+class FailedToDecodeException : Exception("Failed to decode")
+class SkipHttpRequestException : Exception("Skip http request")
 
 internal interface Container {
     fun initWith(arguments: Any?): Container
 
     fun handleEvent(it: Event) {}
 
-    fun createVariableForTemplate(data: JsonElement? = null, properties: List<Property>? = null): JsonElement
+    fun createVariableForTemplate(
+        data: JsonElement? = null,
+        properties: List<Property>? = null
+    ): JsonElement
 
+    fun getFormValues(): Map<String, JsonElement>
     fun getFormValue(key: String): FormValue?
     fun setFormValue(key: String, value: FormValue)
+    fun addFormValueListener(listener: FormValueListener)
+    fun removeFormValueListener(listener: FormValueListener)
 
-    suspend fun sendHttpRequest(req: ApiHttpRequest, variable: JsonElement? = null): Result<JsonElement>
+    suspend fun sendHttpRequest(
+        req: ApiHttpRequest,
+        variable: JsonElement? = null
+    ): Result<JsonElement>
+
     suspend fun fetchEmbedding(experimentId: String, componentId: String? = null): Result<UIBlock>
     suspend fun fetchInAppMessage(trigger: String): Result<UIBlock>
     suspend fun fetchTooltip(trigger: String): Result<UIBlock>
@@ -53,7 +63,7 @@ internal class ContainerImpl(
     private val formRepository: FormRepository? = null,
     private val cache: CacheStore,
     private val context: Context,
-): Container {
+) : Container {
     private val componentRepository: ComponentRepository by lazy {
         ComponentRepositoryImpl(config, cache)
     }
@@ -87,7 +97,10 @@ internal class ContainerImpl(
         this.config.onEvent?.let { it1 -> it1(it) }
     }
 
-    override fun createVariableForTemplate(data: JsonElement?, properties: List<Property>?): JsonElement {
+    override fun createVariableForTemplate(
+        data: JsonElement?,
+        properties: List<Property>?
+    ): JsonElement {
         return createVariableForTemplate(
             user = this.user,
             data = data,
@@ -98,6 +111,10 @@ internal class ContainerImpl(
         )
     }
 
+    override fun getFormValues(): Map<String, JsonElement> {
+        return this.formRepository?.getFormData() ?: emptyMap()
+    }
+
     override fun getFormValue(key: String): FormValue? {
         return this.formRepository?.getValue(key)
     }
@@ -106,42 +123,65 @@ internal class ContainerImpl(
         this.formRepository?.setValue(key, value)
     }
 
-    override suspend fun sendHttpRequest(req: ApiHttpRequest, variable: JsonElement?): Result<JsonElement> {
+    override fun addFormValueListener(listener: FormValueListener) {
+        this.formRepository?.addListener(listener)
+    }
+
+    override fun removeFormValueListener(listener: FormValueListener) {
+        this.formRepository?.removeListener(listener)
+    }
+
+    override suspend fun sendHttpRequest(
+        req: ApiHttpRequest,
+        variable: JsonElement?
+    ): Result<JsonElement> {
         val mergedVariable = mergeJsonElements(variable, createVariableForTemplate())
         val compiledReq = ApiHttpRequest(
             url = req.url?.let { compile(it, mergedVariable) },
             method = req.method,
-            headers = req.headers?.map { ApiHttpHeader(compile(it.name ?: "", mergedVariable), compile(it.value ?: "", mergedVariable)) },
+            headers = req.headers?.map {
+                ApiHttpHeader(
+                    compile(it.name ?: "", mergedVariable),
+                    compile(it.value ?: "", mergedVariable)
+                )
+            },
             body = req.body?.let { compile(it, mergedVariable) },
         )
         return this.httpRequestRepository.request(compiledReq)
     }
 
-    override suspend fun fetchEmbedding(experimentId: String, componentId: String?): Result<UIBlock> {
+    override suspend fun fetchEmbedding(
+        experimentId: String,
+        componentId: String?
+    ): Result<UIBlock> {
         if (componentId != null) {
-            val component = this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
-                return Result.failure(it)
-            }
+            val component =
+                this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
+                    return Result.failure(it)
+                }
             return Result.success(component)
         }
 
         val configs = this.experimentRepository.fetchExperimentConfigs(experimentId).getOrElse {
             return Result.failure(it)
         }
-        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.EMBED).getOrElse {
-            return Result.failure(it)
-        }
+        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.EMBED)
+            .getOrElse {
+                return Result.failure(it)
+            }
         val variantId = variant.id ?: return Result.failure(NotFoundException())
         this.trackRepository.trackExperimentEvent(
             TrackExperimentEvent(
-            experimentId = experimentId,
-            variantId = variantId
-        ))
+                experimentId = experimentId,
+                variantId = variantId
+            )
+        )
         this.databaseRepository.appendExperimentHistory(experimentId)
         val componentId = extractComponentId(variant) ?: return Result.failure(NotFoundException())
-        val component = this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
-            return Result.failure(it)
-        }
+        val component =
+            this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
+                return Result.failure(it)
+            }
         return Result.success(component)
     }
 
@@ -154,19 +194,23 @@ internal class ContainerImpl(
         val configs = this.experimentRepository.fetchTriggerExperimentConfigs(trigger).getOrElse {
             return Result.failure(it)
         }
-        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.POPUP).getOrElse {
-            return Result.failure(it)
-        }
+        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.POPUP)
+            .getOrElse {
+                return Result.failure(it)
+            }
         val variantId = variant.id ?: return Result.failure(NotFoundException())
-        this.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId = experimentId,
-            variantId = variantId
-        ))
+        this.trackRepository.trackExperimentEvent(
+            TrackExperimentEvent(
+                experimentId = experimentId,
+                variantId = variantId
+            )
+        )
         this.databaseRepository.appendExperimentHistory(experimentId)
         val componentId = extractComponentId(variant) ?: return Result.failure(NotFoundException())
-        val component = this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
-            return Result.failure(it)
-        }
+        val component =
+            this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
+                return Result.failure(it)
+            }
         return Result.success(component)
     }
 
@@ -175,19 +219,23 @@ internal class ContainerImpl(
         val configs = this.experimentRepository.fetchTriggerExperimentConfigs(trigger).getOrElse {
             return Result.failure(it)
         }
-        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.TOOLTIP).getOrElse {
-            return Result.failure(it)
-        }
+        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.TOOLTIP)
+            .getOrElse {
+                return Result.failure(it)
+            }
         val variantId = variant.id ?: return Result.failure(NotFoundException())
-        this.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId = experimentId,
-            variantId = variantId
-        ))
+        this.trackRepository.trackExperimentEvent(
+            TrackExperimentEvent(
+                experimentId = experimentId,
+                variantId = variantId
+            )
+        )
         this.databaseRepository.appendExperimentHistory(experimentId)
         val componentId = extractComponentId(variant) ?: return Result.failure(NotFoundException())
-        val component = this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
-            return Result.failure(it)
-        }
+        val component =
+            this.componentRepository.fetchComponent(experimentId, componentId).getOrElse {
+                return Result.failure(it)
+            }
         return Result.success(component)
     }
 
@@ -195,14 +243,17 @@ internal class ContainerImpl(
         val configs = this.experimentRepository.fetchExperimentConfigs(experimentId).getOrElse {
             return Result.failure(it)
         }
-        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.CONFIG).getOrElse {
-            return Result.failure(it)
-        }
+        val (experimentId, variant) = this.extractVariant(configs = configs, ExperimentKind.CONFIG)
+            .getOrElse {
+                return Result.failure(it)
+            }
         val variantId = variant.id ?: return Result.failure(NotFoundException())
-        this.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId = experimentId,
-            variantId = variantId
-        ))
+        this.trackRepository.trackExperimentEvent(
+            TrackExperimentEvent(
+                experimentId = experimentId,
+                variantId = variantId
+            )
+        )
         this.databaseRepository.appendExperimentHistory(experimentId)
         return Result.success(variant)
     }
