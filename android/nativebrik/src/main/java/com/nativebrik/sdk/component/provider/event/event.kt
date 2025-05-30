@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,10 +25,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.nativebrik.sdk.component.provider.container.ContainerContext
 import com.nativebrik.sdk.component.provider.data.DataContext
+import com.nativebrik.sdk.data.FormValueListener
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.coroutines.cancellation.CancellationException
 
 internal var LocalEventListener = compositionLocalOf<EventListenerState> {
@@ -71,17 +74,35 @@ internal fun EventListenerProvider(
 internal fun Modifier.eventDispatcher(
     eventDispatcher: UIBlockEventDispatcher?
 ): Modifier = composed {
-    val container      = ContainerContext.value
-    val data           = DataContext.state.data
-    val eventListener  = LocalEventListener.current
-    val event          = eventDispatcher ?: return@composed this
+    val container = ContainerContext.value
+    val data = DataContext.state.data
+    val eventListener = LocalEventListener.current
+    val event = eventDispatcher ?: return@composed this
 
+    var disabled by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    if (event.requiredFields != null) {
+        val handleFormValueChange: FormValueListener = { values ->
+            disabled = event.requiredFields.any { key ->
+                val value = values[key]
+                value == null || (value is JsonPrimitive && value.isString && value.content.isEmpty())
+            }
+        }
+        DisposableEffect(Unit) {
+            handleFormValueChange(container.getFormValues())
+            container.addFormValueListener(handleFormValueChange)
+
+            onDispose {
+                container.removeFormValueListener(handleFormValueChange)
+            }
+        }
+    }
+
     this
-        .alpha(if (isLoading) 0.8f else 1f)
-        .clickable(enabled = !isLoading) {
+        .alpha(if (disabled) 0.5f else if (isLoading) 0.8f else 1f)
+        .clickable(enabled = !disabled && !isLoading) {
             val req = event.httpRequest
             if (req == null) {
                 eventListener.dispatch(event)
