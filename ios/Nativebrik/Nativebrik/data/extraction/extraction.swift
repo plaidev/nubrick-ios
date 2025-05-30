@@ -91,7 +91,7 @@ func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, prop
                 }
             }
         }
-        
+
         guard let distribution = config.distribution else {
             return true
         }
@@ -413,7 +413,8 @@ func containsPattern(_ input: String, _ pattern: String) -> Bool {
     } else {
         do {
             let regex = try NSRegularExpression(pattern: pattern)
-            let count = regex.numberOfMatches(in: input, range: NSRange(location: 0, length: input.utf16.count))
+            let nsString = input as NSString
+            let count = regex.numberOfMatches(in: input, range: NSRange(location: 0, length: nsString.length))
             return count > 0
         } catch {
             return false
