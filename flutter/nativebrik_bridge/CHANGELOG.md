@@ -98,3 +98,8 @@
 
 - Preview Feature: Product Tour
 - Update com.nativebrik.sdk to 0.4.8
+
+## 0.8.1
+
+- Update Nativebrik to 0.9.14
+- Update com.nativebrik.sdk to 0.4.10
