@@ -34,7 +34,7 @@ import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-const val VERSION = "0.4.10"
+const val VERSION = "0.4.11"
 
 data class Endpoint(
     val cdn: String = "https://cdn.nativebrik.com",
