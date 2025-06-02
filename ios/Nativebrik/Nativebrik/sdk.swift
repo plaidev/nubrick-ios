@@ -12,7 +12,7 @@ import Combine
 // for development
 public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
-public let nativebrikSdkVersion = "0.9.14"
+public let nativebrikSdkVersion = "0.9.15"
 
 public let isNativebrikAvailable: Bool = {
     if #available(iOS 15.0, *) {
