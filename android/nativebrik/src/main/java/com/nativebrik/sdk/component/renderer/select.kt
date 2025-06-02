@@ -32,7 +32,8 @@ import com.nativebrik.sdk.schema.UISelectInputBlock
 import com.nativebrik.sdk.schema.UISelectInputBlockData
 import com.nativebrik.sdk.schema.UISelectInputOption
 
-internal const val NONE_VALUE = "None"
+internal const val NONE_VALUE = ""
+internal const val NONE_LABEL = "None"
 
 // resolveInitialValue retrieves the value from the form context.
 // If not found, it returns the default block.data.value and sets it in the form.
@@ -73,7 +74,7 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
     }
 
     val options: List<UISelectInputOption> =
-        block.data.options ?: listOf(UISelectInputOption(NONE_VALUE))
+        block.data.options ?: listOf(UISelectInputOption(value = NONE_VALUE, label = NONE_LABEL))
     val selectedOption =
         options.firstOrNull { it.value == value }
 
@@ -137,7 +138,7 @@ internal fun Select(block: UISelectInputBlock, modifier: Modifier = Modifier) {
                     },
                     text = {
                         androidx.compose.material3.Text(
-                            text = option.label ?: option.value ?: NONE_VALUE,
+                            text = option.label ?: option.value ?: NONE_LABEL,
                         )
                     },
                     onClick = {
@@ -154,7 +155,7 @@ internal fun selectedOptionsToText(options: List<UISelectInputOption>): String? 
         0 -> null
         1 -> {
             val first = options[0]
-            first.label ?: first.value ?: NONE_VALUE
+            first.label ?: first.value ?: NONE_LABEL
         }
 
         else -> "${options.size} items"
@@ -188,7 +189,7 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
         mutableStateOf(0.dp)
     }
     val options: List<UISelectInputOption> =
-        block.data?.options ?: listOf(UISelectInputOption(NONE_VALUE))
+        block.data?.options ?: listOf(UISelectInputOption(value = NONE_VALUE, label = NONE_LABEL))
     val selectedOptions = options.filter { option ->
         value.any {
             option.value == it
@@ -263,7 +264,7 @@ internal fun MultiSelect(block: UIMultiSelectInputBlock, modifier: Modifier = Mo
                     },
                     text = {
                         androidx.compose.material3.Text(
-                            text = option.label ?: option.value ?: NONE_VALUE,
+                            text = option.label ?: option.value ?: NONE_LABEL,
                         )
                     },
                     onClick = {
