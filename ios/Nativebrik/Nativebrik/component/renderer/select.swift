@@ -10,6 +10,8 @@ import UIKit
 import YogaKit
 import TipKit
 
+let noneValue = ""
+let noneLabel = "None"
 
 @available(iOS 15.0, *)
 class SelectInputView: UIControl {
@@ -66,7 +68,7 @@ class SelectInputView: UIControl {
         if let value = context?.getFormValueByKey(key: formKey) as? String {
             initialValue = block.data?.options?.first { $0.value == value }
         } else {
-            context?.writeToForm(key: formKey, value: initialValue?.value ?? "None")
+            context?.writeToForm(key: formKey, value: initialValue?.value ?? noneValue)
         }
     }
 
@@ -103,8 +105,8 @@ class SelectInputView: UIControl {
 
         var actions: [UIAction] = block.data?.options?.map({ option in
             return UIAction(
-                title: option.label ?? option.value ?? "None",
-                identifier: .init(option.value ?? "None"),
+                title: option.label ?? option.value ?? noneLabel,
+                identifier: .init(option.value ?? noneValue),
                 state: option.value == initialValue?.value ? .on : .off,
                 handler: handleSelect
             )
@@ -112,8 +114,8 @@ class SelectInputView: UIControl {
 
         if initialValue == nil {
             actions.insert(UIAction(
-                title: block.data?.placeholder ?? "None",
-                identifier: .init("None"),
+                title: block.data?.placeholder ?? noneLabel,
+                identifier: .init(noneValue),
                 attributes: [.hidden],
                 state: .off,
                 handler: {_ in }
