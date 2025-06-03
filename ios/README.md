@@ -18,4 +18,3 @@ SDK
             |_ PageView: Fetch data and Render view
                 |_ UIViewBlock: Render view blocks
 ```
-
