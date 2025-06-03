@@ -14,10 +14,10 @@ let nativebrik = {
         fatalError("Missing or invalid PROJECT_ID in Info.plist")
     }
 
-    if let cdnUrl = Bundle.main.object(forInfoDictionaryKey: "CDN_URL") as? String {
+    if let cdnUrl = Bundle.main.object(forInfoDictionaryKey: "CDN_URL") as? String, !cdnUrl.isEmpty {
         nativebrikCdnUrl = cdnUrl
     }
-    if let trackUrl = Bundle.main.object(forInfoDictionaryKey: "TRACK_URL") as? String {
+    if let trackUrl = Bundle.main.object(forInfoDictionaryKey: "TRACK_URL") as? String, !trackUrl.isEmpty {
         nativebrikTrackUrl = trackUrl
     }
 
