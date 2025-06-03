@@ -5,8 +5,8 @@
 //  Created by Takuma Jimbo on 2025/06/02.
 //
 
-PROJECT_ID="your-project-id-here"
-CDN_URL="https://storage.googleapis.com/nativebrik_cdn_dev"
-TRACK_URL="http://localhost:8070/track/v1"
+PROJECT_ID=<your-project-id-here>
+CDN_URL=https:/$()/storage.googleapis.com/nativebrik_cdn_dev
+TRACK_URL=http:/$()/localhost:8070/track/v1
 
-DEVELOPMENT_TEAM="your-account-id-here"
+DEVELOPMENT_TEAM=<your-account-id-here>
