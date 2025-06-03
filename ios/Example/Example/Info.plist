@@ -4,5 +4,9 @@
 <dict>
 	<key>PROJECT_ID</key>
 	<string>$(PROJECT_ID)</string>
+	<key>CDN_URL</key>
+	<string>$(CDN_URL)</string>
+	<key>TRACK_URL</key>
+	<string>$(TRACK_URL)</string>
 </dict>
 </plist>
