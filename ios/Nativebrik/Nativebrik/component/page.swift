@@ -9,6 +9,7 @@ import Foundation
 import UIKit
 import YogaKit
 
+// child of modal
 class ModalPageViewController: UIViewController {
     private var isFirstModal = false
     private let pageView: PageView?
@@ -79,6 +80,12 @@ class ModalPageViewController: UIViewController {
             }
             self.navigationController?.navigationBar.topItem?.backBarButtonItem = leftButton
         }
+
+        // set background of navigation bar to transparent
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        self.navigationController?.navigationBar.scrollEdgeAppearance = appearance
+        self.navigationController?.navigationBar.standardAppearance = appearance
     }
 
     @objc func onClickBack() {
