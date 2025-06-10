@@ -114,8 +114,10 @@ internal class RootViewModel(
     }
 
     fun handleUIEvent(it: UIBlockEventDispatcher) {
+        val variable = DataContext.state.data
+        val mergedVariable = mergeJsonElements(variable, createVariableForTemplate())
         val destId = it.destinationPageId ?: ""
-        val deepLink = it.deepLink ?: ""
+        val deepLink = it.deepLink?.let { compile(it.deeplink, mergedVariable) }
         if (deepLink.isNotEmpty()) {
             onOpenDeepLink(deepLink)
         }
