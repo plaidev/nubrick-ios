@@ -43,6 +43,7 @@ import com.nativebrik.sdk.EventPropertyType
 import com.nativebrik.sdk.component.bridge.UIBlockEventBridgeCollector
 import com.nativebrik.sdk.component.bridge.UIBlockEventBridgeViewModel
 import com.nativebrik.sdk.component.provider.container.ContainerProvider
+import com.nativebrik.sdk.component.provider.data.DataContext
 import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockData
@@ -60,7 +61,9 @@ import com.nativebrik.sdk.schema.PropertyType
 import com.nativebrik.sdk.schema.UIBlockEventDispatcher
 import com.nativebrik.sdk.schema.UIPageBlock
 import com.nativebrik.sdk.schema.UIRootBlock
+import com.nativebrik.sdk.template.compile
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.serialization.json.JsonElement
 
 private fun parseUIEventToEvent(event: UIBlockEventDispatcher): Event {
     return Event(
@@ -113,11 +116,9 @@ internal class RootViewModel(
         render(destId)
     }
 
-    fun handleUIEvent(it: UIBlockEventDispatcher) {
-        val variable = DataContext.state.data
-        val mergedVariable = mergeJsonElements(variable, createVariableForTemplate())
+    fun handleUIEvent(it: UIBlockEventDispatcher, variable: JsonElement) {
         val destId = it.destinationPageId ?: ""
-        val deepLink = it.deepLink?.let { compile(it.deeplink, mergedVariable) }
+        val deepLink = it.deepLink?.let { compile(it, variable) } ?: ""
         if (deepLink.isNotEmpty()) {
             onOpenDeepLink(deepLink)
         }
@@ -252,10 +253,11 @@ internal fun Root(
     val bottomSheetProps = remember {
         ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false)
     }
+    val variable = DataContext.state.data
     val listener =
         remember<(event: UIBlockEventDispatcher) -> Unit>(viewModel, onEvent, container) {
             return@remember {
-                viewModel.handleUIEvent(it)
+                viewModel.handleUIEvent(it, variable)
 
                 // send event to listeners
                 val event = parseUIEventToEvent(it)
