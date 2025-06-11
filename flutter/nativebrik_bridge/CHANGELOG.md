@@ -103,3 +103,8 @@
 
 - Update Nativebrik to 0.9.15
 - Update com.nativebrik.sdk to 0.4.11
+
+## 0.8.2
+
+- Update Nativebrik to 0.9.16
+- Update com.nativebrik.sdk to 0.4.12
