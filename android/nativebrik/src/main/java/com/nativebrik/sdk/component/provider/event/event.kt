@@ -30,6 +30,7 @@ import com.nativebrik.sdk.schema.UIBlockEventDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -38,16 +39,16 @@ internal var LocalEventListener = compositionLocalOf<EventListenerState> {
 }
 
 internal data class EventListenerState(
-    internal val listener: (event: UIBlockEventDispatcher) -> Unit
+    internal val listener: (event: UIBlockEventDispatcher, data: JsonElement) -> Unit
 ) {
-    fun dispatch(event: UIBlockEventDispatcher) {
-        this.listener(event)
+    fun dispatch(event: UIBlockEventDispatcher, data: JsonElement) {
+        this.listener(event, data)
     }
 }
 
 @Composable
 internal fun rememberEventListenerState(
-    listener: (event: UIBlockEventDispatcher) -> Unit
+    listener: (event: UIBlockEventDispatcher, data: JsonElement) -> Unit
 ): EventListenerState {
     val state: EventListenerState by remember {
         mutableStateOf(EventListenerState(listener))
@@ -59,7 +60,7 @@ internal fun rememberEventListenerState(
 
 @Composable
 internal fun EventListenerProvider(
-    listener: (event: UIBlockEventDispatcher) -> Unit,
+    listener: (event: UIBlockEventDispatcher, data: JsonElement) -> Unit,
     content: @Composable () -> Unit,
 ) {
     val state = rememberEventListenerState(listener)
@@ -105,7 +106,7 @@ internal fun Modifier.eventDispatcher(
         .clickable(enabled = !disabled && !isLoading) {
             val req = event.httpRequest
             if (req == null) {
-                eventListener.dispatch(event)
+                eventListener.dispatch(event, data)
                 return@clickable
             }
 
@@ -116,13 +117,13 @@ internal fun Modifier.eventDispatcher(
                         container.sendHttpRequest(req, data).getOrThrow()
                     }
                     // onSuccess
-                    eventListener.dispatch(event)
+                    eventListener.dispatch(event, data)
                 } catch (ce: CancellationException) {
                     // propagate cancellation to parent
                     throw ce
                 } catch (e: Exception) {
                     // onError
-                    eventListener.dispatch(event)
+                    eventListener.dispatch(event, data)
                 } finally {
                     // unlock ui
                     isLoading = false

@@ -18,7 +18,7 @@ import kotlinx.serialization.json.JsonElement
 
 // forcefully dispatch uiblock event in the page compose context, from anywhere.
 // dispatch(event) in flutter -> listen the event in the page context, and dispatch event from the page.
-public class UIBlockEventBridgeViewModel: ViewModel() {
+public class UIBlockEventBridgeViewModel : ViewModel() {
     private val _events = MutableSharedFlow<UIBlockEventDispatcher>()
     internal val events: SharedFlow<UIBlockEventDispatcher> = _events
 
@@ -53,17 +53,17 @@ internal fun UIBlockEventBridgeCollector(
                         .sendHttpRequest(req, data)
                         .onSuccess {
                             GlobalScope.launch(Dispatchers.Main) {
-                                eventListener.dispatch(event)
+                                eventListener.dispatch(event, data)
                             }
                         }
                         .onFailure {
                             GlobalScope.launch(Dispatchers.Main) {
-                                eventListener.dispatch(event)
+                                eventListener.dispatch(event, data)
                             }
                         }
                 }
             } else {
-                eventListener.dispatch(event)
+                eventListener.dispatch(event, data)
             }
         }
     }

@@ -43,7 +43,6 @@ import com.nativebrik.sdk.EventPropertyType
 import com.nativebrik.sdk.component.bridge.UIBlockEventBridgeCollector
 import com.nativebrik.sdk.component.bridge.UIBlockEventBridgeViewModel
 import com.nativebrik.sdk.component.provider.container.ContainerProvider
-import com.nativebrik.sdk.component.provider.data.DataContext
 import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockData
@@ -116,12 +115,13 @@ internal class RootViewModel(
         render(destId)
     }
 
-    fun handleUIEvent(it: UIBlockEventDispatcher, variable: JsonElement) {
-        val destId = it.destinationPageId ?: ""
-        val deepLink = it.deepLink?.let { compile(it, variable) } ?: ""
+    fun handleNavigate(event: UIBlockEventDispatcher, data: JsonElement) {
+        val deepLink = event.deepLink?.let { compile(it, data) } ?: ""
         if (deepLink.isNotEmpty()) {
             onOpenDeepLink(deepLink)
         }
+
+        val destId = event.destinationPageId ?: ""
         if (destId.isNotEmpty()) {
             this.render(destId)
         }
@@ -253,18 +253,15 @@ internal fun Root(
     val bottomSheetProps = remember {
         ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false)
     }
-    val variable = DataContext.state.data
-    val listener =
-        remember<(event: UIBlockEventDispatcher) -> Unit>(viewModel, onEvent, container) {
-            return@remember {
-                viewModel.handleUIEvent(it, variable)
+    val listener = remember(viewModel, onEvent, container) {
+        { event: UIBlockEventDispatcher, data: JsonElement ->
+            viewModel.handleNavigate(event, data)
 
-                // send event to listeners
-                val event = parseUIEventToEvent(it)
-                onEvent(event)
-                container.handleEvent(event)
-            }
+            val e = parseUIEventToEvent(event)
+            onEvent(e)
+            container.handleEvent(e)
         }
+    }
 
     val currentPageBlock = viewModel.currentPageBlock.value
     val displayedPageBlock = viewModel.displayedPageBlock.value
