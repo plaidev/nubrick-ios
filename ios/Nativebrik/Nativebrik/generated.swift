@@ -588,6 +588,7 @@ struct UIPageBlockData: Decodable, Encodable {
   var modalPresentationStyle: ModalPresentationStyle?
   var modalScreenSize: ModalScreenSize?
   var modalNavigationBackButton: NavigationBackButton?
+  var modalRespectSafeArea: Boolean?
   var webviewUrl: String?
   var triggerSetting: TriggerSetting?
   var renderAs: UIBlock?
