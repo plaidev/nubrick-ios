@@ -13,15 +13,18 @@ class FlexView: AnimatedUIControl {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     private var context: UIBlockContext?
     private var isOverflowView = false
+    private var respectSafeArea = false
+    private var hasActivatedConstraints = false
 
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
 
-    init(block: UIFlexContainerBlock, context: UIBlockContext) {
+    init(block: UIFlexContainerBlock, context: UIBlockContext, respectSafeArea: Bool? = false) {
         super.init(frame: .zero)
         self.block = block
         self.context = context
+        self.respectSafeArea = respectSafeArea ?? false
         initialize(block: block, context: context, childFlexShrink: nil)
     }
 
@@ -131,6 +134,22 @@ class FlexView: AnimatedUIControl {
             configureBorder(view: self, frame: self.block.data?.frame)
         }
     }
+    
+    override func didMoveToSuperview() {
+        super.didMoveToSuperview()
+        if !self.respectSafeArea { return }
+        guard let superview = superview, !hasActivatedConstraints else { return }
+
+        translatesAutoresizingMaskIntoConstraints = false
+        topAnchor.constraint(equalTo: superview.safeAreaLayoutGuide.topAnchor).isActive = true
+        hasActivatedConstraints = true
+    }
+
+    override func willMove(toSuperview newSuperview: UIView?) {
+        super.willMove(toSuperview: newSuperview)
+        if !self.respectSafeArea { return }
+        if newSuperview == nil { hasActivatedConstraints = false }
+    }
 }
 
 // FlexOverflowView creates a scrollable view and contains FlexView inside as a child.
@@ -144,10 +163,12 @@ class FlexOverflowView: UIScrollView {
         super.init(coder: aDecoder)
     }
 
-    init(block: UIFlexContainerBlock, context: UIBlockContext) {
+    init(block: UIFlexContainerBlock, context: UIBlockContext, respectSafeArea: Bool) {
         super.init(frame: .zero)
         self.block = block
         self.context = context
+
+        self.contentInsetAdjustmentBehavior = respectSafeArea ? .always : .never
 
         let direction = parseDirection(block.data?.direction)
         let overflow = parseOverflow(block.data?.overflow)
