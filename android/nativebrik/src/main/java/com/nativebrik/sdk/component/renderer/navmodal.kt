@@ -39,8 +39,6 @@ internal fun ModalBottomSheetBackHandler(handler: () -> Unit) {
     }
 }
 
-val MODAL_NAV_HEADER_HEIGHT = 52.dp
-
 @Composable
 internal fun NavigationHeader(
     index: Int,
@@ -51,7 +49,7 @@ internal fun NavigationHeader(
 ) {
     val visibility = block.data?.modalNavigationBackButton?.visible ?: true
     val insetTop = with(LocalDensity.current) {
-        WindowInsets.statusBars.getTop(this).toDp()
+        WindowInsets.statusBars.getTop(this).toDp() - 8.dp
     }
 
     Box(
