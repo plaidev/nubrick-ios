@@ -39,6 +39,8 @@ internal fun ModalBottomSheetBackHandler(handler: () -> Unit) {
     }
 }
 
+val MODAL_NAV_HEADER_HEIGHT = 52.dp
+
 @Composable
 internal fun NavigationHeader(
     index: Int,
