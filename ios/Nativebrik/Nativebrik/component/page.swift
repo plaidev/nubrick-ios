@@ -245,7 +245,8 @@ class PageView: UIView {
                         event: self.event,
                         loading: self.loading
                     )
-                )
+                ),
+                respectSafeArea: self.page?.data?.modalRespectSafeArea
             )
             self.addSubview(self.view)
 

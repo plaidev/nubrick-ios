@@ -17,14 +17,14 @@ func childrenToUIViews(data: [UIBlock]?, context: UIBlockContext) -> [UIView] {
     }
 }
 
-func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
+func uiblockToUIView(data: UIBlock, context: UIBlockContext, respectSafeArea: Bool? = false) -> UIView {
     switch data {
     case .EUIFlexContainerBlock(let block):
         switch block.data?.overflow {
         case .SCROLL, .HIDDEN:
-            return FlexOverflowView(block: block, context: context)
+            return FlexOverflowView(block: block, context: context, respectSafeArea: respectSafeArea ?? false)
         default:
-            return FlexView(block: block, context: context)
+            return FlexView(block: block, context: context, respectSafeArea: respectSafeArea)
         }
     case .EUICollectionBlock(let block):
         return CollectionView(block: block, context: context)
@@ -54,9 +54,9 @@ func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
 class UIViewBlock: UIView {
     private let root: UIView = UIView()
 
-    init(data: UIBlock, context: UIBlockContext) {
+    init(data: UIBlock, context: UIBlockContext, respectSafeArea: Bool? = false) {
         super.init(frame: .zero)
-        let view = uiblockToUIView(data: data, context: context)
+        let view = uiblockToUIView(data: data, context: context, respectSafeArea: respectSafeArea)
 
         self.configureLayout { (layout) in
             layout.isEnabled = true
