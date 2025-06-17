@@ -55,7 +55,7 @@ internal fun NavigationHeader(
     Box(
         modifier = Modifier
             .zIndex(10f)
-            .offset(y = if (isFullscreen) insetTop else 0.dp)
+            .offset(y = if (isFullscreen) insetTop else 8.dp)
     ) {
         if (visibility) {
             if (index > 0) {

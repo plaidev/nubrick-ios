@@ -206,7 +206,7 @@ internal fun ModalPage(
                     .toDp() + 38.dp // status bar + nav header height
             }
         } else {
-            52.dp // nav header height
+            60.dp // nav header height
         }
     } else {
         0.dp
