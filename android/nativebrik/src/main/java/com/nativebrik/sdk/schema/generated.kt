@@ -2737,6 +2737,7 @@ internal class UIPageBlockData (
 	val modalPresentationStyle: ModalPresentationStyle? = null,
 	val modalScreenSize: ModalScreenSize? = null,
 	val modalNavigationBackButton: NavigationBackButton? = null,
+	val modalRespectSafeArea: Boolean? = null,
 	val webviewUrl: String? = null,
 	val triggerSetting: TriggerSetting? = null,
 	val renderAs: UIBlock? = null,
@@ -2763,6 +2764,7 @@ internal class UIPageBlockData (
 				modalPresentationStyle = ModalPresentationStyle.decode(element.jsonObject["modalPresentationStyle"]),
 				modalScreenSize = ModalScreenSize.decode(element.jsonObject["modalScreenSize"]),
 				modalNavigationBackButton = NavigationBackButton.decode(element.jsonObject["modalNavigationBackButton"]),
+				modalRespectSafeArea = BooleanDecoder.decode(element.jsonObject["modalRespectSafeArea"]),
 				webviewUrl = StringDecoder.decode(element.jsonObject["webviewUrl"]),
 				triggerSetting = TriggerSetting.decode(element.jsonObject["triggerSetting"]),
 				renderAs = UIBlock.decode(element.jsonObject["renderAs"]),
@@ -2797,6 +2799,9 @@ internal class UIPageBlockData (
 			}
 			data.modalNavigationBackButton?.let { value ->
 				NavigationBackButton.encode(value)?.let { map["modalNavigationBackButton"] = it }
+			}
+			data.modalRespectSafeArea?.let { value ->
+				BooleanEncoder.encode(value)?.let { map["modalRespectSafeArea"] = it }
 			}
 			data.webviewUrl?.let { value ->
 				StringEncoder.encode(value)?.let { map["webviewUrl"] = it }
