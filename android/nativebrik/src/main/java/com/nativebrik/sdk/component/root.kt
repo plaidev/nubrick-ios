@@ -47,6 +47,7 @@ import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockData
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockProvider
+import com.nativebrik.sdk.component.renderer.MODAL_NAV_HEADER_HEIGHT
 import com.nativebrik.sdk.component.renderer.ModalBottomSheetBackHandler
 import com.nativebrik.sdk.component.renderer.NavigationHeader
 import com.nativebrik.sdk.component.renderer.Page
@@ -196,8 +197,22 @@ internal fun ModalPage(
     blockData: PageBlockData,
     eventBridge: UIBlockEventBridgeViewModel?,
     currentPageBlock: UIPageBlock?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isFullscreen: Boolean,
 ) {
+    val insetTop = if (blockData.block.data?.modalRespectSafeArea == true) {
+        if (isFullscreen) {
+            with(LocalDensity.current) {
+                WindowInsets.statusBars.getTop(this)
+                    .toDp() + MODAL_NAV_HEADER_HEIGHT // status bar + nav header height
+            }
+        } else {
+            MODAL_NAV_HEADER_HEIGHT
+        }
+    } else {
+        0.dp
+    }
+
     PageBlockProvider(
         blockData,
     ) {
@@ -206,7 +221,7 @@ internal fun ModalPage(
                 events = eventBridge?.events,
                 isCurrentPage = blockData.block.id == currentPageBlock?.id
             )
-            Page(block = blockData.block, modifier)
+            Page(block = blockData.block, modifier, insetTop)
         }
     }
 }
@@ -342,18 +357,21 @@ internal fun Root(
                                 label = "Bottom Sheet"
                             ) {
                                 val stack = modalState.modalStack[it]
+                                val isFullscreen =
+                                    modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN
                                 NavigationHeader(
                                     it,
                                     stack.block,
                                     onClose = { modalViewModel.close() },
                                     onBack = { modalViewModel.back() },
-                                    isFullscreen = modalState.modalPresentationStyle == ModalPresentationStyle.DEPENDS_ON_CONTEXT_OR_FULL_SCREEN,
+                                    isFullscreen,
                                 )
                                 ModalPage(
                                     container = container,
                                     blockData = stack,
                                     eventBridge = eventBridge,
                                     currentPageBlock = currentPageBlock,
+                                    isFullscreen = isFullscreen,
                                 )
                             }
                         }
