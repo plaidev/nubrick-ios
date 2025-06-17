@@ -272,10 +272,10 @@ internal fun Modifier.frameSize(frame: FrameData?): Modifier {
 
 
 @Composable
-internal fun Modifier.framePadding(frame: FrameData?): Modifier {
+internal fun Modifier.framePadding(frame: FrameData?, insetTop: Dp? = null): Modifier {
     return this.padding(
         start = frame?.paddingLeft?.dp ?: 0.dp,
-        top = frame?.paddingTop?.dp ?: 0.dp,
+        top = (frame?.paddingTop?.dp ?: 0.dp) + (insetTop ?: 0.dp),
         end = frame?.paddingRight?.dp ?: 0.dp,
         bottom = frame?.paddingBottom?.dp ?: 0.dp,
     )
@@ -368,13 +368,14 @@ internal fun parseVerticalJustifyContent(
 internal fun Flex(
     block: UIFlexContainerBlock,
     modifier: Modifier = Modifier,
+    insetTop: Dp?
 ) {
     val data = DataContext.state
     val direction: FlexDirection = block.data?.direction ?: FlexDirection.ROW
     val flexModifier = modifier
         .eventDispatcher(block.data?.onClick)
         .frameSize(block.data?.frame)
-        .framePadding(block.data?.frame)
+        .framePadding(block.data?.frame, insetTop)
         .flexOverflow(direction, block.data?.overflow)
         .zIndex(1f)
 
