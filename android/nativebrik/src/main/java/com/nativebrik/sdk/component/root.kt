@@ -47,7 +47,6 @@ import com.nativebrik.sdk.component.provider.data.PageDataProvider
 import com.nativebrik.sdk.component.provider.event.EventListenerProvider
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockData
 import com.nativebrik.sdk.component.provider.pageblock.PageBlockProvider
-import com.nativebrik.sdk.component.renderer.MODAL_NAV_HEADER_HEIGHT
 import com.nativebrik.sdk.component.renderer.ModalBottomSheetBackHandler
 import com.nativebrik.sdk.component.renderer.NavigationHeader
 import com.nativebrik.sdk.component.renderer.Page
@@ -204,10 +203,10 @@ internal fun ModalPage(
         if (isFullscreen) {
             with(LocalDensity.current) {
                 WindowInsets.statusBars.getTop(this)
-                    .toDp() + MODAL_NAV_HEADER_HEIGHT // status bar + nav header height
+                    .toDp() + 38.dp // status bar + nav header height
             }
         } else {
-            MODAL_NAV_HEADER_HEIGHT
+            60.dp // nav header height
         }
     } else {
         0.dp
