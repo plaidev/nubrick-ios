@@ -2068,6 +2068,7 @@ class UIBlockEventDispatcher {
   final String? destinationPageId;
   final String? deepLink;
   final List<Property>? payload;
+  final List<String>? requiredFields;
   final ApiHttpRequest? httpRequest;
   final ApiHttpResponseAssertion? httpResponseAssertion;
 
@@ -2076,6 +2077,7 @@ class UIBlockEventDispatcher {
     this.destinationPageId,
     this.deepLink,
     this.payload,
+    this.requiredFields,
     this.httpRequest,
     this.httpResponseAssertion,
   });
@@ -2094,6 +2096,8 @@ class UIBlockEventDispatcher {
       deepLink: StringDecoder.decode(json['deepLink']),
       payload: ListDecoder.decode(
           json['payload'], (element) => Property.decode(element)),
+      requiredFields: ListDecoder.decode(
+          json['requiredFields'], (element) => StringDecoder.decode(element)),
       httpRequest: ApiHttpRequest.decode(json['httpRequest']),
       httpResponseAssertion:
           ApiHttpResponseAssertion.decode(json['httpResponseAssertion']),
@@ -2107,6 +2111,7 @@ class UIBlockEventDispatcher {
       'destinationPageId': destinationPageId,
       'deepLink': deepLink,
       'payload': payload?.map((e) => e.encode()).toList(growable: false),
+      'requiredFields': requiredFields?.map((e) => e).toList(growable: false),
       'httpRequest': httpRequest?.encode(),
       'httpResponseAssertion': httpResponseAssertion?.encode(),
     };
@@ -2599,6 +2604,7 @@ class UIPageBlockData {
   final ModalPresentationStyle? modalPresentationStyle;
   final ModalScreenSize? modalScreenSize;
   final NavigationBackButton? modalNavigationBackButton;
+  final bool? modalRespectSafeArea;
   final String? webviewUrl;
   final TriggerSetting? triggerSetting;
   final UIBlock? renderAs;
@@ -2616,6 +2622,7 @@ class UIPageBlockData {
     this.modalPresentationStyle,
     this.modalScreenSize,
     this.modalNavigationBackButton,
+    this.modalRespectSafeArea,
     this.webviewUrl,
     this.triggerSetting,
     this.renderAs,
@@ -2644,6 +2651,7 @@ class UIPageBlockData {
       modalScreenSize: ModalScreenSizeExtension.decode(json['modalScreenSize']),
       modalNavigationBackButton:
           NavigationBackButton.decode(json['modalNavigationBackButton']),
+      modalRespectSafeArea: BooleanDecoder.decode(json['modalRespectSafeArea']),
       webviewUrl: StringDecoder.decode(json['webviewUrl']),
       triggerSetting: TriggerSetting.decode(json['triggerSetting']),
       renderAs: UIBlock.decode(json['renderAs']),
@@ -2668,6 +2676,7 @@ class UIPageBlockData {
       'modalPresentationStyle': modalPresentationStyle?.encode(),
       'modalScreenSize': modalScreenSize?.encode(),
       'modalNavigationBackButton': modalNavigationBackButton?.encode(),
+      'modalRespectSafeArea': modalRespectSafeArea,
       'webviewUrl': webviewUrl,
       'triggerSetting': triggerSetting?.encode(),
       'renderAs': renderAs?.encode(),
@@ -2816,6 +2825,7 @@ class UISelectInputBlockData {
   final String? key;
   final List<UISelectInputOption>? options;
   final String? value;
+  final String? placeholder;
   final int? size;
   final Color? color;
   final FontDesign? design;
@@ -2827,6 +2837,7 @@ class UISelectInputBlockData {
     this.key,
     this.options,
     this.value,
+    this.placeholder,
     this.size,
     this.color,
     this.design,
@@ -2848,6 +2859,7 @@ class UISelectInputBlockData {
       options: ListDecoder.decode(
           json['options'], (element) => UISelectInputOption.decode(element)),
       value: StringDecoder.decode(json['value']),
+      placeholder: StringDecoder.decode(json['placeholder']),
       size: IntDecoder.decode(json['size']),
       color: Color.decode(json['color']),
       design: FontDesignExtension.decode(json['design']),
@@ -2863,6 +2875,7 @@ class UISelectInputBlockData {
       'key': key,
       'options': options?.map((e) => e.encode()).toList(growable: false),
       'value': value,
+      'placeholder': placeholder,
       'size': size,
       'color': color?.encode(),
       'design': design?.encode(),
