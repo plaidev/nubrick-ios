@@ -1,15 +1,17 @@
 package com.nativebrik.sdk.data.extraction
 
 import com.nativebrik.sdk.data.user.UserProperty
-import com.nativebrik.sdk.data.user.UserPropertyType
 import com.nativebrik.sdk.schema.ConditionOperator
+import com.nativebrik.sdk.schema.UserPropertyType
 import java.time.ZonedDateTime
+import java.util.Locale
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 
-internal fun comparePropWithConditionValue(prop: UserProperty, value: String, op: ConditionOperator): Boolean {
+internal fun comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?, value: String, op: ConditionOperator): Boolean {
     val values = value.split(",")
-    return when (prop.type) {
+    val propType = asType ?: prop.type
+    return when (propType) {
         UserPropertyType.INTEGER -> {
             val propValue = prop.value.trim().toIntOrNull() ?: 0
             val conditionValues = values.map { it.trim().toIntOrNull() ?: 0 }
@@ -36,6 +38,13 @@ internal fun comparePropWithConditionValue(prop: UserProperty, value: String, op
             } catch (e: Exception) {
                 compareLong(a = 0, b = emptyList(), op = op)
             }
+        }
+        UserPropertyType.BOOLEAN -> {
+            val propValue = parseStringToBoolean(prop.value)
+            val conditionValues = values.map {
+                parseStringToBoolean(it)
+            }
+            compareBoolean(propValue, conditionValues, op)
         }
         else -> false
     }
@@ -285,6 +294,36 @@ internal fun compareString(a: String, b: List<String>, op: ConditionOperator): B
     }
 }
 
+internal fun compareBoolean(a: Boolean, b: List<Boolean>, op: ConditionOperator): Boolean {
+    return when (op) {
+        ConditionOperator.Equal -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a == b[0]
+        }
+        ConditionOperator.NotEqual -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a != b[0]
+        }
+        ConditionOperator.In -> {
+            return b.contains(a)
+        }
+        ConditionOperator.NotIn -> {
+            return !b.contains(a)
+        }
+        else -> {
+            if (b.isEmpty()) {
+                return false
+            }
+            return a == b[0]
+        }
+    }
+}
+
+
 internal fun compareSemver(a: String, b: List<String>, op: ConditionOperator): Boolean {
     return when (op) {
         ConditionOperator.Equal -> {
@@ -475,5 +514,15 @@ internal fun containsPattern(input: String, pattern: String): Boolean {
         regex.matcher(input).find()
     } catch (e: PatternSyntaxException) {
         false
+    }
+}
+
+internal fun parseStringToBoolean(str: String): Boolean {
+    val normalized = str
+        .trim()                 // 前後の空白・改行を除去
+        .uppercase(Locale.US)
+    return when (normalized) {
+        "FALSE", "NO", "0", "NIL", "OFF", "" -> false
+        else -> true
     }
 }
