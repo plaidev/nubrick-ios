@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import com.nativebrik.sdk.VERSION
 import com.nativebrik.sdk.schema.BuiltinUserProperty
+import com.nativebrik.sdk.schema.UserPropertyType
 import java.net.HttpURLConnection
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -16,6 +17,7 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
 import kotlin.random.Random
+
 
 internal fun getNativebrikUserSharedPreferences(context: Context): SharedPreferences? {
     return context.getSharedPreferences(
@@ -63,14 +65,6 @@ internal fun getToday(): ZonedDateTime {
 
 internal fun formatISO8601(time: ZonedDateTime): String {
     return time.format(DateTimeFormatter.ISO_INSTANT)
-}
-
-internal enum class UserPropertyType {
-    INTEGER,
-    DOUBLE,
-    STRING,
-    TIMESTAMPZ,
-    SEMVER,
 }
 
 internal data class UserProperty(
@@ -154,21 +148,23 @@ class NativebrikUser {
     }
 
     // This is an alias of NativebrikUser.setProperties
-    fun set(props: Map<String, String>) {
+    fun set(props: Map<String, Any>) {
         val editor = this.preferences?.edit()
         props.forEach { (key, value) ->
             if (key == BuiltinUserProperty.userId.toString()) {
-                this.properties[key] = value
-                editor?.putString(BuiltinUserProperty.userId.toString(), value)
+                val strValue = value.toString()
+                this.properties[key] = strValue
+                editor?.putString(BuiltinUserProperty.userId.toString(), strValue)
                 return@forEach
             }
-            this.customProperties[key] = value
-            editor?.putString(USER_CUSTOM_PROPERTY_KEY_PREFIX + key, value)
+            val strValue = value.toString()
+            this.customProperties[key] = strValue
+            editor?.putString(USER_CUSTOM_PROPERTY_KEY_PREFIX + key, strValue)
         }
         editor?.apply()
     }
 
-    fun setProperties(props: Map<String, String>) {
+    fun setProperties(props: Map<String, Any>) {
         this.set(props)
     }
 
