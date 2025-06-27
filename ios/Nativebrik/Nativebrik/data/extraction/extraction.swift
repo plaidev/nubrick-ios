@@ -117,14 +117,15 @@ func isInDistribution(distribution: [ExperimentCondition], properties: [UserProp
         guard let prop = props[propKey] else {
             return true
         }
-        return !comparePropWithConditionValue(prop: prop, value: conditionValue, op: ConditionOperator(rawValue: op) ?? .Equal)
+        return !comparePropWithConditionValue(prop: prop, asType: condition.asType, value: conditionValue, op: ConditionOperator(rawValue: op) ?? .Equal)
     }
     return foundNotMatched == nil
 }
 
-func comparePropWithConditionValue(prop: UserProperty, value: String, op: ConditionOperator) -> Bool {
+func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?, value: String, op: ConditionOperator) -> Bool {
     let values = value.split(separator: ",")
-    switch prop.type {
+    let propType = asType ?? prop.type
+    switch propType {
     case .INTEGER:
         let propValue = Int(prop.value) ?? 0
         let conditionValues = values.map { value in
@@ -151,9 +152,15 @@ func comparePropWithConditionValue(prop: UserProperty, value: String, op: Condit
         let dateFormatter = DateFormatter()
         let propValue = dateFormatter.date(from: prop.value)?.timeIntervalSince1970 ?? 0
         let conditionValues = values.map { value in
-            return dateFormatter.date(from: prop.value)?.timeIntervalSince1970 ?? 0
+            return dateFormatter.date(from: String(value))?.timeIntervalSince1970 ?? 0
         }
         return compareDouble(a: propValue, b: conditionValues, op: op)
+    case .BOOLEAN:
+        let propValue = parseStringToBoolean(prop.value)
+        let conditionValues = values.map { value in
+            return parseStringToBoolean(String(value))
+        }
+        return compareBoolean(a: propValue, b: conditionValues, op: op)
     default:
         return false
     }
@@ -323,45 +330,74 @@ func compareString(a: String, b: [String], op: ConditionOperator) -> Bool {
     }
 }
 
+func compareBoolean(a: Bool, b: [Bool], op: ConditionOperator) -> Bool {
+    switch op {
+    case .Equal:
+        if b.count == 0 {
+            return false
+        }
+        return a == b[0]
+    case .NotEqual:
+        if b.count == 0 {
+            return false
+        }
+        return a != b[0]
+    case .In:
+        return b.contains { value in
+            return value == a
+        }
+    case .NotIn:
+        return !b.contains { value in
+            return value == a
+        }
+    default:
+        if b.count == 0 {
+            return false
+        }
+        return a == b[0]
+    }
+}
+
+
 func compareSemver(a: String, b: [String], op: ConditionOperator) -> Bool {
     switch op {
     case .Equal:
         if b.count == 0 {
             return false
         }
-        return compareSemverAsComparisonResult(a, b[0]) == .orderedSame
+        return compareSemverAsComparisonResult(a, b[0]) == 0
     case .NotEqual:
         if b.count == 0 {
             return false
         }
-        return compareSemverAsComparisonResult(a, b[0]) != .orderedSame
+        return compareSemverAsComparisonResult(a, b[0]) != 0
     case .GreaterThan:
         if b.count == 0 {
             return false
         }
-        return compareSemverAsComparisonResult(a, b[0]) == .orderedDescending
+        return compareSemverAsComparisonResult(a, b[0]) > 0
     case .GreaterThanOrEqual:
         if b.count == 0 {
             return false
         }
-        return compareSemverAsComparisonResult(a, b[0]) != .orderedAscending
+        return compareSemverAsComparisonResult(a, b[0]) >= 0
     case .LessThan:
         if b.count == 0 {
             return false
         }
-        return compareSemverAsComparisonResult(a, b[0]) == .orderedAscending
+        return compareSemverAsComparisonResult(a, b[0]) < 0
     case .LessThanOrEqual:
         if b.count == 0 {
             return false
         }
-        return compareSemverAsComparisonResult(a, b[0]) != .orderedDescending
+        return compareSemverAsComparisonResult(a, b[0]) <= 0
     case .In:
         return b.contains { value in
-            return compareSemverAsComparisonResult(a, b[0]) == .orderedSame
+            return compareSemverAsComparisonResult(a, b[0]) == 0
         }
     case .NotIn:
         return !b.contains { value in
-            return compareSemverAsComparisonResult(a, b[0]) == .orderedSame
+            return compareSemverAsComparisonResult(a, b[0]) == 0
         }
     case .Between:
         if b.count != 2 {
@@ -369,36 +405,12 @@ func compareSemver(a: String, b: [String], op: ConditionOperator) -> Bool {
         }
         let left = compareSemverAsComparisonResult(a, b[0])
         let right = compareSemverAsComparisonResult(a, b[1])
-        return left != .orderedAscending && right != .orderedDescending
+        return left >= 0 && right <= 0
     default:
         if b.count == 0 {
             return false
         }
-        return compareSemverAsComparisonResult(a, b[0]) == .orderedSame
-    }
-}
-
-func compareSemverAsComparisonResult(_ lhs: String, _ rhs: String) -> ComparisonResult {
-    let versionDelimiter = "."
-
-    var lhsComponents = lhs.components(separatedBy: versionDelimiter)
-    var rhsComponents = rhs.components(separatedBy: versionDelimiter)
-
-    let zeroDiff = lhsComponents.count - rhsComponents.count
-
-    if zeroDiff == 0 {
-        // Same format, compare normally
-        return lhs.compare(rhs, options: .numeric)
-    } else {
-        // append zeros to suffix to compare with the same format v'x' -> v'x.0.0'
-        let zeros = Array(repeating: "0", count: abs(zeroDiff))
-        if zeroDiff > 0 {
-            rhsComponents.append(contentsOf: zeros)
-        } else {
-            lhsComponents.append(contentsOf: zeros)
-        }
-        return lhsComponents.joined(separator: versionDelimiter)
-            .compare(rhsComponents.joined(separator: versionDelimiter), options: .numeric)
+        return compareSemverAsComparisonResult(a, b[0]) == 0
     }
 }
 
@@ -420,4 +432,138 @@ func containsPattern(_ input: String, _ pattern: String) -> Bool {
             return false
         }
     }
+}
+
+func parseStringToBoolean(_ str: String) -> Bool {
+    let normalized = str
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased(with: Locale(identifier: "en_US_POSIX"))
+    switch normalized {
+    case "FALSE", "NO", "0", "NIL", "OFF", "NULL", "UNDEFINED", "ZERO":
+        return false
+    default:
+        return true
+    }
+}
+
+// MARK: - Constant
+private let ASTERISK_IDENTIFIER: Int = -1
+
+// MARK: - Semver
+struct Semver {
+    let major: Int
+    let minor: Int
+    let patch: Int
+    let prerelease: String
+    let build: String
+
+    func compare(to other: SemverConstraint) -> Int {
+        var majorCmp = compareComponent(major, other.major)
+        if other.major == ASTERISK_IDENTIFIER {
+            majorCmp = 0
+        }
+        var minorCmp = compareComponent(minor, other.minor)
+        if other.minor == ASTERISK_IDENTIFIER {
+            minorCmp = 0
+        }
+        var patchCmp = compareComponent(patch, other.patch)
+        if other.patch == ASTERISK_IDENTIFIER {
+            patchCmp = 0
+        }
+        var preCmp = compareComponent(prerelease, other.prerelease ?? "")
+        if other.prerelease == nil {
+            preCmp = 0
+        }
+
+        let ordered = [majorCmp, minorCmp, patchCmp, preCmp]
+        let firstDiff = ordered.first { $0 != 0 } ?? 0
+        return firstDiff < 0 ? -1 : (firstDiff == 0 ? 0 : 1)
+    }
+
+    static func decode(_ value: String) -> Semver {
+        let c = SemverConstraint.decode(value)
+        return Semver(
+            major: c.major == ASTERISK_IDENTIFIER ? 0 : c.major,
+            minor: c.minor == ASTERISK_IDENTIFIER ? 0 : c.minor,
+            patch: c.patch == ASTERISK_IDENTIFIER ? 0 : c.patch,
+            prerelease: c.prerelease ?? "",
+            build: c.build ?? ""
+        )
+    }
+}
+
+// MARK: - SemverConstraint
+struct SemverConstraint {
+    let major: Int
+    let minor: Int
+    let patch: Int
+    let prerelease: String?
+    let build: String?
+
+    // 生成
+    static func decode(_ value: String) -> SemverConstraint {
+        guard !value.isEmpty else { return SemverConstraint() }
+
+        // 1) build metadata（+）
+        let (versionCoreAndPrerelease, buildPart) = splitOnce(value, by: "+")
+        let build = buildPart.isEmpty ? nil : buildPart
+
+        // 2) prerelease（-）
+        let (versionCore, prereleasePart) = splitOnce(versionCoreAndPrerelease, by: "-")
+        let prerelease = prereleasePart.isEmpty ? nil : prereleasePart
+
+        // 3) version core（.）
+        var comps = versionCore.split(separator: ".", omittingEmptySubsequences: false)
+                              .map(String.init)
+        while comps.count < 3 { comps.append("*") }
+
+        let major = intOrWildcard(comps[0])
+        let minor = intOrWildcard(comps[1])
+        let patch = intOrWildcard(comps[2])
+
+        return SemverConstraint(
+            major: major,
+            minor: minor,
+            patch: patch,
+            prerelease: prerelease,
+            build: build
+        )
+    }
+
+    init(
+        major: Int = ASTERISK_IDENTIFIER,
+        minor: Int = ASTERISK_IDENTIFIER,
+        patch: Int = ASTERISK_IDENTIFIER,
+        prerelease: String? = nil,
+        build: String? = nil
+    ) {
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+        self.prerelease = prerelease
+        self.build = build
+    }
+
+    private static func intOrWildcard(_ token: String) -> Int {
+        token == "*" ? ASTERISK_IDENTIFIER : (Int(token) ?? ASTERISK_IDENTIFIER)
+    }
+}
+
+func compareSemverAsComparisonResult(_ lhs: String, _ rhs: String) -> Int {
+    let lhsSemver = Semver.decode(lhs)
+    let rhsConstraint = SemverConstraint.decode(rhs)
+    return lhsSemver.compare(to: rhsConstraint)
+}
+
+private func compareComponent<T: Comparable>(_ lhs: T, _ rhs: T) -> Int {
+    lhs < rhs ? -1 : (lhs > rhs ? 1 : 0)
+}
+
+private func splitOnce(_ source: String, by separator: Character) -> (String, String) {
+    if let index = source.firstIndex(of: separator) {
+        let left  = String(source[..<index])
+        let right = String(source[source.index(after: index)...])
+        return (left, right)
+    }
+    return (source, "")
 }
