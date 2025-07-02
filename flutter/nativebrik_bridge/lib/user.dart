@@ -40,7 +40,7 @@ class NativebrikUser {
   /// keys and values are [String]s.
   ///
   /// Returns a [Future] that completes when the properties have been set.
-  Future<void> setProperties(Map<String, String> properties) async {
+  Future<void> setProperties(Map<String, dynamic> properties) async {
     await NativebrikBridgePlatform.instance.setUserProperties(properties);
   }
 

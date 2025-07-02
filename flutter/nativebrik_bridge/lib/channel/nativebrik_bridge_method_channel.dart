@@ -40,7 +40,7 @@ class MethodChannelNativebrikBridge extends NativebrikBridgePlatform {
   }
 
   @override
-  Future<void> setUserProperties(Map<String, String> properties) async {
+  Future<void> setUserProperties(Map<String, dynamic> properties) async {
     await methodChannel.invokeMethod<String>('setUserProperties', properties);
   }
 
