@@ -39,7 +39,7 @@ abstract class NativebrikBridgePlatform extends PlatformInterface {
     throw UnimplementedError('getUserId() has not been implemented.');
   }
 
-  Future<void> setUserProperties(Map<String, String> properties) {
+  Future<void> setUserProperties(Map<String, dynamic> properties) {
     throw UnimplementedError('setUserProperties() has not been implemented.');
   }
 
