@@ -5,8 +5,10 @@ import 'package:nativebrik_bridge/channel/nativebrik_bridge_platform_interface.d
 /// Usage:
 /// ```dart
 /// // Set Custom User Properties
+/// // Values support [String], [int], [double], [DateTime], [bool].
 /// NativebrikUser.instance.setProperties({
 ///   'prefecture': 'Tokyo',
+///   'test_user': true,
 ///   'environment': const bool.fromEnvironment('dart.vm.product')
 ///       ? 'production'
 ///       : 'development',
@@ -36,8 +38,8 @@ class NativebrikUser {
 
   /// Sets user properties for the current user.
   ///
-  /// The [properties] parameter is a map of key-value pairs where both
-  /// keys and values are [String]s.
+  /// The [properties] parameter is a map of key-value pairs.
+  /// Values support [String], [int], [double], [DateTime], [bool].
   ///
   /// Returns a [Future] that completes when the properties have been set.
   Future<void> setProperties(Map<String, dynamic> properties) async {
