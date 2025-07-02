@@ -49,7 +49,7 @@ class NativebrikBridgeManager {
         return nativebrikClient.user.id
     }
 
-    func setUserProperties(properties: [String: String]) {
+    func setUserProperties(properties: [String: Any]) {
         guard let nativebrikClient = self.nativebrikClient else {
             return
         }
