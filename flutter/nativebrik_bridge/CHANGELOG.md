@@ -117,8 +117,12 @@
 ## 0.9.0
 
 - Change NativebrikUser.setProperties interface
-  - The change won't break the code.
-  - Support String, Integer, Double, Date, Boolean value as an user property.
+    - The change won't break the code.
+    - Support String, Integer, Double, Date, Boolean value as an user property.
 - Update Dependencies
-  - Nativebrik to 0.10.0
-  - com.nativebrik.sdk.to 0.5.0
+    - Nativebrik to 0.10.0
+    - com.nativebrik.sdk.to 0.5.0
+
+## 0.9.1
+
+- Update Nativebrik to 0.10.1
