@@ -10,15 +10,6 @@ import UIKit
 
 typealias ExperimentHistoryRecord = TimeInterval
 
-enum UserPropertyType {
-    case INTEGER
-    case DOUBLE
-    case STRING
-    case TIMESTAMPZ
-    case SEMVER
-    case UNKNOWN
-}
-
 struct UserProperty {
     public let name: String
     public let value: String
@@ -139,20 +130,22 @@ public class NativebrikUser {
     }
 
     // This is an alias of NativebrikUser.setProperties
-    public func set(_ properties: [String: String]) {
+    public func set(_ properties: [String: Any]) {
         for (key, value) in properties {
             if key == BuiltinUserProperty.userId.rawValue {
                 // overwrite userId
-                self.properties[BuiltinUserProperty.userId.rawValue] = value
-                self.userDB.set(value, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
+                let strValue = String(describing: value)
+                self.properties[BuiltinUserProperty.userId.rawValue] = strValue
+                self.userDB.set(strValue, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
                 continue
             }
-            self.customProperties[key] = value
-            self.userDB.set(value, forKey: USER_CUSTOM_PROPERTY_KEY_PREFIX + key)
+            let strValue = String(describing: value)
+            self.customProperties[key] = strValue
+            self.userDB.set(strValue, forKey: USER_CUSTOM_PROPERTY_KEY_PREFIX + key)
         }
     }
 
-    public func setProperties(_ properties: [String: String]) {
+    public func setProperties(_ properties: [String: Any]) {
         self.set(properties)
     }
 

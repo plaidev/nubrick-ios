@@ -200,33 +200,42 @@ final class ExperimentTests: XCTestCase {
 final class CompareTests: XCTestCase {
     func testComparePropWithConditionValue() throws {
         let userId = "hello world"
-        XCTAssertTrue(comparePropWithConditionValue(prop: UserProperty(name: "userId", value: userId, type: .STRING), value: userId, op: .Equal))
-        XCTAssertTrue(comparePropWithConditionValue(prop: UserProperty(name: "userRnd", value: "40", type: .INTEGER), value: "100", op: .LessThanOrEqual))
-        XCTAssertTrue(comparePropWithConditionValue(prop: UserProperty(name: "version", value: "4", type: .SEMVER), value: "4.1", op: .LessThanOrEqual))
+        XCTAssertTrue(comparePropWithConditionValue(prop: UserProperty(name: "userId", value: userId, type: .STRING), asType: nil, value: userId, op: .Equal))
+        XCTAssertTrue(comparePropWithConditionValue(prop: UserProperty(name: "userRnd", value: "40", type: .INTEGER), asType: nil, value: "100", op: .LessThanOrEqual))
+        XCTAssertTrue(comparePropWithConditionValue(prop: UserProperty(name: "version", value: "4", type: .SEMVER), asType: nil, value: "4.1", op: .LessThanOrEqual))
     }
     
+    func testComparePropWithConditionValueWithPropTypeOverride() throws {
+        XCTAssertFalse(comparePropWithConditionValue(
+            prop: UserProperty(name: "xxx", value: "12.3", type: .STRING), asType: .STRING, value: "12", op: .Equal))
+        XCTAssertTrue(comparePropWithConditionValue(
+            prop: UserProperty(name: "xxx", value: "12.3", type: .STRING), asType: .SEMVER, value: "12", op: .Equal))
+    }
+    
+    
     func testCompareSemverAsComparisonResultWhenOnlyMajorVersions() throws {
-        XCTAssertEqual(compareSemverAsComparisonResult("1", "1"), .orderedSame)
-        XCTAssertEqual(compareSemverAsComparisonResult("1", "2"), .orderedAscending)
-        XCTAssertEqual(compareSemverAsComparisonResult("1", "0"), .orderedDescending)
+        XCTAssertEqual(compareSemverAsComparisonResult("1", "1") == 0, true)
+        XCTAssertEqual(compareSemverAsComparisonResult("1", "2") < 0, true)
+        XCTAssertEqual(compareSemverAsComparisonResult("1", "0") > 0, true)
     }
     
     func testCompareSemverAsComparisonResultWhenItsDifferentFormat() throws {
-        XCTAssertEqual(compareSemverAsComparisonResult("1", "1.0"), .orderedSame)
-        XCTAssertEqual(compareSemverAsComparisonResult("1.0.0", "1.0"), .orderedSame)
-        XCTAssertEqual(compareSemverAsComparisonResult("1.0.0", "1"), .orderedSame)
+        XCTAssertEqual(compareSemverAsComparisonResult("1", "1.0") == 0, true)
+        XCTAssertEqual(compareSemverAsComparisonResult("1.0.0", "1.0") == 0, true)
+        XCTAssertEqual(compareSemverAsComparisonResult("1.0.0", "1") == 0, true)
     }
     
     func testCompareSemverAsComparisonResult() throws {
-        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "1"), .orderedDescending)
-        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "1.2"), .orderedDescending)
-        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "1.2.2"), .orderedDescending)
-        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "1.2.4"), .orderedAscending)
-        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "2"), .orderedAscending)
+        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "1") == 0, true)
+        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "1.2") == 0, true)
+        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "1.2.2") > 0, true)
+        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "1.2.4") < 0, true)
+        XCTAssertEqual(compareSemverAsComparisonResult("1.2.3", "2") != 0, true)
     }
     
     func testCompareSemver() throws {
         // equal
+        XCTAssertTrue(compareSemver(a: "1.1", b: ["1"], op: .Equal))
         XCTAssertTrue(compareSemver(a: "1", b: ["1.0"], op: .Equal))
         XCTAssertFalse(compareSemver(a: "1", b: ["1.0.1"], op: .Equal))
         
@@ -381,6 +390,30 @@ final class CompareTests: XCTestCase {
         XCTAssertTrue(compareInteger(a: 5, b: [0, 10], op: .Between))
         XCTAssertFalse(compareInteger(a: 5, b: [10, 20], op: .Between))
         XCTAssertFalse(compareInteger(a: 5, b: [], op: .Between))
+    }
+    
+    func testCompareBoolean() throws {
+        // equal
+        XCTAssertTrue(compareBoolean(a: true, b: [true], op: .Equal))
+        XCTAssertFalse(compareBoolean(a: true, b: [false], op: .Equal))
+        
+        // not equal
+        XCTAssertTrue(compareBoolean(a: false, b: [true], op: .NotEqual))
+        XCTAssertFalse(compareBoolean(a: false, b: [false], op: .NotEqual))
+    }
+    
+    func testParseStrToBoolean() {
+        XCTAssertEqual(parseStringToBoolean("true"), true)
+        XCTAssertEqual(parseStringToBoolean("True"), true)
+        XCTAssertEqual(parseStringToBoolean("TRUE"), true)
+        XCTAssertEqual(parseStringToBoolean("1"), true)
+        
+        XCTAssertEqual(parseStringToBoolean("false"), false)
+        XCTAssertEqual(parseStringToBoolean("False"), false)
+        XCTAssertEqual(parseStringToBoolean("FALSE"), false)
+        XCTAssertEqual(parseStringToBoolean("Nil"), false)
+        XCTAssertEqual(parseStringToBoolean("null"), false)
+        XCTAssertEqual(parseStringToBoolean("0"), false)
     }
     
 }

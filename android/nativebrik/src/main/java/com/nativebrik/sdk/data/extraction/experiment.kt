@@ -95,6 +95,7 @@ internal fun isInDistributionTarget(distribution: List<ExperimentCondition>?, pr
         val prop = props[propKey] ?: return@firstOrNull true
         !comparePropWithConditionValue(
             prop = prop,
+            asType = condition.asType,
             value = conditionValue,
             op = ConditionOperator.valueOf(op)
         )

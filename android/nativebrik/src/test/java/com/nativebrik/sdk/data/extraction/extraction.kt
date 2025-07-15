@@ -1,8 +1,8 @@
 package com.nativebrik.sdk.data.extraction
 
 import com.nativebrik.sdk.data.user.UserProperty
-import com.nativebrik.sdk.data.user.UserPropertyType
 import com.nativebrik.sdk.data.user.getCurrentDate
+import com.nativebrik.sdk.schema.UserPropertyType
 import com.nativebrik.sdk.schema.ConditionOperator
 import com.nativebrik.sdk.schema.ExperimentCondition
 import com.nativebrik.sdk.schema.ExperimentConfig

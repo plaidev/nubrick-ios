@@ -764,6 +764,7 @@ internal enum class ConditionOperator {
 
 internal class ExperimentCondition (
 	val property: String? = null,
+	val asType: UserPropertyType? = null,
 	val operator: String? = null,
 	val value: String? = null,
 ) {
@@ -778,6 +779,7 @@ internal class ExperimentCondition (
 
 			return ExperimentCondition(
 				property = StringDecoder.decode(element.jsonObject["property"]),
+				asType = UserPropertyType.decode(element.jsonObject["asType"]),
 				operator = StringDecoder.decode(element.jsonObject["operator"]),
 				value = StringDecoder.decode(element.jsonObject["value"]),
 			)
@@ -792,6 +794,9 @@ internal class ExperimentCondition (
 			map["__typename"] = JsonPrimitive("ExperimentCondition")
 			data.property?.let { value ->
 				StringEncoder.encode(value)?.let { map["property"] = it }
+			}
+			data.asType?.let { value ->
+				UserPropertyType.encode(value)?.let { map["asType"] = it }
 			}
 			data.operator?.let { value ->
 				StringEncoder.encode(value)?.let { map["operator"] = it }
@@ -3672,6 +3677,58 @@ internal enum class UITooltipTransitionTarget {
 			return when (data) {
 				ANCHOR -> JsonPrimitive("ANCHOR")
 				SCREEN -> JsonPrimitive("SCREEN")
+				UNKNOWN -> JsonPrimitive("UNKNOWN")
+			}
+		}
+	}
+}
+
+
+internal enum class UserPropertyType {
+	INTEGER,
+	DOUBLE,
+	STRING,
+	TIMESTAMPZ,
+	BOOLEAN,
+	SEMVER,
+	UNKNOWN,;
+
+	companion object {
+		fun decode(element: JsonElement?): UserPropertyType? {
+			if (element == null) {
+				return null
+			}
+			if (element !is JsonPrimitive) {
+				return null
+			}
+			if (element is JsonNull) {
+				return null
+			}
+			if (!element.jsonPrimitive.isString) {
+				return null
+			}
+			return when (element.jsonPrimitive.content) {
+				"INTEGER" -> INTEGER
+				"DOUBLE" -> DOUBLE
+				"STRING" -> STRING
+				"TIMESTAMPZ" -> TIMESTAMPZ
+				"BOOLEAN" -> BOOLEAN
+				"SEMVER" -> SEMVER
+				else -> UNKNOWN
+			}
+		}
+
+		fun encode(data: UserPropertyType?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+			return when (data) {
+				INTEGER -> JsonPrimitive("INTEGER")
+				DOUBLE -> JsonPrimitive("DOUBLE")
+				STRING -> JsonPrimitive("STRING")
+				TIMESTAMPZ -> JsonPrimitive("TIMESTAMPZ")
+				BOOLEAN -> JsonPrimitive("BOOLEAN")
+				SEMVER -> JsonPrimitive("SEMVER")
 				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}

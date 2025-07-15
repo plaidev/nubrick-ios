@@ -49,6 +49,8 @@ class _MyAppState extends State<MyApp> {
     var userId = await user.getId();
     await user.setProperties({
       'prefecture': "Tokyo",
+      'age': 11,
+      'is_member': true,
       'environment': const bool.fromEnvironment('dart.vm.product')
           ? 'production'
           : 'development',

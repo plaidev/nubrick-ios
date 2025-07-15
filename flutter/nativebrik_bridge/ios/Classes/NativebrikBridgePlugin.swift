@@ -72,7 +72,7 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             let id = self.manager.getUserId()
             result(id)
         case "setUserProperties":
-            let props = call.arguments as! [String:String]
+            let props = call.arguments as! [String:Any]
             self.manager.setUserProperties(properties: props)
             result("ok")
         case "getUserProperties":
@@ -147,7 +147,7 @@ public class NativebrikBridgePlugin: NSObject, FlutterPlugin {
             let rootBlock = args["json"] as! String
             self.manager.connectTooltipEmbedding(channelId: channelId, rootBlock: rootBlock, messenger: self.messenger)
             result("ok")
-            
+
         case "callTooltipEmbeddingDispatch":
             let args = call.arguments as! [String:Any]
             let channelId = args["channelId"] as! String

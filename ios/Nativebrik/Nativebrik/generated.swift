@@ -124,6 +124,7 @@ enum ConditionOperator: String, Decodable, Encodable {
 }
 struct ExperimentCondition: Decodable, Encodable {
   var property: String?
+  var asType: UserPropertyType?
   var `operator`: String?
   var value: String?
 }
@@ -728,6 +729,22 @@ enum UITooltipTransitionTarget: String, Decodable, Encodable {
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try UITooltipTransitionTarget(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
+}
+enum UserPropertyType: String, Decodable, Encodable {
+  case INTEGER = "INTEGER"
+  case DOUBLE = "DOUBLE"
+  case STRING = "STRING"
+  case TIMESTAMPZ = "TIMESTAMPZ"
+  case BOOLEAN = "BOOLEAN"
+  case SEMVER = "SEMVER"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try UserPropertyType(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
   func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()

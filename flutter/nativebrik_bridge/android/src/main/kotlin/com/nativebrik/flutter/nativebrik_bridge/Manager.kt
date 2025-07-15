@@ -42,7 +42,7 @@ internal class NativebrikBridgeManager(private val binaryMessenger: BinaryMessen
         return this.nativebrikClient?.user?.id
     }
 
-    fun setUserProperties(properties: Map<String, String>) {
+    fun setUserProperties(properties: Map<String, Any>) {
         this.nativebrikClient?.user?.setProperties(properties)
     }
 
