@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Nativebrik'
-  s.version          = '0.10.0'
+  s.version          = '0.10.1'
   s.summary          = 'Nativebrik SDK'
   s.description      = <<-DESC
 Nativebrik SDK for iOS.
@@ -18,7 +18,7 @@ Nativebrik SDK for iOS.
   s.source_files = 'ios/Nativebrik/Nativebrik/**/*'
 
   # common deps
-  s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine', 'YogaKit', 'Yoga', 'ImageIO', 'SafariServices'
+  s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine', 'ImageIO', 'SafariServices'
 
   # >= ios 17.0
   s.weak_frameworks = 'TipKit'
