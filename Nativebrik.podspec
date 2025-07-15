@@ -18,7 +18,7 @@ Nativebrik SDK for iOS.
   s.source_files = 'ios/Nativebrik/Nativebrik/**/*'
 
   # common deps
-  s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine', 'YogaKit', 'Yoga', 'ImageIO', 'SafariServices'
+  s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine', 'ImageIO', 'SafariServices'
 
   # >= ios 17.0
   s.weak_frameworks = 'TipKit'
