@@ -103,10 +103,10 @@ func parseColorToCGColor(_ data: Color?) -> CGColor {
     else { return CGColor(gray: 0, alpha: 0) }
 
     let components: [CGFloat] = [
-        CGFloat(clampDouble(value: color.red ?? 0, min: 0, max: 1)),
-        CGFloat(clampDouble(value: color.green ?? 0, min: 0, max: 1)),
-        CGFloat(clampDouble(value: color.blue ?? 0, min: 0, max: 1)),
-        CGFloat(clampDouble(value: color.alpha ?? 0, min: 0, max: 1)),
+        CGFloat(clampFloat(value: color.red ?? 0.0, min: 0.0, max: 1.0)),
+        CGFloat(clampFloat(value: color.green ?? 0.0, min: 0.0, max: 1.0)),
+        CGFloat(clampFloat(value: color.blue ?? 0.0, min: 0.0, max: 1.0)),
+        CGFloat(clampFloat(value: color.alpha ?? 0.0, min: 0.0, max: 1.0)),
     ]
 
     return CGColor(colorSpace: colorSpace, components: components)
@@ -519,6 +519,6 @@ func configureSkeltonText(view: UILabel, showSkelton: Bool) {
     view.textColor = .init(white: 0, alpha: 0)
 }
 
-func clampDouble(value: Double, min: Double, max: Double) -> Double {
+func clampFloat(value: Float, min: Float, max: Float) -> Float {
     return max(min, min(value, max))
 }
