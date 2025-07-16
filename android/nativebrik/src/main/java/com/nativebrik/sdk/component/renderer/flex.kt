@@ -306,16 +306,16 @@ internal fun Modifier.flexOverflow(direction: FlexDirection, overflow: Overflow?
     }
 }
 
-fun clampDouble(v: Double, min: Double, max: Double): Double {
+fun clampFloat(v: Float, min: Float, max: Float): Float {
     return max(min, min(v, max))
 }
 
 internal fun parseColor(color: SchemaColor?): Color {
     return Color(
-        red = clampDouble(color?.red ?: 0f, 0f, 1f),
-        green = clampDouble(color?.green ?: 0f, 0f, 1f),
-        blue = clampDouble(color?.blue ?: 0f, 0f, 1f),
-        alpha = clampDouble(color?.alpha ?: 0f, 0f, 1f),
+        red = clampFloat(color?.red ?: 0f, 0f, 1f),
+        green = clampFloat(color?.green ?: 0f, 0f, 1f),
+        blue = clampFloat(color?.blue ?: 0f, 0f, 1f),
+        alpha = clampFloat(color?.alpha ?: 0f, 0f, 1f),
     )
 }
 
