@@ -1,3 +1,13 @@
+## 0.9.2
+
+- Enhance Product Tour feature
+    - Try to scroll to next anchor widget when it's possible.
+    - The tooltip won't display when the anchor is not visible.
+- Update Dependencies
+    - Nativebrik to 0.10.2
+    - com.nativebrik.sdk.to 0.5.1
+        - Clamp color pigments in (0f,1f) not to break sdk.
+
 ## 0.9.1
 
 - Update Nativebrik to 0.10.1
