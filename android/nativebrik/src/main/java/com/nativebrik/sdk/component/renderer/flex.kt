@@ -46,8 +46,7 @@ import com.nativebrik.sdk.schema.UIFlexContainerBlock
 import com.nativebrik.sdk.template.compile
 import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
 import com.nativebrik.sdk.schema.Color as SchemaColor
-import kotlin.math.max
-import kotlin.math.min
+import androidx.core.math.MathUtils
 
 private fun calcWeight(frameData: FrameData?, flexDirection: FlexDirection): Float? {
     if (flexDirection == FlexDirection.ROW) {
@@ -306,16 +305,12 @@ internal fun Modifier.flexOverflow(direction: FlexDirection, overflow: Overflow?
     }
 }
 
-fun clampFloat(v: Float, min: Float, max: Float): Float {
-    return max(min, min(v, max))
-}
-
 internal fun parseColor(color: SchemaColor?): Color {
     return Color(
-        red = clampFloat(color?.red ?: 0f, 0f, 1f),
-        green = clampFloat(color?.green ?: 0f, 0f, 1f),
-        blue = clampFloat(color?.blue ?: 0f, 0f, 1f),
-        alpha = clampFloat(color?.alpha ?: 0f, 0f, 1f),
+        red = MathUtils.clamp(color?.red ?: 0f, 0f, 1f),
+        green = MathUtils.clamp(color?.green ?: 0f, 0f, 1f),
+        blue = MathUtils.clamp(color?.blue ?: 0f, 0f, 1f),
+        alpha = MathUtils.clamp(color?.alpha ?: 0f, 0f, 1f),
     )
 }
 
