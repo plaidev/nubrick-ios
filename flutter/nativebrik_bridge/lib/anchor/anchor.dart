@@ -8,6 +8,8 @@ import '../provider.dart';
 /// relative to this widget. This is useful for guiding users through features or workflows
 /// as part of an onboarding experience.
 ///
+/// reference: https://docs.nativebrik.com/reference/flutter/nativebrikanchor
+///
 /// Usage:
 /// Wrap any widget you want to highlight with [NativebrikAnchor], providing a unique [id].
 /// The Nativebrik dashboard can then use this anchor to display contextual UI, such as a tooltip

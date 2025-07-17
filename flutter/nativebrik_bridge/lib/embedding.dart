@@ -30,6 +30,9 @@ typedef EmbeddingBuilder = Widget Function(
 ///
 /// - **NativebrikBridge** must be initialized before using this widget.
 ///
+/// reference: https://docs.nativebrik.com/reference/flutter/nativebrikembedding
+///
+/// Usage:
 /// ```dart
 /// // Embedding with default height
 /// Embedding("ID OR CUSTOM ID", height: 300);

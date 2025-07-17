@@ -2,6 +2,8 @@ import 'package:nativebrik_bridge/channel/nativebrik_bridge_platform_interface.d
 
 /// A class to handle NativebrikUser.
 ///
+/// reference: https://docs.nativebrik.com/reference/flutter/nativebrikuser
+///
 /// Usage:
 /// ```dart
 /// // Set Custom User Properties

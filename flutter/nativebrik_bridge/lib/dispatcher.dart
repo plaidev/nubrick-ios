@@ -5,6 +5,14 @@ class NativebrikEvent {
   NativebrikEvent(this.name);
 }
 
+/// NativebrikDispatcher is the main dispatcher for the Nativebrik SDK.
+///
+/// reference: https://docs.nativebrik.com/reference/flutter/nativebrikdispatcher
+///
+/// Usage:
+/// ```dart
+/// NativebrikDispatcher.instance.dispatch(NativebrikEvent('event_name'));
+/// ```
 class NativebrikDispatcher {
   static final NativebrikDispatcher _instance = NativebrikDispatcher._();
 
