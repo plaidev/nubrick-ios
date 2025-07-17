@@ -46,6 +46,7 @@ import com.nativebrik.sdk.schema.UIFlexContainerBlock
 import com.nativebrik.sdk.template.compile
 import com.nativebrik.sdk.vendor.blurhash.BlurHashDecoder
 import com.nativebrik.sdk.schema.Color as SchemaColor
+import androidx.core.math.MathUtils
 
 private fun calcWeight(frameData: FrameData?, flexDirection: FlexDirection): Float? {
     if (flexDirection == FlexDirection.ROW) {
@@ -306,10 +307,10 @@ internal fun Modifier.flexOverflow(direction: FlexDirection, overflow: Overflow?
 
 internal fun parseColor(color: SchemaColor?): Color {
     return Color(
-        red = color?.red ?: 0f,
-        green = color?.green ?: 0f,
-        blue = color?.blue ?: 0f,
-        alpha = color?.alpha ?: 0f,
+        red = MathUtils.clamp(color?.red ?: 0f, 0f, 1f),
+        green = MathUtils.clamp(color?.green ?: 0f, 0f, 1f),
+        blue = MathUtils.clamp(color?.blue ?: 0f, 0f, 1f),
+        alpha = MathUtils.clamp(color?.alpha ?: 0f, 0f, 1f),
     )
 }
 
