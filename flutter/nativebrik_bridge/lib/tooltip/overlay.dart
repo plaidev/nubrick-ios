@@ -111,6 +111,26 @@ class NativebrikTooltipOverlayState extends State<NativebrikTooltipOverlay>
     final anchorPosition = box.localToGlobal(Offset.zero);
     final anchorSize = box.size;
 
+    // check if the anchor is in the screen
+    final Size screenSize = MediaQuery.of(context).size;
+    final Rect screenRect = Offset.zero & screenSize;
+    final Rect anchorRect = Rect.fromLTWH(
+      anchorPosition.dx,
+      anchorPosition.dy,
+      anchorSize.width,
+      anchorSize.height,
+    );
+    // if the anchor is not in the screen, return false (retryUntilTrue will retry)
+    if (!anchorRect.overlaps(screenRect)) {
+      // try to scroll to the anchor if possible
+      await Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      return false;
+    }
+
     final tooltipPosition = calculateTooltipPosition(
       anchorPosition: anchorPosition,
       anchorSize: anchorSize,
