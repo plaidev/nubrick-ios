@@ -10,15 +10,21 @@ import 'package:nativebrik_bridge/utils/tooltip_animation.dart';
 import 'package:nativebrik_bridge/utils/retry.dart';
 import 'package:nativebrik_bridge/utils/transparent_pointer.dart';
 
-class NativebrikTooltip extends StatefulWidget {
+/// @warning This is the internal overlay view for the tooltip.
+///
+/// DO NOT USE THIS CLASS DIRECTLY.
+///
+/// Use [NativebrikProvider] instead.
+class NativebrikTooltipOverlay extends StatefulWidget {
   final Map<String, GlobalKey> keysReference;
-  const NativebrikTooltip({super.key, required this.keysReference});
+  const NativebrikTooltipOverlay({super.key, required this.keysReference});
 
   @override
-  State<NativebrikTooltip> createState() => NativebrikTooltipState();
+  State<NativebrikTooltipOverlay> createState() =>
+      NativebrikTooltipOverlayState();
 }
 
-class NativebrikTooltipState extends State<NativebrikTooltip>
+class NativebrikTooltipOverlayState extends State<NativebrikTooltipOverlay>
     with TickerProviderStateMixin {
   schema.UIRootBlock? _rootBlock;
   final String _channelId = generateRandomString(16);
@@ -60,8 +66,8 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     await Future.delayed(const Duration(milliseconds: 100));
     retryUntilTrue(
       fn: () => _onNextTooltip(destinationId),
-      retries: 30,
-      delay: const Duration(milliseconds: 100),
+      retries: 30, // 30 * 200 = 6 seconds timeout
+      delay: const Duration(milliseconds: 200),
     );
   }
 
@@ -104,6 +110,7 @@ class NativebrikTooltipState extends State<NativebrikTooltip>
     }
     final anchorPosition = box.localToGlobal(Offset.zero);
     final anchorSize = box.size;
+
     final tooltipPosition = calculateTooltipPosition(
       anchorPosition: anchorPosition,
       anchorSize: anchorSize,

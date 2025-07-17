@@ -1,8 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:nativebrik_bridge/tooltip.dart';
+import 'package:nativebrik_bridge/tooltip/overlay.dart';
 
+/// NativebrikProvider is the main provider for the Nativebrik SDK.
+///
+/// reference: https://docs.nativebrik.com/reference/flutter/nativebrikprovider
+///
+/// Usage:
+/// ```dart
+/// NativebrikProvider(
+///   child: App(),
+/// )
+/// ```
 class NativebrikProvider extends StatefulWidget {
   final Widget child;
   const NativebrikProvider({super.key, required this.child});
@@ -33,7 +43,7 @@ class NativebrikProviderState extends State<NativebrikProvider> {
       children: [
         widget.child,
         _render(context),
-        NativebrikTooltip(keysReference: _keys),
+        NativebrikTooltipOverlay(keysReference: _keys),
       ],
     );
   }
