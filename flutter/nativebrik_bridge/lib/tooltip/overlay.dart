@@ -121,7 +121,7 @@ class NativebrikTooltipOverlayState extends State<NativebrikTooltipOverlay>
       anchorSize.height,
     );
     // if the anchor is not in the screen, return false (retryUntilTrue will retry)
-    if (!anchorRect.overlaps(screenRect)) {
+    if (!anchorRect.overlaps(screenRect.deflate(16))) {
       // try to scroll to the anchor if possible
       await Scrollable.ensureVisible(
         context,

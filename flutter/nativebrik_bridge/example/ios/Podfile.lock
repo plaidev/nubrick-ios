@@ -1,19 +1,16 @@
 PODS:
   - Flutter (1.0.0)
-  - integration_test (0.0.1):
-    - Flutter
-  - Nativebrik (0.10.1):
+  - Nativebrik (0.10.2):
     - YogaKit (~> 2.0.0)
   - nativebrik_bridge (0.0.1):
     - Flutter
-    - Nativebrik (~> 0.10.1)
+    - Nativebrik (~> 0.10.2)
   - Yoga (2.0.1)
   - YogaKit (2.0.1):
     - Yoga (~> 2.0.1)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
-  - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - nativebrik_bridge (from `.symlinks/plugins/nativebrik_bridge/ios`)
 
 SPEC REPOS:
@@ -25,16 +22,13 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
-  integration_test:
-    :path: ".symlinks/plugins/integration_test/ios"
   nativebrik_bridge:
     :path: ".symlinks/plugins/nativebrik_bridge/ios"
 
 SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
-  Nativebrik: 645c1a47a80f8b6f5abe2f45abe795bba2cbaf4c
-  nativebrik_bridge: ffec3c01ee915a42ed9bf11bc367173a6b08586a
+  Nativebrik: 055e2eb9b034e186a7534972e24445f953410657
+  nativebrik_bridge: 9bc9c294ea18c36cd9d1eec0062256826cac7295
   Yoga: 7ac7f65e2d7120bf97e75fd66436ed4c7bf8e37e
   YogaKit: 4751ba673fab49df29e2235e23c4ea7d6d5a339c
 
