@@ -16,6 +16,10 @@ export 'package:nativebrik_bridge/anchor/anchor.dart';
 ///
 /// - Initialize the bridge with the project ID before using nativebrik SDK.
 ///
+/// reference: https://docs.nativebrik.com/reference/flutter/nativebrikbridge
+///
+/// Usage:
+///
 /// ```dart
 /// // Setup Nativebrik SDK
 /// void main() {

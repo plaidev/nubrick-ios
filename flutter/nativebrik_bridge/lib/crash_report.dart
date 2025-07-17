@@ -6,6 +6,8 @@ import 'package:nativebrik_bridge/channel/nativebrik_bridge_platform_interface.d
 /// This class provides methods to record Flutter errors and exceptions
 /// and sends them to the native Nativebrik SDK for tracking.
 ///
+/// reference: https://docs.nativebrik.com/reference/flutter/nativebrikcrashreport
+///
 /// Usage:
 /// ```dart
 /// // Set up global error handling

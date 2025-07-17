@@ -12,6 +12,9 @@ enum RemoteConfigPhase {
 /// - **NativebrikBridge** must be initialized before using this class.
 /// - Dispose the variant after using it not to leak resources.
 ///
+/// reference: https://docs.nativebrik.com/reference/flutter/nativebrikremoteconfig
+///
+/// Usage:
 /// ```dart
 /// final config = NativebrikRemoteConfig("ID OR CUSTOM ID");
 /// final variant = await config.fetch();
