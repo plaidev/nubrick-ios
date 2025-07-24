@@ -57,6 +57,8 @@
 		C13634662AF242B100B9F437 /* decode.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634652AF242B100B9F437 /* decode.swift */; };
 		C13634682AF36D7600B9F437 /* repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634672AF36D7600B9F437 /* repository.swift */; };
 		C14FEF532CF95D8B00D243A0 /* ios-compat.swift in Sources */ = {isa = PBXBuildFile; fileRef = C14FEF522CF95D8300D243A0 /* ios-compat.swift */; };
+		C1B69EDD2E31F02200DE5617 /* frequency.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B69EDB2E31F02200DE5617 /* frequency.swift */; };
+		C1B69EDF2E31F0CD00DE5617 /* frequency_test.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B69EDE2E31F0C900DE5617 /* frequency_test.swift */; };
 		C1F488CC2B5521FC009D7DAD /* placeholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F488CB2B5521FC009D7DAD /* placeholder.swift */; };
 		C1FB6EFD2DA7BEA30088EF76 /* encode.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FB6EFC2DA7BEA00088EF76 /* encode.swift */; };
 		C1FB6EFF2DB9DE0C0088EF76 /* _for_bridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FB6EFE2DB9DDE10088EF76 /* _for_bridge.swift */; };
@@ -131,6 +133,8 @@
 		C13634672AF36D7600B9F437 /* repository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = repository.swift; sourceTree = "<group>"; };
 		C13634882B036E5D00B9F437 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Nativebrik/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C14FEF522CF95D8300D243A0 /* ios-compat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ios-compat.swift"; sourceTree = "<group>"; };
+		C1B69EDB2E31F02200DE5617 /* frequency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = frequency.swift; sourceTree = "<group>"; };
+		C1B69EDE2E31F0C900DE5617 /* frequency_test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = frequency_test.swift; sourceTree = "<group>"; };
 		C1F488CB2B5521FC009D7DAD /* placeholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = placeholder.swift; sourceTree = "<group>"; };
 		C1FB6EFC2DA7BEA00088EF76 /* encode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = encode.swift; sourceTree = "<group>"; };
 		C1FB6EFE2DB9DDE10088EF76 /* _for_bridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _for_bridge.swift; sourceTree = "<group>"; };
@@ -164,6 +168,7 @@
 		C1219DBF2B9B0F84005F487E /* util */ = {
 			isa = PBXGroup;
 			children = (
+				C1B69EDB2E31F02200DE5617 /* frequency.swift */,
 				C1219DC02B9B0F84005F487E /* ios-compat.swift */,
 				C1219DC12B9B0F84005F487E /* utils.swift */,
 			);
@@ -298,6 +303,7 @@
 		C13633A92AEB769800B9F437 /* NativebrikTests */ = {
 			isa = PBXGroup;
 			children = (
+				C1B69EDE2E31F0C900DE5617 /* frequency_test.swift */,
 				F47F22D62D83F86F00EDD159 /* network.swift */,
 				C14FEF522CF95D8300D243A0 /* ios-compat.swift */,
 				C13633AA2AEB769800B9F437 /* sdk.swift */,
@@ -450,6 +456,7 @@
 				C1FB6EFF2DB9DE0C0088EF76 /* _for_bridge.swift in Sources */,
 				C1219E162B9B0F85005F487E /* sdk.swift in Sources */,
 				C1219DFC2B9B0F85005F487E /* grid.swift in Sources */,
+				C1B69EDD2E31F02200DE5617 /* frequency.swift in Sources */,
 				C1219E0F2B9B0F85005F487E /* component.swift in Sources */,
 				C1219E012B9B0F85005F487E /* generated.swift in Sources */,
 				C1219E042B9B0F85005F487E /* modal-component.swift in Sources */,
@@ -498,6 +505,7 @@
 				C13634682AF36D7600B9F437 /* repository.swift in Sources */,
 				C13634602AEBB49900B9F437 /* user.swift in Sources */,
 				C1FB6EFD2DA7BEA30088EF76 /* encode.swift in Sources */,
+				C1B69EDF2E31F0CD00DE5617 /* frequency_test.swift in Sources */,
 				C13634662AF242B100B9F437 /* decode.swift in Sources */,
 				C1F488CC2B5521FC009D7DAD /* placeholder.swift in Sources */,
 			);

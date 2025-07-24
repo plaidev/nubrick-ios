@@ -53,8 +53,8 @@ class ContainerEmptyImpl: Container {
     }
     func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) { }
     func removeFormValueListener(_ id: String) { }
-    
-    
+
+
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError> {
         return Result.failure(NativebrikError.skipRequest)
     }
@@ -137,7 +137,7 @@ class ContainerImpl: Container {
     func getFormValue(key: String) -> Any? {
         return self.formRepository?.getValue(key: key)
     }
-    
+
     func getFormValues() -> [String: Any] {
         return self.formRepository?.getFormData() ?? [:]
     }
@@ -145,7 +145,7 @@ class ContainerImpl: Container {
     func setFormValue(key: String, value: Any) {
         self.formRepository?.setValue(key: key, value: value)
     }
-    
+
     func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
         self.formRepository?.addFormValueListener(id: id, listener: listener)
     }
@@ -321,6 +321,14 @@ class ContainerImpl: Container {
             },
             isNotInFrequency: { experimentId, frequency in
                 return self.databaseRepository.isNotInFrequency(experimentId: experimentId, frequency: frequency)
+            },
+            isMatchedToUserEventFrequencyConditions: { conditions in
+                guard let conditions = conditions else {
+                    return true
+                }
+                return conditions.allSatisfy { condition in
+                    return self.databaseRepository.isMatchedToUserEventFrequencyCondition(condition: condition)
+                }
             }
         ) else {
             return Result.failure(NativebrikError.notFound)

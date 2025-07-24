@@ -97,7 +97,7 @@ public class NativebrikUser {
         self.properties[BuiltinUserProperty.sdkVersion.rawValue] = nativebrikSdkVersion
         self.properties[BuiltinUserProperty.osName.rawValue] = UIDevice.current.systemName
         self.properties[BuiltinUserProperty.osVersion.rawValue] = UIDevice.current.systemVersion
-        
+
         let appId = Bundle.main.bundleIdentifier ?? ""
         self.properties[BuiltinUserProperty.appId.rawValue] = appId
 
@@ -106,7 +106,7 @@ public class NativebrikUser {
 
         let cfBundleVersion = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
         self.properties[BuiltinUserProperty.cfBundleVersion.rawValue] = cfBundleVersion
-        
+
         self.userDB.dictionaryRepresentation().forEach { key, value in
             if key.starts(with: USER_CUSTOM_PROPERTY_KEY_PREFIX) {
                 let propKey = key.replacingOccurrences(of: USER_CUSTOM_PROPERTY_KEY_PREFIX, with: "")
@@ -253,12 +253,12 @@ public class NativebrikUser {
             ),
             UserProperty(
                 name: BuiltinUserProperty.localMinute.rawValue,
-                value: String(localDates.minute),
+                value: String(localDates.hour * 60 * localDates.minute),
                 type: .INTEGER
             ),
             UserProperty(
                 name: BuiltinUserProperty.localSecond.rawValue,
-                value: String(localDates.second),
+                value: String(localDates.hour * 60 * 60 + localDates.minute * 60 + localDates.second),
                 type: .INTEGER
             ),
             UserProperty(
@@ -285,7 +285,7 @@ public class NativebrikUser {
                 eventProps.append(eventProp)
             }
         }
-        
+
         for (key, value) in self.customProperties {
             let eventProp = UserProperty(name: key, value: value, type: .STRING)
             eventProps.append(eventProp)

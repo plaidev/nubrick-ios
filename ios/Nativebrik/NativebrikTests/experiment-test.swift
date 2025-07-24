@@ -120,6 +120,8 @@ final class ExperimentTests: XCTestCase {
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true
+        } isMatchedToUserEventFrequencyConditions: { conditions in
+            return true
         }
         XCTAssertNil(actual)
     }
@@ -156,6 +158,8 @@ final class ExperimentTests: XCTestCase {
             return props
         } isNotInFrequency: { experimentId, frequency in
             return true
+        } isMatchedToUserEventFrequencyConditions: { conditions in
+            return true
         }
         
         XCTAssertEqual(configs.configs?[1].id, actual?.id)
@@ -188,6 +192,8 @@ final class ExperimentTests: XCTestCase {
         let actual = extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: configs.configs)) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
+            return true
+        } isMatchedToUserEventFrequencyConditions: { conditions in
             return true
         }
         
