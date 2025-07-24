@@ -814,6 +814,7 @@ internal class ExperimentConfig (
 	val id: ID? = null,
 	val kind: ExperimentKind? = null,
 	val distribution: List<ExperimentCondition>? = null,
+	val eventFrequencyConditions: List<UserEventFrequencyCondition>? = null,
 	val baseline: ExperimentVariant? = null,
 	val variants: List<ExperimentVariant>? = null,
 	val seed: Int? = null,
@@ -835,6 +836,9 @@ internal class ExperimentConfig (
 				kind = ExperimentKind.decode(element.jsonObject["kind"]),
 				distribution = ListDecoder.decode(element.jsonObject["distribution"]) { element: JsonElement? ->
 				ExperimentCondition.decode(element)
+			},
+				eventFrequencyConditions = ListDecoder.decode(element.jsonObject["eventFrequencyConditions"]) { element: JsonElement? ->
+				UserEventFrequencyCondition.decode(element)
 			},
 				baseline = ExperimentVariant.decode(element.jsonObject["baseline"]),
 				variants = ListDecoder.decode(element.jsonObject["variants"]) { element: JsonElement? ->
@@ -864,6 +868,11 @@ internal class ExperimentConfig (
 				ListEncoder.encode(value) { item ->
 					ExperimentCondition.encode(item)
 				}?.let { map["distribution"] = it }
+			}
+			data.eventFrequencyConditions?.let { value ->
+				ListEncoder.encode(value) { item ->
+					UserEventFrequencyCondition.encode(item)
+				}?.let { map["eventFrequencyConditions"] = it }
 			}
 			data.baseline?.let { value ->
 				ExperimentVariant.encode(value)?.let { map["baseline"] = it }
@@ -1315,7 +1324,11 @@ internal class FrameData (
 }
 
 internal enum class FrequencyUnit {
+	MONTH,
+	WEEK,
 	DAY,
+	HOUR,
+	MINUTE,
 	UNKNOWN,;
 
 	companion object {
@@ -1333,7 +1346,11 @@ internal enum class FrequencyUnit {
 				return null
 			}
 			return when (element.jsonPrimitive.content) {
+				"MONTH" -> MONTH
+				"WEEK" -> WEEK
 				"DAY" -> DAY
+				"HOUR" -> HOUR
+				"MINUTE" -> MINUTE
 				else -> UNKNOWN
 			}
 		}
@@ -1343,7 +1360,11 @@ internal enum class FrequencyUnit {
 				return JsonNull
 			}
 			return when (data) {
+				MONTH -> JsonPrimitive("MONTH")
+				WEEK -> JsonPrimitive("WEEK")
 				DAY -> JsonPrimitive("DAY")
+				HOUR -> JsonPrimitive("HOUR")
+				MINUTE -> JsonPrimitive("MINUTE")
 				UNKNOWN -> JsonPrimitive("UNKNOWN")
 			}
 		}
@@ -3683,6 +3704,64 @@ internal enum class UITooltipTransitionTarget {
 	}
 }
 
+
+internal class UserEventFrequencyCondition (
+	val eventName: String? = null,
+	val lookbackPeriod: Int? = null,
+	val unit: FrequencyUnit? = null,
+	val comparison: ConditionOperator? = null,
+	val since: DateTime? = null,
+	val threshold: Int? = null,
+) {
+	companion object {
+		fun decode(element: JsonElement?): UserEventFrequencyCondition? {
+			if (element == null) {
+				return null
+			}
+			if (element !is JsonObject) {
+				return null
+			}
+
+			return UserEventFrequencyCondition(
+				eventName = StringDecoder.decode(element.jsonObject["eventName"]),
+				lookbackPeriod = IntDecoder.decode(element.jsonObject["lookbackPeriod"]),
+				unit = FrequencyUnit.decode(element.jsonObject["unit"]),
+				comparison = ConditionOperator.decode(element.jsonObject["comparison"]),
+				since = DateTimeDecoder.decode(element.jsonObject["since"]),
+				threshold = IntDecoder.decode(element.jsonObject["threshold"]),
+			)
+		}
+
+		fun encode(data: UserEventFrequencyCondition?): JsonElement? {
+			if (data == null) {
+				return JsonNull
+			}
+
+			val map = mutableMapOf<String, JsonElement>()
+			map["__typename"] = JsonPrimitive("UserEventFrequencyCondition")
+			data.eventName?.let { value ->
+				StringEncoder.encode(value)?.let { map["eventName"] = it }
+			}
+			data.lookbackPeriod?.let { value ->
+				IntEncoder.encode(value)?.let { map["lookbackPeriod"] = it }
+			}
+			data.unit?.let { value ->
+				FrequencyUnit.encode(value)?.let { map["unit"] = it }
+			}
+			data.comparison?.let { value ->
+				ConditionOperator.encode(value)?.let { map["comparison"] = it }
+			}
+			data.since?.let { value ->
+				DateTimeEncoder.encode(value)?.let { map["since"] = it }
+			}
+			data.threshold?.let { value ->
+				IntEncoder.encode(value)?.let { map["threshold"] = it }
+			}
+
+			return JsonObject(map)
+		}
+	}
+}
 
 internal enum class UserPropertyType {
 	INTEGER,
