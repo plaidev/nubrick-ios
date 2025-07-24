@@ -262,12 +262,12 @@ class NativebrikUser {
             ),
             UserProperty(
                 name = BuiltinUserProperty.localMinute.toString(),
-                value = now.minute.toString(),
+                value = (now.hour * 60 * now.minute).toString(),
                 type = UserPropertyType.INTEGER,
             ),
             UserProperty(
                 name = BuiltinUserProperty.localSecond.toString(),
-                value = now.second.toString(),
+                value = (now.hour * 60 * 60 + now.minute * 60 + now.second).toString(),
                 type = UserPropertyType.INTEGER,
             ),
             UserProperty(
