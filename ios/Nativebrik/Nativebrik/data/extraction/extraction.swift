@@ -68,7 +68,12 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     return nil
 }
 
-func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, properties: (_ seed: Int) -> [UserProperty], isNotInFrequency: (_ experimentId: String, _ frequency: ExperimentFrequency?) -> Bool) -> ExperimentConfig? {
+func extractExperimentConfigMatchedToProperties(
+    configs: ExperimentConfigs,
+    properties: (_ seed: Int) -> [UserProperty],
+    isNotInFrequency: (_ experimentId: String, _ frequency: ExperimentFrequency?) -> Bool,
+    isMatchedToUserEventFrequencyConditions: (_ conditions: [UserEventFrequencyCondition]?) -> Bool
+) -> ExperimentConfig? {
     guard let configs = configs.configs else {
         return nil
     }
@@ -96,7 +101,7 @@ func extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs, prop
             return true
         }
         let experimentId = config.id ?? ""
-        return isNotInFrequency(experimentId, config.frequency) && isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
+        return isNotInFrequency(experimentId, config.frequency) && isMatchedToUserEventFrequencyConditions(config.eventFrequencyConditions) && isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
     }
 }
 
