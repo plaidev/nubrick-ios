@@ -59,25 +59,12 @@ class DatabaseRepositoryImpl: DatabaseRepository {
             return true
         }
         let calendar = Calendar(identifier: .gregorian)
-        let value = frequency.period ?? (365 * 50) // default 50 years measured in days when unit is DAY
+        let value = frequency.period ?? (365 * 50)
+        let unit = frequency.unit ?? .DAY
 
-        // Calculate the "after" date by subtracting the period according to unit
-        let after: Date = {
-            switch frequency.unit ?? .DAY {
-            case .MINUTE:
-                return calendar.date(byAdding: .minute, value: -value, to: getCurrentDate()) ?? getCurrentDate()
-            case .HOUR:
-                return calendar.date(byAdding: .hour, value: -value, to: getCurrentDate()) ?? getCurrentDate()
-            case .DAY:
-                return calendar.date(byAdding: .day, value: -value, to: getToday()) ?? getToday()
-            case .WEEK:
-                return calendar.date(byAdding: .weekOfYear, value: -value, to: getToday()) ?? getToday()
-            case .MONTH:
-                return calendar.date(byAdding: .month, value: -value, to: getToday()) ?? getToday()
-            case .unknown:
-                return calendar.date(byAdding: .day, value: -value, to: getToday()) ?? getToday()
-            }
-        }()
+        // Use helper to compute the date boundary.
+        let baseDate: Date = (unit == .MINUTE || unit == .HOUR) ? getCurrentDate() : getToday()
+        let after = unit.subtract(value, from: baseDate, calendar: calendar)
         let count = self.experimentHisotryCountAfter(experimentId: experimentId, after: after)
         return count == 0
     }
@@ -142,22 +129,8 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         // Determine the period length. If not provided, default to 50 years.
         let periodCount = lookbackPeriod ?? (365 * 50)
 
-        // Calculate lower-bound date based on the unit.
-        let startDate: Date
-        switch unit {
-        case .MINUTE:
-            startDate = calendar.date(byAdding: .minute, value: -periodCount, to: sinceDate) ?? sinceDate
-        case .HOUR:
-            startDate = calendar.date(byAdding: .hour, value: -periodCount, to: sinceDate) ?? sinceDate
-        case .DAY:
-            startDate = calendar.date(byAdding: .day, value: -periodCount, to: sinceDate) ?? sinceDate
-        case .WEEK:
-            startDate = calendar.date(byAdding: .weekOfYear, value: -periodCount, to: sinceDate) ?? sinceDate
-        case .MONTH:
-            startDate = calendar.date(byAdding: .month, value: -periodCount, to: sinceDate) ?? sinceDate
-        case .unknown:
-            startDate = calendar.date(byAdding: .day, value: -periodCount, to: sinceDate) ?? sinceDate
-        }
+        // Lower-bound date.
+        let startDate = unit.subtract(periodCount, from: sinceDate, calendar: calendar)
 
         // Fetch events after latest of (startDate, sinceDate).
         let request = UserEventEntity.fetchRequest()
@@ -177,26 +150,7 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         var counts: [Date: Int] = [:]
         for event in events {
             let timestamp = event.timestamp
-            let bucket: Date
-            switch unit {
-            case .MINUTE:
-                var comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: timestamp)
-                comps.second = 0
-                bucket = calendar.date(from: comps) ?? timestamp
-            case .HOUR:
-                var comps = calendar.dateComponents([.year, .month, .day, .hour], from: timestamp)
-                comps.minute = 0
-                comps.second = 0
-                bucket = calendar.date(from: comps) ?? timestamp
-            case .DAY:
-                bucket = calendar.startOfDay(for: timestamp)
-            case .WEEK:
-                bucket = calendar.dateInterval(of: .weekOfYear, for: timestamp)?.start ?? calendar.startOfDay(for: timestamp)
-            case .MONTH:
-                bucket = calendar.dateInterval(of: .month, for: timestamp)?.start ?? calendar.startOfDay(for: timestamp)
-            case .unknown:
-                bucket = calendar.startOfDay(for: timestamp)
-            }
+            let bucket = unit.bucketStart(for: timestamp, calendar: calendar)
             counts[bucket, default: 0] += 1
         }
 
