@@ -3,13 +3,19 @@ package com.nativebrik.sdk.data.database
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.nativebrik.sdk.data.extraction.compareInteger
 import com.nativebrik.sdk.data.user.getToday
+import com.nativebrik.sdk.data.user.getCurrentDate
+import com.nativebrik.sdk.schema.ConditionOperator
 import com.nativebrik.sdk.schema.ExperimentFrequency
+import com.nativebrik.sdk.schema.UserEventFrequencyCondition
+import com.nativebrik.sdk.schema.FrequencyUnit
 
 internal interface DatabaseRepository {
     fun appendUserEvent(name: String)
     fun appendExperimentHistory(experimentId: String)
     fun isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?): Boolean
+    fun isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?): Boolean
 }
 
 private const val DATABASE_NAME = "Nativebrik.sdk.db"
@@ -45,9 +51,34 @@ internal class DatabaseRepositoryImpl(private val db: SQLiteDatabase): DatabaseR
 
     override fun isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?): Boolean {
         if (frequency == null) return true
+
         val period = frequency.period ?: (365 * 50)
-        val after = getToday().minusDays(period.toLong())
+        val unit = frequency.unit ?: FrequencyUnit.DAY
+
+        // For minute/hour we base calculation on current date-time, otherwise on today (truncated day).
+        val baseDate = when (unit) {
+            FrequencyUnit.MINUTE, FrequencyUnit.HOUR -> getCurrentDate()
+            else -> getToday()
+        }
+
+        val after = unit.subtract(period, baseDate)
         val count = history.countAfter(experimentId, after)
         return count.toInt() == 0
+    }
+
+    override fun isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?): Boolean {
+        if (condition == null) return true
+        val eventName = condition.eventName ?: return true
+        val threshold = condition.threshold ?: return true
+        val unit = condition.unit ?: FrequencyUnit.DAY
+        val comparison = condition.comparison ?: ConditionOperator.Equal
+        val counts = userEvent.counts(
+            name = eventName,
+            unit = unit,
+            lookbackPeriod = condition.lookbackPeriod,
+            since = condition.since
+        )
+        val total = counts.values.sum()
+        return compareInteger(total, listOf(threshold), comparison)
     }
 }
