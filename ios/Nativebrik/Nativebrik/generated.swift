@@ -132,6 +132,7 @@ struct ExperimentConfig: Decodable, Encodable {
   var id: ID?
   var kind: ExperimentKind?
   var distribution: [ExperimentCondition]?
+  var eventFrequencyConditions: [UserEventFrequencyCondition]?
   var baseline: ExperimentVariant?
   var variants: [ExperimentVariant]?
   var seed: Int?
@@ -229,7 +230,11 @@ struct FrameData: Decodable, Encodable {
   var shadow: BoxShadow?
 }
 enum FrequencyUnit: String, Decodable, Encodable {
+  case MONTH = "MONTH"
+  case WEEK = "WEEK"
   case DAY = "DAY"
+  case HOUR = "HOUR"
+  case MINUTE = "MINUTE"
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try FrequencyUnit(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
@@ -734,6 +739,14 @@ enum UITooltipTransitionTarget: String, Decodable, Encodable {
     var container = encoder.singleValueContainer()
     try container.encode(rawValue)
   }
+}
+struct UserEventFrequencyCondition: Decodable, Encodable {
+  var eventName: String?
+  var lookbackPeriod: Int?
+  var unit: FrequencyUnit?
+  var comparison: ConditionOperator?
+  var since: DateTime?
+  var threshold: Int?
 }
 enum UserPropertyType: String, Decodable, Encodable {
   case INTEGER = "INTEGER"
