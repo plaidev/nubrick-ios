@@ -58,7 +58,7 @@ class ExtractionUnitTest {
                 )
             )
         )
-        Assert.assertEquals("1", extractExperimentConfig(configs, properties) { _, _ -> true }?.id)
+        Assert.assertEquals("1", extractExperimentConfig(configs, properties, { _, _ -> true }, { _ -> true })?.id)
     }
 
     @Test
@@ -83,7 +83,7 @@ class ExtractionUnitTest {
                 )
             )
         )
-        Assert.assertEquals("running", extractExperimentConfig(configs, properties) { _, _ -> true }?.id)
+        Assert.assertEquals("running", extractExperimentConfig(configs, properties, { _, _ -> true }, { _ -> true })?.id)
     }
 
     @Test
