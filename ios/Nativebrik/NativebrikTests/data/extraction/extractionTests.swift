@@ -1,14 +1,14 @@
 //
-//  experiment-test.swift
+//  extractionTests.swift
 //  NativebrikTests
 //
-//  Created by Ryosuke Suzuki on 2023/10/27.
+//  Created by Takuma Jimbo on 2025/08/01.
 //
 
 import XCTest
 @testable import Nativebrik
 
-final class ExperimentTests: XCTestCase {
+final class ExtractionTests: XCTestCase {
     func testExtractComponentIdShouldReturnTheFirst() throws {
         let expected = "HELLO_WORLD"
         let actual = extractComponentId(variant: ExperimentVariant(
