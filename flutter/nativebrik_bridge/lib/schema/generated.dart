@@ -703,11 +703,13 @@ extension ConditionOperatorExtension on ConditionOperator {
 
 class ExperimentCondition {
   final String? property;
+  final UserPropertyType? asType;
   final String? operator;
   final String? value;
 
   ExperimentCondition({
     this.property,
+    this.asType,
     this.operator,
     this.value,
   });
@@ -722,6 +724,7 @@ class ExperimentCondition {
 
     return ExperimentCondition(
       property: StringDecoder.decode(json['property']),
+      asType: UserPropertyTypeExtension.decode(json['asType']),
       operator: StringDecoder.decode(json['operator']),
       value: StringDecoder.decode(json['value']),
     );
@@ -731,6 +734,7 @@ class ExperimentCondition {
     return {
       '__typename': 'ExperimentCondition',
       'property': property,
+      'asType': asType?.encode(),
       'operator': operator,
       'value': value,
     };
@@ -741,6 +745,7 @@ class ExperimentConfig {
   final String? id;
   final ExperimentKind? kind;
   final List<ExperimentCondition>? distribution;
+  final List<UserEventFrequencyCondition>? eventFrequencyConditions;
   final ExperimentVariant? baseline;
   final List<ExperimentVariant>? variants;
   final int? seed;
@@ -752,6 +757,7 @@ class ExperimentConfig {
     this.id,
     this.kind,
     this.distribution,
+    this.eventFrequencyConditions,
     this.baseline,
     this.variants,
     this.seed,
@@ -773,6 +779,9 @@ class ExperimentConfig {
       kind: ExperimentKindExtension.decode(json['kind']),
       distribution: ListDecoder.decode(json['distribution'],
           (element) => ExperimentCondition.decode(element)),
+      eventFrequencyConditions: ListDecoder.decode(
+          json['eventFrequencyConditions'],
+          (element) => UserEventFrequencyCondition.decode(element)),
       baseline: ExperimentVariant.decode(json['baseline']),
       variants: ListDecoder.decode(
           json['variants'], (element) => ExperimentVariant.decode(element)),
@@ -790,6 +799,9 @@ class ExperimentConfig {
       'kind': kind?.encode(),
       'distribution':
           distribution?.map((e) => e.encode()).toList(growable: false),
+      'eventFrequencyConditions': eventFrequencyConditions
+          ?.map((e) => e.encode())
+          .toList(growable: false),
       'baseline': baseline?.encode(),
       'variants': variants?.map((e) => e.encode()).toList(growable: false),
       'seed': seed,
@@ -1215,7 +1227,15 @@ class FrameData {
 
 enum FrequencyUnit {
   // ignore: constant_identifier_names
+  MONTH,
+  // ignore: constant_identifier_names
+  WEEK,
+  // ignore: constant_identifier_names
   DAY,
+  // ignore: constant_identifier_names
+  HOUR,
+  // ignore: constant_identifier_names
+  MINUTE,
   // ignore: constant_identifier_names
   UNKNOWN,
 }
@@ -1230,8 +1250,16 @@ extension FrequencyUnitExtension on FrequencyUnit {
     }
 
     switch (json) {
+      case 'MONTH':
+        return FrequencyUnit.MONTH;
+      case 'WEEK':
+        return FrequencyUnit.WEEK;
       case 'DAY':
         return FrequencyUnit.DAY;
+      case 'HOUR':
+        return FrequencyUnit.HOUR;
+      case 'MINUTE':
+        return FrequencyUnit.MINUTE;
       default:
         return FrequencyUnit.UNKNOWN;
     }
@@ -1239,8 +1267,16 @@ extension FrequencyUnitExtension on FrequencyUnit {
 
   String? encode() {
     switch (this) {
+      case FrequencyUnit.MONTH:
+        return 'MONTH';
+      case FrequencyUnit.WEEK:
+        return 'WEEK';
       case FrequencyUnit.DAY:
         return 'DAY';
+      case FrequencyUnit.HOUR:
+        return 'HOUR';
+      case FrequencyUnit.MINUTE:
+        return 'MINUTE';
       case FrequencyUnit.UNKNOWN:
         return null;
     }
@@ -3452,6 +3488,118 @@ extension UITooltipTransitionTargetExtension on UITooltipTransitionTarget {
       case UITooltipTransitionTarget.SCREEN:
         return 'SCREEN';
       case UITooltipTransitionTarget.UNKNOWN:
+        return null;
+    }
+  }
+}
+
+class UserEventFrequencyCondition {
+  final String? eventName;
+  final int? lookbackPeriod;
+  final FrequencyUnit? unit;
+  final ConditionOperator? comparison;
+  final DateTime? since;
+  final int? threshold;
+
+  UserEventFrequencyCondition({
+    this.eventName,
+    this.lookbackPeriod,
+    this.unit,
+    this.comparison,
+    this.since,
+    this.threshold,
+  });
+
+  static UserEventFrequencyCondition? decode(dynamic json) {
+    if (json == null) {
+      return null;
+    }
+    if (json is! Map<String, dynamic>) {
+      return null;
+    }
+
+    return UserEventFrequencyCondition(
+      eventName: StringDecoder.decode(json['eventName']),
+      lookbackPeriod: IntDecoder.decode(json['lookbackPeriod']),
+      unit: FrequencyUnitExtension.decode(json['unit']),
+      comparison: ConditionOperatorExtension.decode(json['comparison']),
+      since: DateTimeDecoder.decode(json['since']),
+      threshold: IntDecoder.decode(json['threshold']),
+    );
+  }
+
+  Map<String, dynamic> encode() {
+    return {
+      '__typename': 'UserEventFrequencyCondition',
+      'eventName': eventName,
+      'lookbackPeriod': lookbackPeriod,
+      'unit': unit?.encode(),
+      'comparison': comparison?.encode(),
+      'since': since,
+      'threshold': threshold,
+    };
+  }
+}
+
+enum UserPropertyType {
+  // ignore: constant_identifier_names
+  INTEGER,
+  // ignore: constant_identifier_names
+  DOUBLE,
+  // ignore: constant_identifier_names
+  STRING,
+  // ignore: constant_identifier_names
+  TIMESTAMPZ,
+  // ignore: constant_identifier_names
+  BOOLEAN,
+  // ignore: constant_identifier_names
+  SEMVER,
+  // ignore: constant_identifier_names
+  UNKNOWN,
+}
+
+extension UserPropertyTypeExtension on UserPropertyType {
+  static UserPropertyType? decode(dynamic json) {
+    if (json == null) {
+      return null;
+    }
+    if (json is! String) {
+      return null;
+    }
+
+    switch (json) {
+      case 'INTEGER':
+        return UserPropertyType.INTEGER;
+      case 'DOUBLE':
+        return UserPropertyType.DOUBLE;
+      case 'STRING':
+        return UserPropertyType.STRING;
+      case 'TIMESTAMPZ':
+        return UserPropertyType.TIMESTAMPZ;
+      case 'BOOLEAN':
+        return UserPropertyType.BOOLEAN;
+      case 'SEMVER':
+        return UserPropertyType.SEMVER;
+      default:
+        return UserPropertyType.UNKNOWN;
+    }
+  }
+
+  String? encode() {
+    switch (this) {
+      case UserPropertyType.INTEGER:
+        return 'INTEGER';
+      case UserPropertyType.DOUBLE:
+        return 'DOUBLE';
+      case UserPropertyType.STRING:
+        return 'STRING';
+      case UserPropertyType.TIMESTAMPZ:
+        return 'TIMESTAMPZ';
+      case UserPropertyType.BOOLEAN:
+        return 'BOOLEAN';
+      case UserPropertyType.SEMVER:
+        return 'SEMVER';
+      case UserPropertyType.UNKNOWN:
         return null;
     }
   }
