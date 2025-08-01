@@ -73,8 +73,16 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         let request = ExperimentHistoryEntity.fetchRequest()
         request.predicate = NSPredicate(format: "experimentId = %@ && timestamp >= %@", experimentId, after as NSDate)
 
-        let context = self.persistentContainer.viewContext
-        return (try? context.count(for: request)) ?? 0
+        let bgContext = persistentContainer.newBackgroundContext()
+        var count: Int = 0
+        bgContext.performAndWait {
+            do {
+                count = try bgContext.count(for: request)
+            } catch {
+                print("Couldn’t fetch ExperimentHistoryEntity: \(error)")
+            }
+        }
+        return count
     }
 
     func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) -> Boolean {
@@ -96,9 +104,7 @@ class DatabaseRepositoryImpl: DatabaseRepository {
             since: condition.since
         )
 
-        // Aggregate total number of events across all buckets for comparison.
-        let total = counts.values.reduce(0, +)
-
+        let total = counts.values.count
         return compareInteger(a: total, b: [threshold], op: condition.comparison ?? .Equal)
     }
 
@@ -130,7 +136,8 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         let periodCount = lookbackPeriod ?? (365 * 50)
 
         // Lower-bound date.
-        let startDate = unit.subtract(periodCount, from: sinceDate, calendar: calendar)
+        let today = getCurrentDate()
+        let startDate = unit.subtract(periodCount, from: today, calendar: calendar)
 
         // Fetch events after latest of (startDate, sinceDate).
         let request = UserEventEntity.fetchRequest()
@@ -141,19 +148,19 @@ class DatabaseRepositoryImpl: DatabaseRepository {
             sinceDate as NSDate
         )
 
-        let context = self.persistentContainer.viewContext
-        guard let events = try? context.fetch(request) as? [UserEventEntity] else {
-            return [:]
-        }
-
-        // Aggregate events into buckets defined by `unit`.
+        let bgContext = persistentContainer.newBackgroundContext()
         var counts: [Date: Int] = [:]
-        for event in events {
-            let timestamp = event.timestamp
-            let bucket = unit.bucketStart(for: timestamp, calendar: calendar)
-            counts[bucket, default: 0] += 1
+        bgContext.performAndWait {
+            do {
+                let events = try bgContext.fetch(request) as! [UserEventEntity]
+                for event in events {
+                    let bucket = unit.bucketStart(for: event.timestamp, calendar: calendar)
+                    counts[bucket, default: 0] += 1
+                }
+            } catch {
+                print("Couldn’t fetch UserEventEntity: \(error)")
+            }
         }
-
         return counts
     }
 }
