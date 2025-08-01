@@ -7,11 +7,11 @@ import com.nativebrik.sdk.data.user.formatISO8601
 import com.nativebrik.sdk.data.user.getCurrentDate
 import com.nativebrik.sdk.schema.DateTime
 import com.nativebrik.sdk.schema.FrequencyUnit
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import java.time.DayOfWeek
 
 private object UserEventTable {
     const val Name: String = "event"
@@ -83,9 +83,10 @@ internal class UserEvent(private val db: SQLiteDatabase) {
 
         // Determine reference dates
         val fiftyYearsDays = 365 * 50
-        val sinceDate: ZonedDateTime = since ?: getCurrentDate().minusDays(fiftyYearsDays.toLong())
+        val today = getCurrentDate()
+        val sinceDate: ZonedDateTime = since ?: today.minusDays(fiftyYearsDays.toLong())
         val period = lookbackPeriod ?: fiftyYearsDays
-        val startDate = unit.subtract(period, sinceDate)
+        val startDate = unit.subtract(period, today)
         val lowerBound = if (startDate.isAfter(sinceDate)) startDate else sinceDate
 
         // Fetch timestamps from DB after the lowerBound
@@ -104,7 +105,7 @@ internal class UserEvent(private val db: SQLiteDatabase) {
      * Fetch timestamps of events whose name matches and occurred after [after].
      * Returned timestamps are converted to UTC ZonedDateTime.
      */
-    fun fetchTimestampsAfter(name: String, after: ZonedDateTime): List<ZonedDateTime> {
+    private fun fetchTimestampsAfter(name: String, after: ZonedDateTime): List<ZonedDateTime> {
         val cursor = this.db.query(
             UserEventTable.Name,
             arrayOf(UserEventTable.Columns.Timestamp),
@@ -134,15 +135,6 @@ internal class UserEvent(private val db: SQLiteDatabase) {
 // FrequencyUnit helpers – implemented as extension functions to avoid polluting
 // the original enum definition generated elsewhere.
 // -----------------------------------------------------------------------------
-
-private fun FrequencyUnit.toChronoUnit(): ChronoUnit = when (this) {
-    FrequencyUnit.MINUTE -> ChronoUnit.MINUTES
-    FrequencyUnit.HOUR -> ChronoUnit.HOURS
-    FrequencyUnit.DAY -> ChronoUnit.DAYS
-    FrequencyUnit.WEEK -> ChronoUnit.WEEKS
-    FrequencyUnit.MONTH -> ChronoUnit.MONTHS
-    else -> ChronoUnit.DAYS
-}
 
 internal fun FrequencyUnit.subtract(value: Int, from: ZonedDateTime): ZonedDateTime = when (this) {
     FrequencyUnit.MINUTE -> from.minusMinutes(value.toLong())
