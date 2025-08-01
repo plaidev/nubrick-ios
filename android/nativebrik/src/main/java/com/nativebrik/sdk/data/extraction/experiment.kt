@@ -8,6 +8,7 @@ import com.nativebrik.sdk.schema.ExperimentConfig
 import com.nativebrik.sdk.schema.ExperimentConfigs
 import com.nativebrik.sdk.schema.ExperimentFrequency
 import com.nativebrik.sdk.schema.ExperimentVariant
+import com.nativebrik.sdk.schema.UserEventFrequencyCondition
 
 internal fun extractComponentId(variant: ExperimentVariant): String? {
     val configs = variant.configs ?: return null
@@ -55,6 +56,7 @@ internal fun extractExperimentConfig(
     configs: ExperimentConfigs,
     properties: (seed: Int?) -> List<UserProperty>,
     isNotInFrequency: (experimentId: String, frequency: ExperimentFrequency?) -> Boolean,
+    isMatchedToUserEventFrequencyConditions: (conditions: List<UserEventFrequencyCondition>?) -> Boolean,
 ): ExperimentConfig? {
     val configs = configs.configs ?: return null
     if (configs.isEmpty()) return null
@@ -80,7 +82,7 @@ internal fun extractExperimentConfig(
         ) && isInDistributionTarget(
             distribution = config.distribution,
             properties = properties(config.seed),
-        )
+        ) && isMatchedToUserEventFrequencyConditions(config.eventFrequencyConditions)
     }
 }
 
