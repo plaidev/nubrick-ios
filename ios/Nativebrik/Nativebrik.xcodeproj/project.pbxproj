@@ -49,7 +49,6 @@
 		C1219E162B9B0F85005F487E /* sdk.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1219DEE2B9B0F85005F487E /* sdk.swift */; };
 		C13633A62AEB769800B9F437 /* Nativebrik.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C136339D2AEB769800B9F437 /* Nativebrik.framework */; };
 		C13633AB2AEB769800B9F437 /* sdk.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633AA2AEB769800B9F437 /* sdk.swift */; };
-		C13634562AEB81EC00B9F437 /* experiment-test.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634552AEB81EC00B9F437 /* experiment-test.swift */; };
 		C136345E2AEBB15200B9F437 /* ViewInspector in Frameworks */ = {isa = PBXBuildFile; productRef = C136345D2AEBB15200B9F437 /* ViewInspector */; };
 		C13634602AEBB49900B9F437 /* user.swift in Sources */ = {isa = PBXBuildFile; fileRef = C136345F2AEBB49900B9F437 /* user.swift */; };
 		C13634622AEBBC6500B9F437 /* remote-config.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634612AEBBC6500B9F437 /* remote-config.swift */; };
@@ -66,6 +65,7 @@
 		C1FFFD7D2B22E98C00ACD132 /* YogaKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13634522AEB7D6600B9F437 /* YogaKit.xcframework */; };
 		F412635E2D82D45D0008FB4E /* network.swift in Sources */ = {isa = PBXBuildFile; fileRef = F412635D2D82D45B0008FB4E /* network.swift */; };
 		F47543A02DDF718C0076EDDD /* select.swift in Sources */ = {isa = PBXBuildFile; fileRef = F475439F2DDF718B0076EDDD /* select.swift */; };
+		F477260B2E3C975E00725F6B /* extractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F47726082E3C975E00725F6B /* extractionTests.swift */; };
 		F47F22D72D83F87400EDD159 /* network.swift in Sources */ = {isa = PBXBuildFile; fileRef = F47F22D62D83F86F00EDD159 /* network.swift */; };
 /* End PBXBuildFile section */
 
@@ -125,7 +125,6 @@
 		C13633AA2AEB769800B9F437 /* sdk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sdk.swift; sourceTree = "<group>"; };
 		C136344F2AEB7D5800B9F437 /* yoga.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = yoga.xcframework; path = ../xcframeworks/yoga.xcframework; sourceTree = "<group>"; };
 		C13634522AEB7D6600B9F437 /* YogaKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = YogaKit.xcframework; path = ../xcframeworks/YogaKit.xcframework; sourceTree = "<group>"; };
-		C13634552AEB81EC00B9F437 /* experiment-test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "experiment-test.swift"; sourceTree = "<group>"; };
 		C136345F2AEBB49900B9F437 /* user.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = user.swift; sourceTree = "<group>"; };
 		C13634612AEBBC6500B9F437 /* remote-config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "remote-config.swift"; sourceTree = "<group>"; };
 		C13634632AEF92F700B9F437 /* embedding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = embedding.swift; sourceTree = "<group>"; };
@@ -140,6 +139,7 @@
 		C1FB6EFE2DB9DDE10088EF76 /* _for_bridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _for_bridge.swift; sourceTree = "<group>"; };
 		F412635D2D82D45B0008FB4E /* network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = network.swift; sourceTree = "<group>"; };
 		F475439F2DDF718B0076EDDD /* select.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = select.swift; sourceTree = "<group>"; };
+		F47726082E3C975E00725F6B /* extractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = extractionTests.swift; sourceTree = "<group>"; };
 		F47F22D62D83F86F00EDD159 /* network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = network.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -303,11 +303,11 @@
 		C13633A92AEB769800B9F437 /* NativebrikTests */ = {
 			isa = PBXGroup;
 			children = (
+				F477260A2E3C975E00725F6B /* data */,
 				C1B69EDE2E31F0C900DE5617 /* frequency_test.swift */,
 				F47F22D62D83F86F00EDD159 /* network.swift */,
 				C14FEF522CF95D8300D243A0 /* ios-compat.swift */,
 				C13633AA2AEB769800B9F437 /* sdk.swift */,
-				C13634552AEB81EC00B9F437 /* experiment-test.swift */,
 				C136345F2AEBB49900B9F437 /* user.swift */,
 				C13634612AEBBC6500B9F437 /* remote-config.swift */,
 				C13634632AEF92F700B9F437 /* embedding.swift */,
@@ -326,6 +326,22 @@
 				C136344F2AEB7D5800B9F437 /* yoga.xcframework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F47726092E3C975E00725F6B /* extraction */ = {
+			isa = PBXGroup;
+			children = (
+				F47726082E3C975E00725F6B /* extractionTests.swift */,
+			);
+			path = extraction;
+			sourceTree = "<group>";
+		};
+		F477260A2E3C975E00725F6B /* data */ = {
+			isa = PBXGroup;
+			children = (
+				F47726092E3C975E00725F6B /* extraction */,
+			);
+			path = data;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -496,11 +512,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C13634562AEB81EC00B9F437 /* experiment-test.swift in Sources */,
 				C13634622AEBBC6500B9F437 /* remote-config.swift in Sources */,
 				F47F22D72D83F87400EDD159 /* network.swift in Sources */,
 				C14FEF532CF95D8B00D243A0 /* ios-compat.swift in Sources */,
 				C13633AB2AEB769800B9F437 /* sdk.swift in Sources */,
+				F477260B2E3C975E00725F6B /* extractionTests.swift in Sources */,
 				C13634642AEF92F700B9F437 /* embedding.swift in Sources */,
 				C13634682AF36D7600B9F437 /* repository.swift in Sources */,
 				C13634602AEBB49900B9F437 /* user.swift in Sources */,
