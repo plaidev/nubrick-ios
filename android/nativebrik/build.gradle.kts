@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.nativebrik"
-version = "0.5.1"
+version = "0.6.0"
 
 android {
     namespace = "com.nativebrik.sdk"
