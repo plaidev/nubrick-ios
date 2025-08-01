@@ -78,7 +78,7 @@ internal class DatabaseRepositoryImpl(private val db: SQLiteDatabase): DatabaseR
             lookbackPeriod = condition.lookbackPeriod,
             since = condition.since
         )
-        val total = counts.values.sum()
+        val total = counts.values.count()
         return compareInteger(total, listOf(threshold), comparison)
     }
 }
