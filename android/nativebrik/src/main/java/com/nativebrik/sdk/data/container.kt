@@ -269,9 +269,10 @@ internal class ContainerImpl(
                 this.databaseRepository.isNotInFrequency(experimentId, frequency)
             },
             isMatchedToUserEventFrequencyConditions = { conditions ->
-                conditions?.all { condition ->
+                val _conditions = conditions ?: return@extractExperimentConfig true
+                _conditions.all { condition ->
                     this.databaseRepository.isMatchedToUserEventFrequencyCondition(condition)
-                } ?: true
+                }
             }
         ) ?: return Result.failure(NotFoundException())
         val experimentId = config.id ?: return Result.failure(NotFoundException())
