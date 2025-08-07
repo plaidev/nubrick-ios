@@ -1,3 +1,8 @@
+## 0.10.0
+
+- Support Swift Package Manager
+- Run `flutter config --enable-swift-package-manager` to enable Swift Package Manager
+
 ## 0.9.2
 
 - Enhance Product Tour feature
