@@ -13,7 +13,7 @@ A new Flutter plugin project.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Nativebrik Inc' => 'dev.share@nativebrik.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'nativebrik_bridge/Sources/nativebrik_bridge/**/*.swift'
   s.dependency 'Flutter'
   s.dependency 'Nativebrik', '~> 0.10.2'
   s.ios.deployment_target = '14.0'
