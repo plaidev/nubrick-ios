@@ -1,0 +1,15 @@
+{
+  "originHash" : "cb7b463d1d383ef53792debc98a352946538a7c498af183e74b8c2c26eb9c714",
+  "pins" : [
+    {
+      "identity" : "nativebrik-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/plaidev/nativebrik-sdk.git",
+      "state" : {
+        "revision" : "7772bf505b6ba8fbeea684f2c6031d223c4df935",
+        "version" : "0.10.2"
+      }
+    }
+  ],
+  "version" : 3
+}
