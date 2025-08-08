@@ -1,3 +1,9 @@
+## 0.10.1
+
+- Update Dependencies
+    - Nativebrik to 0.11.0
+    - com.nativebrik.sdk.to 0.6.0
+
 ## 0.10.0
 
 - Support Swift Package Manager
