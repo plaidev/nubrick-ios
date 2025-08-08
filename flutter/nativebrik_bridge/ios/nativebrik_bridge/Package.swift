@@ -12,7 +12,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/plaidev/nativebrik-sdk.git",
-            exact: "0.10.2"
+            exact: "0.11.0"
         )
     ],
     targets: [
