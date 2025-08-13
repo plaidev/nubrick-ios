@@ -17,6 +17,11 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.32.8
+      - name: Ensure iOS simulator runtime is installed
+        run: |
+          sudo xcodebuild -license accept
+          sudo xcodebuild -downloadPlatform iOS
+          xcrun simctl list runtimes
       - name: Enable Swift Package Manager
         run: flutter config --enable-swift-package-manager
       - name: Build iOS
