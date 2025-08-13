@@ -205,15 +205,13 @@ class RemoteConfigSwiftViewModel: ObservableObject {
         let _ = RemoteConfig(
             experimentId: experimentId,
             container: container,
-            modalViewController: modalViewController) { phase in
-                DispatchQueue.main.async { [weak self] in
-                    switch phase {
-                    case .loading:
-                        return
-                    default:
-                        self?.phase = phase
-                        return
-                    }
+            modalViewController: modalViewController) { @MainActor [weak self] phase in
+                switch phase {
+                case .loading:
+                    return
+                default:
+                    self?.phase = phase
+                    return
                 }
             }
     }

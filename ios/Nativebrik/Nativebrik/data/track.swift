@@ -106,13 +106,16 @@ class TrackRespositoryImpl: TrackRepository2 {
         self.queueLock.lock()
         if self.timer == nil {
             // here, use async not sync. main.sync will break the app.
-            DispatchQueue.main.async {
+            let setupTimer = { @MainActor in
                 self.timer?.invalidate()
                 self.timer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true, block: { _ in
                     Task(priority: .low) {
                         try await self.sendAndFlush()
                     }
                 })
+            }
+            Task {
+                await setupTimer()
             }
         }
 
