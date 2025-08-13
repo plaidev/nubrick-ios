@@ -11,7 +11,7 @@ internal interface HttpRequestRepository {
     suspend fun request(req: ApiHttpRequest): Result<JsonElement>
 }
 
-internal class HttpRequestRepositoryImpl(): HttpRequestRepository {
+internal class HttpRequestRepositoryImpl : HttpRequestRepository {
     override suspend fun request(req: ApiHttpRequest): Result<JsonElement> {
         return withContext(Dispatchers.IO) {
             val url = req.url ?: return@withContext Result.failure(SkipHttpRequestException())
@@ -22,14 +22,14 @@ internal class HttpRequestRepositoryImpl(): HttpRequestRepository {
             connection.requestMethod = method.toString()
             connection.doInput = true
 
-            // can send data as body
-            if (method != ApiHttpRequestMethod.GET && method != ApiHttpRequestMethod.TRACE) run {
-                val body = req.body ?: ""
-                setBody(connection, body)
-            }
             req.headers?.forEach { header ->
                 val name = header.name ?: return@forEach
                 connection.setRequestProperty(name, header.value ?: "")
+            }
+
+            if (method != ApiHttpRequestMethod.GET && method != ApiHttpRequestMethod.TRACE) run {
+                val body = req.body ?: ""
+                setBody(connection, body)
             }
 
             val response: String = connectAndGetResponse(connection).getOrElse {
