@@ -140,7 +140,7 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
             }
         } catch {
             // Error handling - silently fail as before
-            return
+            print("Failed to load image from \(url): \(error)")
         }
     }
 }
@@ -178,7 +178,7 @@ func loadAsyncImage(url: String, view: UIView, image: UIImageView) {
             }
         } catch {
             // Error handling - silently fail as before
-            return
+            print("Failed to load image from \(url): \(error)")
         }
     }
 }

@@ -205,8 +205,8 @@ class RemoteConfigSwiftViewModel: ObservableObject {
         let _ = RemoteConfig(
             experimentId: experimentId,
             container: container,
-            modalViewController: modalViewController) { [weak self] phase in
-                Task { @MainActor in
+            modalViewController: modalViewController) { phase in
+                Task { @MainActor [weak self] in
                     switch phase {
                     case .loading:
                         return
