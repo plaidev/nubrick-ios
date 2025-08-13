@@ -178,11 +178,8 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         
         if block.data?.kind == CollectionKind.CAROUSEL && block.data?.fullItemWidth == true && block.data?.autoScroll == true {
             let timeInterval = block.data?.autoScrollInterval ?? 3.0
-            let setupTimer = { @MainActor [self] in
+            DispatchQueue.main.async { [self] in
                 self.timer = Timer.scheduledTimer(timeInterval: TimeInterval(timeInterval), target: self, selector: #selector(automaticScroll), userInfo: nil, repeats: true)
-            }
-            Task {
-                await setupTimer()
             }
         }
         
