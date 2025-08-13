@@ -1,3 +1,7 @@
+## 0.10.2
+
+- Update com.nativebrik.sdk.to 0.6.1
+
 ## 0.10.1
 
 - Update Dependencies
