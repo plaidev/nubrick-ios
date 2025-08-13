@@ -152,8 +152,10 @@ class PageView: UIView {
             )
 
             let assertion = dispatchedEvent.httpResponseAssertion
-            let handleEvent = { @MainActor () -> Void in
-                parentEventManager?.dispatch(event: dispatchedEvent)
+            let handleEvent = { () -> Void in
+                Task { @MainActor in
+                    parentEventManager?.dispatch(event: dispatchedEvent)
+                }
             }
             if let httpRequest = dispatchedEvent.httpRequest {
                 Task {
