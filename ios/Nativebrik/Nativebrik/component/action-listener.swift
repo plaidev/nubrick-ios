@@ -164,7 +164,7 @@ func configureDisabled(target: UIView, context: UIBlockContext, requiredFields: 
     let isDisabled = getIsDisabled(requiredFields: requiredFields)
     
     let handleFormValueChange: FormValueListener = { values in
-        DispatchQueue.main.async {
+        Task { @MainActor in
             if isDisabled(values) {
                 target.isUserInteractionEnabled = false
                 target.alpha = 0.5

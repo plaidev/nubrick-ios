@@ -104,15 +104,13 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
         view.clipsToBounds = true
     }
     
-    nativebrikSession.dataTask(with: requestUrl) { (data, response, error) in
-        if error != nil {
-            return
-        }
-
-        DispatchQueue.main.async {
-            if let imageData = data {
+    Task {
+        do {
+            let (data, response) = try await nativebrikSession.data(from: requestUrl)
+            
+            await MainActor.run {
                 if isGif(response) {
-                    guard let image = UIImage.gifImageWithData(imageData) else {
+                    guard let image = UIImage.gifImageWithData(data) else {
                         return
                     }
                     UIView.transition(
@@ -124,7 +122,7 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
                             view.clipsToBounds = true
                         }
                 } else {
-                    guard let image = UIImage(data: imageData) else {
+                    guard let image = UIImage(data: data) else {
                         return
                     }
                     UIView.transition(
@@ -140,28 +138,30 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
                 }
                 view.layoutSubviews()
             }
+        } catch {
+            // Error handling - silently fail as before
+            print("Failed to load image from \(url): \(error)")
         }
-    }.resume()
+    }
 }
 
 func loadAsyncImage(url: String, view: UIView, image: UIImageView) {
     guard let requestUrl = URL(string: url) else {
         return
     }
-    nativebrikSession.dataTask(with: requestUrl) { (data, response, error) in
-        DispatchQueue.main.async {
-            if error != nil {
-                return
-            }
+    
+    Task {
+        do {
+            let (data, response) = try await nativebrikSession.data(from: requestUrl)
             
-            if let imageData = data {
+            await MainActor.run {
                 if isGif(response) {
                     UIView.transition(
                         with: image,
                         duration: 0.2,
                         options: .transitionCrossDissolve,
                         animations: {
-                            image.image = UIImage.gifImageWithData(imageData)
+                            image.image = UIImage.gifImageWithData(data)
                         },
                         completion: nil)
                 } else {
@@ -170,16 +170,17 @@ func loadAsyncImage(url: String, view: UIView, image: UIImageView) {
                         duration: 0.2,
                         options: .transitionCrossDissolve,
                         animations: {
-                            image.image = UIImage(data: imageData)
+                            image.image = UIImage(data: data)
                         },
                         completion: nil)
                 }
                 view.layoutSubviews()
-            } else {
-                return
             }
+        } catch {
+            // Error handling - silently fail as before
+            print("Failed to load image from \(url): \(error)")
         }
-    }.resume()
+    }
 }
 
 func isGif(_ response: URLResponse?) -> Boolean {
