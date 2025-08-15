@@ -178,8 +178,8 @@ class RootView: UIView {
             onEvent?(event)
         })
 
-        if let destId = trigger?.data?.triggerSetting?.onTrigger?.destinationPageId {
-            self.presentPage(pageId: destId, props: nil)
+        if let onTrigger = trigger?.data?.triggerSetting?.onTrigger {
+            self.event?.dispatch(event: onTrigger)
         }
     }
 
