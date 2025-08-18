@@ -26,7 +26,28 @@ class TextView: AnimatedUIControl {
         
         let label = UILabel()
         label.yoga.isEnabled = true
-        if let color = block.data?.color {
+        
+        // Try new ColorValue format first
+        if let colorValue = block.data?.colorValue {
+            if let colorResult = parseColorValueFromGenerated(colorValue) {
+                switch colorResult {
+                case .solid(let color):
+                    label.textColor = color
+                case .linearGradient(let gradientLayer):
+                    // Create gradient text effect (requires more complex setup)
+                    // For now, use the first color from the gradient
+                    if let colors = gradientLayer.colors as? [CGColor], !colors.isEmpty,
+                       let firstColor = colors.first {
+                        label.textColor = UIColor(cgColor: firstColor)
+                    } else {
+                        label.textColor = .label
+                    }
+                }
+            } else {
+                label.textColor = .label
+            }
+        } else if let color = block.data?.color {
+            // Fallback to old format
             label.textColor = parseColor(color)
         } else {
             label.textColor = .label
