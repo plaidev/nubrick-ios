@@ -672,9 +672,6 @@ private func normalizeSingleRadius(radius: CGFloat, width: CGFloat, height: CGFl
 
 // NOTE: should be called in viewDidLayoutSubviews to wait until view.bounds are set
 func configureBorder(view: UIView, frame: FrameData?) {
-    // Debug logging
-    
-    // Handle background using new ColorValue format if available
     if let backgroundValue = frame?.backgroundValue {
         if let colorResult = parseColorValueFromGenerated(backgroundValue) {
             switch colorResult {
@@ -682,7 +679,6 @@ func configureBorder(view: UIView, frame: FrameData?) {
                 view.layer.backgroundColor = color.cgColor
                 view.layer.sublayers?.filter { $0.name == "gradient-layer" }.forEach { $0.removeFromSuperlayer() }
             case .linearGradient(let gradientLayer):
-                print("DEBUG: Applying gradient layer with bounds: \(view.bounds)")
                 view.layer.backgroundColor = UIColor.clear.cgColor
                 view.layer.sublayers?.filter { $0.name == "gradient-layer" }.forEach { $0.removeFromSuperlayer() }
                 gradientLayer.frame = view.bounds
