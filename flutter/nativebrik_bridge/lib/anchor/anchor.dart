@@ -39,26 +39,28 @@ class NativebrikAnchor extends StatefulWidget {
 
 class _AnchorState extends State<NativebrikAnchor> {
   final GlobalKey childKey = GlobalKey();
+  NativebrikProviderState? _provider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _provider = context.nativebrikProvider;
+  }
 
   @override
   void initState() {
     super.initState();
     // Register the key after the first frame is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.nativebrikProvider;
-      if (provider != null) {
-        provider.storeKey(widget.id, childKey);
-      }
+      if (!mounted) return;
+      _provider?.storeKey(widget.id, childKey);
     });
   }
 
   @override
   void dispose() {
     // Remove the key when the widget is disposed
-    final provider = context.nativebrikProvider;
-    if (provider != null) {
-      provider.removeKey(widget.id);
-    }
+    _provider?.removeKey(widget.id);
     super.dispose();
   }
 
