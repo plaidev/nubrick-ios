@@ -96,7 +96,7 @@ class TextView: AnimatedUIControl {
         configureBorder(view: self, frame: self.block.data?.frame)
         
         // Apply gradient if available
-        if let gradientLayer = self.gradientLayer {
+        if self.gradientLayer != nil {
             applyGradientToLabel()
         }
     }
