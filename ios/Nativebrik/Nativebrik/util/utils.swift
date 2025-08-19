@@ -74,10 +74,15 @@ func configureBorderWithRawData(view: UIView, frameDict: [String: Any]?) {
                     view.layer.borderWidth = borderWidthCG
                     view.layer.borderColor = color.cgColor
                     view.layer.cornerRadius = cornerRadius
+                    view.clipsToBounds = true  // Clip content to bounds
                 case .linearGradient(let gradientLayer):
                     // Create gradient border for simple case
                     view.layer.borderWidth = 0  // Remove native border
                     view.layer.cornerRadius = cornerRadius
+                    view.clipsToBounds = true  // Clip content to bounds
+                    
+                    // Remove old gradient border layers first
+                    view.layer.sublayers?.filter { $0.name == "gradient-border-layer" }.forEach { $0.removeFromSuperlayer() }
                     
                     // Create path for the border
                     let path = UIBezierPath(roundedRect: view.bounds, cornerRadius: cornerRadius)
@@ -101,8 +106,7 @@ func configureBorderWithRawData(view: UIView, frameDict: [String: Any]?) {
                     gradientBorderLayer.mask = borderMask
                     gradientBorderLayer.name = "gradient-border-layer"
                     
-                    // Remove old gradient border layers and add the new one
-                    view.layer.sublayers?.filter { $0.name == "gradient-border-layer" }.forEach { $0.removeFromSuperlayer() }
+                    // Add the new gradient border layer
                     view.layer.addSublayer(gradientBorderLayer)
                 }
             }
@@ -121,10 +125,14 @@ func configureBorderWithRawData(view: UIView, frameDict: [String: Any]?) {
                 view.layer.borderWidth = borderWidthCG
                 view.layer.borderColor = color.cgColor
                 view.layer.cornerRadius = cornerRadius
+                view.clipsToBounds = true  // Clip content to bounds
             }
         } else {
             view.layer.borderWidth = borderWidthCG
             view.layer.cornerRadius = cornerRadius
+            if cornerRadius > 0 {
+                view.clipsToBounds = true  // Clip content to bounds when there's corner radius
+            }
         }
         return
     }
@@ -760,10 +768,15 @@ func configureBorder(view: UIView, frame: FrameData?) {
                     view.layer.borderWidth = borderWidth
                     view.layer.borderColor = color.cgColor
                     view.layer.cornerRadius = cornerRadius
+                    view.clipsToBounds = true  // Clip content to bounds
                 case .linearGradient(let gradientLayer):
                     // Create gradient border for simple case
                     view.layer.borderWidth = 0  // Remove native border
                     view.layer.cornerRadius = cornerRadius
+                    view.clipsToBounds = true  // Clip content to bounds
+                    
+                    // Remove old gradient border layers first
+                    view.layer.sublayers?.filter { $0.name == "gradient-border-layer" }.forEach { $0.removeFromSuperlayer() }
                     
                     // Create path for the border
                     let path = UIBezierPath(roundedRect: view.bounds, cornerRadius: cornerRadius)
@@ -787,8 +800,7 @@ func configureBorder(view: UIView, frame: FrameData?) {
                     gradientBorderLayer.mask = borderMask
                     gradientBorderLayer.name = "gradient-border-layer"
                     
-                    // Remove old gradient border layers and add the new one
-                    view.layer.sublayers?.filter { $0.name == "gradient-border-layer" }.forEach { $0.removeFromSuperlayer() }
+                    // Add the new gradient border layer
                     view.layer.addSublayer(gradientBorderLayer)
                 }
             }
@@ -796,9 +808,13 @@ func configureBorder(view: UIView, frame: FrameData?) {
             view.layer.borderWidth = borderWidth
             view.layer.borderColor = parseColorToCGColor(bc)
             view.layer.cornerRadius = cornerRadius
+            view.clipsToBounds = true  // Clip content to bounds
         } else {
             view.layer.borderWidth = borderWidth
             view.layer.cornerRadius = cornerRadius
+            if cornerRadius > 0 {
+                view.clipsToBounds = true  // Clip content to bounds when there's corner radius
+            }
         }
         return
     }
