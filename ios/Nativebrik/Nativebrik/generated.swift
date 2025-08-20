@@ -102,6 +102,49 @@ struct Color: Decodable, Encodable {
   var blue: Float?
   var alpha: Float?
 }
+indirect enum ColorValue: Decodable, Encodable {
+  case ESolidColor(SolidColor)
+  case ELinearGradient(LinearGradient)
+  case unknown
+
+  enum CodingKeys: String, CodingKey {
+    case __typename
+  }
+  enum Typename: String, Decodable {
+    case __SolidColor = "SolidColor"
+    case __LinearGradient = "LinearGradient"
+    case unknown
+  }
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let typename = try container.decode(Typename.self, forKey: .__typename)
+    let associateContainer = try decoder.singleValueContainer()
+    switch typename {
+    case .__SolidColor:
+      let data = try associateContainer.decode(SolidColor.self)
+      self = .ESolidColor(data)
+    case .__LinearGradient:
+      let data = try associateContainer.decode(LinearGradient.self)
+      self = .ELinearGradient(data)
+    default:
+      self = .unknown
+    }
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+
+    switch self {
+    case .ESolidColor(let data):
+      try container.encode(Typename.__SolidColor.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .ELinearGradient(let data):
+      try container.encode(Typename.__LinearGradient.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .unknown:
+      try container.encode(Typename.unknown.rawValue, forKey: .__typename)
+    }
+  }
+}
 enum ConditionOperator: String, Decodable, Encodable {
   case Regex = "Regex"
   case Equal = "Equal"
@@ -225,7 +268,9 @@ struct FrameData: Decodable, Encodable {
   var borderBottomLeftRadius: Int?
   var borderWidth: Int?
   var borderColor: Color?
+  var borderColorValue: ColorValue?
   var background: Color?
+  var backgroundValue: ColorValue?
   var backgroundSrc: String?
   var shadow: BoxShadow?
 }
@@ -243,6 +288,28 @@ enum FrequencyUnit: String, Decodable, Encodable {
     var container = encoder.singleValueContainer()
     try container.encode(rawValue)
   }
+}
+enum GradientDirection: String, Decodable, Encodable {
+  case TO_RIGHT = "TO_RIGHT"
+  case TO_LEFT = "TO_LEFT"
+  case TO_TOP = "TO_TOP"
+  case TO_BOTTOM = "TO_BOTTOM"
+  case TO_TOP_RIGHT = "TO_TOP_RIGHT"
+  case TO_TOP_LEFT = "TO_TOP_LEFT"
+  case TO_BOTTOM_RIGHT = "TO_BOTTOM_RIGHT"
+  case TO_BOTTOM_LEFT = "TO_BOTTOM_LEFT"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try GradientDirection(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
+}
+struct GradientStop: Decodable, Encodable {
+  var color: Color?
+  var position: Float?
 }
 enum ImageContentMode: String, Decodable, Encodable {
   case FIT = "FIT"
@@ -269,6 +336,10 @@ enum JustifyContent: String, Decodable, Encodable {
     var container = encoder.singleValueContainer()
     try container.encode(rawValue)
   }
+}
+struct LinearGradient: Decodable, Encodable {
+  var direction: GradientDirection?
+  var stops: [GradientStop]?
 }
 enum ModalPresentationStyle: String, Decodable, Encodable {
   case DEPENDS_ON_CONTEXT_OR_FULL_SCREEN = "DEPENDS_ON_CONTEXT_OR_FULL_SCREEN"
@@ -347,6 +418,9 @@ enum PropertyType: String, Decodable, Encodable {
     var container = encoder.singleValueContainer()
     try container.encode(rawValue)
   }
+}
+struct SolidColor: Decodable, Encodable {
+  var color: Color?
 }
 enum TextAlign: String, Decodable, Encodable {
   case NATURAL = "NATURAL"
@@ -656,6 +730,7 @@ struct UITextBlockData: Decodable, Encodable {
   var value: String?
   var size: Int?
   var color: Color?
+  var colorValue: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?
   var maxLines: Int?
