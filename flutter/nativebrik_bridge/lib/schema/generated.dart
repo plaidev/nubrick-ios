@@ -1,7 +1,6 @@
 // Generated code - do not modify
 // ignore_for_file: unnecessary_cast, unnecessary_null_checks
 
-
 class StringDecoder {
   static String? decode(dynamic element) {
     if (element == null) {
@@ -182,10 +181,8 @@ class ApiHttpHeader {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'ApiHttpHeader',
-      'name':
-          name,
-      'value':
-          value,
+      'name': name,
+      'value': value,
     };
   }
 }
@@ -214,7 +211,8 @@ class ApiHttpRequest {
     return ApiHttpRequest(
       url: StringDecoder.decode(json['url']),
       method: ApiHttpRequestMethodExtension.decode(json['method']),
-      headers: ListDecoder.decode(json['headers'], (element) => ApiHttpHeader.decode(element)),
+      headers: ListDecoder.decode(
+          json['headers'], (element) => ApiHttpHeader.decode(element)),
       body: StringDecoder.decode(json['body']),
     );
   }
@@ -222,14 +220,10 @@ class ApiHttpRequest {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'ApiHttpRequest',
-      'url':
-          url,
-      'method':
-          method?.encode(),
-      'headers':
-            headers?.map((e) => e.encode()).toList(growable: false),
-      'body':
-          body,
+      'url': url,
+      'method': method?.encode(),
+      'headers': headers?.map((e) => e.encode()).toList(growable: false),
+      'body': body,
     };
   }
 }
@@ -320,15 +314,15 @@ class ApiHttpResponseAssertion {
     }
 
     return ApiHttpResponseAssertion(
-      statusCodes: ListDecoder.decode(json['statusCodes'], (element) => IntDecoder.decode(element)),
+      statusCodes: ListDecoder.decode(
+          json['statusCodes'], (element) => IntDecoder.decode(element)),
     );
   }
 
   Map<String, dynamic> encode() {
     return {
       '__typename': 'ApiHttpResponseAssertion',
-      'statusCodes':
-            statusCodes?.map((e) => e).toList(growable: false),
+      'statusCodes': statusCodes?.map((e) => e).toList(growable: false),
     };
   }
 }
@@ -365,14 +359,10 @@ class BoxShadow {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'BoxShadow',
-      'color':
-          color?.encode(),
-      'offsetX':
-          offsetX,
-      'offsetY':
-          offsetY,
-      'radius':
-          radius,
+      'color': color?.encode(),
+      'offsetX': offsetX,
+      'offsetY': offsetY,
+      'radius': radius,
     };
   }
 }
@@ -615,67 +605,11 @@ class Color {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'Color',
-      'red':
-          red,
-      'green':
-          green,
-      'blue':
-          blue,
-      'alpha':
-          alpha,
+      'red': red,
+      'green': green,
+      'blue': blue,
+      'alpha': alpha,
     };
-  }
-}
-
-abstract class ColorValue {
-  factory ColorValue.asSolidColor(SolidColor data) = ColorValueSolidColor;
-  factory ColorValue.asLinearGradient(LinearGradient data) = ColorValueLinearGradient;
-
-  static ColorValue? decode(dynamic json) {
-    if (json == null) {
-      return null;
-    }
-    if (json is! Map<String, dynamic>) {
-      return null;
-    }
-
-    final typename = json['__typename'];
-    if (typename == null || typename is! String) {
-      return null;
-    }
-
-    switch (typename) {
-      case 'SolidColor':
-        final decoded = SolidColor.decode(json);
-        return decoded != null ? ColorValue.asSolidColor(decoded) : null;
-      case 'LinearGradient':
-        final decoded = LinearGradient.decode(json);
-        return decoded != null ? ColorValue.asLinearGradient(decoded) : null;
-      default:
-        return null;
-    }
-  }
-
-  Map<String, dynamic>? encode();
-}
-class ColorValueSolidColor implements ColorValue {
-  final SolidColor data;
-
-  ColorValueSolidColor(this.data);
-
-  @override
-  Map<String, dynamic>? encode() {
-    return data.encode();
-  }
-}
-class ColorValueLinearGradient implements ColorValue {
-  final LinearGradient data;
-
-  ColorValueLinearGradient(this.data);
-
-  @override
-  Map<String, dynamic>? encode() {
-    return data.encode();
   }
 }
 
@@ -799,14 +733,10 @@ class ExperimentCondition {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'ExperimentCondition',
-      'property':
-          property,
-      'asType':
-          asType?.encode(),
-      'operator':
-          operator,
-      'value':
-          value,
+      'property': property,
+      'asType': asType?.encode(),
+      'operator': operator,
+      'value': value,
     };
   }
 }
@@ -847,10 +777,14 @@ class ExperimentConfig {
     return ExperimentConfig(
       id: StringDecoder.decode(json['id']),
       kind: ExperimentKindExtension.decode(json['kind']),
-      distribution: ListDecoder.decode(json['distribution'], (element) => ExperimentCondition.decode(element)),
-      eventFrequencyConditions: ListDecoder.decode(json['eventFrequencyConditions'], (element) => UserEventFrequencyCondition.decode(element)),
+      distribution: ListDecoder.decode(json['distribution'],
+          (element) => ExperimentCondition.decode(element)),
+      eventFrequencyConditions: ListDecoder.decode(
+          json['eventFrequencyConditions'],
+          (element) => UserEventFrequencyCondition.decode(element)),
       baseline: ExperimentVariant.decode(json['baseline']),
-      variants: ListDecoder.decode(json['variants'], (element) => ExperimentVariant.decode(element)),
+      variants: ListDecoder.decode(
+          json['variants'], (element) => ExperimentVariant.decode(element)),
       seed: IntDecoder.decode(json['seed']),
       frequency: ExperimentFrequency.decode(json['frequency']),
       startedAt: DateTimeDecoder.decode(json['startedAt']),
@@ -861,26 +795,19 @@ class ExperimentConfig {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'ExperimentConfig',
-      'id':
-          id,
-      'kind':
-          kind?.encode(),
+      'id': id,
+      'kind': kind?.encode(),
       'distribution':
-            distribution?.map((e) => e.encode()).toList(growable: false),
-      'eventFrequencyConditions':
-            eventFrequencyConditions?.map((e) => e.encode()).toList(growable: false),
-      'baseline':
-          baseline?.encode(),
-      'variants':
-            variants?.map((e) => e.encode()).toList(growable: false),
-      'seed':
-          seed,
-      'frequency':
-          frequency?.encode(),
-      'startedAt':
-          startedAt,
-      'endedAt':
-          endedAt,
+          distribution?.map((e) => e.encode()).toList(growable: false),
+      'eventFrequencyConditions': eventFrequencyConditions
+          ?.map((e) => e.encode())
+          .toList(growable: false),
+      'baseline': baseline?.encode(),
+      'variants': variants?.map((e) => e.encode()).toList(growable: false),
+      'seed': seed,
+      'frequency': frequency?.encode(),
+      'startedAt': startedAt,
+      'endedAt': endedAt,
     };
   }
 }
@@ -901,15 +828,15 @@ class ExperimentConfigs {
     }
 
     return ExperimentConfigs(
-      configs: ListDecoder.decode(json['configs'], (element) => ExperimentConfig.decode(element)),
+      configs: ListDecoder.decode(
+          json['configs'], (element) => ExperimentConfig.decode(element)),
     );
   }
 
   Map<String, dynamic> encode() {
     return {
       '__typename': 'ExperimentConfigs',
-      'configs':
-            configs?.map((e) => e.encode()).toList(growable: false),
+      'configs': configs?.map((e) => e.encode()).toList(growable: false),
     };
   }
 }
@@ -940,10 +867,8 @@ class ExperimentFrequency {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'ExperimentFrequency',
-      'period':
-          period,
-      'unit':
-          unit?.encode(),
+      'period': period,
+      'unit': unit?.encode(),
     };
   }
 }
@@ -1021,7 +946,8 @@ class ExperimentVariant {
 
     return ExperimentVariant(
       id: StringDecoder.decode(json['id']),
-      configs: ListDecoder.decode(json['configs'], (element) => VariantConfig.decode(element)),
+      configs: ListDecoder.decode(
+          json['configs'], (element) => VariantConfig.decode(element)),
       weight: IntDecoder.decode(json['weight']),
     );
   }
@@ -1029,12 +955,9 @@ class ExperimentVariant {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'ExperimentVariant',
-      'id':
-          id,
-      'configs':
-            configs?.map((e) => e.encode()).toList(growable: false),
-      'weight':
-          weight,
+      'id': id,
+      'configs': configs?.map((e) => e.encode()).toList(growable: false),
+      'weight': weight,
     };
   }
 }
@@ -1227,9 +1150,7 @@ class FrameData {
   final int? borderBottomLeftRadius;
   final int? borderWidth;
   final Color? borderColor;
-  final ColorValue? borderColorValue;
   final Color? background;
-  final ColorValue? backgroundValue;
   final String? backgroundSrc;
   final BoxShadow? shadow;
 
@@ -1247,9 +1168,7 @@ class FrameData {
     this.borderBottomLeftRadius,
     this.borderWidth,
     this.borderColor,
-    this.borderColorValue,
     this.background,
-    this.backgroundValue,
     this.backgroundSrc,
     this.shadow,
   });
@@ -1272,13 +1191,12 @@ class FrameData {
       borderRadius: IntDecoder.decode(json['borderRadius']),
       borderTopLeftRadius: IntDecoder.decode(json['borderTopLeftRadius']),
       borderTopRightRadius: IntDecoder.decode(json['borderTopRightRadius']),
-      borderBottomRightRadius: IntDecoder.decode(json['borderBottomRightRadius']),
+      borderBottomRightRadius:
+          IntDecoder.decode(json['borderBottomRightRadius']),
       borderBottomLeftRadius: IntDecoder.decode(json['borderBottomLeftRadius']),
       borderWidth: IntDecoder.decode(json['borderWidth']),
       borderColor: Color.decode(json['borderColor']),
-      borderColorValue: ColorValue.decode(json['borderColorValue']),
       background: Color.decode(json['background']),
-      backgroundValue: ColorValue.decode(json['backgroundValue']),
       backgroundSrc: StringDecoder.decode(json['backgroundSrc']),
       shadow: BoxShadow.decode(json['shadow']),
     );
@@ -1287,42 +1205,22 @@ class FrameData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'FrameData',
-      'width':
-          width,
-      'height':
-          height,
-      'paddingLeft':
-          paddingLeft,
-      'paddingRight':
-          paddingRight,
-      'paddingTop':
-          paddingTop,
-      'paddingBottom':
-          paddingBottom,
-      'borderRadius':
-          borderRadius,
-      'borderTopLeftRadius':
-          borderTopLeftRadius,
-      'borderTopRightRadius':
-          borderTopRightRadius,
-      'borderBottomRightRadius':
-          borderBottomRightRadius,
-      'borderBottomLeftRadius':
-          borderBottomLeftRadius,
-      'borderWidth':
-          borderWidth,
-      'borderColor':
-          borderColor?.encode(),
-      'borderColorValue':
-          borderColorValue?.encode(),
-      'background':
-          background?.encode(),
-      'backgroundValue':
-          backgroundValue?.encode(),
-      'backgroundSrc':
-          backgroundSrc,
-      'shadow':
-          shadow?.encode(),
+      'width': width,
+      'height': height,
+      'paddingLeft': paddingLeft,
+      'paddingRight': paddingRight,
+      'paddingTop': paddingTop,
+      'paddingBottom': paddingBottom,
+      'borderRadius': borderRadius,
+      'borderTopLeftRadius': borderTopLeftRadius,
+      'borderTopRightRadius': borderTopRightRadius,
+      'borderBottomRightRadius': borderBottomRightRadius,
+      'borderBottomLeftRadius': borderBottomLeftRadius,
+      'borderWidth': borderWidth,
+      'borderColor': borderColor?.encode(),
+      'background': background?.encode(),
+      'backgroundSrc': backgroundSrc,
+      'shadow': shadow?.encode(),
     };
   }
 }
@@ -1382,116 +1280,6 @@ extension FrequencyUnitExtension on FrequencyUnit {
       case FrequencyUnit.UNKNOWN:
         return null;
     }
-  }
-}
-
-enum GradientDirection {
-  // ignore: constant_identifier_names
-  TO_RIGHT,
-  // ignore: constant_identifier_names
-  TO_LEFT,
-  // ignore: constant_identifier_names
-  TO_TOP,
-  // ignore: constant_identifier_names
-  TO_BOTTOM,
-  // ignore: constant_identifier_names
-  TO_TOP_RIGHT,
-  // ignore: constant_identifier_names
-  TO_TOP_LEFT,
-  // ignore: constant_identifier_names
-  TO_BOTTOM_RIGHT,
-  // ignore: constant_identifier_names
-  TO_BOTTOM_LEFT,
-  // ignore: constant_identifier_names
-  UNKNOWN,
-}
-
-extension GradientDirectionExtension on GradientDirection {
-  static GradientDirection? decode(dynamic json) {
-    if (json == null) {
-      return null;
-    }
-    if (json is! String) {
-      return null;
-    }
-
-    switch (json) {
-      case 'TO_RIGHT':
-        return GradientDirection.TO_RIGHT;
-      case 'TO_LEFT':
-        return GradientDirection.TO_LEFT;
-      case 'TO_TOP':
-        return GradientDirection.TO_TOP;
-      case 'TO_BOTTOM':
-        return GradientDirection.TO_BOTTOM;
-      case 'TO_TOP_RIGHT':
-        return GradientDirection.TO_TOP_RIGHT;
-      case 'TO_TOP_LEFT':
-        return GradientDirection.TO_TOP_LEFT;
-      case 'TO_BOTTOM_RIGHT':
-        return GradientDirection.TO_BOTTOM_RIGHT;
-      case 'TO_BOTTOM_LEFT':
-        return GradientDirection.TO_BOTTOM_LEFT;
-      default:
-        return GradientDirection.UNKNOWN;
-    }
-  }
-
-  String? encode() {
-    switch (this) {
-      case GradientDirection.TO_RIGHT:
-        return 'TO_RIGHT';
-      case GradientDirection.TO_LEFT:
-        return 'TO_LEFT';
-      case GradientDirection.TO_TOP:
-        return 'TO_TOP';
-      case GradientDirection.TO_BOTTOM:
-        return 'TO_BOTTOM';
-      case GradientDirection.TO_TOP_RIGHT:
-        return 'TO_TOP_RIGHT';
-      case GradientDirection.TO_TOP_LEFT:
-        return 'TO_TOP_LEFT';
-      case GradientDirection.TO_BOTTOM_RIGHT:
-        return 'TO_BOTTOM_RIGHT';
-      case GradientDirection.TO_BOTTOM_LEFT:
-        return 'TO_BOTTOM_LEFT';
-      case GradientDirection.UNKNOWN:
-        return null;
-    }
-  }
-}
-
-class GradientStop {
-  final Color? color;
-  final double? position;
-
-  GradientStop({
-    this.color,
-    this.position,
-  });
-
-  static GradientStop? decode(dynamic json) {
-    if (json == null) {
-      return null;
-    }
-    if (json is! Map<String, dynamic>) {
-      return null;
-    }
-
-    return GradientStop(
-      color: Color.decode(json['color']),
-      position: FloatDecoder.decode(json['position']),
-    );
-  }
-
-  Map<String, dynamic> encode() {
-    return {
-      '__typename': 'GradientStop',
-      'color':
-          color?.encode(),
-      'position':
-          position,
-    };
   }
 }
 
@@ -1584,40 +1372,6 @@ extension JustifyContentExtension on JustifyContent {
       case JustifyContent.UNKNOWN:
         return null;
     }
-  }
-}
-
-class LinearGradient {
-  final GradientDirection? direction;
-  final List<GradientStop>? stops;
-
-  LinearGradient({
-    this.direction,
-    this.stops,
-  });
-
-  static LinearGradient? decode(dynamic json) {
-    if (json == null) {
-      return null;
-    }
-    if (json is! Map<String, dynamic>) {
-      return null;
-    }
-
-    return LinearGradient(
-      direction: GradientDirectionExtension.decode(json['direction']),
-      stops: ListDecoder.decode(json['stops'], (element) => GradientStop.decode(element)),
-    );
-  }
-
-  Map<String, dynamic> encode() {
-    return {
-      '__typename': 'LinearGradient',
-      'direction':
-          direction?.encode(),
-      'stops':
-            stops?.map((e) => e.encode()).toList(growable: false),
-    };
   }
 }
 
@@ -1736,12 +1490,9 @@ class NavigationBackButton {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'NavigationBackButton',
-      'title':
-          title,
-      'color':
-          color?.encode(),
-      'visible':
-          visible,
+      'title': title,
+      'color': color?.encode(),
+      'visible': visible,
     };
   }
 }
@@ -1891,12 +1642,9 @@ class Property {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'Property',
-      'name':
-          name,
-      'value':
-          value,
-      'ptype':
-          ptype?.encode(),
+      'name': name,
+      'value': value,
+      'ptype': ptype?.encode(),
     };
   }
 }
@@ -1944,35 +1692,6 @@ extension PropertyTypeExtension on PropertyType {
       case PropertyType.UNKNOWN:
         return null;
     }
-  }
-}
-
-class SolidColor {
-  final Color? color;
-
-  SolidColor({
-    this.color,
-  });
-
-  static SolidColor? decode(dynamic json) {
-    if (json == null) {
-      return null;
-    }
-    if (json is! Map<String, dynamic>) {
-      return null;
-    }
-
-    return SolidColor(
-      color: Color.decode(json['color']),
-    );
-  }
-
-  Map<String, dynamic> encode() {
-    return {
-      '__typename': 'SolidColor',
-      'color':
-          color?.encode(),
-    };
   }
 }
 
@@ -2051,8 +1770,7 @@ class TriggerEventDef {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'TriggerEventDef',
-      'name':
-          name,
+      'name': name,
     };
   }
 }
@@ -2177,10 +1895,8 @@ class TriggerSetting {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'TriggerSetting',
-      'onTrigger':
-          onTrigger?.encode(),
-      'trigger':
-          trigger?.encode(),
+      'onTrigger': onTrigger?.encode(),
+      'trigger': trigger?.encode(),
     };
   }
 }
@@ -2188,15 +1904,22 @@ class TriggerSetting {
 abstract class UIBlock {
   factory UIBlock.asUIRootBlock(UIRootBlock data) = UIBlockUIRootBlock;
   factory UIBlock.asUIPageBlock(UIPageBlock data) = UIBlockUIPageBlock;
-  factory UIBlock.asUIFlexContainerBlock(UIFlexContainerBlock data) = UIBlockUIFlexContainerBlock;
+  factory UIBlock.asUIFlexContainerBlock(UIFlexContainerBlock data) =
+      UIBlockUIFlexContainerBlock;
   factory UIBlock.asUITextBlock(UITextBlock data) = UIBlockUITextBlock;
   factory UIBlock.asUIImageBlock(UIImageBlock data) = UIBlockUIImageBlock;
-  factory UIBlock.asUICollectionBlock(UICollectionBlock data) = UIBlockUICollectionBlock;
-  factory UIBlock.asUICarouselBlock(UICarouselBlock data) = UIBlockUICarouselBlock;
-  factory UIBlock.asUITextInputBlock(UITextInputBlock data) = UIBlockUITextInputBlock;
-  factory UIBlock.asUISelectInputBlock(UISelectInputBlock data) = UIBlockUISelectInputBlock;
-  factory UIBlock.asUIMultiSelectInputBlock(UIMultiSelectInputBlock data) = UIBlockUIMultiSelectInputBlock;
-  factory UIBlock.asUISwitchInputBlock(UISwitchInputBlock data) = UIBlockUISwitchInputBlock;
+  factory UIBlock.asUICollectionBlock(UICollectionBlock data) =
+      UIBlockUICollectionBlock;
+  factory UIBlock.asUICarouselBlock(UICarouselBlock data) =
+      UIBlockUICarouselBlock;
+  factory UIBlock.asUITextInputBlock(UITextInputBlock data) =
+      UIBlockUITextInputBlock;
+  factory UIBlock.asUISelectInputBlock(UISelectInputBlock data) =
+      UIBlockUISelectInputBlock;
+  factory UIBlock.asUIMultiSelectInputBlock(UIMultiSelectInputBlock data) =
+      UIBlockUIMultiSelectInputBlock;
+  factory UIBlock.asUISwitchInputBlock(UISwitchInputBlock data) =
+      UIBlockUISwitchInputBlock;
 
   static UIBlock? decode(dynamic json) {
     if (json == null) {
@@ -2241,7 +1964,9 @@ abstract class UIBlock {
         return decoded != null ? UIBlock.asUISelectInputBlock(decoded) : null;
       case 'UIMultiSelectInputBlock':
         final decoded = UIMultiSelectInputBlock.decode(json);
-        return decoded != null ? UIBlock.asUIMultiSelectInputBlock(decoded) : null;
+        return decoded != null
+            ? UIBlock.asUIMultiSelectInputBlock(decoded)
+            : null;
       case 'UISwitchInputBlock':
         final decoded = UISwitchInputBlock.decode(json);
         return decoded != null ? UIBlock.asUISwitchInputBlock(decoded) : null;
@@ -2252,6 +1977,7 @@ abstract class UIBlock {
 
   Map<String, dynamic>? encode();
 }
+
 class UIBlockUIRootBlock implements UIBlock {
   final UIRootBlock data;
 
@@ -2262,6 +1988,7 @@ class UIBlockUIRootBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUIPageBlock implements UIBlock {
   final UIPageBlock data;
 
@@ -2272,6 +1999,7 @@ class UIBlockUIPageBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUIFlexContainerBlock implements UIBlock {
   final UIFlexContainerBlock data;
 
@@ -2282,6 +2010,7 @@ class UIBlockUIFlexContainerBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUITextBlock implements UIBlock {
   final UITextBlock data;
 
@@ -2292,6 +2021,7 @@ class UIBlockUITextBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUIImageBlock implements UIBlock {
   final UIImageBlock data;
 
@@ -2302,6 +2032,7 @@ class UIBlockUIImageBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUICollectionBlock implements UIBlock {
   final UICollectionBlock data;
 
@@ -2312,6 +2043,7 @@ class UIBlockUICollectionBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUICarouselBlock implements UIBlock {
   final UICarouselBlock data;
 
@@ -2322,6 +2054,7 @@ class UIBlockUICarouselBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUITextInputBlock implements UIBlock {
   final UITextInputBlock data;
 
@@ -2332,6 +2065,7 @@ class UIBlockUITextInputBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUISelectInputBlock implements UIBlock {
   final UISelectInputBlock data;
 
@@ -2342,6 +2076,7 @@ class UIBlockUISelectInputBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUIMultiSelectInputBlock implements UIBlock {
   final UIMultiSelectInputBlock data;
 
@@ -2352,6 +2087,7 @@ class UIBlockUIMultiSelectInputBlock implements UIBlock {
     return data.encode();
   }
 }
+
 class UIBlockUISwitchInputBlock implements UIBlock {
   final UISwitchInputBlock data;
 
@@ -2394,30 +2130,26 @@ class UIBlockEventDispatcher {
       name: StringDecoder.decode(json['name']),
       destinationPageId: StringDecoder.decode(json['destinationPageId']),
       deepLink: StringDecoder.decode(json['deepLink']),
-      payload: ListDecoder.decode(json['payload'], (element) => Property.decode(element)),
-      requiredFields: ListDecoder.decode(json['requiredFields'], (element) => StringDecoder.decode(element)),
+      payload: ListDecoder.decode(
+          json['payload'], (element) => Property.decode(element)),
+      requiredFields: ListDecoder.decode(
+          json['requiredFields'], (element) => StringDecoder.decode(element)),
       httpRequest: ApiHttpRequest.decode(json['httpRequest']),
-      httpResponseAssertion: ApiHttpResponseAssertion.decode(json['httpResponseAssertion']),
+      httpResponseAssertion:
+          ApiHttpResponseAssertion.decode(json['httpResponseAssertion']),
     );
   }
 
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIBlockEventDispatcher',
-      'name':
-          name,
-      'destinationPageId':
-          destinationPageId,
-      'deepLink':
-          deepLink,
-      'payload':
-            payload?.map((e) => e.encode()).toList(growable: false),
-      'requiredFields':
-            requiredFields?.map((e) => e).toList(growable: false),
-      'httpRequest':
-          httpRequest?.encode(),
-      'httpResponseAssertion':
-          httpResponseAssertion?.encode(),
+      'name': name,
+      'destinationPageId': destinationPageId,
+      'deepLink': deepLink,
+      'payload': payload?.map((e) => e.encode()).toList(growable: false),
+      'requiredFields': requiredFields?.map((e) => e).toList(growable: false),
+      'httpRequest': httpRequest?.encode(),
+      'httpResponseAssertion': httpResponseAssertion?.encode(),
     };
   }
 }
@@ -2448,10 +2180,8 @@ class UICarouselBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UICarouselBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -2478,7 +2208,8 @@ class UICarouselBlockData {
     }
 
     return UICarouselBlockData(
-      children: ListDecoder.decode(json['children'], (element) => UIBlock.decode(element)),
+      children: ListDecoder.decode(
+          json['children'], (element) => UIBlock.decode(element)),
       frame: FrameData.decode(json['frame']),
       gap: IntDecoder.decode(json['gap']),
       onClick: UIBlockEventDispatcher.decode(json['onClick']),
@@ -2488,14 +2219,10 @@ class UICarouselBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UICarouselBlockData',
-      'children':
-            children?.map((e) => e.encode()).toList(growable: false),
-      'frame':
-          frame?.encode(),
-      'gap':
-          gap,
-      'onClick':
-          onClick?.encode(),
+      'children': children?.map((e) => e.encode()).toList(growable: false),
+      'frame': frame?.encode(),
+      'gap': gap,
+      'onClick': onClick?.encode(),
     };
   }
 }
@@ -2526,10 +2253,8 @@ class UICollectionBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UICollectionBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -2576,7 +2301,8 @@ class UICollectionBlockData {
     }
 
     return UICollectionBlockData(
-      children: ListDecoder.decode(json['children'], (element) => UIBlock.decode(element)),
+      children: ListDecoder.decode(
+          json['children'], (element) => UIBlock.decode(element)),
       frame: FrameData.decode(json['frame']),
       gap: IntDecoder.decode(json['gap']),
       kind: CollectionKindExtension.decode(json['kind']),
@@ -2596,34 +2322,20 @@ class UICollectionBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UICollectionBlockData',
-      'children':
-            children?.map((e) => e.encode()).toList(growable: false),
-      'frame':
-          frame?.encode(),
-      'gap':
-          gap,
-      'kind':
-          kind?.encode(),
-      'direction':
-          direction?.encode(),
-      'reference':
-          reference,
-      'gridSize':
-          gridSize,
-      'itemWidth':
-          itemWidth,
-      'itemHeight':
-          itemHeight,
-      'fullItemWidth':
-          fullItemWidth,
-      'pageControl':
-          pageControl,
-      'autoScroll':
-          autoScroll,
-      'autoScrollInterval':
-          autoScrollInterval,
-      'onClick':
-          onClick?.encode(),
+      'children': children?.map((e) => e.encode()).toList(growable: false),
+      'frame': frame?.encode(),
+      'gap': gap,
+      'kind': kind?.encode(),
+      'direction': direction?.encode(),
+      'reference': reference,
+      'gridSize': gridSize,
+      'itemWidth': itemWidth,
+      'itemHeight': itemHeight,
+      'fullItemWidth': fullItemWidth,
+      'pageControl': pageControl,
+      'autoScroll': autoScroll,
+      'autoScrollInterval': autoScrollInterval,
+      'onClick': onClick?.encode(),
     };
   }
 }
@@ -2654,10 +2366,8 @@ class UIFlexContainerBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIFlexContainerBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -2692,7 +2402,8 @@ class UIFlexContainerBlockData {
     }
 
     return UIFlexContainerBlockData(
-      children: ListDecoder.decode(json['children'], (element) => UIBlock.decode(element)),
+      children: ListDecoder.decode(
+          json['children'], (element) => UIBlock.decode(element)),
       direction: FlexDirectionExtension.decode(json['direction']),
       justifyContent: JustifyContentExtension.decode(json['justifyContent']),
       alignItems: AlignItemsExtension.decode(json['alignItems']),
@@ -2706,22 +2417,14 @@ class UIFlexContainerBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIFlexContainerBlockData',
-      'children':
-            children?.map((e) => e.encode()).toList(growable: false),
-      'direction':
-          direction?.encode(),
-      'justifyContent':
-          justifyContent?.encode(),
-      'alignItems':
-          alignItems?.encode(),
-      'gap':
-          gap,
-      'frame':
-          frame?.encode(),
-      'overflow':
-          overflow?.encode(),
-      'onClick':
-          onClick?.encode(),
+      'children': children?.map((e) => e.encode()).toList(growable: false),
+      'direction': direction?.encode(),
+      'justifyContent': justifyContent?.encode(),
+      'alignItems': alignItems?.encode(),
+      'gap': gap,
+      'frame': frame?.encode(),
+      'overflow': overflow?.encode(),
+      'onClick': onClick?.encode(),
     };
   }
 }
@@ -2752,10 +2455,8 @@ class UIImageBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIImageBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -2792,14 +2493,10 @@ class UIImageBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIImageBlockData',
-      'src':
-          src,
-      'contentMode':
-          contentMode?.encode(),
-      'frame':
-          frame?.encode(),
-      'onClick':
-          onClick?.encode(),
+      'src': src,
+      'contentMode': contentMode?.encode(),
+      'frame': frame?.encode(),
+      'onClick': onClick?.encode(),
     };
   }
 }
@@ -2830,10 +2527,8 @@ class UIMultiSelectInputBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIMultiSelectInputBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -2873,8 +2568,10 @@ class UIMultiSelectInputBlockData {
 
     return UIMultiSelectInputBlockData(
       key: StringDecoder.decode(json['key']),
-      options: ListDecoder.decode(json['options'], (element) => UISelectInputOption.decode(element)),
-      value: ListDecoder.decode(json['value'], (element) => StringDecoder.decode(element)),
+      options: ListDecoder.decode(
+          json['options'], (element) => UISelectInputOption.decode(element)),
+      value: ListDecoder.decode(
+          json['value'], (element) => StringDecoder.decode(element)),
       placeholder: StringDecoder.decode(json['placeholder']),
       size: IntDecoder.decode(json['size']),
       color: Color.decode(json['color']),
@@ -2888,26 +2585,16 @@ class UIMultiSelectInputBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIMultiSelectInputBlockData',
-      'key':
-          key,
-      'options':
-            options?.map((e) => e.encode()).toList(growable: false),
-      'value':
-            value?.map((e) => e).toList(growable: false),
-      'placeholder':
-          placeholder,
-      'size':
-          size,
-      'color':
-          color?.encode(),
-      'design':
-          design?.encode(),
-      'weight':
-          weight?.encode(),
-      'textAlign':
-          textAlign?.encode(),
-      'frame':
-          frame?.encode(),
+      'key': key,
+      'options': options?.map((e) => e.encode()).toList(growable: false),
+      'value': value?.map((e) => e).toList(growable: false),
+      'placeholder': placeholder,
+      'size': size,
+      'color': color?.encode(),
+      'design': design?.encode(),
+      'weight': weight?.encode(),
+      'textAlign': textAlign?.encode(),
+      'frame': frame?.encode(),
     };
   }
 }
@@ -2941,12 +2628,9 @@ class UIPageBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIPageBlock',
-      'id':
-          id,
-      'name':
-          name,
-      'data':
-          data?.encode(),
+      'id': id,
+      'name': name,
+      'data': data?.encode(),
     };
   }
 }
@@ -2998,9 +2682,11 @@ class UIPageBlockData {
 
     return UIPageBlockData(
       kind: PageKindExtension.decode(json['kind']),
-      modalPresentationStyle: ModalPresentationStyleExtension.decode(json['modalPresentationStyle']),
+      modalPresentationStyle: ModalPresentationStyleExtension.decode(
+          json['modalPresentationStyle']),
       modalScreenSize: ModalScreenSizeExtension.decode(json['modalScreenSize']),
-      modalNavigationBackButton: NavigationBackButton.decode(json['modalNavigationBackButton']),
+      modalNavigationBackButton:
+          NavigationBackButton.decode(json['modalNavigationBackButton']),
       modalRespectSafeArea: BooleanDecoder.decode(json['modalRespectSafeArea']),
       webviewUrl: StringDecoder.decode(json['webviewUrl']),
       triggerSetting: TriggerSetting.decode(json['triggerSetting']),
@@ -3009,9 +2695,12 @@ class UIPageBlockData {
       httpRequest: ApiHttpRequest.decode(json['httpRequest']),
       tooltipSize: UITooltipSize.decode(json['tooltipSize']),
       tooltipAnchor: StringDecoder.decode(json['tooltipAnchor']),
-      tooltipPlacement: UITooltipPlacementExtension.decode(json['tooltipPlacement']),
-      tooltipTransitionTarget: UITooltipTransitionTargetExtension.decode(json['tooltipTransitionTarget']),
-      props: ListDecoder.decode(json['props'], (element) => Property.decode(element)),
+      tooltipPlacement:
+          UITooltipPlacementExtension.decode(json['tooltipPlacement']),
+      tooltipTransitionTarget: UITooltipTransitionTargetExtension.decode(
+          json['tooltipTransitionTarget']),
+      props: ListDecoder.decode(
+          json['props'], (element) => Property.decode(element)),
       query: StringDecoder.decode(json['query']),
     );
   }
@@ -3019,38 +2708,22 @@ class UIPageBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIPageBlockData',
-      'kind':
-          kind?.encode(),
-      'modalPresentationStyle':
-          modalPresentationStyle?.encode(),
-      'modalScreenSize':
-          modalScreenSize?.encode(),
-      'modalNavigationBackButton':
-          modalNavigationBackButton?.encode(),
-      'modalRespectSafeArea':
-          modalRespectSafeArea,
-      'webviewUrl':
-          webviewUrl,
-      'triggerSetting':
-          triggerSetting?.encode(),
-      'renderAs':
-          renderAs?.encode(),
-      'position':
-          position?.encode(),
-      'httpRequest':
-          httpRequest?.encode(),
-      'tooltipSize':
-          tooltipSize?.encode(),
-      'tooltipAnchor':
-          tooltipAnchor,
-      'tooltipPlacement':
-          tooltipPlacement?.encode(),
-      'tooltipTransitionTarget':
-          tooltipTransitionTarget?.encode(),
-      'props':
-            props?.map((e) => e.encode()).toList(growable: false),
-      'query':
-          query,
+      'kind': kind?.encode(),
+      'modalPresentationStyle': modalPresentationStyle?.encode(),
+      'modalScreenSize': modalScreenSize?.encode(),
+      'modalNavigationBackButton': modalNavigationBackButton?.encode(),
+      'modalRespectSafeArea': modalRespectSafeArea,
+      'webviewUrl': webviewUrl,
+      'triggerSetting': triggerSetting?.encode(),
+      'renderAs': renderAs?.encode(),
+      'position': position?.encode(),
+      'httpRequest': httpRequest?.encode(),
+      'tooltipSize': tooltipSize?.encode(),
+      'tooltipAnchor': tooltipAnchor,
+      'tooltipPlacement': tooltipPlacement?.encode(),
+      'tooltipTransitionTarget': tooltipTransitionTarget?.encode(),
+      'props': props?.map((e) => e.encode()).toList(growable: false),
+      'query': query,
     };
   }
 }
@@ -3081,10 +2754,8 @@ class UIPageBlockPosition {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIPageBlockPosition',
-      'x':
-          x,
-      'y':
-          y,
+      'x': x,
+      'y': y,
     };
   }
 }
@@ -3115,10 +2786,8 @@ class UIRootBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIRootBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -3141,7 +2810,8 @@ class UIRootBlockData {
     }
 
     return UIRootBlockData(
-      pages: ListDecoder.decode(json['pages'], (element) => UIPageBlock.decode(element)),
+      pages: ListDecoder.decode(
+          json['pages'], (element) => UIPageBlock.decode(element)),
       currentPageId: StringDecoder.decode(json['currentPageId']),
     );
   }
@@ -3149,10 +2819,8 @@ class UIRootBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UIRootBlockData',
-      'pages':
-            pages?.map((e) => e.encode()).toList(growable: false),
-      'currentPageId':
-          currentPageId,
+      'pages': pages?.map((e) => e.encode()).toList(growable: false),
+      'currentPageId': currentPageId,
     };
   }
 }
@@ -3183,10 +2851,8 @@ class UISelectInputBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UISelectInputBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -3226,7 +2892,8 @@ class UISelectInputBlockData {
 
     return UISelectInputBlockData(
       key: StringDecoder.decode(json['key']),
-      options: ListDecoder.decode(json['options'], (element) => UISelectInputOption.decode(element)),
+      options: ListDecoder.decode(
+          json['options'], (element) => UISelectInputOption.decode(element)),
       value: StringDecoder.decode(json['value']),
       placeholder: StringDecoder.decode(json['placeholder']),
       size: IntDecoder.decode(json['size']),
@@ -3241,26 +2908,16 @@ class UISelectInputBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UISelectInputBlockData',
-      'key':
-          key,
-      'options':
-            options?.map((e) => e.encode()).toList(growable: false),
-      'value':
-          value,
-      'placeholder':
-          placeholder,
-      'size':
-          size,
-      'color':
-          color?.encode(),
-      'design':
-          design?.encode(),
-      'weight':
-          weight?.encode(),
-      'textAlign':
-          textAlign?.encode(),
-      'frame':
-          frame?.encode(),
+      'key': key,
+      'options': options?.map((e) => e.encode()).toList(growable: false),
+      'value': value,
+      'placeholder': placeholder,
+      'size': size,
+      'color': color?.encode(),
+      'design': design?.encode(),
+      'weight': weight?.encode(),
+      'textAlign': textAlign?.encode(),
+      'frame': frame?.encode(),
     };
   }
 }
@@ -3291,10 +2948,8 @@ class UISelectInputOption {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UISelectInputOption',
-      'value':
-          value,
-      'label':
-          label,
+      'value': value,
+      'label': label,
     };
   }
 }
@@ -3325,10 +2980,8 @@ class UISwitchInputBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UISwitchInputBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -3362,12 +3015,9 @@ class UISwitchInputBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UISwitchInputBlockData',
-      'key':
-          key,
-      'value':
-          value,
-      'checkedColor':
-          checkedColor?.encode(),
+      'key': key,
+      'value': value,
+      'checkedColor': checkedColor?.encode(),
     };
   }
 }
@@ -3398,10 +3048,8 @@ class UITextBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UITextBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -3410,7 +3058,6 @@ class UITextBlockData {
   final String? value;
   final int? size;
   final Color? color;
-  final ColorValue? colorValue;
   final FontDesign? design;
   final FontWeight? weight;
   final int? maxLines;
@@ -3421,7 +3068,6 @@ class UITextBlockData {
     this.value,
     this.size,
     this.color,
-    this.colorValue,
     this.design,
     this.weight,
     this.maxLines,
@@ -3441,7 +3087,6 @@ class UITextBlockData {
       value: StringDecoder.decode(json['value']),
       size: IntDecoder.decode(json['size']),
       color: Color.decode(json['color']),
-      colorValue: ColorValue.decode(json['colorValue']),
       design: FontDesignExtension.decode(json['design']),
       weight: FontWeightExtension.decode(json['weight']),
       maxLines: IntDecoder.decode(json['maxLines']),
@@ -3453,24 +3098,14 @@ class UITextBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UITextBlockData',
-      'value':
-          value,
-      'size':
-          size,
-      'color':
-          color?.encode(),
-      'colorValue':
-          colorValue?.encode(),
-      'design':
-          design?.encode(),
-      'weight':
-          weight?.encode(),
-      'maxLines':
-          maxLines,
-      'frame':
-          frame?.encode(),
-      'onClick':
-          onClick?.encode(),
+      'value': value,
+      'size': size,
+      'color': color?.encode(),
+      'design': design?.encode(),
+      'weight': weight?.encode(),
+      'maxLines': maxLines,
+      'frame': frame?.encode(),
+      'onClick': onClick?.encode(),
     };
   }
 }
@@ -3501,10 +3136,8 @@ class UITextInputBlock {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UITextInputBlock',
-      'id':
-          id,
-      'data':
-          data?.encode(),
+      'id': id,
+      'data': data?.encode(),
     };
   }
 }
@@ -3556,7 +3189,8 @@ class UITextInputBlockData {
       placeholder: StringDecoder.decode(json['placeholder']),
       regex: StringDecoder.decode(json['regex']),
       errorMessage: UITooltipMessage.decode(json['errorMessage']),
-      keyboardType: UITextInputKeyboardTypeExtension.decode(json['keyboardType']),
+      keyboardType:
+          UITextInputKeyboardTypeExtension.decode(json['keyboardType']),
       secure: BooleanDecoder.decode(json['secure']),
       autocorrect: BooleanDecoder.decode(json['autocorrect']),
       size: IntDecoder.decode(json['size']),
@@ -3571,34 +3205,20 @@ class UITextInputBlockData {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UITextInputBlockData',
-      'key':
-          key,
-      'value':
-          value,
-      'placeholder':
-          placeholder,
-      'regex':
-          regex,
-      'errorMessage':
-          errorMessage?.encode(),
-      'keyboardType':
-          keyboardType?.encode(),
-      'secure':
-          secure,
-      'autocorrect':
-          autocorrect,
-      'size':
-          size,
-      'color':
-          color?.encode(),
-      'design':
-          design?.encode(),
-      'weight':
-          weight?.encode(),
-      'textAlign':
-          textAlign?.encode(),
-      'frame':
-          frame?.encode(),
+      'key': key,
+      'value': value,
+      'placeholder': placeholder,
+      'regex': regex,
+      'errorMessage': errorMessage?.encode(),
+      'keyboardType': keyboardType?.encode(),
+      'secure': secure,
+      'autocorrect': autocorrect,
+      'size': size,
+      'color': color?.encode(),
+      'design': design?.encode(),
+      'weight': weight?.encode(),
+      'textAlign': textAlign?.encode(),
+      'frame': frame?.encode(),
     };
   }
 }
@@ -3696,8 +3316,7 @@ class UITooltipMessage {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UITooltipMessage',
-      'title':
-          title,
+      'title': title,
     };
   }
 }
@@ -3828,10 +3447,8 @@ class UITooltipSize {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UITooltipSize',
-      'width':
-          width,
-      'height':
-          height,
+      'width': width,
+      'height': height,
     };
   }
 }
@@ -3914,18 +3531,12 @@ class UserEventFrequencyCondition {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'UserEventFrequencyCondition',
-      'eventName':
-          eventName,
-      'lookbackPeriod':
-          lookbackPeriod,
-      'unit':
-          unit?.encode(),
-      'comparison':
-          comparison?.encode(),
-      'since':
-          since,
-      'threshold':
-          threshold,
+      'eventName': eventName,
+      'lookbackPeriod': lookbackPeriod,
+      'unit': unit?.encode(),
+      'comparison': comparison?.encode(),
+      'since': since,
+      'threshold': threshold,
     };
   }
 }
@@ -4023,12 +3634,9 @@ class VariantConfig {
   Map<String, dynamic> encode() {
     return {
       '__typename': 'VariantConfig',
-      'key':
-          key,
-      'kind':
-          kind?.encode(),
-      'value':
-          value,
+      'key': key,
+      'kind': kind?.encode(),
+      'value': value,
     };
   }
 }
