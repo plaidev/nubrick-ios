@@ -59,9 +59,9 @@ class _AnchorState extends State<NativebrikAnchor> {
 
   @override
   void dispose() {
-    // Remove the key when the widget is disposed
-    _provider?.removeKey(widget.id);
     super.dispose();
+    // Remove the key when the widget is disposed
+    _provider?.removeKey(widget.id, childKey);
   }
 
   @override
