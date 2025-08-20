@@ -1,3 +1,8 @@
+## 0.10.3
+
+- Fix the critical bug that potentially causes crash when the nativebrik anchor will be set.
+- Fix the critical bug that will the tooltip won't be displayed correctly after the page transition is occured.
+
 ## 0.10.2
 
 - Update com.nativebrik.sdk.to 0.6.1
