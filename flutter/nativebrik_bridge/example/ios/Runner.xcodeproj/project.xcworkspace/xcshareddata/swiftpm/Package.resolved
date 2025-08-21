@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/plaidev/nativebrik-sdk.git",
       "state" : {
-        "revision" : "ac95f599ac2b8c9d264e97ff70299a1c9c4546ea",
-        "version" : "0.11.0"
+        "revision" : "1aeed0ff01fbc4be01bc075154a2feca841de730",
+        "version" : "0.11.1"
       }
     }
   ],
