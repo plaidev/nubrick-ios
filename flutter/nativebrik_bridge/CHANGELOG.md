@@ -1,3 +1,9 @@
+## 0.10.4
+
+- Update Dependencies
+    - Nativebrik to 0.11.1
+    - com.nativebrik.sdk.to 0.6.2
+
 ## 0.10.3
 
 - Fix the critical bug that potentially causes crash when the nativebrik anchor will be set.
