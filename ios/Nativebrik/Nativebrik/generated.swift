@@ -46,7 +46,7 @@ struct ApiHttpResponseAssertion: Decodable, Encodable {
   var statusCodes: [Int]?
 }
 struct BoxShadow: Decodable, Encodable {
-  var color: Color?
+  var color: ColorValue?
   var offsetX: Int?
   var offsetY: Int?
   var radius: Int?
@@ -103,7 +103,7 @@ struct Color: Decodable, Encodable {
   var alpha: Float?
 }
 indirect enum ColorValue: Decodable, Encodable {
-  case ESolidColor(SolidColor)
+  case EColor(Color)
   case ELinearGradient(LinearGradient)
   case unknown
 
@@ -111,7 +111,7 @@ indirect enum ColorValue: Decodable, Encodable {
     case __typename
   }
   enum Typename: String, Decodable {
-    case __SolidColor = "SolidColor"
+    case __Color = "Color"
     case __LinearGradient = "LinearGradient"
     case unknown
   }
@@ -120,9 +120,9 @@ indirect enum ColorValue: Decodable, Encodable {
     let typename = try container.decode(Typename.self, forKey: .__typename)
     let associateContainer = try decoder.singleValueContainer()
     switch typename {
-    case .__SolidColor:
-      let data = try associateContainer.decode(SolidColor.self)
-      self = .ESolidColor(data)
+    case .__Color:
+      let data = try associateContainer.decode(Color.self)
+      self = .EColor(data)
     case .__LinearGradient:
       let data = try associateContainer.decode(LinearGradient.self)
       self = .ELinearGradient(data)
@@ -134,8 +134,8 @@ indirect enum ColorValue: Decodable, Encodable {
     var container = encoder.container(keyedBy: CodingKeys.self)
 
     switch self {
-    case .ESolidColor(let data):
-      try container.encode(Typename.__SolidColor.rawValue, forKey: .__typename)
+    case .EColor(let data):
+      try container.encode(Typename.__Color.rawValue, forKey: .__typename)
       try data.encode(to: encoder)
     case .ELinearGradient(let data):
       try container.encode(Typename.__LinearGradient.rawValue, forKey: .__typename)
@@ -267,10 +267,8 @@ struct FrameData: Decodable, Encodable {
   var borderBottomRightRadius: Int?
   var borderBottomLeftRadius: Int?
   var borderWidth: Int?
-  var borderColor: Color?
-  var borderColorValue: ColorValue?
-  var background: Color?
-  var backgroundValue: ColorValue?
+  var borderColor: ColorValue?
+  var background: ColorValue?
   var backgroundSrc: String?
   var shadow: BoxShadow?
 }
@@ -283,24 +281,6 @@ enum FrequencyUnit: String, Decodable, Encodable {
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try FrequencyUnit(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
-  }
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    try container.encode(rawValue)
-  }
-}
-enum GradientDirection: String, Decodable, Encodable {
-  case TO_RIGHT = "TO_RIGHT"
-  case TO_LEFT = "TO_LEFT"
-  case TO_TOP = "TO_TOP"
-  case TO_BOTTOM = "TO_BOTTOM"
-  case TO_TOP_RIGHT = "TO_TOP_RIGHT"
-  case TO_TOP_LEFT = "TO_TOP_LEFT"
-  case TO_BOTTOM_RIGHT = "TO_BOTTOM_RIGHT"
-  case TO_BOTTOM_LEFT = "TO_BOTTOM_LEFT"
-  case unknown = "unknown"
-  init(from decoder: Decoder) throws {
-    self = try GradientDirection(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
   }
   func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
@@ -338,7 +318,11 @@ enum JustifyContent: String, Decodable, Encodable {
   }
 }
 struct LinearGradient: Decodable, Encodable {
-  var direction: GradientDirection?
+  var red: Float?
+  var green: Float?
+  var blue: Float?
+  var alpha: Float?
+  var angle: Float?
   var stops: [GradientStop]?
 }
 enum ModalPresentationStyle: String, Decodable, Encodable {
@@ -368,7 +352,7 @@ enum ModalScreenSize: String, Decodable, Encodable {
 }
 struct NavigationBackButton: Decodable, Encodable {
   var title: String?
-  var color: Color?
+  var color: ColorValue?
   var visible: Boolean?
 }
 enum Overflow: String, Decodable, Encodable {
@@ -418,9 +402,6 @@ enum PropertyType: String, Decodable, Encodable {
     var container = encoder.singleValueContainer()
     try container.encode(rawValue)
   }
-}
-struct SolidColor: Decodable, Encodable {
-  var color: Color?
 }
 enum TextAlign: String, Decodable, Encodable {
   case NATURAL = "NATURAL"
@@ -652,7 +633,7 @@ struct UIMultiSelectInputBlockData: Decodable, Encodable {
   var value: [String]?
   var placeholder: String?
   var size: Int?
-  var color: Color?
+  var color: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?
   var textAlign: TextAlign?
@@ -703,7 +684,7 @@ struct UISelectInputBlockData: Decodable, Encodable {
   var value: String?
   var placeholder: String?
   var size: Int?
-  var color: Color?
+  var color: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?
   var textAlign: TextAlign?
@@ -720,7 +701,7 @@ struct UISwitchInputBlock: Decodable, Encodable {
 struct UISwitchInputBlockData: Decodable, Encodable {
   var key: String?
   var value: Boolean?
-  var checkedColor: Color?
+  var checkedColor: ColorValue?
 }
 struct UITextBlock: Decodable, Encodable {
   var id: ID?
@@ -729,8 +710,7 @@ struct UITextBlock: Decodable, Encodable {
 struct UITextBlockData: Decodable, Encodable {
   var value: String?
   var size: Int?
-  var color: Color?
-  var colorValue: ColorValue?
+  var color: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?
   var maxLines: Int?
@@ -751,7 +731,7 @@ struct UITextInputBlockData: Decodable, Encodable {
   var secure: Boolean?
   var autocorrect: Boolean?
   var size: Int?
-  var color: Color?
+  var color: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?
   var textAlign: TextAlign?
