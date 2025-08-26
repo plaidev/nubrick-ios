@@ -370,11 +370,8 @@ func parseColorValueFromGenerated(_ colorValue: ColorValue?) -> ColorValueResult
     }
     
     switch colorValue {
-    case .ESolidColor(let solidColor):
-        if let color = solidColor.color {
-            return .solid(parseColor(color))
-        }
-        return nil
+    case .EColor(let color):
+        return .solid(parseColor(color))
     case .ELinearGradient(let linearGradient):
         return parseLinearGradientFromGenerated(linearGradient)
     case .unknown:
@@ -386,46 +383,37 @@ func parseColorValueFromGenerated(_ colorValue: ColorValue?) -> ColorValueResult
 func parseLinearGradientFromGenerated(_ gradient: LinearGradient) -> ColorValueResult? {
     let gradientLayer = CAGradientLayer()
     
-    // Parse direction
-    if let direction = gradient.direction {
-        switch direction {
-        case .TO_TOP:
-            gradientLayer.startPoint = CGPoint(x: 0.5, y: 1.0)
-            gradientLayer.endPoint = CGPoint(x: 0.5, y: 0.0)
-        case .TO_TOP_RIGHT:
-            gradientLayer.startPoint = CGPoint(x: 0.0, y: 1.0)
-            gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.0)
-        case .TO_RIGHT:
-            gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
-            gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
-        case .TO_BOTTOM_RIGHT:
-            gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.0)
-            gradientLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
-        case .TO_BOTTOM:
-            gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
-            gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
-        case .TO_BOTTOM_LEFT:
-            gradientLayer.startPoint = CGPoint(x: 1.0, y: 0.0)
-            gradientLayer.endPoint = CGPoint(x: 0.0, y: 1.0)
-        case .TO_LEFT:
-            gradientLayer.startPoint = CGPoint(x: 1.0, y: 0.5)
-            gradientLayer.endPoint = CGPoint(x: 0.0, y: 0.5)
-        case .TO_TOP_LEFT:
-            gradientLayer.startPoint = CGPoint(x: 1.0, y: 1.0)
-            gradientLayer.endPoint = CGPoint(x: 0.0, y: 0.0)
-        case .unknown:
-            // Default to top-to-bottom
-            gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
-            gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
-        }
+    // Parse angle to gradient direction
+    if let angle = gradient.angle {
+        // Convert angle to gradient points
+        // angle is normalized (0-1), where 0 = 0°, 0.25 = 90°, 0.5 = 180°, 0.75 = 270°, 1 = 360°
+        // CSS gradient standard: 0° = to top, 90° = to right, 180° = to bottom, 270° = to left
+        // CAGradientLayer: (0,0) is top-left, (1,1) is bottom-right
+        
+        // Convert normalized value to radians
+        let degrees = angle * 360.0
+        let radians = degrees * .pi / 180.0
+        
+        // Calculate direction vector (CSS coordinate system)
+        let dx = sin(radians)
+        let dy = -cos(radians)  // Y軸を反転（CSSは上が負、iOSは下が正）
+        
+        // Convert to start and end points
+        let startX = 0.5 - dx * 0.5
+        let startY = 0.5 - dy * 0.5
+        let endX = 0.5 + dx * 0.5
+        let endY = 0.5 + dy * 0.5
+        
+        gradientLayer.startPoint = CGPoint(x: CGFloat(startX), y: CGFloat(startY))
+        gradientLayer.endPoint = CGPoint(x: CGFloat(endX), y: CGFloat(endY))
     } else {
-        // Default to top-to-bottom
+        // Default to top-to-bottom (angle = 180)
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
         gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
     }
     
     // Parse stops
-    if let stops = gradient.stops {
+    if let stops = gradient.stops, !stops.isEmpty {
         var colors: [CGColor] = []
         var locations: [NSNumber] = []
         
@@ -443,6 +431,17 @@ func parseLinearGradientFromGenerated(_ gradient: LinearGradient) -> ColorValueR
             gradientLayer.colors = colors
             gradientLayer.locations = locations.count == colors.count ? locations : nil
         }
+    } else {
+        // If no stops provided, create a gradient from the base color to transparent
+        // Using the red/green/blue/alpha properties from LinearGradient
+        let baseColor = UIColor(
+            red: CGFloat(gradient.red ?? 0),
+            green: CGFloat(gradient.green ?? 0),
+            blue: CGFloat(gradient.blue ?? 0),
+            alpha: CGFloat(gradient.alpha ?? 1)
+        )
+        gradientLayer.colors = [baseColor.cgColor, baseColor.withAlphaComponent(0).cgColor]
+        gradientLayer.locations = [0, 1]
     }
     
     return .linearGradient(gradientLayer)
@@ -727,8 +726,8 @@ private func normalizeSingleRadius(radius: CGFloat, width: CGFloat, height: CGFl
 
 // NOTE: should be called in viewDidLayoutSubviews to wait until view.bounds are set
 func configureBorder(view: UIView, frame: FrameData?) {
-    if let backgroundValue = frame?.backgroundValue {
-        if let colorResult = parseColorValueFromGenerated(backgroundValue) {
+    if let background = frame?.background {
+        if let colorResult = parseColorValueFromGenerated(background) {
             switch colorResult {
             case .solid(let color):
                 view.layer.backgroundColor = color.cgColor
@@ -741,9 +740,6 @@ func configureBorder(view: UIView, frame: FrameData?) {
                 view.layer.insertSublayer(gradientLayer, at: 0)
             }
         }
-    } else if let bg = frame?.background {
-        view.layer.backgroundColor = parseColorToCGColor(bg)
-        view.layer.sublayers?.filter { $0.name == "gradient-layer" }.forEach { $0.removeFromSuperlayer() }
     }
 
     let width = view.bounds.width
@@ -761,8 +757,8 @@ func configureBorder(view: UIView, frame: FrameData?) {
             normalizeSingleRadius(
                 radius: CGFloat(frame?.borderRadius ?? 0), width: width, height: height))
         
-        if let borderColorValue = frame?.borderColorValue {
-            if let colorResult = parseColorValueFromGenerated(borderColorValue) {
+        if let borderColor = frame?.borderColor {
+            if let colorResult = parseColorValueFromGenerated(borderColor) {
                 switch colorResult {
                 case .solid(let color):
                     view.layer.borderWidth = borderWidth
@@ -804,11 +800,6 @@ func configureBorder(view: UIView, frame: FrameData?) {
                     view.layer.addSublayer(gradientBorderLayer)
                 }
             }
-        } else if let bc = frame?.borderColor {
-            view.layer.borderWidth = borderWidth
-            view.layer.borderColor = parseColorToCGColor(bc)
-            view.layer.cornerRadius = cornerRadius
-            view.clipsToBounds = true  // Clip content to bounds
         } else {
             view.layer.borderWidth = borderWidth
             view.layer.cornerRadius = cornerRadius
@@ -886,8 +877,8 @@ func configureBorder(view: UIView, frame: FrameData?) {
     shapeLayer.lineWidth = CGFloat(frame?.borderWidth ?? 0)
     shapeLayer.fillColor = UIColor.clear.cgColor
     shapeLayer.name = "border-layer"
-    if let borderColorValue = frame?.borderColorValue {
-        if let colorResult = parseColorValueFromGenerated(borderColorValue) {
+    if let borderColor = frame?.borderColor {
+        if let colorResult = parseColorValueFromGenerated(borderColor) {
             switch colorResult {
             case .solid(let color):
                 shapeLayer.strokeColor = color.cgColor
@@ -916,9 +907,6 @@ func configureBorder(view: UIView, frame: FrameData?) {
                 return
             }
         }
-    } else if let bc = frame?.borderColor {
-        // Fallback to old format
-        shapeLayer.strokeColor = parseColorToCGColor(bc)
     }
     
     view.layer.sublayers?.filter { $0.name == "border-layer" || $0.name == "gradient-border-layer" }.forEach { $0.removeFromSuperlayer() }
@@ -926,8 +914,8 @@ func configureBorder(view: UIView, frame: FrameData?) {
 }
 
 func configureBackgroundWithFallback(view: UIView, frame: FrameData?) {
-    if let backgroundValue = frame?.backgroundValue {
-        if let colorResult = parseColorValueFromGenerated(backgroundValue) {
+    if let background = frame?.background {
+        if let colorResult = parseColorValueFromGenerated(background) {
             switch colorResult {
             case .solid(let color):
                 view.backgroundColor = color
@@ -939,14 +927,7 @@ func configureBackgroundWithFallback(view: UIView, frame: FrameData?) {
                 gradientLayer.name = "gradient-layer"
                 view.layer.insertSublayer(gradientLayer, at: 0)
             }
-            return
         }
-    }
-    
-    if let bg = frame?.background {
-        view.backgroundColor = parseColor(bg)
-        // Remove any gradient layers if they exist
-        view.layer.sublayers?.filter { $0.name == "gradient-layer" }.forEach { $0.removeFromSuperlayer() }
     }
 }
 
@@ -996,7 +977,19 @@ func configureBackgroundWithFallbackRawData(view: UIView, frameDict: [String: An
 
 func configureShadow(view: UIView, shadow: BoxShadow?) {
     if let shadow = shadow {
-        view.layer.shadowColor = parseColorToCGColor(shadow.color)
+        // Handle ColorValue for shadow color
+        if let colorValue = shadow.color,
+           let colorResult = parseColorValueFromGenerated(colorValue) {
+            switch colorResult {
+            case .solid(let color):
+                view.layer.shadowColor = color.cgColor
+            case .linearGradient:
+                // Gradient not supported for shadow, use black as default
+                view.layer.shadowColor = UIColor.black.cgColor
+            }
+        } else {
+            view.layer.shadowColor = UIColor.black.cgColor
+        }
         view.layer.shadowOffset = CGSize(width: shadow.offsetX ?? 0, height: shadow.offsetY ?? 0)
         view.layer.shadowOpacity = 1
         view.layer.shadowRadius = CGFloat(shadow.radius ?? 0)

@@ -82,7 +82,19 @@ class SelectInputView: UIControl {
             trailing: CGFloat(frame?.paddingRight ?? 0)
         )
 
-        let foregroundColor = block.data?.color.flatMap(parseColor) ?? .label
+        let foregroundColor: UIColor = {
+            if let colorValue = block.data?.color,
+               let colorResult = parseColorValueFromGenerated(colorValue) {
+                switch colorResult {
+                case .solid(let color):
+                    return color
+                case .linearGradient:
+                    // Gradient not supported for text color, use default
+                    return .label
+                }
+            }
+            return .label
+        }()
         config.titleTextAttributesTransformer = .init({ _ in
             return .init([
                 .font: parseTextBlockDataToUIFont(self.block.data?.size, self.block.data?.weight, self.block.data?.design),
@@ -296,8 +308,16 @@ class MultiSelectInputView: UIControl {
             layout.flexGrow = 1
         }
         var textColor: UIColor = .label
-        if let color = block.data?.color {
-            textColor = parseColor(color)
+        if let colorValue = block.data?.color {
+            if let colorResult = parseColorValueFromGenerated(colorValue) {
+                switch colorResult {
+                case .solid(let color):
+                    textColor = color
+                case .linearGradient:
+                    // Gradient not supported for text color in select, use default
+                    break
+                }
+            }
         }
         let text = getMultiSelectText(self.values)
         label.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)

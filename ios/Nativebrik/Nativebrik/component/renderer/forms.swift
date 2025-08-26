@@ -177,8 +177,18 @@ class TextInputView: UIView, UITextFieldDelegate {
             textInput.rightViewMode = .always
         }
 
-        if let color = block.data?.color {
-            textInput.textColor = parseColor(color)
+        if let colorValue = block.data?.color {
+            if let colorResult = parseColorValueFromGenerated(colorValue) {
+                switch colorResult {
+                case .solid(let color):
+                    textInput.textColor = color
+                case .linearGradient:
+                    // Gradient not supported for text color in input field, use default
+                    textInput.textColor = .label
+                }
+            } else {
+                textInput.textColor = .label
+            }
         } else {
             textInput.textColor = .label
         }

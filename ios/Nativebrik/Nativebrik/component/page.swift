@@ -59,8 +59,16 @@ class ModalPageViewController: UIViewController {
             action: #selector(onClickBack)
         )
 
-        if let color = buttonData?.color {
-            leftButton.tintColor = parseColor(color)
+        if let colorValue = buttonData?.color {
+            if let colorResult = parseColorValueFromGenerated(colorValue) {
+                switch colorResult {
+                case .solid(let color):
+                    leftButton.tintColor = color
+                case .linearGradient:
+                    // Gradient not supported for tintColor, use default
+                    break
+                }
+            }
         }
 
         if self.isFirstModal {

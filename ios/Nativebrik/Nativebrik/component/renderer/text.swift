@@ -29,8 +29,8 @@ class TextView: AnimatedUIControl {
         let label = UILabel()
         label.yoga.isEnabled = true
         
-        // Try new ColorValue format first
-        if let colorValue = block.data?.colorValue {
+        // Handle ColorValue which can be either solid color or gradient
+        if let colorValue = block.data?.color {
             if let colorResult = parseColorValueFromGenerated(colorValue) {
                 switch colorResult {
                 case .solid(let color):
@@ -46,9 +46,6 @@ class TextView: AnimatedUIControl {
             } else {
                 label.textColor = .label
             }
-        } else if let color = block.data?.color {
-            // Fallback to old format
-            label.textColor = parseColor(color)
         } else {
             label.textColor = .label
         }
