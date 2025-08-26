@@ -89,6 +89,7 @@ internal class RootViewModel(
     private val onNextTooltip: ((pageId: String) -> Unit) = {},
     private val onDismiss: ((root: UIRootBlock) -> Unit) = {},
     private val onOpenDeepLink: ((link: String) -> Unit) = {},
+    private val onTrigger: ((trigger: UIBlockEventDispatcher) -> Unit) = {},
 ) : ViewModel() {
     private val pages: List<UIPageBlock> = root.data?.pages ?: emptyList()
     val displayedPageBlock = mutableStateOf<PageBlockData?>(null)
@@ -106,13 +107,19 @@ internal class RootViewModel(
             return
         }
 
-        val destId = trigger.data?.triggerSetting?.onTrigger?.destinationPageId
-        if (destId == null) {
-            onDismiss(root)
-            return
+        val onTrigger = trigger.data?.triggerSetting?.onTrigger
+        if (onTrigger == null) {
+          onDismiss(root)
+          return
         }
+        onTrigger(onTrigger)
 
-        render(destId)
+        val destId = onTrigger.destinationPageId ?: ""
+        if (destId.isNotEmpty()) {
+            this.render(destId)
+        } else {
+          this.dismiss()
+        }
     }
 
     fun handleNavigate(event: UIBlockEventDispatcher, data: JsonElement) {
@@ -259,7 +266,13 @@ internal fun Root(
                     context.startActivity(intent)
                 } catch (_: Throwable) {
                 }
-            })
+            },
+            onTrigger = { trigger ->
+                val e = parseUIEventToEvent(trigger)
+                onEvent(e)
+                container.handleEvent(e)
+            }
+        )
     }
     LaunchedEffect(Unit) {
         viewModel.initialize()
