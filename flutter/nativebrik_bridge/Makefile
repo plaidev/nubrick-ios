@@ -12,8 +12,8 @@ reinstall:
 
 .PHONY: reinstall-ios
 reinstall-ios:
-	cd example && flutter clean && rm -rf ./ios/Pods ./ios/Podfile.lock 2> /dev/null && pod repo update && flutter build ios --simulator
-	cd e2e && flutter clean && rm -rf ./ios/Pods ./ios/Podfile.lock 2> /dev/null && pod repo update && flutter build ios --simulator
+	cd example && flutter clean && flutter build ios --simulator
+	cd e2e && flutter clean && flutter build ios --simulator
 
 .PHONY: reinstall-android
 reinstall-android:

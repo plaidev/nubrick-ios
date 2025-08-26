@@ -7,6 +7,9 @@ void main() {
   runZonedGuarded(() {
     WidgetsFlutterBinding.ensureInitialized();
     NativebrikBridge("cgv3p3223akg00fod19g");
+    NativebrikBridge.instance?.addEventListener((event) {
+      print("EVENT: ${event.name}");
+    });
     FlutterError.onError = (errorDetails) {
       NativebrikCrashReport.instance.recordFlutterError(errorDetails);
     };

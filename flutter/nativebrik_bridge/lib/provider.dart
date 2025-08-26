@@ -33,8 +33,11 @@ class NativebrikProviderState extends State<NativebrikProvider> {
   }
 
   /// Remove a global key by ID
-  void removeKey(String id) {
-    _keys.remove(id);
+  void removeKey(String id, GlobalKey key) {
+    final currentKey = _keys[id];
+    if (identical(currentKey, key)) {
+      _keys.remove(id);
+    }
   }
 
   @override
