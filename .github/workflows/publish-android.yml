@@ -10,28 +10,28 @@ jobs:
     environment:
       name: Only Main
     steps:
-    - name: checkout
-      uses: actions/checkout@v2
-    - name: setup jdk
-      uses: actions/setup-java@v2
-      with:
-        distribution: 'zulu'
-        java-version: '21'
-    - name: make archive
-      working-directory: android
-      run: |
-        GPG_SIGNING_KEY=$(echo $GPG_SIGNING_KEY_BASE64 | base64 --decode) ./gradlew makeArchive
-      env:
-        GPG_SIGNING_KEY_BASE64: ${{ secrets.GPG_SIGNING_KEY }}
-        GPG_SIGNING_KEY_PASSPHRASE: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
-    - name: publish to maven central
-      working-directory: android
-      run: |
-        ls nativebrik/build/distributions
-        curl --request POST \
-          --header "Authorization: Bearer $(echo "$SONATYPE_USERNAME:$SONATYPE_PASSWORD" | base64)" \
-          --form bundle="@nativebrik/build/distributions/$(ls nativebrik/build/distributions)" \
-          'https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC'
-      env:
-        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup jdk
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: make archive
+        working-directory: android
+        run: |
+          GPG_SIGNING_KEY=$(echo $GPG_SIGNING_KEY_BASE64 | base64 --decode) ./gradlew makeArchive
+        env:
+          GPG_SIGNING_KEY_BASE64: ${{ secrets.GPG_SIGNING_KEY }}
+          GPG_SIGNING_KEY_PASSPHRASE: ${{ secrets.GPG_SIGNING_KEY_PASSPHRASE }}
+      - name: publish to maven central
+        working-directory: android
+        run: |
+          ls nativebrik/build/distributions
+          curl --request POST \
+            --header "Authorization: Bearer $(echo "$SONATYPE_USERNAME:$SONATYPE_PASSWORD" | base64)" \
+            --form bundle="@nativebrik/build/distributions/$(ls nativebrik/build/distributions)" \
+            'https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC'
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
