@@ -6,6 +6,8 @@ on:
       - main
       - "ci/fix-e2e-flutter"
 
+
+
 jobs:
   publish-flutter-ios-e2e-app:
     runs-on: macos-15
@@ -18,7 +20,7 @@ jobs:
           xcode-version: '16.0'
 
       - name: Install iOS
-        run: xcodebuild -version
+        run: xcode-select -p
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
