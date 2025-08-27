@@ -149,8 +149,6 @@ func parseLinearGradientFromGenerated(_ gradient: LinearGradient) -> ColorValueR
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
         gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
     }
-    
-    // Parse stops
     if let stops = gradient.stops, !stops.isEmpty {
         var colors: [CGColor] = []
         var locations: [NSNumber] = []
@@ -170,8 +168,6 @@ func parseLinearGradientFromGenerated(_ gradient: LinearGradient) -> ColorValueR
             gradientLayer.locations = locations.count == colors.count ? locations : nil
         }
     } else {
-        // If no stops provided, create a gradient from the base color to transparent
-        // Using the red/green/blue/alpha properties from LinearGradient
         let baseColor = UIColor(
             red: CGFloat(gradient.red ?? 0),
             green: CGFloat(gradient.green ?? 0),
