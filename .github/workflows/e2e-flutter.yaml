@@ -2,7 +2,9 @@ name: "[flutter] E2E Test Nativebrik SDK"
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - "ci/fix-e2e-flutter"
 
 jobs:
   publish-flutter-ios-e2e-app:
@@ -16,7 +18,7 @@ jobs:
           xcode-version: '16.0'
 
       - name: Install iOS
-        run: xcodebuild -downloadPlatform iOS
+        run: xcodebuild -version
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
