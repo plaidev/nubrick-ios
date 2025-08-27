@@ -502,9 +502,7 @@ func configureBorder(view: UIView, frame: FrameData?) {
             normalizeSingleRadius(
                 radius: CGFloat(frame?.borderRadius ?? 0), width: width, height: height))
         view.layer.cornerRadius = cornerRadius
-        if let gradientLayer = view.layer.sublayers?.first(where: { $0.name == "gradient-layer" }) as? CAGradientLayer {
-            gradientLayer.cornerRadius = cornerRadius
-        }
+        view.layer.masksToBounds = true
         
         return
     }
@@ -568,15 +566,7 @@ func configureBorder(view: UIView, frame: FrameData?) {
     maskLayer.path = path.cgPath
     maskLayer.fillColor = UIColor.white.cgColor
     view.layer.mask = maskLayer
-    
-    // Apply the same mask to gradient layer if exists
-    if let gradientLayer = view.layer.sublayers?.first(where: { $0.name == "gradient-layer" }) as? CAGradientLayer {
-        let gradientMaskLayer = CAShapeLayer()
-        gradientMaskLayer.frame = gradientLayer.bounds
-        gradientMaskLayer.path = path.cgPath
-        gradientMaskLayer.fillColor = UIColor.white.cgColor
-        gradientLayer.mask = gradientMaskLayer
-    }
+    view.layer.masksToBounds = true
 
     // set border
     let shapeLayer = CAShapeLayer()
