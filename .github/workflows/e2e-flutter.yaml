@@ -6,7 +6,7 @@ on:
 
 jobs:
   publish-flutter-ios-e2e-app:
-    runs-on: macos-15
+    runs-on: macos-14
     environment:
       name: Only Main
     steps:
@@ -15,11 +15,7 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.0'
-      - name: Install iOS Simulator runtime (iOS 18)
-        run: |
-          xcodebuild -downloadPlatform iOS
-          xcrun simctl list runtimes
+          xcode-version: '15.0'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
