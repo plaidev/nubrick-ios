@@ -1,0 +1,46 @@
+name: "[ios] Test Nativebrik SDK"
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - "ios/**"
+      - .github/workflows/test-ios.yaml
+      - Nativebrik.podspec
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "ios/**"
+      - .github/workflows/test-ios.yaml
+      - Nativebrik.podspec
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-13
+    strategy:
+      matrix:
+        scheme: [
+          NativebrikTests
+        ]
+        destination: [
+          'platform=iOS Simulator,name=iPhone 15,OS=17.0.1'
+        ]
+    steps:
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.0'
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test ${{ matrix.scheme }} on ${{ matrix.destination }}
+        run: xcodebuild test -project ./ios/Nativebrik/Nativebrik.xcodeproj -scheme ${{ matrix.scheme }} -sdk iphonesimulator -skipMacroValidation -destination '${{ matrix.destination }}' | xcbeautify && exit ${PIPESTATUS[0]}
+      - name: Pod lib lint
+        run: pod lib lint
+      - name: Should have the same version in podspec and sdk.swift
+        run: |
+          test $(cat ./Nativebrik.podspec | grep -E 's\.version\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]') = $(cat ./ios/Nativebrik/Nativebrik/sdk.swift | grep -E 'nativebrikSdkVersion\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]')
