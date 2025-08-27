@@ -1,4 +1,5 @@
 name: "[flutter] Test Nativebrik SDK"
+
 on:
   workflow_dispatch:
   push:
@@ -23,6 +24,7 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.19.2
+
       - name: Validate package
         working-directory: flutter/nativebrik_bridge
         run: dart pub publish --dry-run
