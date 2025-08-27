@@ -2,7 +2,7 @@ name: "[flutter] E2E Test Nativebrik SDK"
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   publish-flutter-ios-e2e-app:
@@ -37,9 +37,9 @@ jobs:
       name: Only Main
     steps:
       - name: checkout
+        uses: actions/checkout@v4
       - name: setup jdk
         uses: actions/setup-java@v2
-        uses: actions/checkout@v4
         with:
           distribution: "zulu"
           java-version: "21"
