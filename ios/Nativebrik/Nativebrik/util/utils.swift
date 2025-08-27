@@ -509,8 +509,8 @@ func configureBorder(view: UIView, frame: FrameData?) {
     if isSingleRadius {
         // if radius is not set or single value
         view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
-        if let borderColor = frame?.borderColor,
-           let cgColor = parseColorValueToSolidCGColor(borderColor) {
+        if let bc = frame?.borderColor,
+           let cgColor = parseColorValueToSolidCGColor(bc) {
             view.layer.borderColor = cgColor
         }
         let cornerRadius = CGFloat(
@@ -590,8 +590,8 @@ func configureBorder(view: UIView, frame: FrameData?) {
     shapeLayer.lineWidth = CGFloat(frame?.borderWidth ?? 0)
     shapeLayer.fillColor = UIColor.clear.cgColor
     shapeLayer.name = "border-layer"
-    if let borderColor = frame?.borderColor,
-       let cgColor = parseColorValueToSolidCGColor(borderColor) {
+    if let bc = frame?.borderColor,
+       let cgColor = parseColorValueToSolidCGColor(bc) {
         shapeLayer.strokeColor = cgColor
     }
     
