@@ -198,6 +198,20 @@ func parseColorToCGColor(_ data: Color?) -> CGColor {
         ?? CGColor(gray: 0, alpha: 0)
 }
 
+// Helper function to extract solid color from ColorValue (returns nil for gradients)
+func parseColorValueToSolidCGColor(_ colorValue: ColorValue?) -> CGColor? {
+    guard let colorValue = colorValue else { return nil }
+    
+    switch colorValue {
+    case .EColor(let color):
+        return parseColorToCGColor(color)
+    case .ELinearGradient:
+        return nil  // Gradients not supported for borders/shadows
+    case .unknown:
+        return nil
+    }
+}
+
 func parseFontWeight(_ data: FontWeight?) -> UIFont.Weight {
     switch data {
     case .some(data):
@@ -458,23 +472,31 @@ private func normalizeSingleRadius(radius: CGFloat, width: CGFloat, height: CGFl
     return radius * min(1, l / radius / 2)
 }
 
+// Helper function to apply background (solid color or gradient)
+private func applyBackground(to view: UIView, colorValue: ColorValue?) {
+    // Remove existing gradient layer
+    view.layer.sublayers?.filter { $0.name == "gradient-layer" }.forEach { $0.removeFromSuperlayer() }
+    
+    guard let colorValue = colorValue,
+          let colorResult = parseColorValueFromGenerated(colorValue) else {
+        return
+    }
+    
+    switch colorResult {
+    case .solid(let color):
+        view.layer.backgroundColor = color.cgColor
+    case .linearGradient(let gradientLayer):
+        view.layer.backgroundColor = UIColor.clear.cgColor
+        gradientLayer.frame = view.bounds
+        gradientLayer.name = "gradient-layer"
+        view.layer.insertSublayer(gradientLayer, at: 0)
+    }
+}
+
 // NOTE: should be called in viewDidLayoutSubviews to wait until view.bounds are set
 func configureBorder(view: UIView, frame: FrameData?) {
-    if let background = frame?.background {
-        if let colorResult = parseColorValueFromGenerated(background) {
-            switch colorResult {
-            case .solid(let color):
-                view.layer.backgroundColor = color.cgColor
-                view.layer.sublayers?.filter { $0.name == "gradient-layer" }.forEach { $0.removeFromSuperlayer() }
-            case .linearGradient(let gradientLayer):
-                view.layer.backgroundColor = UIColor.clear.cgColor
-                view.layer.sublayers?.filter { $0.name == "gradient-layer" }.forEach { $0.removeFromSuperlayer() }
-                gradientLayer.frame = view.bounds
-                gradientLayer.name = "gradient-layer"
-                view.layer.insertSublayer(gradientLayer, at: 0)
-            }
-        }
-    }
+    // Apply background
+    applyBackground(to: view, colorValue: frame?.background)
 
     let width = view.bounds.width
     let height = view.bounds.height
@@ -487,16 +509,9 @@ func configureBorder(view: UIView, frame: FrameData?) {
     if isSingleRadius {
         // if radius is not set or single value
         view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
-        if let borderColor = frame?.borderColor {
-            if let colorResult = parseColorValueFromGenerated(borderColor) {
-                switch colorResult {
-                case .solid(let color):
-                    view.layer.borderColor = color.cgColor
-                case .linearGradient:
-                    // Gradient not supported for border, use clear as default
-                    view.layer.borderColor = UIColor.clear.cgColor
-                }
-            }
+        if let borderColor = frame?.borderColor,
+           let cgColor = parseColorValueToSolidCGColor(borderColor) {
+            view.layer.borderColor = cgColor
         }
         let cornerRadius = CGFloat(
             normalizeSingleRadius(
@@ -575,16 +590,9 @@ func configureBorder(view: UIView, frame: FrameData?) {
     shapeLayer.lineWidth = CGFloat(frame?.borderWidth ?? 0)
     shapeLayer.fillColor = UIColor.clear.cgColor
     shapeLayer.name = "border-layer"
-    if let bg = frame?.borderColor {
-        if let colorResult = parseColorValueFromGenerated(bg) {
-            switch colorResult {
-            case .solid(let color):
-                shapeLayer.strokeColor = color.cgColor
-            case .linearGradient:
-                // Gradient not supported for border, use clear as default
-                shapeLayer.strokeColor = UIColor.clear.cgColor
-            }
-        }
+    if let borderColor = frame?.borderColor,
+       let cgColor = parseColorValueToSolidCGColor(borderColor) {
+        shapeLayer.strokeColor = cgColor
     }
     
     view.layer.sublayers?.filter { $0.name == "border-layer" }.forEach { $0.removeFromSuperlayer() }
@@ -593,19 +601,7 @@ func configureBorder(view: UIView, frame: FrameData?) {
 
 func configureShadow(view: UIView, shadow: BoxShadow?) {
     if let shadow = shadow {
-        // Handle ColorValue for shadow color
-        if let colorValue = shadow.color,
-           let colorResult = parseColorValueFromGenerated(colorValue) {
-            switch colorResult {
-            case .solid(let color):
-                view.layer.shadowColor = color.cgColor
-            case .linearGradient:
-                // Gradient not supported for shadow, use black as default
-                view.layer.shadowColor = UIColor.black.cgColor
-            }
-        } else {
-            view.layer.shadowColor = UIColor.black.cgColor
-        }
+        view.layer.shadowColor = parseColorValueToSolidCGColor(shadow.color) ?? UIColor.black.cgColor
         view.layer.shadowOffset = CGSize(width: shadow.offsetX ?? 0, height: shadow.offsetY ?? 0)
         view.layer.shadowOpacity = 1
         view.layer.shadowRadius = CGFloat(shadow.radius ?? 0)
