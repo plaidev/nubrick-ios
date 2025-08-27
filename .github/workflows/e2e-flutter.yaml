@@ -15,7 +15,7 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.0'
+          xcode-version: '16.0'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
