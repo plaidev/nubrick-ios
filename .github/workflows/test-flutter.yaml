@@ -6,12 +6,12 @@ on:
     branches: [ main ]
     paths:
       - "flutter/**"
-      - .github/workflows/test-flutter.yml
+      - .github/workflows/test-flutter.yaml
   pull_request:
     branches: [ main ]
     paths:
       - "flutter/**"
-      - .github/workflows/test-flutter.yml
+      - .github/workflows/test-flutter.yaml
 
 jobs:
   test:

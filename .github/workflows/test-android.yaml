@@ -5,12 +5,12 @@ on:
     branches: [ main ]
     paths:
       - "android/**"
-      - .github/workflows/test-android.yml
+      - .github/workflows/test-android.yaml
   pull_request:
     branches: [ main ]
     paths:
       - "android/**"
-      - .github/workflows/test-android.yml
+      - .github/workflows/test-android.yaml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

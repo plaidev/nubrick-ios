@@ -5,13 +5,13 @@ on:
     branches: [ main ]
     paths:
       - "ios/**"
-      - .github/workflows/test-ios.yml
+      - .github/workflows/test-ios.yaml
       - Nativebrik.podspec
   pull_request:
     branches: [ main ]
     paths:
       - "ios/**"
-      - .github/workflows/test-ios.yml
+      - .github/workflows/test-ios.yaml
       - Nativebrik.podspec
 
 concurrency:
