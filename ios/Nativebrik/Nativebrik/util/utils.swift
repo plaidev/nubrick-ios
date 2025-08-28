@@ -134,7 +134,7 @@ func parseLinearGradientFromGenerated(_ gradient: LinearGradient) -> ColorValueR
         
         // Calculate direction vector (CSS coordinate system)
         let dx = sin(radians)
-        let dy = -cos(radians)  // Y軸を反転（CSSは上が負、iOSは下が正）
+        let dy = -cos(radians)  // Invert Y-axis (CSS: up is negative, iOS: down is positive)
         
         // Convert to start and end points
         let startX = 0.5 - dx * 0.5
