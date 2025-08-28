@@ -6,6 +6,8 @@ class TextView: AnimatedUIControl {
     var label: UILabel = UILabel()
     var block: UITextBlock = UITextBlock()
     var context: UIBlockContext?
+    var gradientLayer: CAGradientLayer?
+    
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
@@ -26,8 +28,24 @@ class TextView: AnimatedUIControl {
         
         let label = UILabel()
         label.yoga.isEnabled = true
-        if let color = block.data?.color {
-            label.textColor = parseColor(color)
+        
+        // Handle ColorValue which can be either solid color or gradient
+        if let colorValue = block.data?.color {
+            if let colorResult = parseColorValueFromGenerated(colorValue) {
+                switch colorResult {
+                case .solid(let color):
+                    label.textColor = color
+                    self.gradientLayer?.removeFromSuperlayer()
+                    self.gradientLayer = nil
+                case .linearGradient(let gradientLayer):
+                    // Store gradient layer for applying
+                    self.gradientLayer = gradientLayer
+                    // Apply gradient will be done in layoutSubviews after bounds are set
+                    label.textColor = .label // Set default color temporarily
+                }
+            } else {
+                label.textColor = .label
+            }
         } else {
             label.textColor = .label
         }
@@ -73,5 +91,34 @@ class TextView: AnimatedUIControl {
     override func layoutSubviews() {
         super.layoutSubviews()
         configureBorder(view: self, frame: self.block.data?.frame)
+        
+        // Apply gradient if available
+        if self.gradientLayer != nil {
+            applyGradientToLabel()
+        }
+    }
+    
+    private func applyGradientToLabel() {
+        guard let gradientLayer = self.gradientLayer else { return }
+        
+        // Ensure label has valid bounds
+        guard label.bounds.size.width > 0 && label.bounds.size.height > 0 else { return }
+        
+        // Create gradient image
+        UIGraphicsBeginImageContextWithOptions(label.bounds.size, false, 0)
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+        
+        // Set gradient frame to match label
+        gradientLayer.frame = CGRect(origin: .zero, size: label.bounds.size)
+        gradientLayer.render(in: context)
+        
+        guard let gradientImage = UIGraphicsGetImageFromCurrentImageContext() else {
+            UIGraphicsEndImageContext()
+            return
+        }
+        UIGraphicsEndImageContext()
+        
+        // Apply gradient as text color pattern
+        label.textColor = UIColor(patternImage: gradientImage)
     }
 }

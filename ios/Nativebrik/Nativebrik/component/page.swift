@@ -59,8 +59,9 @@ class ModalPageViewController: UIViewController {
             action: #selector(onClickBack)
         )
 
-        if let color = buttonData?.color {
-            leftButton.tintColor = parseColor(color)
+        if let colorValue = buttonData?.color,
+           let cgColor = parseColorValueToSolidCGColor(colorValue) {
+            leftButton.tintColor = UIColor(cgColor: cgColor)
         }
 
         if self.isFirstModal {

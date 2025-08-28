@@ -177,11 +177,13 @@ class TextInputView: UIView, UITextFieldDelegate {
             textInput.rightViewMode = .always
         }
 
-        if let color = block.data?.color {
-            textInput.textColor = parseColor(color)
-        } else {
-            textInput.textColor = .label
-        }
+        textInput.textColor = {
+            if let colorValue = block.data?.color,
+               let cgColor = parseColorValueToSolidCGColor(colorValue) {
+                return UIColor(cgColor: cgColor)
+            }
+            return .label
+        }()
         textInput.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
         self.fontSize = block.data?.size
         if let placeholder = block.data?.placeholder {
