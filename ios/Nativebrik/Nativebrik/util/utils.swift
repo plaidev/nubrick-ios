@@ -128,8 +128,11 @@ func parseLinearGradientFromGenerated(_ gradient: LinearGradient) -> ColorValueR
         // CSS gradient standard: 0° = to top, 90° = to right, 180° = to bottom, 270° = to left
         // CAGradientLayer: (0,0) is top-left, (1,1) is bottom-right
         
+        // Clip angle to [0, 1] range
+        let clippedAngle = max(0, min(1, angle))
+        
         // Convert normalized value to radians
-        let degrees = angle * 360.0
+        let degrees = clippedAngle * 360.0
         let radians = degrees * .pi / 180.0
         
         // Calculate direction vector (CSS coordinate system)
@@ -158,7 +161,9 @@ func parseLinearGradientFromGenerated(_ gradient: LinearGradient) -> ColorValueR
                 colors.append(parseColorToCGColor(color))
                 
                 if let position = stop.position {
-                    locations.append(NSNumber(value: position))
+                    // Clip position to [0, 1] range
+                    let clippedPosition = max(0, min(1, position))
+                    locations.append(NSNumber(value: clippedPosition))
                 }
             }
         }
