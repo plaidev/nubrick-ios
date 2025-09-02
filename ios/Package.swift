@@ -11,13 +11,14 @@ let package = Package(
     products: [
         .library(
             name: "Nativebrik",
-            targets: ["Nativebrik", "Yoga", "YogaKit"]
+            targets: ["Nativebrik"]
         ),
     ],
     targets: [
         .target(
             name: "Nativebrik",
-            path: "ios/Nativebrik/Nativebrik",
+            dependencies: ["Yoga", "YogaKit"],
+            path: "Nativebrik/Nativebrik",
             exclude: ["PrivacyInfo.xcprivacy"],
             resources: [
                 .copy("PrivacyInfo.xcprivacy")
