@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:Nativebrik/Nativebrik.xcodeproj">
+      location = "group:Sources/Nativebrik.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:Example-UIKit/Example-UIKit.xcodeproj">
