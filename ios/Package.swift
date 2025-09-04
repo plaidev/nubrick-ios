@@ -18,7 +18,6 @@ let package = Package(
         .target(
             name: "Nativebrik",
             dependencies: ["Yoga", "YogaKit"],
-            path: "ios/Nativebrik/Nativebrik",
             exclude: ["PrivacyInfo.xcprivacy"],
             resources: [
                 .copy("PrivacyInfo.xcprivacy")

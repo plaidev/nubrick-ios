@@ -15,7 +15,7 @@ Nativebrik SDK for iOS.
   s.platform = :ios
   s.ios.deployment_target = '14.0'
 
-  s.source_files = 'ios/Nativebrik/Nativebrik/**/*'
+  s.source_files = 'ios/Sources/Nativebrik/**/*'
 
   # common deps
   s.frameworks = 'UIKit', 'Foundation', 'SwiftUI', 'Combine', 'ImageIO', 'SafariServices'
