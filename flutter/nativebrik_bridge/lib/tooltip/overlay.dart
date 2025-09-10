@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:nativebrik_bridge/channel/nativebrik_bridge_platform_interface.dart';
 import 'package:nativebrik_bridge/nativebrik_bridge.dart';
@@ -354,6 +355,12 @@ class NativebrikTooltipOverlayState extends State<NativebrikTooltipOverlay>
           layoutDirection: TextDirection.ltr,
           creationParams: creationParams,
           creationParamsCodec: const StandardMessageCodec(),
+          gestureRecognizers: {
+            // Maybe we need to pass other gesture recognizers.
+            // This suppport only horizontal drag like horizontal swipe.
+            Factory<OneSequenceGestureRecognizer>(
+                () => HorizontalDragGestureRecognizer()),
+          },
         );
       case TargetPlatform.android:
         return AndroidView(
@@ -361,6 +368,12 @@ class NativebrikTooltipOverlayState extends State<NativebrikTooltipOverlay>
           layoutDirection: TextDirection.ltr,
           creationParams: creationParams,
           creationParamsCodec: const StandardMessageCodec(),
+          gestureRecognizers: {
+            // Maybe we need to pass other gesture recognizers.
+            // This suppport only horizontal drag like horizontal swipe.
+            Factory<OneSequenceGestureRecognizer>(
+                () => HorizontalDragGestureRecognizer()),
+          },
         );
       default:
         return const SizedBox.shrink();
