@@ -1,3 +1,7 @@
+## 0.10.5
+
+- Fix: carousel swipe problem
+
 ## 0.10.4
 
 - Update Dependencies
