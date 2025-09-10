@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nativebrik_bridge/remote_config.dart';
@@ -187,6 +188,12 @@ class _BridgeView extends StatelessWidget {
           layoutDirection: TextDirection.ltr,
           creationParams: creationParams,
           creationParamsCodec: const StandardMessageCodec(),
+          gestureRecognizers: {
+            // Maybe we need to pass other gesture recognizers.
+            // This suppport only horizontal drag like horizontal swipe.
+            Factory<OneSequenceGestureRecognizer>(
+                () => HorizontalDragGestureRecognizer()),
+          },
         );
       case TargetPlatform.android:
         return AndroidView(
@@ -194,6 +201,12 @@ class _BridgeView extends StatelessWidget {
           layoutDirection: TextDirection.ltr,
           creationParams: creationParams,
           creationParamsCodec: const StandardMessageCodec(),
+          gestureRecognizers: {
+            // Maybe we need to pass other gesture recognizers.
+            // This suppport only horizontal drag like horizontal swipe.
+            Factory<OneSequenceGestureRecognizer>(
+                () => HorizontalDragGestureRecognizer()),
+          },
         );
       default:
         return const SizedBox.shrink();
