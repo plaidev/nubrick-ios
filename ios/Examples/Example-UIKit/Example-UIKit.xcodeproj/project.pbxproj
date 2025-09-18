@@ -25,7 +25,6 @@
 		C1FFFD422B15AA3100ACD132 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C1FFFD452B15AA3100ACD132 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C1FFFD472B15AA3100ACD132 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C1FFFD542B15AA6E00ACD132 /* Nativebrik.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Nativebrik.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,7 +44,6 @@
 			children = (
 				C1FFFD382B15AA2F00ACD132 /* Example-UIKit */,
 				C1FFFD372B15AA2F00ACD132 /* Products */,
-				C1FFFD532B15AA6E00ACD132 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -69,14 +67,6 @@
 				C1FFFD472B15AA3100ACD132 /* Info.plist */,
 			);
 			path = "Example-UIKit";
-			sourceTree = "<group>";
-		};
-		C1FFFD532B15AA6E00ACD132 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				C1FFFD542B15AA6E00ACD132 /* Nativebrik.framework */,
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

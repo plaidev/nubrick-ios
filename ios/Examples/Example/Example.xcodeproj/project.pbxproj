@@ -45,9 +45,6 @@
 		C13633D82AEB777900B9F437 /* ExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C13633DC2AEB777900B9F437 /* ExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleUITests.swift; sourceTree = "<group>"; };
 		C13633DE2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		C1FFFD642B1DB57500ACD132 /* Nativebrik.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Nativebrik.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C1FFFD682B1DB79800ACD132 /* yoga.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = yoga.xcframework; path = ../xcframeworks/yoga.xcframework; sourceTree = SOURCE_ROOT; };
-		C1FFFD692B1DB79800ACD132 /* YogaKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = YogaKit.xcframework; path = ../xcframeworks/YogaKit.xcframework; sourceTree = SOURCE_ROOT; };
 		F4377A6E2DED943B002EF91E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -89,7 +86,6 @@
 				C13633D12AEB777900B9F437 /* ExampleTests */,
 				C13633DB2AEB777900B9F437 /* ExampleUITests */,
 				C13633BF2AEB777800B9F437 /* Products */,
-				C13634072AEB77FC00B9F437 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -138,16 +134,6 @@
 				C13633DE2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift */,
 			);
 			path = ExampleUITests;
-			sourceTree = "<group>";
-		};
-		C13634072AEB77FC00B9F437 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				C1FFFD682B1DB79800ACD132 /* yoga.xcframework */,
-				C1FFFD692B1DB79800ACD132 /* YogaKit.xcframework */,
-				C1FFFD642B1DB57500ACD132 /* Nativebrik.framework */,
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
