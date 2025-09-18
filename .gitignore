@@ -23,6 +23,7 @@ DerivedData
 *.ipa
 .netrc
 .swiftpm
+Pods
 
 # Bundler
 .bundle
