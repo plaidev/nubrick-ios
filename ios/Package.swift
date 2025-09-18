@@ -14,6 +14,9 @@ let package = Package(
             targets: ["Nativebrik"]
         ),
     ],
+    dependencies: [
+        .package(url: "https://github.com/nalexn/ViewInspector", from: "0.10.2")
+    ],
     targets: [
         .target(
             name: "Nativebrik",
@@ -25,7 +28,7 @@ let package = Package(
         ),
         .testTarget(
             name: "NativebrikTests",
-            dependencies: ["Nativebrik"]
+            dependencies: ["Nativebrik", .product(name: "ViewInspector", package: "ViewInspector")]
         ),
         .binaryTarget(
             name: "Yoga",
