@@ -13,23 +13,8 @@
 		C1FFFD412B15AA2F00ACD132 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD3F2B15AA2F00ACD132 /* Main.storyboard */; };
 		C1FFFD432B15AA3100ACD132 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD422B15AA3100ACD132 /* Assets.xcassets */; };
 		C1FFFD462B15AA3100ACD132 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD442B15AA3100ACD132 /* LaunchScreen.storyboard */; };
-		C1FFFD552B15AA6E00ACD132 /* Nativebrik.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1FFFD542B15AA6E00ACD132 /* Nativebrik.framework */; };
-		C1FFFD562B15AA6E00ACD132 /* Nativebrik.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1FFFD542B15AA6E00ACD132 /* Nativebrik.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		F407E0CE2E7BBF770034091F /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F407E0CD2E7BBF770034091F /* Nativebrik */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		C1FFFD572B15AA6E00ACD132 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				C1FFFD562B15AA6E00ACD132 /* Nativebrik.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		C1FFFD362B15AA2F00ACD132 /* Example-UIKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example-UIKit.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -40,7 +25,6 @@
 		C1FFFD422B15AA3100ACD132 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C1FFFD452B15AA3100ACD132 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C1FFFD472B15AA3100ACD132 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C1FFFD542B15AA6E00ACD132 /* Nativebrik.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Nativebrik.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,7 +32,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1FFFD552B15AA6E00ACD132 /* Nativebrik.framework in Frameworks */,
+				F407E0CE2E7BBF770034091F /* Nativebrik in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -60,7 +44,6 @@
 			children = (
 				C1FFFD382B15AA2F00ACD132 /* Example-UIKit */,
 				C1FFFD372B15AA2F00ACD132 /* Products */,
-				C1FFFD532B15AA6E00ACD132 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -86,14 +69,6 @@
 			path = "Example-UIKit";
 			sourceTree = "<group>";
 		};
-		C1FFFD532B15AA6E00ACD132 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				C1FFFD542B15AA6E00ACD132 /* Nativebrik.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -104,7 +79,6 @@
 				C1FFFD322B15AA2F00ACD132 /* Sources */,
 				C1FFFD332B15AA2F00ACD132 /* Frameworks */,
 				C1FFFD342B15AA2F00ACD132 /* Resources */,
-				C1FFFD572B15AA6E00ACD132 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -391,6 +365,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F407E0CD2E7BBF770034091F /* Nativebrik */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Nativebrik;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C1FFFD2E2B15AA2F00ACD132 /* Project object */;
 }

@@ -2,13 +2,13 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:Sources/Nativebrik.xcodeproj">
+      location = "group:">
    </FileRef>
    <FileRef
-      location = "group:Example-UIKit/Example-UIKit.xcodeproj">
+      location = "group:Examples/Example-UIKit/Example-UIKit.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:Nativebrik/../Example/Example.xcodeproj">
+      location = "group:Examples/Example/Example.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:E2E/E2E.xcodeproj">
