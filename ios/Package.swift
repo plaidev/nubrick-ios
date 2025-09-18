@@ -23,6 +23,10 @@ let package = Package(
                 .copy("PrivacyInfo.xcprivacy")
             ]
         ),
+        .testTarget(
+            name: "NativebrikTests",
+            dependencies: ["Nativebrik"]
+        ),
         .binaryTarget(
             name: "Yoga",
             url: "https://cdn.nativebrik.com/sdk/spm/yoga/2.0.0/yoga.xcframework.zip",
