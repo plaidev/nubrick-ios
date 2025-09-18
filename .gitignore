@@ -22,8 +22,7 @@ DerivedData
 *.hmap
 *.ipa
 .netrc
-ios/.swiftpm/configuration/registries.json
-ios/.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.swiftpm
 
 # Bundler
 .bundle
