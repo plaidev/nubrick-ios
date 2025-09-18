@@ -24,6 +24,7 @@ DerivedData
 .netrc
 .swiftpm
 Pods
+ios/PodBuilder/PodBuilder.xcworkspace
 
 # Bundler
 .bundle
