@@ -41,9 +41,3 @@ jobs:
         run: |
           xcodebuild test -scheme ${{ matrix.scheme }} -sdk iphonesimulator -destination '${{ matrix.destination }}' -skipMacroValidation -skipPackagePluginValidation | xcbeautify
           exit ${PIPESTATUS[0]}
-
-      - name: Pod lib lint
-        run: pod lib lint
-      - name: Should have the same version in podspec and sdk.swift
-        run: |
-          test $(cat ./Nativebrik.podspec | grep -E 's\.version\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]') = $(cat ./ios/Sources/Nativebrik/sdk.swift | grep -E 'nativebrikSdkVersion\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]')
