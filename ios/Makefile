@@ -1,9 +1,10 @@
-PODS_ROOT := ./xcframeworks/PodBuilder/Pods
+PODS_ROOT := ./PodBuilder/Pods
 PODS_PROJECT := $(PODS_ROOT)/Pods.xcodeproj
 SYMROOT := $(PODS_ROOT)/Build
 IPHONEOS_DEPLOYMENT_TARGET = 13.4
 
 build-cocoapods:
+	@(cd ./PodBuilder && pod install)
 	@xcodebuild -project "$(PODS_PROJECT)" \
 			-sdk iphoneos \
 			-configuration Release -target Yoga \
