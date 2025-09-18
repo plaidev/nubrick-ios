@@ -39,7 +39,6 @@ jobs:
       - name: Test ${{ matrix.scheme }} on ${{ matrix.destination }}
         working-directory: ios
         run: |
-          xcodebuild -list -json
           xcodebuild test -scheme ${{ matrix.scheme }} -sdk iphonesimulator -destination '${{ matrix.destination }}' -skipMacroValidation -skipPackagePluginValidation | xcbeautify
           exit ${PIPESTATUS[0]}
 
