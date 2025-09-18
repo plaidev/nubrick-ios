@@ -22,7 +22,8 @@ DerivedData
 *.hmap
 *.ipa
 .netrc
-.swiftpm
+ios/.swiftpm/configuration/registries.json
+ios/.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 Pods
 ios/PodBuilder/PodBuilder.xcworkspace
 
