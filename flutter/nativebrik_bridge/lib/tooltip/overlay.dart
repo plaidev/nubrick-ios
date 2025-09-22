@@ -325,7 +325,7 @@ class NativebrikTooltipOverlayState extends State<NativebrikTooltipOverlay>
                         size.height,
                       ).inflate(8.0 * hole),
                       borderRadius: 8.0,
-                      color: const Color.fromARGB(30, 0, 0, 0),
+                      color: const Color.fromARGB(150, 0, 0, 0),
                     ),
                   ),
                 ),
