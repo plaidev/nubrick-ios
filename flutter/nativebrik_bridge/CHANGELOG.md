@@ -1,3 +1,8 @@
+
+## 0.10.6
+
+- Fix: Make the background darker while tooltip is shown (Product Tour feature)
+
 ## 0.10.5
 
 - Fix: carousel swipe problem
