@@ -14,6 +14,7 @@
 		C13633D32AEB777900B9F437 /* ExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633D22AEB777900B9F437 /* ExampleTests.swift */; };
 		C13633DD2AEB777900B9F437 /* ExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633DC2AEB777900B9F437 /* ExampleUITests.swift */; };
 		C13633DF2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633DE2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift */; };
+		F44FE1A12E8EAE530051EF7B /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F44FE1A02E8EAE530051EF7B /* Nativebrik */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F44FE1A12E8EAE530051EF7B /* Nativebrik in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,6 +85,7 @@
 				C13633C02AEB777800B9F437 /* Example */,
 				C13633D12AEB777900B9F437 /* ExampleTests */,
 				C13633DB2AEB777900B9F437 /* ExampleUITests */,
+				F44FE19F2E8EAE530051EF7B /* Frameworks */,
 				C13633BF2AEB777800B9F437 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -132,6 +135,13 @@
 				C13633DE2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift */,
 			);
 			path = ExampleUITests;
+			sourceTree = "<group>";
+		};
+		F44FE19F2E8EAE530051EF7B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -615,6 +625,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F44FE1A02E8EAE530051EF7B /* Nativebrik */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Nativebrik;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C13633B62AEB777800B9F437 /* Project object */;
 }
