@@ -1,4 +1,4 @@
-name: "[ios] E2E Test Nativebrik SDK"
+name: "E2E Test"
 on:
   workflow_dispatch:
   push:
@@ -17,14 +17,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Nativebrik E2E
-        run: xcodebuild -workspace ./ios/nativebrik.xcworkspace -scheme E2E -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.0.1' -derivedDataPath ./.dist
+        run: xcodebuild -workspace ./nativebrik.xcworkspace -scheme E2E -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.0.1' -derivedDataPath ./.dist
       - name: Zip app
         run: |
           cd .dist/Build/Products/Release-iphonesimulator/ && zip -r E2E.app.zip ./E2E.app
 
       - name: Upload to MagicPod
         run: |
-          curl -L -X POST \
+          curl --fail-with-body -L -X POST \
             -F "file=@.dist/Build/Products/Release-iphonesimulator/E2E.app.zip" \
             -H "Authorization: Token ${{ secrets.MAGICPOD_API_TOKEN }}" \
             "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik/upload-file/"

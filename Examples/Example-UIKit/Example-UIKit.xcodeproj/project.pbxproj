@@ -14,6 +14,7 @@
 		C1FFFD432B15AA3100ACD132 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD422B15AA3100ACD132 /* Assets.xcassets */; };
 		C1FFFD462B15AA3100ACD132 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD442B15AA3100ACD132 /* LaunchScreen.storyboard */; };
 		F407E0CE2E7BBF770034091F /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F407E0CD2E7BBF770034091F /* Nativebrik */; };
+		F4699B4E2E8B6CF300D0D7A4 /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F4699B4D2E8B6CF300D0D7A4 /* Nativebrik */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F407E0CE2E7BBF770034091F /* Nativebrik in Frameworks */,
+				F4699B4E2E8B6CF300D0D7A4 /* Nativebrik in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -113,6 +115,8 @@
 				Base,
 			);
 			mainGroup = C1FFFD2D2B15AA2F00ACD132;
+			packageReferences = (
+			);
 			productRefGroup = C1FFFD372B15AA2F00ACD132 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -368,6 +372,10 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		F407E0CD2E7BBF770034091F /* Nativebrik */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Nativebrik;
+		};
+		F4699B4D2E8B6CF300D0D7A4 /* Nativebrik */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Nativebrik;
 		};

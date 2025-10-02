@@ -14,7 +14,7 @@
 		C13633D32AEB777900B9F437 /* ExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633D22AEB777900B9F437 /* ExampleTests.swift */; };
 		C13633DD2AEB777900B9F437 /* ExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633DC2AEB777900B9F437 /* ExampleUITests.swift */; };
 		C13633DF2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633DE2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift */; };
-		F407E0CC2E7BAA030034091F /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F407E0CB2E7BAA030034091F /* Nativebrik */; };
+		F44FE1A12E8EAE530051EF7B /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F44FE1A02E8EAE530051EF7B /* Nativebrik */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,7 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F407E0CC2E7BAA030034091F /* Nativebrik in Frameworks */,
+				F44FE1A12E8EAE530051EF7B /* Nativebrik in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +85,7 @@
 				C13633C02AEB777800B9F437 /* Example */,
 				C13633D12AEB777900B9F437 /* ExampleTests */,
 				C13633DB2AEB777900B9F437 /* ExampleUITests */,
+				F44FE19F2E8EAE530051EF7B /* Frameworks */,
 				C13633BF2AEB777800B9F437 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -134,6 +135,13 @@
 				C13633DE2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift */,
 			);
 			path = ExampleUITests;
+			sourceTree = "<group>";
+		};
+		F44FE19F2E8EAE530051EF7B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -224,6 +232,8 @@
 				Base,
 			);
 			mainGroup = C13633B52AEB777800B9F437;
+			packageReferences = (
+			);
 			productRefGroup = C13633BF2AEB777800B9F437 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -617,7 +627,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		F407E0CB2E7BAA030034091F /* Nativebrik */ = {
+		F44FE1A02E8EAE530051EF7B /* Nativebrik */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Nativebrik;
 		};
