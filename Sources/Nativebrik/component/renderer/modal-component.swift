@@ -78,6 +78,10 @@ class ModalComponentViewController: UIViewController {
         let top = findTopPresenting(root)
         top.present(viewController, animated: true)
     }
+    
+    override func viewDidLayoutSubviews() {
+        self.view.yoga.applyLayout(preservingOrigin: true)
+    }
 
     @objc func dismissModal() {
          if let modal = self.currentModal {
