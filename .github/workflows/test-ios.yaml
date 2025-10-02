@@ -1,16 +1,14 @@
-name: "[ios] Test Nativebrik SDK"
+name: Test
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
-    paths:
-      - "ios/**"
-      - .github/workflows/test-ios.yaml
+    paths-ignore:
+      - .github/workflows/e2e.yaml
   pull_request:
     branches: [ main ]
-    paths:
-      - "ios/**"
-      - .github/workflows/test-ios.yaml
+    paths-ignore:
+      - .github/workflows/e2e.yaml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -37,7 +35,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Test ${{ matrix.scheme }} on ${{ matrix.destination }}
-        working-directory: ios
         run: |
           xcodebuild test -scheme ${{ matrix.scheme }} -sdk iphonesimulator -destination '${{ matrix.destination }}' -skipMacroValidation -skipPackagePluginValidation | xcbeautify
           exit ${PIPESTATUS[0]}
