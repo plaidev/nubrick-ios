@@ -93,7 +93,7 @@ class ModalPageViewController: UIViewController {
     }
 }
 
-class PageView: UIView {
+final class PageView: UIView {
     fileprivate let page: UIPageBlock?
     private let props: [Property]?
     private let container: Container
