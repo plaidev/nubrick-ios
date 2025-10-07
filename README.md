@@ -1,10 +1,14 @@
-# Nativebrik SDK
+# Nativebrik SDK for iOS
 
 documentations
 
 [https://docs.nativebrik.com](https://docs.nativebrik.com/)
 
-# Structure
+## Development
+
+run `make app` or open `Nativebrik.xcworkspace` in Xcode
+
+## Structure
 
 ```
 SDK
@@ -24,4 +28,3 @@ SDK
             |_ PageView: Fetch data and Render view
                 |_ UIViewBlock: Render view blocks
 ```
-
