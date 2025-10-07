@@ -260,6 +260,6 @@ class PageView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-//        self.yoga.applyLayout(preservingOrigin: true)
+        self.yoga.applyLayout(preservingOrigin: true)
     }
 }
