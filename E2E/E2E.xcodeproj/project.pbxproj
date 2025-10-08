@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -11,7 +11,7 @@
 		C13634782B03394000B9F437 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634772B03394000B9F437 /* ContentView.swift */; };
 		C136347A2B03394300B9F437 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C13634792B03394300B9F437 /* Assets.xcassets */; };
 		C136347D2B03394300B9F437 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C136347C2B03394300B9F437 /* Preview Assets.xcassets */; };
-		F407E0D02E7BBFD10034091F /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F407E0CF2E7BBFD10034091F /* Nativebrik */; };
+		F44FE1D32E962E870051EF7B /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F44FE1D22E962E870051EF7B /* Nativebrik */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F407E0D02E7BBFD10034091F /* Nativebrik in Frameworks */,
+				F44FE1D32E962E870051EF7B /* Nativebrik in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -113,6 +113,9 @@
 				Base,
 			);
 			mainGroup = C13634692B03394000B9F437;
+			packageReferences = (
+				F44FE1D12E962E870051EF7B /* XCLocalSwiftPackageReference "../" */,
+			);
 			productRefGroup = C13634732B03394000B9F437 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -349,8 +352,15 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		F44FE1D12E962E870051EF7B /* XCLocalSwiftPackageReference "../" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../";
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
-		F407E0CF2E7BBFD10034091F /* Nativebrik */ = {
+		F44FE1D22E962E870051EF7B /* Nativebrik */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Nativebrik;
 		};
