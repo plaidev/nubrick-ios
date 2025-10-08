@@ -15,30 +15,28 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/nalexn/ViewInspector", exact: "0.9.11")
+        .package(url: "https://github.com/nalexn/ViewInspector", exact: "0.9.11"),
+        .package(url: "https://github.com/facebook/yoga.git", .upToNextMinor(from: "3.2.1")),
     ],
     targets: [
         .target(
             name: "Nativebrik",
-            dependencies: ["Yoga", "YogaKit"],
+            dependencies: ["YogaKit"],
+            path: "Sources/Nativebrik",
             exclude: ["PrivacyInfo.xcprivacy"],
             resources: [
                 .copy("PrivacyInfo.xcprivacy")
             ]
         ),
+        .target(
+            name: "YogaKit",
+            dependencies: ["yoga"],
+            path: "Sources/YogaKit",
+            publicHeadersPath: "include/YogaKit"
+        ),
         .testTarget(
             name: "NativebrikTests",
             dependencies: ["Nativebrik", .product(name: "ViewInspector", package: "ViewInspector")]
-        ),
-        .binaryTarget(
-            name: "Yoga",
-            url: "https://cdn.nativebrik.com/sdk/spm/yoga/2.0.0/yoga.xcframework.zip",
-            checksum: "19b4ab4cdf3ec7c5d9809b3f3230d33dccbc4917033c712c9e7175e835eca695"
-        ),
-        .binaryTarget(
-            name: "YogaKit",
-            url: "https://cdn.nativebrik.com/sdk/spm/YogaKit/2.0.0/YogaKit.xcframework.zip",
-            checksum: "10567c44d05e2a7cfaffc14b52b4a499921e48fdf0d78aa7f5c1537c1e365460"
         ),
     ]
 )
