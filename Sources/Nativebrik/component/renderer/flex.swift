@@ -99,8 +99,8 @@ class FlexView: AnimatedUIControl {
                 if let childFlexShrink = childFlexShrink {
                     layout.isEnabled = true
                     layout.flexShrink = CGFloat(childFlexShrink)
-                    layout.minWidth = YGValue(layout.width.value)
-                    layout.minHeight = YGValue(layout.height.value)
+                    layout.minWidth = .init(value: layout.width.value, unit: .point)
+                    layout.minHeight = .init(value: layout.height.value, unit: .point)
                 }
             }
 

@@ -311,10 +311,10 @@ class MultiSelectInputView: UIControl {
             layout.isEnabled = true
             layout.alignItems = .center
             layout.justifyContent = .center
-            layout.width = .init(integerLiteral: 9)
-            layout.height = .init(integerLiteral: 11)
-            layout.marginRight = .init(integerLiteral: 4)
-            layout.marginLeft = .init(integerLiteral: 4)
+            layout.width = .init(value: 9, unit: .point)
+            layout.height = .init(value: 11, unit: .point)
+            layout.marginRight = .init(value: 4, unit: .point)
+            layout.marginLeft = .init(value: 4, unit: .point)
         }
         iconView.tintColor = .tertiaryLabel
 
