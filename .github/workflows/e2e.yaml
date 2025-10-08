@@ -7,6 +7,7 @@ on:
 jobs:
   publish-e2e-app:
     runs-on: macos-26
+    timeout-minutes: 15
     environment:
       name: Only Main
     steps:
