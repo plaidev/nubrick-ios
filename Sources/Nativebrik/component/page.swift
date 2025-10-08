@@ -93,7 +93,7 @@ class ModalPageViewController: UIViewController {
     }
 }
 
-class PageView: UIView {
+final class PageView: UIView {
     fileprivate let page: UIPageBlock?
     private let props: [Property]?
     private let container: Container
@@ -125,19 +125,7 @@ class PageView: UIView {
 
         // build placeholder input. init.props is passed from other pages, and page.data.props are the page.props.
         // so merge them and create self.props.
-        self.props =
-            page?.data?.props?.enumerated().map { (index, property) in
-                let propIndexInEvent =
-                    props?.firstIndex(where: { prop in
-                        return property.name == prop.name
-                    }) ?? -1
-                let propInEvent = propIndexInEvent >= 0 ? props![propIndexInEvent] : nil
-                return Property(
-                    name: property.name ?? "",
-                    value: propInEvent?.value ?? property.value ?? "",
-                    ptype: property.ptype ?? PropertyType.STRING
-                )
-            } ?? []
+        self.props = Self.mergeProps(pageProps: page?.data?.props, eventProps: props)
 
         self.data = container.createVariableForTemplate(data: nil, properties: self.props)
         super.init(frame: .zero)
@@ -261,5 +249,20 @@ class PageView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         self.yoga.applyLayout(preservingOrigin: true)
+    }
+
+    private static func mergeProps(pageProps: [Property]?, eventProps: [Property]?) -> [Property] {
+        guard let pageProps = pageProps else {
+            return []
+        }
+
+        return pageProps.map { property in
+            let eventProp = eventProps?.first { $0.name == property.name }
+            return Property(
+                name: property.name ?? "",
+                value: eventProp?.value ?? property.value ?? "",
+                ptype: property.ptype ?? PropertyType.STRING
+            )
+        }
     }
 }

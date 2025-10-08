@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,8 +13,7 @@
 		C1FFFD412B15AA2F00ACD132 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD3F2B15AA2F00ACD132 /* Main.storyboard */; };
 		C1FFFD432B15AA3100ACD132 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD422B15AA3100ACD132 /* Assets.xcassets */; };
 		C1FFFD462B15AA3100ACD132 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD442B15AA3100ACD132 /* LaunchScreen.storyboard */; };
-		F407E0CE2E7BBF770034091F /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F407E0CD2E7BBF770034091F /* Nativebrik */; };
-		F4699B4E2E8B6CF300D0D7A4 /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F4699B4D2E8B6CF300D0D7A4 /* Nativebrik */; };
+		F44FE1D62E962EB30051EF7B /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F44FE1D52E962EB30051EF7B /* Nativebrik */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,8 +32,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F407E0CE2E7BBF770034091F /* Nativebrik in Frameworks */,
-				F4699B4E2E8B6CF300D0D7A4 /* Nativebrik in Frameworks */,
+				F44FE1D62E962EB30051EF7B /* Nativebrik in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -116,6 +114,7 @@
 			);
 			mainGroup = C1FFFD2D2B15AA2F00ACD132;
 			packageReferences = (
+				F44FE1D42E962EB30051EF7B /* XCLocalSwiftPackageReference "../../" */,
 			);
 			productRefGroup = C1FFFD372B15AA2F00ACD132 /* Products */;
 			projectDirPath = "";
@@ -370,12 +369,15 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCSwiftPackageProductDependency section */
-		F407E0CD2E7BBF770034091F /* Nativebrik */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Nativebrik;
+/* Begin XCLocalSwiftPackageReference section */
+		F44FE1D42E962EB30051EF7B /* XCLocalSwiftPackageReference "../../" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../";
 		};
-		F4699B4D2E8B6CF300D0D7A4 /* Nativebrik */ = {
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F44FE1D52E962EB30051EF7B /* Nativebrik */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Nativebrik;
 		};
