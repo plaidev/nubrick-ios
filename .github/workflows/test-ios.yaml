@@ -24,12 +24,8 @@ jobs:
     steps:
       - name: Install xcbeautify
         run: brew install xcbeautify
-      # - uses: maxim-lobanov/setup-xcode@v1
-      #   with:
-      #     xcode-version: "15.4"
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Test ${{ matrix.scheme }} on ${{ matrix.destination }}
         run: |
           xcodebuild test -scheme ${{ matrix.scheme }} -sdk iphonesimulator -destination '${{ matrix.destination }}' -skipMacroValidation -skipPackagePluginValidation | xcbeautify
