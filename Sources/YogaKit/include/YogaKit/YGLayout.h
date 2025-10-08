@@ -6,6 +6,7 @@
  */
 
 #import <UIKit/UIKit.h>
+
 #import <yoga/YGEnums.h>
 #import <yoga/YGMacros.h>
 #import <yoga/Yoga.h>
@@ -63,6 +64,7 @@ typedef NS_OPTIONS(NSInteger, YGDimensionFlexibility) {
 @property(nonatomic, readwrite, assign) YGWrap flexWrap;
 @property(nonatomic, readwrite, assign) YGOverflow overflow;
 @property(nonatomic, readwrite, assign) YGDisplay display;
+@property(nonatomic, readwrite, assign) YGBoxSizing boxSizing;
 
 @property(nonatomic, readwrite, assign) CGFloat flex;
 @property(nonatomic, readwrite, assign) CGFloat flexGrow;
@@ -113,6 +115,10 @@ typedef NS_OPTIONS(NSInteger, YGDimensionFlexibility) {
 
 // Yoga specific properties, not compatible with flexbox specification
 @property(nonatomic, readwrite, assign) CGFloat aspectRatio;
+
+@property(nonatomic, readwrite, assign) CGFloat columnGap;
+@property(nonatomic, readwrite, assign) CGFloat rowGap;
+@property(nonatomic, readwrite, assign) CGFloat gap;
 
 /**
  Get the resolved direction of this node. This won't be YGDirectionInherit
