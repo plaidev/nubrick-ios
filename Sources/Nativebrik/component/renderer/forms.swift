@@ -61,10 +61,10 @@ class InputIconView: UIControl {
 
         self.configureLayout { layout in
             layout.isEnabled = true
-            layout.paddingLeft = .init(integerLiteral: paddingLeft)
-            layout.paddingRight = .init(integerLiteral: paddingRight)
+            layout.paddingLeft = .init(value: Float(paddingLeft), unit: .point)
+            layout.paddingRight = .init(value: Float(paddingRight), unit: .point)
             layout.height = .init(value: 100, unit: .percent)
-            layout.width = .init(integerLiteral: paddingLeft + paddingRight + size)
+            layout.width = .init(value: Float(paddingLeft + paddingRight + size), unit: .point)
             layout.alignItems = .center
             layout.justifyContent = .center
         }
@@ -72,8 +72,8 @@ class InputIconView: UIControl {
         let iconView = UIImageView(image: UIImage(systemName: systemName))
         iconView.configureLayout { layout in
             layout.isEnabled = true
-            layout.width = .init(integerLiteral: size)
-            layout.height = .init(integerLiteral: size)
+            layout.width = .init(value: Float(size), unit: .point)
+            layout.height = .init(value: Float(size), unit: .point)
         }
         iconView.sizeToFit()
         if let color = color {

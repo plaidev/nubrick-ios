@@ -30,7 +30,7 @@ func parseInt(_ data: Int?) -> YGValue {
 
 func parseIntForFlex(_ data: Int?) -> YGValue? {
     if let integer = data {
-        return YGValue(CGFloat(integer))
+        return YGValue(value: Float(integer), unit: .point)
     } else {
         return YGValueUndefined
     }

@@ -169,7 +169,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             pageControl.configureLayout { layout in
                 layout.isEnabled = true
                 layout.position = .absolute
-                layout.bottom = YGValue(floatLiteral: 0)
+                layout.bottom = .init(value: 0, unit: .point)
                 layout.alignSelf = .center
             }
             self.pageControl = pageControl

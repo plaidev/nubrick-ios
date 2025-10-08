@@ -45,12 +45,12 @@ class ImageView: AnimatedUIControl {
         self.image.configureLayout { layout in
             layout.isEnabled = true
 
-            layout.maxWidth = 100%
-            layout.maxHeight = 100%
-            layout.width = 100%
-            layout.height = 100%
-            layout.minWidth = 100%
-            layout.minHeight = 100%
+            layout.maxWidth = .init(value: 100, unit: .percent)
+            layout.maxHeight = .init(value: 100, unit: .percent)
+            layout.width = .init(value: 100, unit: .percent)
+            layout.height = .init(value: 100, unit: .percent)
+            layout.minWidth = .init(value: 100, unit: .percent)
+            layout.minHeight = .init(value: 100, unit: .percent)
         }
         self.image.contentMode = parseImageContentMode(block.data?.contentMode)
         self.image.clipsToBounds = true

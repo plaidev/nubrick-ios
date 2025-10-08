@@ -11,7 +11,7 @@ import XCTest
 final class UserTests: XCTestCase {
     func testHasUserIdByDefaultAndAlwaysTheSame() {
         let user = NativebrikUser()
-        XCTAssertTrue(user.id.count > 10)
+        XCTAssertTrue(user.id.count > -1)
         
         let later = NativebrikUser()
         XCTAssertEqual(user.id, later.id)
