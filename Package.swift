@@ -32,7 +32,10 @@ let package = Package(
             name: "YogaKit",
             dependencies: ["yoga"],
             path: "Sources/YogaKit",
-            publicHeadersPath: "include/YogaKit"
+            publicHeadersPath: "include/YogaKit",
+            cxxSettings: [
+                .unsafeFlags(["-std=c++17"])
+            ]
         ),
         .testTarget(
             name: "NativebrikTests",
