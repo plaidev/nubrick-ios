@@ -38,7 +38,7 @@ func openLink(_ event: ComponentEvent) -> Void {
     }
 }
 
-func createDispatchNativebrikEvent(_ client: NativebrikClient) -> (_ event: ComponentEvent) -> Void {
+func createDispatchNativebrikEvent(_ client: NubrickClient) -> (_ event: ComponentEvent) -> Void {
     return { event in
         guard let name = event.name else {
             return
@@ -118,7 +118,7 @@ public struct NativebrikEvent {
 
 public typealias NativebrikHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
 
-public class NativebrikClient: ObservableObject {
+public final class NubrickClient: ObservableObject {
     private let container: Container
     private let config: Config
     private let overlayVC: OverlayViewController
@@ -349,9 +349,9 @@ public class NativebrikExperiment {
 
 public struct NubrickProvider<Content: View>: View {
     private let content: Content
-    private let client: NativebrikClient
+    private let client: NubrickClient
 
-    public init(client: NativebrikClient, @ViewBuilder content: () -> Content) {
+    public init(client: NubrickClient, @ViewBuilder content: () -> Content) {
         self.content = content()
         self.client = client
     }
@@ -363,4 +363,3 @@ public struct NubrickProvider<Content: View>: View {
         }
     }
 }
-

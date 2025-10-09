@@ -11,23 +11,25 @@ import SwiftUI
 @testable import Nubrick
 
 
-final class NativebrikClientTests: XCTestCase {
-    func testInitializeNativebrikClientWithoutErrorThrows() throws {
-        let client = NativebrikClient(projectId: "Nothing")
-        let _ = client.experiment.overlayViewController()
-    }
-    
-    func testDispatchWithoutErrorThrows() throws {
-        let client = NativebrikClient(projectId: "Nothing")
-        client.experiment.dispatch(NativebrikEvent("Hello"))
+final class NubrickClientTests: XCTestCase {
+    func testInitializeNubrickClientWithoutError() throws {
+        let client = NubrickClient(projectId: "Nothing")
+
+        XCTContext.runActivity(named: "initialize and create overlay") { _ in
+            XCTAssertNoThrow(client.experiment.overlayViewController())
+        }
+
+        XCTContext.runActivity(named: "dispatch event") { _ in
+            XCTAssertNoThrow(client.experiment.dispatch(NativebrikEvent("Hello")))
+        }
     }
 }
 
 final class NubrickProviderTests: XCTestCase {
     struct ClientConsumerView: View {
-        @EnvironmentObject var nativebrik: NativebrikClient
+        @EnvironmentObject var nubrick: NubrickClient
         var body: some View {
-            nativebrik
+            nubrick
                 .experiment
                 .embedding("Nothing", onEvent: nil) { phase in
                     switch phase {
@@ -39,7 +41,7 @@ final class NubrickProviderTests: XCTestCase {
     }
     struct TestView: View {
         var body: some View {
-            NubrickProvider(client: NativebrikClient(projectId: "Nothing")) {
+            NubrickProvider(client: NubrickClient(projectId: "Nothing")) {
                 Text("Hello")
                 ClientConsumerView()
             }

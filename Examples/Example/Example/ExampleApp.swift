@@ -21,7 +21,7 @@ let nativebrik = {
         nativebrikTrackUrl = trackUrl
     }
 
-    return NativebrikClient(
+    return NubrickClient(
         projectId: projectId,
         cachePolicy: NativebrikCachePolicy(cacheTime: 10 * 60, staleTime: 0)
     )

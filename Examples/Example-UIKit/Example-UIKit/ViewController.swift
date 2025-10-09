@@ -9,7 +9,7 @@ import UIKit
 import Nubrick
 
 let nativebrik = {
-    return NativebrikClient(projectId: "cgv3p3223akg00fod19g")
+    return NubrickClient(projectId: "cgv3p3223akg00fod19g")
 }()
 
 class ViewController: UIViewController {

@@ -12,7 +12,7 @@ import Nubrick
 struct E2EApp: App {
     var body: some Scene {
         WindowGroup {
-            NubrickProvider(client: NativebrikClient(projectId: "ckto7v223akg00ag3jsg")) {
+            NubrickProvider(client: NubrickClient(projectId: "ckto7v223akg00ag3jsg")) {
                 ContentView()
             }
         }

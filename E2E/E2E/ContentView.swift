@@ -43,7 +43,7 @@ struct ContentView: View {
 }
 
 #Preview {
-    NubrickProvider(client: NativebrikClient(projectId: "ckto7v223akg00ag3jsg")) {
+    NubrickProvider(client: NubrickClient(projectId: "ckto7v223akg00ag3jsg")) {
         ContentView()
     }
 }
