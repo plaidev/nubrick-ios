@@ -5,7 +5,7 @@
 //  Created by Ryosuke Suzuki on 2023/10/27.
 //
 
-import Nativebrik
+import Nubrick
 import SwiftUI
 import UIKit
 

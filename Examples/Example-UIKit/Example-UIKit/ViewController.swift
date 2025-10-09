@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import Nativebrik
+import Nubrick
 
 let nativebrik = {
     return NativebrikClient(projectId: "cgv3p3223akg00fod19g")

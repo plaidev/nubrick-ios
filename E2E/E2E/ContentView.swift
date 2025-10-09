@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Nativebrik
+import Nubrick
 
 struct ContentView: View {
     @EnvironmentObject var nativebrik: NativebrikClient

@@ -5,7 +5,7 @@ install:
 
 .PHONY: open
 open:
-	xed Nativebrik.xcworkspace
+	xed Nubrick.xcworkspace
 
 .PHONY: app
 app: \

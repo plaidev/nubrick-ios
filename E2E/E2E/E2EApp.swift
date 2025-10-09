@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Nativebrik
+import Nubrick
 
 @main
 struct E2EApp: App {

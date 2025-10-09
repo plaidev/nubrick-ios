@@ -11,7 +11,7 @@
 		C13634782B03394000B9F437 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13634772B03394000B9F437 /* ContentView.swift */; };
 		C136347A2B03394300B9F437 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C13634792B03394300B9F437 /* Assets.xcassets */; };
 		C136347D2B03394300B9F437 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C136347C2B03394300B9F437 /* Preview Assets.xcassets */; };
-		F44FE1D32E962E870051EF7B /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F44FE1D22E962E870051EF7B /* Nativebrik */; };
+		F46316662E97B56A002540F8 /* Nubrick in Frameworks */ = {isa = PBXBuildFile; productRef = F46316652E97B56A002540F8 /* Nubrick */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F44FE1D32E962E870051EF7B /* Nativebrik in Frameworks */,
+				F46316662E97B56A002540F8 /* Nubrick in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -97,7 +97,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					C13634712B03394000B9F437 = {
 						CreatedOnToolsVersion = 15.0.1;
@@ -114,7 +114,7 @@
 			);
 			mainGroup = C13634692B03394000B9F437;
 			packageReferences = (
-				F44FE1D12E962E870051EF7B /* XCLocalSwiftPackageReference "../" */,
+				F46316642E97B56A002540F8 /* XCLocalSwiftPackageReference "../" */,
 			);
 			productRefGroup = C13634732B03394000B9F437 /* Products */;
 			projectDirPath = "";
@@ -153,7 +153,6 @@
 		C136347E2B03394300B9F437 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -217,7 +216,6 @@
 		C136347F2B03394300B9F437 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -353,16 +351,16 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		F44FE1D12E962E870051EF7B /* XCLocalSwiftPackageReference "../" */ = {
+		F46316642E97B56A002540F8 /* XCLocalSwiftPackageReference "../" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "../";
+			relativePath = ../;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		F44FE1D22E962E870051EF7B /* Nativebrik */ = {
+		F46316652E97B56A002540F8 /* Nubrick */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Nativebrik;
+			productName = Nubrick;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
