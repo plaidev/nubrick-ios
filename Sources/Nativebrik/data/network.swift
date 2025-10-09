@@ -1,6 +1,6 @@
 //
 //  network.swift
-//  Nativebrik
+//  Nubrick
 //
 //  Created by Takuma Jimbo on 2025/03/13.
 //

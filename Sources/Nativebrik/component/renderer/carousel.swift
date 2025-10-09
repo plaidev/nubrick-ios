@@ -1,6 +1,6 @@
 //
 //  carousel.swift
-//  Nativebrik
+//  Nubrick
 //
 //  Created by Ryosuke Suzuki on 2023/03/31.
 //

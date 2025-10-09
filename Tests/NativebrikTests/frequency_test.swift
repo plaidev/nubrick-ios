@@ -1,6 +1,6 @@
 //
 //  frequency.swift
-//  Nativebrik
+//  Nubrick
 //
 //  Created by ryosuke.suzuki on 2025/07/24.
 //

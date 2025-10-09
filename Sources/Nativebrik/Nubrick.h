@@ -1,6 +1,6 @@
 //
-//  Nativebrik.h
-//  Nativebrik
+//  Nubrick.h
+//  Nubrick
 //
 //  Created by Ryosuke Suzuki on 2023/10/27.
 //

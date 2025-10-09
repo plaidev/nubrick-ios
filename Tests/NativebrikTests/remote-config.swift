@@ -1,6 +1,6 @@
 //
 //  remote-config.swift
-//  NativebrikTests
+//  NubrickTests
 //
 //  Created by Ryosuke Suzuki on 2023/10/27.
 //

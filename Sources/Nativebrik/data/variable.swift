@@ -1,6 +1,6 @@
 //
 //  variable.swift
-//  Nativebrik
+//  Nubrick
 //
 //  Created by Ryosuke Suzuki on 2024/03/07.
 //

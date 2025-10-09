@@ -1,6 +1,6 @@
 //
 //  extractionTests.swift
-//  NativebrikTests
+//  NubrickTests
 //
 //  Created by Takuma Jimbo on 2025/08/01.
 //

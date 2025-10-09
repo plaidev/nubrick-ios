@@ -1,6 +1,6 @@
 //
 //  placeholder.swift
-//  NativebrikTests
+//  NubrickTests
 //
 //  Created by Ryosuke Suzuki on 2024/01/15.
 //
