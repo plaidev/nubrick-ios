@@ -33,13 +33,11 @@ let package = Package(
             dependencies: ["yoga"],
             path: "Sources/YogaKit",
             publicHeadersPath: "include/YogaKit",
-            cxxSettings: [
-                .unsafeFlags(["-std=c++17"])
-            ]
         ),
         .testTarget(
             name: "NativebrikTests",
             dependencies: ["Nativebrik", .product(name: "ViewInspector", package: "ViewInspector")]
         ),
-    ]
+    ],
+    cxxLanguageStandard: CXXLanguageStandard(rawValue: "c++20")
 )
