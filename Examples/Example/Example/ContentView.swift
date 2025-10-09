@@ -165,7 +165,7 @@ struct ContentView: View {
 }
 
 #Preview {
-    NativebrikProvider(client: NativebrikClient(projectId: "cgv3p3223akg00fod19g")) {
+    NubrickProvider(client: NativebrikClient(projectId: "cgv3p3223akg00fod19g")) {
         ContentView()
     }
 }

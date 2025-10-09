@@ -23,8 +23,8 @@ final class NativebrikClientTests: XCTestCase {
     }
 }
 
-final class NativebrikProviderTests: XCTestCase {
-    struct AccessToClient: View {
+final class NubrickProviderTests: XCTestCase {
+    struct ClientConsumerView: View {
         @EnvironmentObject var nativebrik: NativebrikClient
         var body: some View {
             nativebrik
@@ -37,29 +37,29 @@ final class NativebrikProviderTests: XCTestCase {
                 }
         }
     }
-    struct ContentView: View {
+    struct TestView: View {
         var body: some View {
-            NativebrikProvider(client: NativebrikClient(projectId: "Nothing")) {
+            NubrickProvider(client: NativebrikClient(projectId: "Nothing")) {
                 Text("Hello")
-                AccessToClient()
+                ClientConsumerView()
             }
         }
     }
     
-    func testNativebrikProvider() throws {
-        try XCTContext.runActivity(named: "find content") { _ in
-            let view = ContentView()
-            let _ = try view.inspect().find(text: "Hello")
+    @MainActor
+    func testNubrickProvider() throws {
+        let view = TestView()
+        
+        try XCTContext.runActivity(named: "renders content") { _ in
+            XCTAssertNoThrow(try view.inspect().find(text: "Hello"))
         }
         
         try XCTContext.runActivity(named: "find overlay") { _ in
-            let view = ContentView()
-            let _ = try view.inspect().find(OverlayViewControllerRepresentable.self)
+            XCTAssertNoThrow(try view.inspect().find(OverlayViewControllerRepresentable.self))
         }
         
-        try XCTContext.runActivity(named: "find experiment") { _ in
-            let view = ContentView()
-            let _ = try view.inspect().find(text: "EXPERIMENT")
+        try XCTContext.runActivity(named: "renders experiment") { _ in
+            XCTAssertNoThrow(try view.inspect().find(text: "EXPERIMENT"))
         }
     }
 }

@@ -347,19 +347,19 @@ public class NativebrikExperiment {
     }
 }
 
-public struct NativebrikProvider<Content: View>: View {
-    private let _content: Content
-    private let context: NativebrikClient
+public struct NubrickProvider<Content: View>: View {
+    private let content: Content
+    private let client: NativebrikClient
 
     public init(client: NativebrikClient, @ViewBuilder content: () -> Content) {
-        self._content = content()
-        self.context = client
+        self.content = content()
+        self.client = client
     }
 
     public var body: some View {
         ZStack(alignment: .top) {
-            self.context.experiment.overlay()
-            _content.environmentObject(self.context)
+            self.client.experiment.overlay()
+            content.environmentObject(self.client)
         }
     }
 }
