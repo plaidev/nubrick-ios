@@ -29,5 +29,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Test ${{ matrix.scheme }} on ${{ matrix.destination }}
         run: |
-          xcodebuild test -scheme ${{ matrix.scheme }} -sdk iphonesimulator -destination '${{ matrix.destination }}' -skipMacroValidation -skipPackagePluginValidation | xcbeautify
+          xcodebuild test -scheme ${{ matrix.scheme }} -sdk iphonesimulator -destination '${{ matrix.destination }}' -destination-timeout 300 -skipMacroValidation -skipPackagePluginValidation | xcbeautify
           exit ${PIPESTATUS[0]}
+        env:
+          COMPILER_INDEX_STORE_ENABLE: NO
