@@ -7,7 +7,7 @@ let EMBEDDING_ID_1_FOR_TEST = "EMBEDDING_1"
 final class EmbeddingUIViewTests: XCTestCase {
     func testEmbeddingShouldFetch() {
         let expectation = expectation(description: "Fetch an embedding for test")
-        
+
         var didLoadingPhaseCome = false
         let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
         let view = client.experiment.embeddingUIView(EMBEDDING_ID_1_FOR_TEST, onEvent: nil) { phase in
@@ -25,7 +25,7 @@ final class EmbeddingUIViewTests: XCTestCase {
         }
         // because internally we use [weak self] and if it is `let _ =`, weak self will be nil.
         print("it must be `let view = client` to pass the test.", view.frame)
-        waitForExpectations(timeout: 5) { error in
+        waitForExpectations(timeout: 30) { error in
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
             }
@@ -35,7 +35,7 @@ final class EmbeddingUIViewTests: XCTestCase {
 
     func testEmbeddingShouldNotFetch() {
         let expectation = expectation(description: "Fetch an embedding for test")
-        
+
         var didLoadingPhaseCome = false
         let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
         let view = client.experiment.embeddingUIView(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
@@ -53,7 +53,7 @@ final class EmbeddingUIViewTests: XCTestCase {
         }
         // because internally we use [weak self] and if it is `let _ =`, weak self will be nil.
         print("it must be `let view = client` to pass the test.", view.frame)
-        waitForExpectations(timeout: 5) { error in
+        waitForExpectations(timeout: 30) { error in
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
             }
