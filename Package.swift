@@ -22,7 +22,7 @@ let package = Package(
         .target(
             name: "Nativebrik",
             dependencies: ["YogaKit"],
-            path: "Sources/Nativebrik",
+            path: "Sources/Nubrick",
             exclude: ["PrivacyInfo.xcprivacy"],
             resources: [
                 .copy("PrivacyInfo.xcprivacy")
