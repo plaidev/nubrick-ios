@@ -4,14 +4,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "Nativebrik",
+    name: "Nubrick",
     platforms: [
         .iOS("13.4"),
     ],
     products: [
         .library(
-            name: "Nativebrik",
-            targets: ["Nativebrik"]
+            name: "Nubrick",
+            targets: ["Nubrick"]
         ),
     ],
     dependencies: [
@@ -20,7 +20,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "Nativebrik",
+            name: "Nubrick",
             dependencies: ["YogaKit"],
             path: "Sources/Nubrick",
             exclude: ["PrivacyInfo.xcprivacy"],
@@ -35,8 +35,8 @@ let package = Package(
             publicHeadersPath: "include/YogaKit"
         ),
         .testTarget(
-            name: "NativebrikTests",
-            dependencies: ["Nativebrik", .product(name: "ViewInspector", package: "ViewInspector")]
+            name: "NubrickTests",
+            dependencies: ["Nubrick", .product(name: "ViewInspector", package: "ViewInspector")]
         ),
     ],
     cxxLanguageStandard: CXXLanguageStandard(rawValue: "c++20")
