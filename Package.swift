@@ -32,7 +32,7 @@ let package = Package(
             name: "YogaKit",
             dependencies: ["yoga"],
             path: "Sources/YogaKit",
-            publicHeadersPath: "include/YogaKit",
+            publicHeadersPath: "include/YogaKit"
         ),
         .testTarget(
             name: "NativebrikTests",
