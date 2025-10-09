@@ -7,7 +7,7 @@
 
 import XCTest
 import ViewInspector
-@testable import Nativebrik
+@testable import Nubrick
 
 final class IOSCompatTest: XCTestCase {
     func testSyncDateFromHTTPULReponseShouldWork() throws {

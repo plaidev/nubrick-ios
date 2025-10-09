@@ -1,5 +1,5 @@
 import XCTest
-@testable import Nativebrik
+@testable import Nubrick
 import SwiftUI
 
 let EMBEDDING_ID_1_FOR_TEST = "EMBEDDING_1"

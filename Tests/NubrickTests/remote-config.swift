@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import Nativebrik
+@testable import Nubrick
 
 // https://nativebrik.com/experiments/result?projectId=ckto7v223akg00ag3jsg
 let PROJECT_ID_FOR_TEST = "ckto7v223akg00ag3jsg"

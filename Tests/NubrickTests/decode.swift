@@ -8,7 +8,7 @@
 import Foundation
 
 import XCTest
-@testable import Nativebrik
+@testable import Nubrick
 
 final class DecodeJsonTests: XCTestCase {
     func testShouldDecodeApiHttpRequest() throws {

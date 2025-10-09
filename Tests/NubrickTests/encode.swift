@@ -8,7 +8,7 @@
 import Foundation
 
 import XCTest
-@testable import Nativebrik
+@testable import Nubrick
 
 final class EncodeJsonTests: XCTestCase {
     func testShouldEncodeStruct() throws {

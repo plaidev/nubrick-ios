@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import Nativebrik
+@testable import Nubrick
 
 final class UserTests: XCTestCase {
     func testHasUserIdByDefaultAndAlwaysTheSame() {

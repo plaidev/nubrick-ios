@@ -8,7 +8,7 @@
 import Foundation
 
 import XCTest
-@testable import Nativebrik
+@testable import Nubrick
 
 let HEALTH_CHECK_URL = "https://track.nativebrik.com/health"
 
