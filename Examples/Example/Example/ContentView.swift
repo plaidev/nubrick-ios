@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Nativebrik
+import Nubrick
 
 struct ItemBuyButton: View {
     let price: String
