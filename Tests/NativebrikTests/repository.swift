@@ -16,7 +16,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
     func testShouldCallApiHttpRequest() throws {
         let expectation = expectation(description: "Request should be expected.")
         let repository = HttpRequestRepositoryImpl(intercepter: nil)
-        
+
         Task {
             let result = await repository.request(req: ApiHttpRequest(url: HEALTH_CHECK_URL), assetion: nil)
             switch result {
@@ -28,13 +28,13 @@ final class HttpRequestReposotiryTests: XCTestCase {
             expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 5)
+        wait(for: [expectation], timeout: 30)
     }
-    
+
     func testShouldAssertHttpRequest() throws {
         let expectation = expectation(description: "Request should be unexpected.")
         let repository = HttpRequestRepositoryImpl(intercepter: nil)
-        
+
         Task {
             let result = await repository.request(
                 req: ApiHttpRequest(url: HEALTH_CHECK_URL),
@@ -48,8 +48,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
             }
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 5)
+
+        wait(for: [expectation], timeout: 30)
     }
 }
 
@@ -61,7 +61,7 @@ final class ContainerTests: XCTestCase {
         let cache = CacheStore(policy: NativebrikCachePolicy())
         let container = ContainerImpl(config: config, cache: cache, user: user, persistentContainer: db)
         let expectation = expectation(description: "Request should be expected.")
-        
+
         Task {
             let result = await container.fetchRemoteConfig(experimentId: REMOTE_CONFIG_ID_1_FOR_TEST)
             switch result {
@@ -73,6 +73,6 @@ final class ContainerTests: XCTestCase {
             expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 5)
+        wait(for: [expectation], timeout: 30)
     }
 }

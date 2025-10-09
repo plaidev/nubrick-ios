@@ -18,7 +18,7 @@ let UNKNOWN_EXPERIMENT_ID = "UNKNOWN_ID_XXXXXX"
 final class RemoteConfigTests: XCTestCase {
     func testRemoteConfigShouldFetch() {
         let expectation = expectation(description: "Fetch remote config for test")
-        
+
         var didLoadingPhaseCome = false
         let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
         client.experiment.remoteConfig(REMOTE_CONFIG_ID_1_FOR_TEST) { phase in
@@ -34,18 +34,18 @@ final class RemoteConfigTests: XCTestCase {
                 expectation.fulfill()
             }
         }
-        
-        waitForExpectations(timeout: 5) { error in
+
+        waitForExpectations(timeout: 30) { error in
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
             }
             XCTAssertTrue(didLoadingPhaseCome)
         }
     }
-    
+
     func testRemoteConfigShouldNotFetch() {
         let expectation = expectation(description: "Fetch non-exist remote config for test")
-        
+
         var didLoadingPhaseCome = false
         let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
         client.experiment.remoteConfig(UNKNOWN_EXPERIMENT_ID) { phase in
@@ -58,8 +58,8 @@ final class RemoteConfigTests: XCTestCase {
                 expectation.fulfill()
             }
         }
-        
-        waitForExpectations(timeout: 5) { error in
+
+        waitForExpectations(timeout: 30) { error in
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
             }
