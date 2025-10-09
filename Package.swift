@@ -15,7 +15,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/nalexn/ViewInspector", exact: "0.9.11"),
+        .package(url: "https://github.com/nalexn/ViewInspector", exact: "0.10.3"),
         .package(url: "https://github.com/facebook/yoga.git", .upToNextMinor(from: "3.2.1")),
     ],
     targets: [
