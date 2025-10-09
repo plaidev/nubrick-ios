@@ -15,9 +15,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "Nativebrik"
-               BuildableName = "Nativebrik"
-               BlueprintName = "Nativebrik"
+               BlueprintIdentifier = "Nubrick"
+               BuildableName = "Nubrick"
+               BlueprintName = "Nubrick"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -34,9 +34,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "NativebrikTests"
-               BuildableName = "NativebrikTests"
-               BlueprintName = "NativebrikTests"
+               BlueprintIdentifier = "NubrickTests"
+               BuildableName = "NubrickTests"
+               BlueprintName = "NubrickTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>
@@ -62,9 +62,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "Nativebrik"
-            BuildableName = "Nativebrik"
-            BlueprintName = "Nativebrik"
+            BlueprintIdentifier = "Nubrick"
+            BuildableName = "Nubrick"
+            BlueprintName = "Nubrick"
             ReferencedContainer = "container:">
          </BuildableReference>
       </MacroExpansion>
