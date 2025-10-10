@@ -22,20 +22,13 @@ public let isNativebrikAvailable: Bool = {
     }
 }()
 
-func openLink(_ event: ComponentEvent) -> Void {
-    guard let link = event.deepLink else {
+private func openLink(_ event: ComponentEvent) -> Void {
+    guard let link = event.deepLink,
+          let url = URL(string: link),
+          UIApplication.shared.canOpenURL(url) else {
         return
     }
-    guard let url = URL(string: link) else {
-        return
-    }
-    if UIApplication.shared.canOpenURL(url) {
-        if #available(iOS 10.0, *) {
-            UIApplication.shared.open(url, options: [:])
-        } else {
-            UIApplication.shared.openURL(url)
-        }
-    }
+    UIApplication.shared.open(url)
 }
 
 func createDispatchNativebrikEvent(_ client: NubrickClient) -> (_ event: ComponentEvent) -> Void {
