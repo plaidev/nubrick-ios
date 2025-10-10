@@ -31,12 +31,11 @@ private func openLink(_ event: ComponentEvent) -> Void {
     UIApplication.shared.open(url)
 }
 
-func createDispatchNativebrikEvent(_ client: NubrickClient) -> (_ event: ComponentEvent) -> Void {
-    return { event in
-        guard let name = event.name else {
-            return
-        }
-        if name.isEmpty {
+private func createDispatchNubrickEvent(_ client: NubrickClient) -> (_ event: ComponentEvent) -> Void {
+    return { [weak client] event in
+        guard let client,
+              let name = event.name,
+              !name.isEmpty else {
             return
         }
         client.experiment.dispatch(NativebrikEvent(name))
@@ -144,7 +143,7 @@ public final class NubrickClient: ObservableObject {
         self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch)
         self.experiment = NativebrikExperiment(container: self.container, overlay: self.overlayVC)
 
-        config.addEventListner(createDispatchNativebrikEvent(self))
+        config.addEventListner(createDispatchNubrickEvent(self))
     }
 }
 
