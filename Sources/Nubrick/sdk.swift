@@ -10,8 +10,8 @@ import SwiftUI
 import Combine
 
 // for development
-public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
-public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
+public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
+public var nubrickCdnUrl = "https://cdn.nativebrik.com"
 public let nubrickSdkVersion = "0.12.3"
 
 public let isNubrickAvailable: Bool = {
@@ -45,8 +45,8 @@ private func createDispatchNubrickEvent(_ client: NubrickClient) -> (_ event: Co
 final class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
-    var trackUrl: String = nativebrikTrackUrl
-    var cdnUrl: String = nativebrikCdnUrl
+    var trackUrl: String = nubrickTrackUrl
+    var cdnUrl: String = nubrickCdnUrl
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
     var cachePolicy: NativebrikCachePolicy = NativebrikCachePolicy()
 

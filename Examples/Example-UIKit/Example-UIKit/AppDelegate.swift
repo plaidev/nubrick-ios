@@ -14,7 +14,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.
         
         NSSetUncaughtExceptionHandler { exception in
-            nativebrik.experiment.record(exception: exception)
+            nubrick.experiment.record(exception: exception)
         }
         
         return true
