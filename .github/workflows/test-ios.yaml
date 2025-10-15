@@ -30,7 +30,7 @@ jobs:
       - name: Test ${{ matrix.scheme }} on ${{ matrix.destination }}
         run: |
           set -o pipefail
-          xcodebuild \
+          xcodebuild test \
           -workspace ./Nubrick.xcworkspace \
           -scheme NubrickTests \
           -sdk iphonesimulator \
