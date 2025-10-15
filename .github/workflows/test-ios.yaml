@@ -35,7 +35,6 @@ jobs:
           -scheme NubrickTests \
           -sdk iphonesimulator \
           -configuration Debug \
-          -parallelizeTargets NO \
           -jobs 2 \
           -showBuildTimingSummary \
           -derivedDataPath "$RUNNER_TEMP/DerivedData" \
