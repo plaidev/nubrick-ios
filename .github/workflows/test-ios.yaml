@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        scheme: [Nativebrik]
+        scheme: [NubrickTests]
         destination: ["platform=iOS Simulator,name=iPhone 17,OS=26.0"]
     steps:
       - name: Install xcbeautify

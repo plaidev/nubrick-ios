@@ -6,10 +6,10 @@
 //
 
 import UIKit
-import Nativebrik
+import Nubrick
 
-let nativebrik = {
-    return NativebrikClient(projectId: "cgv3p3223akg00fod19g")
+let nubrick = {
+    return NubrickClient(projectId: "cgv3p3223akg00fod19g")
 }()
 
 class ViewController: UIViewController {
@@ -19,12 +19,12 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // add Nativebrik.overlay at first
-        let overlay = nativebrik.experiment.overlayViewController()
+        let overlay = nubrick.experiment.overlayViewController()
         self.addChild(overlay)
         self.view.addSubview(overlay.view)
         
         // embed nativebrik TOP_COMPONENT
-        let topComponent = nativebrik.experiment.embeddingUIView("TOP_COMPONENT")
+        let topComponent = nubrick.experiment.embeddingUIView("TOP_COMPONENT")
         topComponent.frame = .init(x: 0, y: 100, width: self.view.frame.width, height: 230)
         self.view.addSubview(topComponent)
         

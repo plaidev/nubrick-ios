@@ -13,7 +13,7 @@
 		C1FFFD412B15AA2F00ACD132 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD3F2B15AA2F00ACD132 /* Main.storyboard */; };
 		C1FFFD432B15AA3100ACD132 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD422B15AA3100ACD132 /* Assets.xcassets */; };
 		C1FFFD462B15AA3100ACD132 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C1FFFD442B15AA3100ACD132 /* LaunchScreen.storyboard */; };
-		F44FE1D62E962EB30051EF7B /* Nativebrik in Frameworks */ = {isa = PBXBuildFile; productRef = F44FE1D52E962EB30051EF7B /* Nativebrik */; };
+		F46316632E97B523002540F8 /* Nubrick in Frameworks */ = {isa = PBXBuildFile; productRef = F46316622E97B523002540F8 /* Nubrick */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,7 +32,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F44FE1D62E962EB30051EF7B /* Nativebrik in Frameworks */,
+				F46316632E97B523002540F8 /* Nubrick in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -114,7 +114,7 @@
 			);
 			mainGroup = C1FFFD2D2B15AA2F00ACD132;
 			packageReferences = (
-				F44FE1D42E962EB30051EF7B /* XCLocalSwiftPackageReference "../../" */,
+				F46316612E97B523002540F8 /* XCLocalSwiftPackageReference "../../" */,
 			);
 			productRefGroup = C1FFFD372B15AA2F00ACD132 /* Products */;
 			projectDirPath = "";
@@ -370,16 +370,16 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		F44FE1D42E962EB30051EF7B /* XCLocalSwiftPackageReference "../../" */ = {
+		F46316612E97B523002540F8 /* XCLocalSwiftPackageReference "../../" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../../";
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		F44FE1D52E962EB30051EF7B /* Nativebrik */ = {
+		F46316622E97B523002540F8 /* Nubrick */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Nativebrik;
+			productName = Nubrick;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

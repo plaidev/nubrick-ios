@@ -1,4 +1,4 @@
-# Nativebrik SDK for iOS
+# Nubrick SDK for iOS
 
 documentations
 

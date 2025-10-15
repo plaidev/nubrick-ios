@@ -13,8 +13,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-      - name: Build Nativebrik E2E
-        run: xcodebuild -workspace ./nativebrik.xcworkspace -scheme E2E -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.0' -derivedDataPath ./.dist
+      - name: Build Nubrick E2E
+        run: xcodebuild -workspace ./Nubrick.xcworkspace -scheme E2E -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.0' -derivedDataPath ./.dist
       - name: Zip app
         run: |
           cd .dist/Build/Products/Release-iphonesimulator/ && zip -r E2E.app.zip ./E2E.app
