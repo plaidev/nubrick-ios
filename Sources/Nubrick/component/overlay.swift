@@ -22,7 +22,7 @@ class OverlayViewController: UIViewController {
         )
         super.init(nibName: nil, bundle: nil)
 
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return
         }
 
@@ -36,7 +36,7 @@ class OverlayViewController: UIViewController {
     }
 
     override func viewDidLoad() {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return
         }
 

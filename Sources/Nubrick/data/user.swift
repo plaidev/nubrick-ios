@@ -62,7 +62,7 @@ public class NativebrikUser {
     internal var userDB: UserDefaults
 
     init() {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             self.properties = [:]
             self.customProperties = [:]
             self.userDB = UserDefaults.standard

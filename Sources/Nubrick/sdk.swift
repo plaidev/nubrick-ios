@@ -14,7 +14,7 @@ public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
 public let nativebrikSdkVersion = "0.12.3"
 
-public let isNativebrikAvailable: Bool = {
+public let isNubrickAvailable: Bool = {
     if #available(iOS 15.0, *) {
         return true
     } else {
@@ -157,21 +157,21 @@ public class NativebrikExperiment {
     }
 
     public func dispatch(_ event: NativebrikEvent) {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return
         }
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
 
     public func record(exception: NSException) {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return
         }
         self.container.record(exception)
     }
 
     public func overlayViewController() -> UIViewController {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             let vc = UIViewController()
             vc.view.frame = .zero
             return vc
@@ -180,7 +180,7 @@ public class NativebrikExperiment {
     }
 
     public func overlay() -> some View {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return AnyView(EmptyView())
         }
         return AnyView(OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0))
@@ -191,7 +191,7 @@ public class NativebrikExperiment {
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return AnyView(EmptyView())
         }
         return AnyView(EmbeddingSwiftView(
@@ -208,7 +208,7 @@ public class NativebrikExperiment {
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
     ) -> some View {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return AnyView(content(.notFound))
         }
         return AnyView(EmbeddingSwiftView.init<V>(
@@ -226,7 +226,7 @@ public class NativebrikExperiment {
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return UIView()
         }
         return EmbeddingUIView(
@@ -244,7 +244,7 @@ public class NativebrikExperiment {
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return content(.notFound)
         }
         return EmbeddingUIView(
@@ -260,7 +260,7 @@ public class NativebrikExperiment {
         _ id: String,
         phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
     ) {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             phase(.notFound)
             return
         }
@@ -276,7 +276,7 @@ public class NativebrikExperiment {
         _ id: String,
         @ViewBuilder phase: @escaping ((_ phase: RemoteConfigPhase) -> V)
     ) -> some View {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return AnyView(phase(.notFound))
         }
         return AnyView(RemoteConfigAsView(
@@ -289,7 +289,7 @@ public class NativebrikExperiment {
 
     // for flutter integration
     public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NativebrikError> {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return .failure(.notFound)
         }
         switch await self.container.fetchTooltip(trigger: trigger) {
@@ -316,7 +316,7 @@ public class NativebrikExperiment {
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> __DO_NOT_USE__NativebrikBridgedViewAccessor {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return __DO_NOT_USE__NativebrikBridgedViewAccessor(uiview: UIView())
         }
         do {
