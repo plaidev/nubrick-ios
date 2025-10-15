@@ -34,6 +34,7 @@ jobs:
           -workspace ./Nubrick.xcworkspace \
           -scheme NubrickTests \
           -sdk iphonesimulator \
+          -destination '${{ matrix.destination }}'
           -configuration Debug \
           -jobs 2 \
           -showBuildTimingSummary \
