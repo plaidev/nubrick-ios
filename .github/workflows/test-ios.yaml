@@ -29,7 +29,8 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Test ${{ matrix.scheme }} on ${{ matrix.destination }}
         run: |
-          xcodebuild build-for-testing \
+          set -o pipefail
+          xcodebuild \
           -workspace ./Nubrick.xcworkspace \
           -scheme NubrickTests \
           -sdk iphonesimulator \
@@ -37,10 +38,11 @@ jobs:
           -parallelizeTargets NO \
           -jobs 2 \
           -showBuildTimingSummary \
-          -derivedDataPath $RUNNER_TEMP/DerivedData \
+          -derivedDataPath "$RUNNER_TEMP/DerivedData" \
           BUILD_LIBRARY_FOR_DISTRIBUTION=NO \
           SWIFT_COMPILATION_MODE=wholemodule \
           CLANG_ENABLE_CODE_COVERAGE=NO \
+          build-for-testing \
           | xcbeautify
           exit ${PIPESTATUS[0]}
         env:
