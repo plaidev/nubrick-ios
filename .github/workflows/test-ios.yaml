@@ -35,7 +35,6 @@ jobs:
           -scheme NubrickTests \
           -sdk iphonesimulator \
           -destination '${{ matrix.destination }}'
-          -configuration Debug \
           -jobs 2 \
           -showBuildTimingSummary \
           -derivedDataPath "$RUNNER_TEMP/DerivedData" \
