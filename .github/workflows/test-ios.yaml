@@ -30,6 +30,7 @@ jobs:
       - name: Test ${{ matrix.scheme }} on ${{ matrix.destination }}
         run: |
           xcodebuild test \
+          -workspace ./Nubrick.xcworkspace \
           -scheme ${{ matrix.scheme }} \
           -sdk iphonesimulator \
           -destination '${{ matrix.destination }}' \
