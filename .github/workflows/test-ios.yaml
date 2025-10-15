@@ -34,12 +34,13 @@ jobs:
           -scheme NubrickTests \
           -sdk iphonesimulator \
           -configuration Debug \
-          -parallelizeTargets NO -jobs 2 \
+          -parallelizeTargets NO \
+          -jobs 2 \
+          -showBuildTimingSummary \
+          -derivedDataPath $RUNNER_TEMP/DerivedData \
           BUILD_LIBRARY_FOR_DISTRIBUTION=NO \
           SWIFT_COMPILATION_MODE=wholemodule \
           CLANG_ENABLE_CODE_COVERAGE=NO \
-          -showBuildTimingSummary \
-          -derivedDataPath $RUNNER_TEMP/DerivedData \
           | xcbeautify
           exit ${PIPESTATUS[0]}
         env:
