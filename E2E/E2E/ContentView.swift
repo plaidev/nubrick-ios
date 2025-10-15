@@ -9,11 +9,11 @@ import SwiftUI
 import Nubrick
 
 struct ContentView: View {
-    @EnvironmentObject var nativebrik: NativebrikClient
+    @EnvironmentObject var nubrick: NubrickClient
 
     var body: some View {
         VStack {
-            nativebrik
+            nubrick
                 .experiment
                 .embedding("EMBEDDING_FOR_E2E", onEvent: nil, content: { phase in
                     switch phase {
@@ -26,7 +26,7 @@ struct ContentView: View {
                     }
                 })
                 .frame(height: 240)
-            nativebrik
+            nubrick
                 .experiment
                 .remoteConfigAsView("REMOTE_CONFIG_FOR_E2E") { phase in
                     switch phase {
