@@ -31,8 +31,8 @@ jobs:
         run: |
           run: |
             xcodebuild build-for-testing \
-            -project ./<Your>.xcodeproj \
-            -scheme Nubrick \
+            -workspace ./Nubrick.xcworkspace \
+            -scheme NubrickTests \
             -sdk iphonesimulator \
             -configuration Debug \
             -parallelizeTargets NO -jobs 2 \
