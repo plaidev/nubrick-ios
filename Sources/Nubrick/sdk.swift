@@ -10,11 +10,11 @@ import SwiftUI
 import Combine
 
 // for development
-public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
-public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
-public let nativebrikSdkVersion = "0.12.3"
+public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
+public var nubrickCdnUrl = "https://cdn.nativebrik.com"
+public let nubrickSdkVersion = "0.12.3"
 
-public let isNativebrikAvailable: Bool = {
+public let isNubrickAvailable: Bool = {
     if #available(iOS 15.0, *) {
         return true
     } else {
@@ -22,39 +22,31 @@ public let isNativebrikAvailable: Bool = {
     }
 }()
 
-func openLink(_ event: ComponentEvent) -> Void {
-    guard let link = event.deepLink else {
+private func openLink(_ event: ComponentEvent) -> Void {
+    guard let link = event.deepLink,
+          let url = URL(string: link),
+          UIApplication.shared.canOpenURL(url) else {
         return
     }
-    guard let url = URL(string: link) else {
-        return
-    }
-    if UIApplication.shared.canOpenURL(url) {
-        if #available(iOS 10.0, *) {
-            UIApplication.shared.open(url, options: [:])
-        } else {
-            UIApplication.shared.openURL(url)
+    UIApplication.shared.open(url)
+}
+
+private func createDispatchNubrickEvent(_ client: NubrickClient) -> (_ event: ComponentEvent) -> Void {
+    return { [weak client] event in
+        guard let client,
+              let name = event.name,
+              !name.isEmpty else {
+            return
         }
+        client.experiment.dispatch(NubrickEvent(name))
     }
 }
 
-func createDispatchNativebrikEvent(_ client: NativebrikClient) -> (_ event: ComponentEvent) -> Void {
-    return { event in
-        guard let name = event.name else {
-            return
-        }
-        if name.isEmpty {
-            return
-        }
-        client.experiment.dispatch(NativebrikEvent(name))
-    }
-}
-
-class Config {
+final class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
-    var trackUrl: String = nativebrikTrackUrl
-    var cdnUrl: String = nativebrikCdnUrl
+    var trackUrl: String = nubrickTrackUrl
+    var cdnUrl: String = nubrickCdnUrl
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
     var cachePolicy: NativebrikCachePolicy = NativebrikCachePolicy()
 
@@ -78,7 +70,7 @@ class Config {
         }
     }
 
-    func addEventListner(_ onEvent: @escaping (_ event: ComponentEvent) -> Void) {
+    func addEventListener(_ onEvent: @escaping (_ event: ComponentEvent) -> Void) {
         self.eventListeners.append(onEvent)
     }
 
@@ -109,30 +101,30 @@ public struct ComponentEvent {
     public let payload: [EventProperty]?
 }
 
-public struct NativebrikEvent {
+public struct NubrickEvent {
     public let name: String
     public init(_ name: String) {
         self.name = name
     }
 }
 
-public typealias NativebrikHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
+public typealias NubrickHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
 
-public class NativebrikClient: ObservableObject {
+public final class NubrickClient: ObservableObject {
     private let container: Container
     private let config: Config
     private let overlayVC: OverlayViewController
-    public final let experiment: NativebrikExperiment
-    public final let user: NativebrikUser
+    public final let experiment: NubrickExperiment
+    public final let user: NubrickUser
 
     public init(
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        httpRequestInterceptor: NativebrikHttpRequestInterceptor? = nil,
+        httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
         cachePolicy: NativebrikCachePolicy? = nil,
-        onDispatch: ((_ event: NativebrikEvent) -> Void)? = nil
+        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
     ) {
-        let user = NativebrikUser()
+        let user = NubrickUser()
         let config = Config(projectId: projectId, onEvents: [
             openLink,
             onEvent
@@ -149,13 +141,13 @@ public class NativebrikClient: ObservableObject {
             intercepter: httpRequestInterceptor
         )
         self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch)
-        self.experiment = NativebrikExperiment(container: self.container, overlay: self.overlayVC)
+        self.experiment = NubrickExperiment(container: self.container, overlay: self.overlayVC)
 
-        config.addEventListner(createDispatchNativebrikEvent(self))
+        config.addEventListener(createDispatchNubrickEvent(self))
     }
 }
 
-public class NativebrikExperiment {
+public class NubrickExperiment {
     private let container: Container
     private let overlayVC: OverlayViewController
 
@@ -164,22 +156,22 @@ public class NativebrikExperiment {
         self.overlayVC = overlay
     }
 
-    public func dispatch(_ event: NativebrikEvent) {
-        if !isNativebrikAvailable {
+    public func dispatch(_ event: NubrickEvent) {
+        if !isNubrickAvailable {
             return
         }
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
 
     public func record(exception: NSException) {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return
         }
         self.container.record(exception)
     }
 
     public func overlayViewController() -> UIViewController {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             let vc = UIViewController()
             vc.view.frame = .zero
             return vc
@@ -188,7 +180,7 @@ public class NativebrikExperiment {
     }
 
     public func overlay() -> some View {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return AnyView(EmptyView())
         }
         return AnyView(OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0))
@@ -199,7 +191,7 @@ public class NativebrikExperiment {
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return AnyView(EmptyView())
         }
         return AnyView(EmbeddingSwiftView(
@@ -216,7 +208,7 @@ public class NativebrikExperiment {
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
     ) -> some View {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return AnyView(content(.notFound))
         }
         return AnyView(EmbeddingSwiftView.init<V>(
@@ -234,7 +226,7 @@ public class NativebrikExperiment {
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return UIView()
         }
         return EmbeddingUIView(
@@ -252,7 +244,7 @@ public class NativebrikExperiment {
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return content(.notFound)
         }
         return EmbeddingUIView(
@@ -268,7 +260,7 @@ public class NativebrikExperiment {
         _ id: String,
         phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
     ) {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             phase(.notFound)
             return
         }
@@ -284,7 +276,7 @@ public class NativebrikExperiment {
         _ id: String,
         @ViewBuilder phase: @escaping ((_ phase: RemoteConfigPhase) -> V)
     ) -> some View {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return AnyView(phase(.notFound))
         }
         return AnyView(RemoteConfigAsView(
@@ -296,8 +288,8 @@ public class NativebrikExperiment {
     }
 
     // for flutter integration
-    public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NativebrikError> {
-        if !isNativebrikAvailable {
+    public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NubrickError> {
+        if !isNubrickAvailable {
             return .failure(.notFound)
         }
         switch await self.container.fetchTooltip(trigger: trigger) {
@@ -324,7 +316,7 @@ public class NativebrikExperiment {
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> __DO_NOT_USE__NativebrikBridgedViewAccessor {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return __DO_NOT_USE__NativebrikBridgedViewAccessor(uiview: UIView())
         }
         do {
@@ -347,20 +339,19 @@ public class NativebrikExperiment {
     }
 }
 
-public struct NativebrikProvider<Content: View>: View {
-    private let _content: Content
-    private let context: NativebrikClient
+public struct NubrickProvider<Content: View>: View {
+    private let content: Content
+    private let client: NubrickClient
 
-    public init(client: NativebrikClient, @ViewBuilder content: () -> Content) {
-        self._content = content()
-        self.context = client
+    public init(client: NubrickClient, @ViewBuilder content: () -> Content) {
+        self.content = content()
+        self.client = client
     }
 
     public var body: some View {
         ZStack(alignment: .top) {
-            self.context.experiment.overlay()
-            _content.environmentObject(self.context)
+            self.client.experiment.overlay()
+            content.environmentObject(self.client)
         }
     }
 }
-

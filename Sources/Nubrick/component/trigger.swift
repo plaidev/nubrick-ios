@@ -14,21 +14,21 @@ enum UserDefaultsKeys: String {
 }
 
 class TriggerViewController: UIViewController {
-    private let user: NativebrikUser
+    private let user: NubrickUser
     private let container: Container
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: ModalRootViewController? = nil
-    private var onDispatch: ((_ event: NativebrikEvent) -> Void)? = nil
+    private var onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
     private var didLoaded = false
     private var ignoreFirstUserEventToForegroundEvent = true
 
     required init?(coder: NSCoder) {
-        self.user = NativebrikUser()
+        self.user = NubrickUser()
         self.container = ContainerEmptyImpl()
         super.init(coder: coder)
     }
 
-    init(user: NativebrikUser, container: Container, modalViewController: ModalComponentViewController?, onDispatch: ((_ event: NativebrikEvent) -> Void)? = nil) {
+    init(user: NubrickUser, container: Container, modalViewController: ModalComponentViewController?, onDispatch: ((_ event: NubrickEvent) -> Void)? = nil) {
         self.user = user
         self.container = container
         self.modalViewController = modalViewController
@@ -40,13 +40,13 @@ class TriggerViewController: UIViewController {
         self.didLoaded = true
 
         // dispatch an event when the user is only booted
-        self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_BOOT_APP.rawValue))
+        self.dispatch(event: NubrickEvent(TriggerEventNameDefs.USER_BOOT_APP.rawValue))
 
         // dispatch user enter the app firtly
         let count = UserDefaults.standard.object(forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue) as? Int ?? 0
         UserDefaults.standard.set(count + 1, forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue)
         if count == 0 {
-            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
+            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
         }
 
         // dispatch retention event
@@ -61,7 +61,7 @@ class TriggerViewController: UIViewController {
             self.ignoreFirstUserEventToForegroundEvent = false
             return
         }
-        self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue))
+        self.dispatch(event: NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue))
         self.callWhenUserComeBack()
     }
 
@@ -69,23 +69,23 @@ class TriggerViewController: UIViewController {
         self.user.comeBack()
 
         // dispatch the event when every time the user is activated
-        self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue))
+        self.dispatch(event: NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue))
 
         let retention = self.user.retention
         if retention == 1 {
-            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_1.rawValue))
+            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_1.rawValue))
         } else if 1 < retention && retention <= 3 {
-            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_2_3.rawValue))
+            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_2_3.rawValue))
         } else if 3 < retention && retention <= 7 {
-            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_4_7.rawValue))
+            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_4_7.rawValue))
         } else if 7 < retention && retention <= 14 {
-            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_8_14.rawValue))
+            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_8_14.rawValue))
         } else if 14 < retention {
-            self.dispatch(event: NativebrikEvent(TriggerEventNameDefs.RETENTION_15.rawValue))
+            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_15.rawValue))
         }
     }
 
-    func dispatch(event: NativebrikEvent) {
+    func dispatch(event: NubrickEvent) {
         Task {
             let result = await Task.detached {
                 return await self.container.fetchInAppMessage(trigger: event.name)

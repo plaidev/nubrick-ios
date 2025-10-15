@@ -11,23 +11,25 @@ import SwiftUI
 @testable import Nubrick
 
 
-final class NativebrikClientTests: XCTestCase {
-    func testInitializeNativebrikClientWithoutErrorThrows() throws {
-        let client = NativebrikClient(projectId: "Nothing")
-        let _ = client.experiment.overlayViewController()
-    }
-    
-    func testDispatchWithoutErrorThrows() throws {
-        let client = NativebrikClient(projectId: "Nothing")
-        client.experiment.dispatch(NativebrikEvent("Hello"))
+final class NubrickClientTests: XCTestCase {
+    func testInitializeNubrickClientWithoutError() throws {
+        let client = NubrickClient(projectId: "Nothing")
+
+        XCTContext.runActivity(named: "initialize and create overlay") { _ in
+            XCTAssertNoThrow(client.experiment.overlayViewController())
+        }
+
+        XCTContext.runActivity(named: "dispatch event") { _ in
+            XCTAssertNoThrow(client.experiment.dispatch(NubrickEvent("Hello")))
+        }
     }
 }
 
-final class NativebrikProviderTests: XCTestCase {
-    struct AccessToClient: View {
-        @EnvironmentObject var nativebrik: NativebrikClient
+final class NubrickProviderTests: XCTestCase {
+    struct ClientConsumerView: View {
+        @EnvironmentObject var nubrick: NubrickClient
         var body: some View {
-            nativebrik
+            nubrick
                 .experiment
                 .embedding("Nothing", onEvent: nil) { phase in
                     switch phase {
@@ -37,29 +39,29 @@ final class NativebrikProviderTests: XCTestCase {
                 }
         }
     }
-    struct ContentView: View {
+    struct TestView: View {
         var body: some View {
-            NativebrikProvider(client: NativebrikClient(projectId: "Nothing")) {
+            NubrickProvider(client: NubrickClient(projectId: "Nothing")) {
                 Text("Hello")
-                AccessToClient()
+                ClientConsumerView()
             }
         }
     }
     
-    func testNativebrikProvider() throws {
-        try XCTContext.runActivity(named: "find content") { _ in
-            let view = ContentView()
-            let _ = try view.inspect().find(text: "Hello")
+    @MainActor
+    func testNubrickProvider() throws {
+        let view = TestView()
+        
+        try XCTContext.runActivity(named: "renders content") { _ in
+            XCTAssertNoThrow(try view.inspect().find(text: "Hello"))
         }
         
         try XCTContext.runActivity(named: "find overlay") { _ in
-            let view = ContentView()
-            let _ = try view.inspect().find(OverlayViewControllerRepresentable.self)
+            XCTAssertNoThrow(try view.inspect().find(OverlayViewControllerRepresentable.self))
         }
         
-        try XCTContext.runActivity(named: "find experiment") { _ in
-            let view = ContentView()
-            let _ = try view.inspect().find(text: "EXPERIMENT")
+        try XCTContext.runActivity(named: "renders experiment") { _ in
+            XCTAssertNoThrow(try view.inspect().find(text: "EXPERIMENT"))
         }
     }
 }

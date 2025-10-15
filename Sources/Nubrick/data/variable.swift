@@ -8,7 +8,7 @@
 import Foundation
 
 func _createVariableForTemplate(
-    user: NativebrikUser? = nil,
+    user: NubrickUser? = nil,
     data: Any? = nil,
     properties: [Property]? = nil,
     form: [String: Any]? = nil,

@@ -88,7 +88,7 @@ class CacheStore {
     }
 }
 
-func getData(url: URL, syncDateTime: Bool = false, cache: CacheStore) async -> Result<Data, NativebrikError> {
+func getData(url: URL, syncDateTime: Bool = false, cache: CacheStore) async -> Result<Data, NubrickError> {
     let urlStr = url.absoluteString
 
     guard let cached = cache.get(key: urlStr) else {
@@ -118,23 +118,23 @@ func getData(url: URL, syncDateTime: Bool = false, cache: CacheStore) async -> R
 }
 
 
-func _getData(url: URL, syncDateTime: Bool = false) async -> Result<Data, NativebrikError> {
+func _getData(url: URL, syncDateTime: Bool = false) async -> Result<Data, NubrickError> {
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
     do {
         let t0 = getCurrentDate()
         let (data, response) = try await nativebrikSession.data(for: request)
         guard let res = response as? HTTPURLResponse else {
-            return Result.failure(NativebrikError.irregular("Failed to parse as HttpURLResponse"))
+            return Result.failure(NubrickError.irregular("Failed to parse as HttpURLResponse"))
         }
         if syncDateTime {
             syncDateFromHTTPURLResponse(t0: t0, res: res)
         }
         if res.statusCode == 404 {
-            return Result.failure(NativebrikError.notFound)
+            return Result.failure(NubrickError.notFound)
         }
         return Result.success(data)
     } catch {
-        return Result.failure(NativebrikError.other(error))
+        return Result.failure(NubrickError.other(error))
     }
 }

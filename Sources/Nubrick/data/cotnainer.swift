@@ -8,7 +8,7 @@
 import Foundation
 import CoreData
 
-public enum NativebrikError: Error {
+public enum NubrickError: Error {
     case notFound
     case failedToDecode
     case failedToEncode
@@ -28,11 +28,11 @@ protocol Container {
     func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener)
     func removeFormValueListener(_ id: String)
 
-    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError>
-    func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NativebrikError>
-    func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NativebrikError>
-    func fetchTooltip(trigger: String) async -> Result<UIBlock, NativebrikError>
-    func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NativebrikError>
+    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError>
+    func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
+    func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NubrickError>
+    func fetchTooltip(trigger: String) async -> Result<UIBlock, NubrickError>
+    func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 
     func record(_ exception: NSException)
 }
@@ -55,20 +55,20 @@ class ContainerEmptyImpl: Container {
     func removeFormValueListener(_ id: String) { }
 
 
-    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError> {
-        return Result.failure(NativebrikError.skipRequest)
+    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError> {
+        return Result.failure(NubrickError.skipRequest)
     }
-    func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NativebrikError> {
-        return Result.failure(NativebrikError.notFound)
+    func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError> {
+        return Result.failure(NubrickError.notFound)
     }
-    func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NativebrikError> {
-        return Result.failure(NativebrikError.notFound)
+    func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NubrickError> {
+        return Result.failure(NubrickError.notFound)
     }
-    func fetchTooltip(trigger: String) async -> Result<UIBlock, NativebrikError> {
-        return Result.failure(NativebrikError.notFound)
+    func fetchTooltip(trigger: String) async -> Result<UIBlock, NubrickError> {
+        return Result.failure(NubrickError.notFound)
     }
-    func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NativebrikError> {
-        return Result.failure(NativebrikError.notFound)
+    func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
+        return Result.failure(NubrickError.notFound)
     }
     func record(_ exception: NSException) {
     }
@@ -76,7 +76,7 @@ class ContainerEmptyImpl: Container {
 
 class ContainerImpl: Container {
     private let config: Config
-    private let user: NativebrikUser
+    private let user: NubrickUser
     private let persistentContainer: NSPersistentContainer
 
     private let experimentRepository: ExperimentRepository2
@@ -88,7 +88,7 @@ class ContainerImpl: Container {
 
     private let arguments: Any?
 
-    init(config: Config, cache: CacheStore, user: NativebrikUser, persistentContainer: NSPersistentContainer, intercepter: NativebrikHttpRequestInterceptor? = nil) {
+    init(config: Config, cache: CacheStore, user: NubrickUser, persistentContainer: NSPersistentContainer, intercepter: NubrickHttpRequestInterceptor? = nil) {
         self.config = config
         self.user = user
         self.persistentContainer = persistentContainer
@@ -153,7 +153,7 @@ class ContainerImpl: Container {
         self.formRepository?.removeFormValueListener(id: id)
     }
 
-    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NativebrikError> {
+    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError> {
         let request = ApiHttpRequest(
             url: compile(req.url ?? "", variable),
             method: req.method,
@@ -165,7 +165,7 @@ class ContainerImpl: Container {
         return await self.httpRequestRepository.request(req: request, assetion: assertion)
     }
 
-    func fetchEmbedding(experimentId: String, componentId: String? = nil) async -> Result<UIBlock, NativebrikError> {
+    func fetchEmbedding(experimentId: String, componentId: String? = nil) async -> Result<UIBlock, NubrickError> {
         if let componentId = componentId {
             let component = await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
             return component
@@ -191,7 +191,7 @@ class ContainerImpl: Container {
         }
 
         guard let variantId = variant.id else {
-            return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
+            return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
 
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
@@ -200,13 +200,13 @@ class ContainerImpl: Container {
         self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
 
         guard let componentId = extractComponentId(variant: variant) else {
-            return Result.failure(NativebrikError.notFound)
+            return Result.failure(NubrickError.notFound)
         }
 
         return await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
     }
 
-    func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NativebrikError> {
+    func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NubrickError> {
         // send the user track event and save it to database
         self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
         self.databaseRepository.appendUserEvent(name: trigger)
@@ -231,7 +231,7 @@ class ContainerImpl: Container {
         }
 
         guard let variantId = variant.id else {
-            return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
+            return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
 
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
@@ -240,13 +240,13 @@ class ContainerImpl: Container {
         self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
 
         guard let componentId = extractComponentId(variant: variant) else {
-            return Result.failure(NativebrikError.notFound)
+            return Result.failure(NubrickError.notFound)
         }
 
         return await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
     }
 
-    func fetchTooltip(trigger: String) async -> Result<UIBlock, NativebrikError> {
+    func fetchTooltip(trigger: String) async -> Result<UIBlock, NubrickError> {
         // retrieve experiment config
         var configs: ExperimentConfigs
         switch await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger) {
@@ -267,7 +267,7 @@ class ContainerImpl: Container {
         }
 
         guard let variantId = variant.id else {
-            return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
+            return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
 
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
@@ -276,13 +276,13 @@ class ContainerImpl: Container {
         self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
 
         guard let componentId = extractComponentId(variant: variant) else {
-            return Result.failure(NativebrikError.notFound)
+            return Result.failure(NubrickError.notFound)
         }
 
         return await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
     }
 
-    func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NativebrikError> {
+    func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
         var configs: ExperimentConfigs
         switch await self.experimentRepository.fetchExperimentConfigs(id: experimentId) {
         case .success(let it):
@@ -302,7 +302,7 @@ class ContainerImpl: Container {
         }
 
         guard let variantId = variant.id else {
-            return Result.failure(NativebrikError.irregular("ExperimentVariant.id is not found"))
+            return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
 
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
@@ -313,7 +313,7 @@ class ContainerImpl: Container {
         return Result.success((experimentId, variant))
     }
 
-    private func extractVariant(configs: ExperimentConfigs, kind: ExperimentKind) async -> Result<(String, ExperimentVariant), NativebrikError> {
+    private func extractVariant(configs: ExperimentConfigs, kind: ExperimentKind) async -> Result<(String, ExperimentVariant), NubrickError> {
         guard let config = extractExperimentConfigMatchedToProperties(
             configs: configs,
             properties: { seed in
@@ -331,17 +331,17 @@ class ContainerImpl: Container {
                 }
             }
         ) else {
-            return Result.failure(NativebrikError.notFound)
+            return Result.failure(NubrickError.notFound)
         }
         guard let experimentId = config.id else {
-            return Result.failure(NativebrikError.irregular("Couldn't get the experiment id"))
+            return Result.failure(NubrickError.irregular("Couldn't get the experiment id"))
         }
         if (config.kind != kind) {
-            return Result.failure(NativebrikError.notFound)
+            return Result.failure(NubrickError.notFound)
         }
         let normalizedUserRnd = self.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0)
         guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUserRnd) else {
-            return Result.failure(NativebrikError.notFound)
+            return Result.failure(NubrickError.notFound)
         }
         return Result.success((experimentId, variant))
     }

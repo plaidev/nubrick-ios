@@ -9,7 +9,7 @@ final class EmbeddingUIViewTests: XCTestCase {
         let expectation = expectation(description: "Fetch an embedding for test")
 
         var didLoadingPhaseCome = false
-        let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
+        let client = NubrickClient(projectId: PROJECT_ID_FOR_TEST)
         let view = client.experiment.embeddingUIView(EMBEDDING_ID_1_FOR_TEST, onEvent: nil) { phase in
             switch phase {
             case .completed:
@@ -37,7 +37,7 @@ final class EmbeddingUIViewTests: XCTestCase {
         let expectation = expectation(description: "Fetch an embedding for test")
 
         var didLoadingPhaseCome = false
-        let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
+        let client = NubrickClient(projectId: PROJECT_ID_FOR_TEST)
         let view = client.experiment.embeddingUIView(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
             switch phase {
             case .completed:

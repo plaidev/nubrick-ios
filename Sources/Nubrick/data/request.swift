@@ -24,21 +24,21 @@ enum HttpRequestAssertionError: Error {
 }
 
 protocol HttpRequestRepository {
-    func request(req: ApiHttpRequest, assetion: ApiHttpResponseAssertion?) async -> Result<JSONData, NativebrikError>
+    func request(req: ApiHttpRequest, assetion: ApiHttpResponseAssertion?) async -> Result<JSONData, NubrickError>
 }
 
 class HttpRequestRepositoryImpl: HttpRequestRepository {
-    private let intercepter: NativebrikHttpRequestInterceptor
-    init(intercepter: NativebrikHttpRequestInterceptor? = nil) {
+    private let intercepter: NubrickHttpRequestInterceptor
+    init(intercepter: NubrickHttpRequestInterceptor? = nil) {
         self.intercepter = intercepter ?? { req in return req }
     }
     
-    func request(req: ApiHttpRequest, assetion: ApiHttpResponseAssertion?) async -> Result<JSONData, NativebrikError> {
+    func request(req: ApiHttpRequest, assetion: ApiHttpResponseAssertion?) async -> Result<JSONData, NubrickError> {
         guard let url = req.url else {
-            return Result.failure(NativebrikError.skipRequest)
+            return Result.failure(NubrickError.skipRequest)
         }
         guard let url = URL(string: url) else {
-            return Result.failure(NativebrikError.irregular("Failed to create URL object"))
+            return Result.failure(NubrickError.irregular("Failed to create URL object"))
         }
         var request = URLRequest(url: url)
         let method = req.method ?? ApiHttpRequestMethod.GET
@@ -59,7 +59,7 @@ class HttpRequestRepositoryImpl: HttpRequestRepository {
         do {
             let (data, response) = try await nativebrikSession.data(for: self.intercepter(request))
             guard let res = response as? HTTPURLResponse else {
-                return Result.failure(NativebrikError.irregular("Failed to parse as HttpURLResponse"))
+                return Result.failure(NubrickError.irregular("Failed to parse as HttpURLResponse"))
             }
             
             var expected = false
@@ -68,7 +68,7 @@ class HttpRequestRepositoryImpl: HttpRequestRepository {
                     return expectedStatusCode == res.statusCode
                 }
                 if matched == nil {
-                    return Result.failure(NativebrikError.other(HttpRequestAssertionError.unexpected))
+                    return Result.failure(NubrickError.other(HttpRequestAssertionError.unexpected))
                 } else {
                     expected = true
                 }
@@ -83,12 +83,12 @@ class HttpRequestRepositoryImpl: HttpRequestRepository {
                 if expected {
                     return Result.success(JSONData(data: nil))
                 } else {
-                    return Result.failure(NativebrikError.unexpected)
+                    return Result.failure(NubrickError.unexpected)
                 }
             }
             return Result.success(JSONData(data: result))
         } catch {
-            return Result.failure(NativebrikError.other(error))
+            return Result.failure(NubrickError.other(error))
         }
     }
 }

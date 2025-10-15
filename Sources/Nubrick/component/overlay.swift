@@ -13,7 +13,7 @@ class OverlayViewController: UIViewController {
     let modalForTriggerViewController: ModalComponentViewController = ModalComponentViewController()
     let triggerViewController: TriggerViewController
 
-    init(user: NativebrikUser, container: Container, onDispatch: ((_ event: NativebrikEvent) -> Void)? = nil) {
+    init(user: NubrickUser, container: Container, onDispatch: ((_ event: NubrickEvent) -> Void)? = nil) {
         self.triggerViewController = TriggerViewController(
             user: user,
             container: container,
@@ -22,7 +22,7 @@ class OverlayViewController: UIViewController {
         )
         super.init(nibName: nil, bundle: nil)
 
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return
         }
 
@@ -36,7 +36,7 @@ class OverlayViewController: UIViewController {
     }
 
     override func viewDidLoad() {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             return
         }
 

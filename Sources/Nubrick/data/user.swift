@@ -55,14 +55,14 @@ private let USER_CUSTOM_PROPERTY_KEY_PREFIX = "NATIVEBRIK_CUSTOM_"
 private let USER_SEED_KEY: String = "NATIVEBRIK_USER_SEED"
 private let USER_SEED_MAX: Int = 100000000
 
-public class NativebrikUser {
+public class NubrickUser {
     private var properties: [String: String]
     private var customProperties: [String: String]
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
     internal var userDB: UserDefaults
 
     init() {
-        if !isNativebrikAvailable {
+        if !isNubrickAvailable {
             self.properties = [:]
             self.customProperties = [:]
             self.userDB = UserDefaults.standard
@@ -94,7 +94,7 @@ public class NativebrikUser {
         self.userDB.set(firstBootTime, forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue)
         self.properties[BuiltinUserProperty.firstBootTime.rawValue] = firstBootTime
 
-        self.properties[BuiltinUserProperty.sdkVersion.rawValue] = nativebrikSdkVersion
+        self.properties[BuiltinUserProperty.sdkVersion.rawValue] = nubrickSdkVersion
         self.properties[BuiltinUserProperty.osName.rawValue] = UIDevice.current.systemName
         self.properties[BuiltinUserProperty.osVersion.rawValue] = UIDevice.current.systemVersion
 
@@ -129,7 +129,7 @@ public class NativebrikUser {
         }
     }
 
-    // This is an alias of NativebrikUser.setProperties
+    // This is an alias of NubrickUser.setProperties
     public func set(_ properties: [String: Any]) {
         for (key, value) in properties {
             if key == BuiltinUserProperty.userId.rawValue {

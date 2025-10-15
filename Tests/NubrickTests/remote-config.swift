@@ -20,7 +20,7 @@ final class RemoteConfigTests: XCTestCase {
         let expectation = expectation(description: "Fetch remote config for test")
 
         var didLoadingPhaseCome = false
-        let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
+        let client = NubrickClient(projectId: PROJECT_ID_FOR_TEST)
         client.experiment.remoteConfig(REMOTE_CONFIG_ID_1_FOR_TEST) { phase in
             switch phase {
             case .completed(let variant):
@@ -47,7 +47,7 @@ final class RemoteConfigTests: XCTestCase {
         let expectation = expectation(description: "Fetch non-exist remote config for test")
 
         var didLoadingPhaseCome = false
-        let client = NativebrikClient(projectId: PROJECT_ID_FOR_TEST)
+        let client = NubrickClient(projectId: PROJECT_ID_FOR_TEST)
         client.experiment.remoteConfig(UNKNOWN_EXPERIMENT_ID) { phase in
             switch phase {
             case .completed:
