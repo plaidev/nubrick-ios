@@ -14,7 +14,7 @@ enum UserDefaultsKeys: String {
 }
 
 class TriggerViewController: UIViewController {
-    private let user: NativebrikUser
+    private let user: NubrickUser
     private let container: Container
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: ModalRootViewController? = nil
@@ -23,12 +23,12 @@ class TriggerViewController: UIViewController {
     private var ignoreFirstUserEventToForegroundEvent = true
 
     required init?(coder: NSCoder) {
-        self.user = NativebrikUser()
+        self.user = NubrickUser()
         self.container = ContainerEmptyImpl()
         super.init(coder: coder)
     }
 
-    init(user: NativebrikUser, container: Container, modalViewController: ModalComponentViewController?, onDispatch: ((_ event: NubrickEvent) -> Void)? = nil) {
+    init(user: NubrickUser, container: Container, modalViewController: ModalComponentViewController?, onDispatch: ((_ event: NubrickEvent) -> Void)? = nil) {
         self.user = user
         self.container = container
         self.modalViewController = modalViewController

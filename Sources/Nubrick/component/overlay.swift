@@ -13,7 +13,7 @@ class OverlayViewController: UIViewController {
     let modalForTriggerViewController: ModalComponentViewController = ModalComponentViewController()
     let triggerViewController: TriggerViewController
 
-    init(user: NativebrikUser, container: Container, onDispatch: ((_ event: NubrickEvent) -> Void)? = nil) {
+    init(user: NubrickUser, container: Container, onDispatch: ((_ event: NubrickEvent) -> Void)? = nil) {
         self.triggerViewController = TriggerViewController(
             user: user,
             container: container,

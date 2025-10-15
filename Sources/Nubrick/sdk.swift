@@ -115,7 +115,7 @@ public final class NubrickClient: ObservableObject {
     private let config: Config
     private let overlayVC: OverlayViewController
     public final let experiment: NubrickExperiment
-    public final let user: NativebrikUser
+    public final let user: NubrickUser
 
     public init(
         projectId: String,
@@ -124,7 +124,7 @@ public final class NubrickClient: ObservableObject {
         cachePolicy: NativebrikCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
     ) {
-        let user = NativebrikUser()
+        let user = NubrickUser()
         let config = Config(projectId: projectId, onEvents: [
             openLink,
             onEvent

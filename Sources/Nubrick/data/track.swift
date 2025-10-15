@@ -65,11 +65,11 @@ class TrackRespositoryImpl: TrackRepository2 {
     private let maxQueueSize: Int
     private let maxBatchSize: Int
     private let config: Config
-    private let user: NativebrikUser
+    private let user: NubrickUser
     private let queueLock: NSLock
     private var timer: Timer?
     private var buffer: [TrackEvent]
-    init(config: Config, user: NativebrikUser) {
+    init(config: Config, user: NubrickUser) {
         self.maxQueueSize = 300
         self.maxBatchSize = 50
         self.config = config

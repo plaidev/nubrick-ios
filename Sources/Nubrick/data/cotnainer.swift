@@ -76,7 +76,7 @@ class ContainerEmptyImpl: Container {
 
 class ContainerImpl: Container {
     private let config: Config
-    private let user: NativebrikUser
+    private let user: NubrickUser
     private let persistentContainer: NSPersistentContainer
 
     private let experimentRepository: ExperimentRepository2
@@ -88,7 +88,7 @@ class ContainerImpl: Container {
 
     private let arguments: Any?
 
-    init(config: Config, cache: CacheStore, user: NativebrikUser, persistentContainer: NSPersistentContainer, intercepter: NubrickHttpRequestInterceptor? = nil) {
+    init(config: Config, cache: CacheStore, user: NubrickUser, persistentContainer: NSPersistentContainer, intercepter: NubrickHttpRequestInterceptor? = nil) {
         self.config = config
         self.user = user
         self.persistentContainer = persistentContainer

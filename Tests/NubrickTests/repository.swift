@@ -56,7 +56,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
 final class ContainerTests: XCTestCase {
     func testShouldCallApiHttpRequest() throws {
         let db = createNativebrikCoreDataHelper()
-        let user = NativebrikUser()
+        let user = NubrickUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
         let cache = CacheStore(policy: NativebrikCachePolicy())
         let container = ContainerImpl(config: config, cache: cache, user: user, persistentContainer: db)

@@ -55,7 +55,7 @@ private let USER_CUSTOM_PROPERTY_KEY_PREFIX = "NATIVEBRIK_CUSTOM_"
 private let USER_SEED_KEY: String = "NATIVEBRIK_USER_SEED"
 private let USER_SEED_MAX: Int = 100000000
 
-public class NativebrikUser {
+public class NubrickUser {
     private var properties: [String: String]
     private var customProperties: [String: String]
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
@@ -129,7 +129,7 @@ public class NativebrikUser {
         }
     }
 
-    // This is an alias of NativebrikUser.setProperties
+    // This is an alias of NubrickUser.setProperties
     public func set(_ properties: [String: Any]) {
         for (key, value) in properties {
             if key == BuiltinUserProperty.userId.rawValue {
