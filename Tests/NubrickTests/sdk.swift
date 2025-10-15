@@ -20,7 +20,7 @@ final class NubrickClientTests: XCTestCase {
         }
 
         XCTContext.runActivity(named: "dispatch event") { _ in
-            XCTAssertNoThrow(client.experiment.dispatch(NativebrikEvent("Hello")))
+            XCTAssertNoThrow(client.experiment.dispatch(NubrickEvent("Hello")))
         }
     }
 }

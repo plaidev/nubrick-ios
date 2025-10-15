@@ -8,8 +8,8 @@
 import Foundation
 
 protocol ExperimentRepository2 {
-    func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NativebrikError>
-    func fetchTriggerExperimentConfigs(name: String) async -> Result<ExperimentConfigs, NativebrikError>
+    func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NubrickError>
+    func fetchTriggerExperimentConfigs(name: String) async -> Result<ExperimentConfigs, NubrickError>
 }
 
 class ExperimentRepositoryImpl: ExperimentRepository2 {
@@ -20,9 +20,9 @@ class ExperimentRepositoryImpl: ExperimentRepository2 {
         self.cache = cache
     }
     
-    func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NativebrikError> {
+    func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NubrickError> {
         guard let url = URL(string: self.config.cdnUrl + "/projects/" + self.config.projectId + "/experiments/id/" + id) else {
-            return Result.failure(NativebrikError.irregular("Failed to create URL object"))
+            return Result.failure(NubrickError.irregular("Failed to create URL object"))
         }
         
         let data = await getData(url: url, syncDateTime: true, cache: self.cache)
@@ -30,7 +30,7 @@ class ExperimentRepositoryImpl: ExperimentRepository2 {
         case .success(let data):
             let decoder = JSONDecoder()
             guard let result = try? decoder.decode(ExperimentConfigs.self, from: data) else {
-                return Result.failure(NativebrikError.failedToDecode)
+                return Result.failure(NubrickError.failedToDecode)
             }
             return Result.success(result)
             
@@ -39,9 +39,9 @@ class ExperimentRepositoryImpl: ExperimentRepository2 {
         }
     }
     
-    func fetchTriggerExperimentConfigs(name: String) async -> Result<ExperimentConfigs, NativebrikError> {
+    func fetchTriggerExperimentConfigs(name: String) async -> Result<ExperimentConfigs, NubrickError> {
         guard let url = URL(string: config.cdnUrl + "/projects/" + config.projectId + "/experiments/trigger/" + name) else {
-            return Result.failure(NativebrikError.irregular("Failed to create URL object"))
+            return Result.failure(NubrickError.irregular("Failed to create URL object"))
         }
         
         let data = await getData(url: url, syncDateTime: true, cache: self.cache)
@@ -49,7 +49,7 @@ class ExperimentRepositoryImpl: ExperimentRepository2 {
         case .success(let data):
             let decoder = JSONDecoder()
             guard let result = try? decoder.decode(ExperimentConfigs.self, from: data) else {
-                return Result.failure(NativebrikError.failedToDecode)
+                return Result.failure(NubrickError.failedToDecode)
             }
             return Result.success(result)
             

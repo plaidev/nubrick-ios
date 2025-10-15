@@ -151,7 +151,7 @@ public enum RemoteConfigPhase {
     case loading
     case completed(RemoteConfigVariant)
     case notFound
-    case failed(NativebrikError)
+    case failed(NubrickError)
 }
 
 class RemoteConfig {

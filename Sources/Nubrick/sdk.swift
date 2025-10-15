@@ -12,7 +12,7 @@ import Combine
 // for development
 public var nativebrikTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nativebrikCdnUrl = "https://cdn.nativebrik.com"
-public let nativebrikSdkVersion = "0.12.3"
+public let nubrickSdkVersion = "0.12.3"
 
 public let isNubrickAvailable: Bool = {
     if #available(iOS 15.0, *) {
@@ -38,7 +38,7 @@ private func createDispatchNubrickEvent(_ client: NubrickClient) -> (_ event: Co
               !name.isEmpty else {
             return
         }
-        client.experiment.dispatch(NativebrikEvent(name))
+        client.experiment.dispatch(NubrickEvent(name))
     }
 }
 
@@ -101,28 +101,28 @@ public struct ComponentEvent {
     public let payload: [EventProperty]?
 }
 
-public struct NativebrikEvent {
+public struct NubrickEvent {
     public let name: String
     public init(_ name: String) {
         self.name = name
     }
 }
 
-public typealias NativebrikHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
+public typealias NubrickHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
 
 public final class NubrickClient: ObservableObject {
     private let container: Container
     private let config: Config
     private let overlayVC: OverlayViewController
-    public final let experiment: NativebrikExperiment
+    public final let experiment: NubrickExperiment
     public final let user: NativebrikUser
 
     public init(
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        httpRequestInterceptor: NativebrikHttpRequestInterceptor? = nil,
+        httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
         cachePolicy: NativebrikCachePolicy? = nil,
-        onDispatch: ((_ event: NativebrikEvent) -> Void)? = nil
+        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
     ) {
         let user = NativebrikUser()
         let config = Config(projectId: projectId, onEvents: [
@@ -141,13 +141,13 @@ public final class NubrickClient: ObservableObject {
             intercepter: httpRequestInterceptor
         )
         self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch)
-        self.experiment = NativebrikExperiment(container: self.container, overlay: self.overlayVC)
+        self.experiment = NubrickExperiment(container: self.container, overlay: self.overlayVC)
 
         config.addEventListener(createDispatchNubrickEvent(self))
     }
 }
 
-public class NativebrikExperiment {
+public class NubrickExperiment {
     private let container: Container
     private let overlayVC: OverlayViewController
 
@@ -156,7 +156,7 @@ public class NativebrikExperiment {
         self.overlayVC = overlay
     }
 
-    public func dispatch(_ event: NativebrikEvent) {
+    public func dispatch(_ event: NubrickEvent) {
         if !isNubrickAvailable {
             return
         }
@@ -288,7 +288,7 @@ public class NativebrikExperiment {
     }
 
     // for flutter integration
-    public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NativebrikError> {
+    public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NubrickError> {
         if !isNubrickAvailable {
             return .failure(.notFound)
         }

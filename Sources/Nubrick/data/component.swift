@@ -8,7 +8,7 @@
 import Foundation
 
 protocol ComponentRepository2 {
-    func fetchComponent(experimentId: String, id: String) async -> Result<UIBlock, NativebrikError>
+    func fetchComponent(experimentId: String, id: String) async -> Result<UIBlock, NubrickError>
 }
 
 class ComponentRepositoryImpl: ComponentRepository2 {
@@ -19,9 +19,9 @@ class ComponentRepositoryImpl: ComponentRepository2 {
         self.cache = cache
     }
 
-    func fetchComponent(experimentId: String, id: String) async -> Result<UIBlock, NativebrikError> {
+    func fetchComponent(experimentId: String, id: String) async -> Result<UIBlock, NubrickError> {
         guard let url = URL(string: config.cdnUrl + "/projects/" + config.projectId + "/experiments/components/" + experimentId + "/" + id) else {
-            return Result.failure(NativebrikError.irregular("Failed to create URL object"))
+            return Result.failure(NubrickError.irregular("Failed to create URL object"))
         }
         
         let data = await getData(url: url, cache: self.cache)
@@ -29,7 +29,7 @@ class ComponentRepositoryImpl: ComponentRepository2 {
         case .success(let data):
             let decoder = JSONDecoder()
             guard let result = try? decoder.decode(UIBlockJSON.self, from: data) else {
-                return Result.failure(NativebrikError.failedToDecode)
+                return Result.failure(NubrickError.failedToDecode)
             }
             return Result.success(result)
             
