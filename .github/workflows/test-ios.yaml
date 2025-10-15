@@ -33,7 +33,7 @@ jobs:
           -workspace ./Nubrick.xcworkspace \
           -scheme ${{ matrix.scheme }} \
           -sdk iphonesimulator \
-          -destination '${{ matrix.destination }}'
+          -destination '${{ matrix.destination }}' \
           -skipMacroValidation \
           -skipPackagePluginValidation \
           -showBuildTimingSummary \
