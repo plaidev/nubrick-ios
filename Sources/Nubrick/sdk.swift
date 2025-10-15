@@ -42,7 +42,7 @@ private func createDispatchNubrickEvent(_ client: NubrickClient) -> (_ event: Co
     }
 }
 
-class Config {
+final class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
     var trackUrl: String = nativebrikTrackUrl
@@ -70,7 +70,7 @@ class Config {
         }
     }
 
-    func addEventListner(_ onEvent: @escaping (_ event: ComponentEvent) -> Void) {
+    func addEventListener(_ onEvent: @escaping (_ event: ComponentEvent) -> Void) {
         self.eventListeners.append(onEvent)
     }
 
@@ -143,7 +143,7 @@ public final class NubrickClient: ObservableObject {
         self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch)
         self.experiment = NativebrikExperiment(container: self.container, overlay: self.overlayVC)
 
-        config.addEventListner(createDispatchNubrickEvent(self))
+        config.addEventListener(createDispatchNubrickEvent(self))
     }
 }
 
