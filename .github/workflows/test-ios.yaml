@@ -35,7 +35,6 @@ jobs:
           -scheme NubrickTests \
           -sdk iphonesimulator \
           -destination '${{ matrix.destination }}'
-          -jobs 2 \
           -showBuildTimingSummary \
           -derivedDataPath "$RUNNER_TEMP/DerivedData" \
           BUILD_LIBRARY_FOR_DISTRIBUTION=NO \
