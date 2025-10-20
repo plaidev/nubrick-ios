@@ -24,5 +24,9 @@ Pod::Spec.new do |spec|
   spec.requires_arc = true
   spec.swift_version = "5.9"
 
+  # Frameworks
+  spec.frameworks = "UIKit", "Foundation", "SwiftUI", "Combine", "ImageIO", "SafariServices"
+  spec.weak_frameworks = "TipKit"
+
   spec.dependency "Yoga", "~> 3.2.1"
 end
