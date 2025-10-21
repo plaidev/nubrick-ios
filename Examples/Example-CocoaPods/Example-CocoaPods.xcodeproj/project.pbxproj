@@ -20,8 +20,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F44990782EA741C700F7F92E /* Example-CocoaPods */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Example-CocoaPods";
 			sourceTree = "<group>";
 		};
