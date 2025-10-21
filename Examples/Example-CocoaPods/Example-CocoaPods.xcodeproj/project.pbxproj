@@ -7,33 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D36FE112C0471D3FBA107D33 /* Pods_Example_CocoaPods.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5BA6B4FBA6FC560ACB2C8BF7 /* Pods_Example_CocoaPods.framework */; };
+		DD263AFEC4C4B2197C4983D3 /* Pods_Example_CocoaPods.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B9DBF654F5459FBD87E3F48 /* Pods_Example_CocoaPods.framework */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		F44990872EA741C800F7F92E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F449906E2EA741C700F7F92E /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F44990752EA741C700F7F92E;
-			remoteInfo = "Example-CocoaPods";
-		};
-		F44990912EA741C800F7F92E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F449906E2EA741C700F7F92E /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F44990752EA741C700F7F92E;
-			remoteInfo = "Example-CocoaPods";
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
-		5BA6B4FBA6FC560ACB2C8BF7 /* Pods_Example_CocoaPods.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Example_CocoaPods.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		77F51DD735D8E6C4AA174482 /* Pods-Example-CocoaPods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example-CocoaPods.release.xcconfig"; path = "Target Support Files/Pods-Example-CocoaPods/Pods-Example-CocoaPods.release.xcconfig"; sourceTree = "<group>"; };
-		B0C3C1617B80E8CB7F22DEB2 /* Pods-Example-CocoaPods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example-CocoaPods.debug.xcconfig"; path = "Target Support Files/Pods-Example-CocoaPods/Pods-Example-CocoaPods.debug.xcconfig"; sourceTree = "<group>"; };
+		2B9DBF654F5459FBD87E3F48 /* Pods_Example_CocoaPods.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Example_CocoaPods.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		49834B82298BDE7A000FC4E6 /* Pods-Example-CocoaPods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example-CocoaPods.debug.xcconfig"; path = "Target Support Files/Pods-Example-CocoaPods/Pods-Example-CocoaPods.debug.xcconfig"; sourceTree = "<group>"; };
+		87F606D684EBC4E690A107FC /* Pods-Example-CocoaPods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example-CocoaPods.release.xcconfig"; path = "Target Support Files/Pods-Example-CocoaPods/Pods-Example-CocoaPods.release.xcconfig"; sourceTree = "<group>"; };
 		F44990762EA741C700F7F92E /* Example-CocoaPods.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example-CocoaPods.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		F44990862EA741C800F7F92E /* Example-CocoaPodsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Example-CocoaPodsTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		F44990902EA741C800F7F92E /* Example-CocoaPodsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Example-CocoaPodsUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -44,20 +25,6 @@
 			path = "Example-CocoaPods";
 			sourceTree = "<group>";
 		};
-		F44990892EA741C800F7F92E /* Example-CocoaPodsTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
-			path = "Example-CocoaPodsTests";
-			sourceTree = "<group>";
-		};
-		F44990932EA741C800F7F92E /* Example-CocoaPodsUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
-			path = "Example-CocoaPodsUITests";
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,21 +32,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D36FE112C0471D3FBA107D33 /* Pods_Example_CocoaPods.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F44990832EA741C800F7F92E /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F449908D2EA741C800F7F92E /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+				DD263AFEC4C4B2197C4983D3 /* Pods_Example_CocoaPods.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,17 +42,16 @@
 		0CBEC1E0745DD1B5AC9BB3EC /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				B0C3C1617B80E8CB7F22DEB2 /* Pods-Example-CocoaPods.debug.xcconfig */,
-				77F51DD735D8E6C4AA174482 /* Pods-Example-CocoaPods.release.xcconfig */,
+				49834B82298BDE7A000FC4E6 /* Pods-Example-CocoaPods.debug.xcconfig */,
+				87F606D684EBC4E690A107FC /* Pods-Example-CocoaPods.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		D632C189839208E758228DF0 /* Frameworks */ = {
+		0D99CF497A5129B156E6FA88 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				5BA6B4FBA6FC560ACB2C8BF7 /* Pods_Example_CocoaPods.framework */,
+				2B9DBF654F5459FBD87E3F48 /* Pods_Example_CocoaPods.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -108,11 +60,9 @@
 			isa = PBXGroup;
 			children = (
 				F44990782EA741C700F7F92E /* Example-CocoaPods */,
-				F44990892EA741C800F7F92E /* Example-CocoaPodsTests */,
-				F44990932EA741C800F7F92E /* Example-CocoaPodsUITests */,
 				F44990772EA741C700F7F92E /* Products */,
 				0CBEC1E0745DD1B5AC9BB3EC /* Pods */,
-				D632C189839208E758228DF0 /* Frameworks */,
+				0D99CF497A5129B156E6FA88 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -120,8 +70,6 @@
 			isa = PBXGroup;
 			children = (
 				F44990762EA741C700F7F92E /* Example-CocoaPods.app */,
-				F44990862EA741C800F7F92E /* Example-CocoaPodsTests.xctest */,
-				F44990902EA741C800F7F92E /* Example-CocoaPodsUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -133,11 +81,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F449909A2EA741C800F7F92E /* Build configuration list for PBXNativeTarget "Example-CocoaPods" */;
 			buildPhases = (
-				1A9A433469149E9739FF0B24 /* [CP] Check Pods Manifest.lock */,
+				1889198239FC9F34B04AD77F /* [CP] Check Pods Manifest.lock */,
 				F44990722EA741C700F7F92E /* Sources */,
 				F44990732EA741C700F7F92E /* Frameworks */,
 				F44990742EA741C700F7F92E /* Resources */,
-				463183C736C60419FA6B0516 /* [CP] Embed Pods Frameworks */,
+				ED70269CA0FF1B968AC16F97 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -151,48 +99,6 @@
 			productReference = F44990762EA741C700F7F92E /* Example-CocoaPods.app */;
 			productType = "com.apple.product-type.application";
 		};
-		F44990852EA741C800F7F92E /* Example-CocoaPodsTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = F449909D2EA741C800F7F92E /* Build configuration list for PBXNativeTarget "Example-CocoaPodsTests" */;
-			buildPhases = (
-				F44990822EA741C800F7F92E /* Sources */,
-				F44990832EA741C800F7F92E /* Frameworks */,
-				F44990842EA741C800F7F92E /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				F44990882EA741C800F7F92E /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				F44990892EA741C800F7F92E /* Example-CocoaPodsTests */,
-			);
-			name = "Example-CocoaPodsTests";
-			productName = "Example-CocoaPodsTests";
-			productReference = F44990862EA741C800F7F92E /* Example-CocoaPodsTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		F449908F2EA741C800F7F92E /* Example-CocoaPodsUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = F44990A02EA741C800F7F92E /* Build configuration list for PBXNativeTarget "Example-CocoaPodsUITests" */;
-			buildPhases = (
-				F449908C2EA741C800F7F92E /* Sources */,
-				F449908D2EA741C800F7F92E /* Frameworks */,
-				F449908E2EA741C800F7F92E /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				F44990922EA741C800F7F92E /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				F44990932EA741C800F7F92E /* Example-CocoaPodsUITests */,
-			);
-			name = "Example-CocoaPodsUITests";
-			productName = "Example-CocoaPodsUITests";
-			productReference = F44990902EA741C800F7F92E /* Example-CocoaPodsUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -205,14 +111,6 @@
 				TargetAttributes = {
 					F44990752EA741C700F7F92E = {
 						CreatedOnToolsVersion = 16.2;
-					};
-					F44990852EA741C800F7F92E = {
-						CreatedOnToolsVersion = 16.2;
-						TestTargetID = F44990752EA741C700F7F92E;
-					};
-					F449908F2EA741C800F7F92E = {
-						CreatedOnToolsVersion = 16.2;
-						TestTargetID = F44990752EA741C700F7F92E;
 					};
 				};
 			};
@@ -231,8 +129,6 @@
 			projectRoot = "";
 			targets = (
 				F44990752EA741C700F7F92E /* Example-CocoaPods */,
-				F44990852EA741C800F7F92E /* Example-CocoaPodsTests */,
-				F449908F2EA741C800F7F92E /* Example-CocoaPodsUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -245,24 +141,10 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F44990842EA741C800F7F92E /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F449908E2EA741C800F7F92E /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		1A9A433469149E9739FF0B24 /* [CP] Check Pods Manifest.lock */ = {
+		1889198239FC9F34B04AD77F /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -284,7 +166,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		463183C736C60419FA6B0516 /* [CP] Embed Pods Frameworks */ = {
+		ED70269CA0FF1B968AC16F97 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -311,34 +193,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F44990822EA741C800F7F92E /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F449908C2EA741C800F7F92E /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		F44990882EA741C800F7F92E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F44990752EA741C700F7F92E /* Example-CocoaPods */;
-			targetProxy = F44990872EA741C800F7F92E /* PBXContainerItemProxy */;
-		};
-		F44990922EA741C800F7F92E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F44990752EA741C700F7F92E /* Example-CocoaPods */;
-			targetProxy = F44990912EA741C800F7F92E /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F44990982EA741C800F7F92E /* Debug */ = {
@@ -462,7 +317,7 @@
 		};
 		F449909B2EA741C800F7F92E /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B0C3C1617B80E8CB7F22DEB2 /* Pods-Example-CocoaPods.debug.xcconfig */;
+			baseConfigurationReference = 49834B82298BDE7A000FC4E6 /* Pods-Example-CocoaPods.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -492,7 +347,7 @@
 		};
 		F449909C2EA741C800F7F92E /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 77F51DD735D8E6C4AA174482 /* Pods-Example-CocoaPods.release.xcconfig */;
+			baseConfigurationReference = 87F606D684EBC4E690A107FC /* Pods-Example-CocoaPods.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -520,78 +375,6 @@
 			};
 			name = Release;
 		};
-		F449909E2EA741C800F7F92E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = M3LJ3SDTT4;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nativebrik.Example-CocoaPodsTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example-CocoaPods.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Example-CocoaPods";
-			};
-			name = Debug;
-		};
-		F449909F2EA741C800F7F92E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = M3LJ3SDTT4;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nativebrik.Example-CocoaPodsTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example-CocoaPods.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Example-CocoaPods";
-			};
-			name = Release;
-		};
-		F44990A12EA741C800F7F92E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = M3LJ3SDTT4;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nativebrik.Example-CocoaPodsUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "Example-CocoaPods";
-			};
-			name = Debug;
-		};
-		F44990A22EA741C800F7F92E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = M3LJ3SDTT4;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.nativebrik.Example-CocoaPodsUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "Example-CocoaPods";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -609,24 +392,6 @@
 			buildConfigurations = (
 				F449909B2EA741C800F7F92E /* Debug */,
 				F449909C2EA741C800F7F92E /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		F449909D2EA741C800F7F92E /* Build configuration list for PBXNativeTarget "Example-CocoaPodsTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F449909E2EA741C800F7F92E /* Debug */,
-				F449909F2EA741C800F7F92E /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		F44990A02EA741C800F7F92E /* Build configuration list for PBXNativeTarget "Example-CocoaPodsUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F44990A12EA741C800F7F92E /* Debug */,
-				F44990A22EA741C800F7F92E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
