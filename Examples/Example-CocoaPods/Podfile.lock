@@ -1,0 +1,20 @@
+PODS:
+  - Nubrick (0.13.0):
+    - Yoga (~> 3.2.1)
+  - Yoga (3.2.1)
+
+DEPENDENCIES:
+  - Nubrick (~> 0.13.0)
+
+SPEC REPOS:
+  trunk:
+    - Nubrick
+    - Yoga
+
+SPEC CHECKSUMS:
+  Nubrick: 6f4ac5511b516dcb6ce3fa9e152cb37bcb051d3a
+  Yoga: 636ce73bd247407928a7df089f3bc3675916b3ff
+
+PODFILE CHECKSUM: 9aa450198db2e119848b7a9390617b4f8d979cc9
+
+COCOAPODS: 1.16.2
