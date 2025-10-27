@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreData
+import MetricKit
 
 public enum NubrickError: Error {
     case notFound
@@ -33,8 +34,9 @@ protocol Container {
     func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NubrickError>
     func fetchTooltip(trigger: String) async -> Result<UIBlock, NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
-
-    func record(_ exception: NSException)
+    
+    @available(iOS 14.0, *)
+    func report(_ crash: MXCrashDiagnostic)
 }
 
 class ContainerEmptyImpl: Container {
@@ -70,7 +72,8 @@ class ContainerEmptyImpl: Container {
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
         return Result.failure(NubrickError.notFound)
     }
-    func record(_ exception: NSException) {
+    @available(iOS 14.0, *)
+    func report(_ crash: MXCrashDiagnostic) {
     }
 }
 
@@ -345,8 +348,8 @@ class ContainerImpl: Container {
         }
         return Result.success((experimentId, variant))
     }
-
-    func record(_ exception: NSException) {
-        self.trackRepository.record(exception)
+    @available(iOS 14.0, *)
+    func report(_ crash: MXCrashDiagnostic) {
+        self.trackRepository.report(crash)
     }
 }

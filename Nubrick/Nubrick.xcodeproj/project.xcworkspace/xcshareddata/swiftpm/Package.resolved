@@ -1,4 +1,5 @@
 {
+  "originHash" : "d0f6a42ac8472d8c896bc69aa5954a686b40bbe674bd470a18066363cfb6c067",
   "pins" : [
     {
       "identity" : "yoga",
@@ -10,5 +11,5 @@
       }
     }
   ],
-  "version" : 2
+  "version" : 3
 }

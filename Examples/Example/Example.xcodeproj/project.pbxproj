@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		250555512EAB4EA9005D8A1B /* nubrick in Frameworks */ = {isa = PBXBuildFile; productRef = 250555502EAB4EA9005D8A1B /* nubrick */; };
 		C13633C22AEB777800B9F437 /* ExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633C12AEB777800B9F437 /* ExampleApp.swift */; };
 		C13633C42AEB777800B9F437 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633C32AEB777800B9F437 /* ContentView.swift */; };
 		C13633C62AEB777900B9F437 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C13633C52AEB777900B9F437 /* Assets.xcassets */; };
@@ -14,7 +15,6 @@
 		C13633D32AEB777900B9F437 /* ExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633D22AEB777900B9F437 /* ExampleTests.swift */; };
 		C13633DD2AEB777900B9F437 /* ExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633DC2AEB777900B9F437 /* ExampleUITests.swift */; };
 		C13633DF2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633DE2AEB777900B9F437 /* ExampleUITestsLaunchTests.swift */; };
-		F463165C2E97B4A5002540F8 /* Nubrick in Frameworks */ = {isa = PBXBuildFile; productRef = F463165B2E97B4A5002540F8 /* Nubrick */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +33,19 @@
 			remoteInfo = Example;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		250554952EA858BC005D8A1B /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		C13633BE2AEB777800B9F437 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -57,7 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F463165C2E97B4A5002540F8 /* Nubrick in Frameworks */,
+				250555512EAB4EA9005D8A1B /* nubrick in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -154,6 +167,7 @@
 				C13633BA2AEB777800B9F437 /* Sources */,
 				C13633BB2AEB777800B9F437 /* Frameworks */,
 				C13633BC2AEB777800B9F437 /* Resources */,
+				250554952EA858BC005D8A1B /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -233,7 +247,7 @@
 			);
 			mainGroup = C13633B52AEB777800B9F437;
 			packageReferences = (
-				F463165A2E97B4A5002540F8 /* XCLocalSwiftPackageReference "../../" */,
+				2505554B2EAB1243005D8A1B /* XCLocalSwiftPackageReference "../../../nubrick-ios" */,
 			);
 			productRefGroup = C13633BF2AEB777800B9F437 /* Products */;
 			projectDirPath = "";
@@ -441,6 +455,7 @@
 			baseConfigurationReferenceAnchor = F4377A732DED9481002EF91E /* Configuration */;
 			baseConfigurationReferenceRelativePath = Debug.xcconfig;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -477,6 +492,7 @@
 			baseConfigurationReferenceAnchor = F4377A732DED9481002EF91E /* Configuration */;
 			baseConfigurationReferenceRelativePath = Release.xcconfig;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -622,16 +638,16 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		F463165A2E97B4A5002540F8 /* XCLocalSwiftPackageReference "../../" */ = {
+		2505554B2EAB1243005D8A1B /* XCLocalSwiftPackageReference "../../../nubrick-ios" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../;
+			relativePath = "../../../nubrick-ios";
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		F463165B2E97B4A5002540F8 /* Nubrick */ = {
+		250555502EAB4EA9005D8A1B /* nubrick */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Nubrick;
+			productName = nubrick;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

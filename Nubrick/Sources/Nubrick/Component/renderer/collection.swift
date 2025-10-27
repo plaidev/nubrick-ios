@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-import YogaKit
+@_implementationOnly import YogaKitInternal
 
 class CollectionViewCell: UICollectionViewCell {
     var view: UIView?

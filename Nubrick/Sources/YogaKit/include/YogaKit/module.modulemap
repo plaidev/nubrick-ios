@@ -1,0 +1,10 @@
+//
+//  module.modulemap
+//  Nubrick
+//
+
+module YogaKitInternal {
+    header "UIView+Yoga.h"
+
+    export *
+}

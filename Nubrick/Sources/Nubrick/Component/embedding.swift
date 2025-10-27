@@ -8,7 +8,7 @@
 import Foundation
 import UIKit
 import SwiftUI
-import YogaKit
+@_implementationOnly import YogaKitInternal
 
 public enum EmbeddingPhase {
     case loading
