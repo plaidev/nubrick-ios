@@ -8,9 +8,44 @@
 import Foundation
 import SwiftUI
 import Combine
+import MetricKit
+import Darwin.Mach
+
+// For crash reporting
+@available(iOS 14.0, *)
+class AppMetrics: NSObject, MXMetricManagerSubscriber {
+   private let recordCrash: (_ crash: MXCrashDiagnostic) -> Void
+
+   init(_ recordCrash: @escaping (_ crash: MXCrashDiagnostic) -> Void) {
+       self.recordCrash = recordCrash
+       super.init()
+       
+       let shared = MXMetricManager.shared
+       shared.add(self)
+
+       // Immediately receive crash reports generated since
+       // the last allocation of the shared manager instance
+       didReceive(shared.pastDiagnosticPayloads)
+   }
+
+   deinit {
+       let shared = MXMetricManager.shared
+       shared.remove(self)
+   }
+
+   func didReceive(_ payloads: [MXDiagnosticPayload]) {
+       
+       payloads.forEach { payload in
+            payload.crashDiagnostics?.forEach { crashDiagnostic in
+                recordCrash(crashDiagnostic)
+            }
+        }
+    }
+}
+
 
 // for development
-public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
+public var nubrickTrackUrl = "http://172.16.11.240:8070/track/v1"
 public var nubrickCdnUrl = "https://cdn.nativebrik.com"
 public let nubrickSdkVersion = "0.12.3"
 
@@ -116,6 +151,7 @@ public final class NubrickClient: ObservableObject {
     private let overlayVC: OverlayViewController
     public final let experiment: NubrickExperiment
     public final let user: NubrickUser
+    private var appMetrics: Any?
 
     public init(
         projectId: String,
@@ -143,7 +179,19 @@ public final class NubrickClient: ObservableObject {
         self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch)
         self.experiment = NubrickExperiment(container: self.container, overlay: self.overlayVC)
 
+        // Initialize AppMetrics only for iOS 14+
+        if #available(iOS 14.0, *) {
+            self.appMetrics = AppMetrics(self.experiment.report)
+        }
+
+
         config.addEventListener(createDispatchNubrickEvent(self))
+    }
+    
+    public func simulateCrash() {
+        // let p = UnsafeMutablePointer<Int>(bitPattern: 0)!
+        // _ = p.pointee      // <-- expect this exact line in atos/Sentry
+        fatalError("unreachable") // never reached; just silences Noreturn warnings
     }
 }
 
@@ -162,12 +210,13 @@ public class NubrickExperiment {
         }
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
-
-    public func record(exception: NSException) {
+    
+    @available(iOS 14.0, *)
+    public func report(crash: MXCrashDiagnostic) {
         if !isNubrickAvailable {
             return
         }
-        self.container.record(exception)
+       self.container.report(crash)
     }
 
     public func overlayViewController() -> UIViewController {
