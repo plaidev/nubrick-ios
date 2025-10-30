@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name         = "Nubrick"
-  spec.version      = "0.13.0"
+  spec.version      = "0.13.1"
   spec.summary      = "Nubrick SDK for iOS"
   spec.description  = <<-DESC
                    Nubrick SDK for iOS.
