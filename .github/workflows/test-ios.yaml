@@ -42,14 +42,6 @@ jobs:
           COMPILER_INDEX_STORE_ENABLE: NO
           SWIFT_COMPILATION_MODE: wholemodule
 
-  pod:
-    runs-on: macos-26
-    timeout-minutes: 5
-    steps:
-      - name: Install xcbeautify
-        run: brew install xcbeautify
-      - name: Checkout
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Pod lint
         run: pod lib lint
       - name: Verify version consistency
