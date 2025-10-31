@@ -19,8 +19,13 @@ let package = Package(
         .package(url: "https://github.com/facebook/yoga.git", .upToNextMinor(from: "3.2.1")),
     ],
     targets: [
-        .target(
+        
+        .binaryTarget(
             name: "Nubrick",
+            path: "./Nubrick/output/Nubrick.xcframework"
+        ),
+        .target(
+            name: "NubrickLocal",
             dependencies: ["YogaKit"],
             path: "Sources/Nubrick",
             exclude: ["PrivacyInfo.xcprivacy"],
@@ -36,7 +41,7 @@ let package = Package(
         ),
         .testTarget(
             name: "NubrickTests",
-            dependencies: ["Nubrick", .product(name: "ViewInspector", package: "ViewInspector")]
+            dependencies: ["NubrickLocal", .product(name: "ViewInspector", package: "ViewInspector")]
         ),
     ],
     cxxLanguageStandard: CXXLanguageStandard(rawValue: "c++20")

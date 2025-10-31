@@ -26,6 +26,7 @@ DerivedData
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 Pods
 PodBuilder/PodBuilder.xcworkspace
+output/
 
 # Bundler
 .bundle

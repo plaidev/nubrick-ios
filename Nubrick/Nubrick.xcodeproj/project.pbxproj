@@ -8,80 +8,110 @@
 
 /* Begin PBXBuildFile section */
 		2505552E2EA8CCD9005D8A1B /* yoga in Frameworks */ = {isa = PBXBuildFile; productRef = 2505552D2EA8CCD9005D8A1B /* yoga */; };
+		25C9F6832EB0597E00BD8267 /* collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6452EB0597E00BD8267 /* collection.swift */; };
+		25C9F6842EB0597E00BD8267 /* _for_bridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6722EB0597E00BD8267 /* _for_bridge.swift */; };
+		25C9F6852EB0597E00BD8267 /* generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6692EB0597E00BD8267 /* generated.swift */; };
+		25C9F6862EB0597E00BD8267 /* compiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6662EB0597E00BD8267 /* compiler.swift */; };
+		25C9F6872EB0597E00BD8267 /* ios-compat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F66C2EB0597E00BD8267 /* ios-compat.swift */; };
+		25C9F6882EB0597E00BD8267 /* image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6492EB0597E00BD8267 /* image.swift */; };
+		25C9F6892EB0597E00BD8267 /* form.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F65F2EB0597E00BD8267 /* form.swift */; };
+		25C9F68A2EB0597E00BD8267 /* action-listener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F64F2EB0597E00BD8267 /* action-listener.swift */; };
+		25C9F68B2EB0597E00BD8267 /* root.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6542EB0597E00BD8267 /* root.swift */; };
+		25C9F68C2EB0597E00BD8267 /* frequency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F66B2EB0597E00BD8267 /* frequency.swift */; };
+		25C9F68D2EB0597E00BD8267 /* grid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6482EB0597E00BD8267 /* grid.swift */; };
+		25C9F68E2EB0597E00BD8267 /* track.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6622EB0597E00BD8267 /* track.swift */; };
+		25C9F68F2EB0597E00BD8267 /* modal-component.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F64A2EB0597E00BD8267 /* modal-component.swift */; };
+		25C9F6902EB0597E00BD8267 /* component.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F65C2EB0597E00BD8267 /* component.swift */; };
+		25C9F6912EB0597E00BD8267 /* utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F66D2EB0597E00BD8267 /* utils.swift */; };
+		25C9F6922EB0597E00BD8267 /* remote-config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6752EB0597E00BD8267 /* remote-config.swift */; };
+		25C9F6932EB0597E00BD8267 /* trigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6552EB0597E00BD8267 /* trigger.swift */; };
+		25C9F6942EB0597E00BD8267 /* select.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F64C2EB0597E00BD8267 /* select.swift */; };
+		25C9F6952EB0597E00BD8267 /* overlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6522EB0597E00BD8267 /* overlay.swift */; };
+		25C9F6962EB0597E00BD8267 /* embedding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6512EB0597E00BD8267 /* embedding.swift */; };
+		25C9F6972EB0597E00BD8267 /* text.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F64D2EB0597E00BD8267 /* text.swift */; };
+		25C9F6982EB0597E00BD8267 /* blurhash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F66F2EB0597E00BD8267 /* blurhash.swift */; };
+		25C9F6992EB0597E00BD8267 /* navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F64B2EB0597E00BD8267 /* navigation.swift */; };
+		25C9F69A2EB0597E00BD8267 /* variable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6642EB0597E00BD8267 /* variable.swift */; };
+		25C9F69B2EB0597E00BD8267 /* context.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6502EB0597E00BD8267 /* context.swift */; };
+		25C9F69C2EB0597E00BD8267 /* cotnainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F65D2EB0597E00BD8267 /* cotnainer.swift */; };
+		25C9F69D2EB0597E00BD8267 /* user.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6632EB0597E00BD8267 /* user.swift */; };
+		25C9F69E2EB0597E00BD8267 /* helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6582EB0597E00BD8267 /* helper.swift */; };
+		25C9F69F2EB0597E00BD8267 /* page.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6532EB0597E00BD8267 /* page.swift */; };
+		25C9F6A02EB0597E00BD8267 /* YGLayout.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6802EB0597E00BD8267 /* YGLayout.mm */; };
+		25C9F6A12EB0597E00BD8267 /* network.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6602EB0597E00BD8267 /* network.swift */; };
+		25C9F6A22EB0597E00BD8267 /* carousel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6442EB0597E00BD8267 /* carousel.swift */; };
+		25C9F6A32EB0597E00BD8267 /* UIView+Yoga.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F67F2EB0597E00BD8267 /* UIView+Yoga.mm */; };
+		25C9F6A42EB0597E00BD8267 /* sdk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6772EB0597E00BD8267 /* sdk.swift */; };
+		25C9F6A52EB0597E00BD8267 /* flex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6462EB0597E00BD8267 /* flex.swift */; };
+		25C9F6A62EB0597E00BD8267 /* extraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F65A2EB0597E00BD8267 /* extraction.swift */; };
+		25C9F6A72EB0597E00BD8267 /* block.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6432EB0597E00BD8267 /* block.swift */; };
+		25C9F6A82EB0597E00BD8267 /* gif.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6702EB0597E00BD8267 /* gif.swift */; };
+		25C9F6A92EB0597E00BD8267 /* database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6572EB0597E00BD8267 /* database.swift */; };
+		25C9F6AA2EB0597E00BD8267 /* formatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6672EB0597E00BD8267 /* formatter.swift */; };
+		25C9F6AB2EB0597E00BD8267 /* request.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6612EB0597E00BD8267 /* request.swift */; };
+		25C9F6AC2EB0597E00BD8267 /* scalars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6762EB0597E00BD8267 /* scalars.swift */; };
+		25C9F6AD2EB0597E00BD8267 /* experiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F65E2EB0597E00BD8267 /* experiment.swift */; };
+		25C9F6AE2EB0597E00BD8267 /* forms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6472EB0597E00BD8267 /* forms.swift */; };
+		25C9F6AF2EB0597E00BD8267 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 25C9F6742EB0597E00BD8267 /* PrivacyInfo.xcprivacy */; };
+		25C9F6B02EB0597E00BD8267 /* UIView+Yoga.h in Headers */ = {isa = PBXBuildFile; fileRef = 25C9F67A2EB0597E00BD8267 /* UIView+Yoga.h */; };
+		25C9F6B12EB0597E00BD8267 /* YGLayout+Private.h in Headers */ = {isa = PBXBuildFile; fileRef = 25C9F67C2EB0597E00BD8267 /* YGLayout+Private.h */; };
+		25C9F6B22EB0597E00BD8267 /* YGLayout.h in Headers */ = {isa = PBXBuildFile; fileRef = 25C9F67B2EB0597E00BD8267 /* YGLayout.h */; };
+		25C9F6B32EB0597E00BD8267 /* Nubrick.h in Headers */ = {isa = PBXBuildFile; fileRef = 25C9F6732EB0597E00BD8267 /* Nubrick.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		250554A32EA8ACFB005D8A1B /* Nubrick.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Nubrick.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		25C9F6432EB0597E00BD8267 /* block.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = block.swift; sourceTree = "<group>"; };
+		25C9F6442EB0597E00BD8267 /* carousel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = carousel.swift; sourceTree = "<group>"; };
+		25C9F6452EB0597E00BD8267 /* collection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = collection.swift; sourceTree = "<group>"; };
+		25C9F6462EB0597E00BD8267 /* flex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = flex.swift; sourceTree = "<group>"; };
+		25C9F6472EB0597E00BD8267 /* forms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = forms.swift; sourceTree = "<group>"; };
+		25C9F6482EB0597E00BD8267 /* grid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = grid.swift; sourceTree = "<group>"; };
+		25C9F6492EB0597E00BD8267 /* image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = image.swift; sourceTree = "<group>"; };
+		25C9F64A2EB0597E00BD8267 /* modal-component.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "modal-component.swift"; sourceTree = "<group>"; };
+		25C9F64B2EB0597E00BD8267 /* navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = navigation.swift; sourceTree = "<group>"; };
+		25C9F64C2EB0597E00BD8267 /* select.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = select.swift; sourceTree = "<group>"; };
+		25C9F64D2EB0597E00BD8267 /* text.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = text.swift; sourceTree = "<group>"; };
+		25C9F64F2EB0597E00BD8267 /* action-listener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "action-listener.swift"; sourceTree = "<group>"; };
+		25C9F6502EB0597E00BD8267 /* context.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = context.swift; sourceTree = "<group>"; };
+		25C9F6512EB0597E00BD8267 /* embedding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = embedding.swift; sourceTree = "<group>"; };
+		25C9F6522EB0597E00BD8267 /* overlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = overlay.swift; sourceTree = "<group>"; };
+		25C9F6532EB0597E00BD8267 /* page.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = page.swift; sourceTree = "<group>"; };
+		25C9F6542EB0597E00BD8267 /* root.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = root.swift; sourceTree = "<group>"; };
+		25C9F6552EB0597E00BD8267 /* trigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = trigger.swift; sourceTree = "<group>"; };
+		25C9F6572EB0597E00BD8267 /* database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = database.swift; sourceTree = "<group>"; };
+		25C9F6582EB0597E00BD8267 /* helper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = helper.swift; sourceTree = "<group>"; };
+		25C9F65A2EB0597E00BD8267 /* extraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = extraction.swift; sourceTree = "<group>"; };
+		25C9F65C2EB0597E00BD8267 /* component.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = component.swift; sourceTree = "<group>"; };
+		25C9F65D2EB0597E00BD8267 /* cotnainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cotnainer.swift; sourceTree = "<group>"; };
+		25C9F65E2EB0597E00BD8267 /* experiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = experiment.swift; sourceTree = "<group>"; };
+		25C9F65F2EB0597E00BD8267 /* form.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = form.swift; sourceTree = "<group>"; };
+		25C9F6602EB0597E00BD8267 /* network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = network.swift; sourceTree = "<group>"; };
+		25C9F6612EB0597E00BD8267 /* request.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = request.swift; sourceTree = "<group>"; };
+		25C9F6622EB0597E00BD8267 /* track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = track.swift; sourceTree = "<group>"; };
+		25C9F6632EB0597E00BD8267 /* user.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = user.swift; sourceTree = "<group>"; };
+		25C9F6642EB0597E00BD8267 /* variable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = variable.swift; sourceTree = "<group>"; };
+		25C9F6662EB0597E00BD8267 /* compiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = compiler.swift; sourceTree = "<group>"; };
+		25C9F6672EB0597E00BD8267 /* formatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = formatter.swift; sourceTree = "<group>"; };
+		25C9F6692EB0597E00BD8267 /* generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = generated.swift; sourceTree = "<group>"; };
+		25C9F66B2EB0597E00BD8267 /* frequency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = frequency.swift; sourceTree = "<group>"; };
+		25C9F66C2EB0597E00BD8267 /* ios-compat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ios-compat.swift"; sourceTree = "<group>"; };
+		25C9F66D2EB0597E00BD8267 /* utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = utils.swift; sourceTree = "<group>"; };
+		25C9F66F2EB0597E00BD8267 /* blurhash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = blurhash.swift; sourceTree = "<group>"; };
+		25C9F6702EB0597E00BD8267 /* gif.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = gif.swift; sourceTree = "<group>"; };
+		25C9F6722EB0597E00BD8267 /* _for_bridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _for_bridge.swift; sourceTree = "<group>"; };
+		25C9F6732EB0597E00BD8267 /* Nubrick.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Nubrick.h; sourceTree = "<group>"; };
+		25C9F6742EB0597E00BD8267 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		25C9F6752EB0597E00BD8267 /* remote-config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "remote-config.swift"; sourceTree = "<group>"; };
+		25C9F6762EB0597E00BD8267 /* scalars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = scalars.swift; sourceTree = "<group>"; };
+		25C9F6772EB0597E00BD8267 /* sdk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sdk.swift; sourceTree = "<group>"; };
+		25C9F6792EB0597E00BD8267 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
+		25C9F67A2EB0597E00BD8267 /* UIView+Yoga.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "UIView+Yoga.h"; sourceTree = "<group>"; };
+		25C9F67B2EB0597E00BD8267 /* YGLayout.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = YGLayout.h; sourceTree = "<group>"; };
+		25C9F67C2EB0597E00BD8267 /* YGLayout+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "YGLayout+Private.h"; sourceTree = "<group>"; };
+		25C9F67F2EB0597E00BD8267 /* UIView+Yoga.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "UIView+Yoga.mm"; sourceTree = "<group>"; };
+		25C9F6802EB0597E00BD8267 /* YGLayout.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = YGLayout.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2505566D2EAB61BB005D8A1B /* Exceptions for "Sources" folder in "Nubrick" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Nubrick/_for_bridge.swift,
-				"Nubrick/Component/action-listener.swift",
-				Nubrick/Component/context.swift,
-				Nubrick/Component/embedding.swift,
-				Nubrick/Component/overlay.swift,
-				Nubrick/Component/page.swift,
-				Nubrick/Component/renderer/block.swift,
-				Nubrick/Component/renderer/carousel.swift,
-				Nubrick/Component/renderer/collection.swift,
-				Nubrick/Component/renderer/flex.swift,
-				Nubrick/Component/renderer/forms.swift,
-				Nubrick/Component/renderer/grid.swift,
-				Nubrick/Component/renderer/image.swift,
-				"Nubrick/Component/renderer/modal-component.swift",
-				Nubrick/Component/renderer/navigation.swift,
-				Nubrick/Component/renderer/select.swift,
-				Nubrick/Component/renderer/text.swift,
-				Nubrick/Component/root.swift,
-				Nubrick/Component/trigger.swift,
-				Nubrick/Data/component.swift,
-				Nubrick/Data/cotnainer.swift,
-				Nubrick/Data/database/database.swift,
-				Nubrick/Data/database/helper.swift,
-				Nubrick/Data/experiment.swift,
-				Nubrick/Data/extraction/extraction.swift,
-				Nubrick/Data/form.swift,
-				Nubrick/Data/network.swift,
-				Nubrick/Data/request.swift,
-				Nubrick/Data/track.swift,
-				Nubrick/Data/user.swift,
-				Nubrick/Data/variable.swift,
-				Nubrick/Interpolation/compiler.swift,
-				Nubrick/Interpolation/formatter.swift,
-				Nubrick/Nubrick.h,
-				Nubrick/PrivacyInfo.xcprivacy,
-				"Nubrick/remote-config.swift",
-				Nubrick/scalars.swift,
-				Nubrick/Schema/generated.swift,
-				Nubrick/sdk.swift,
-				Nubrick/Util/frequency.swift,
-				"Nubrick/Util/ios-compat.swift",
-				Nubrick/Util/utils.swift,
-				Nubrick/vendor/blurhash.swift,
-				Nubrick/vendor/gif.swift,
-				"YogaKit/include/YogaKit/UIView+Yoga.h",
-				YogaKit/include/YogaKit/YGLayout.h,
-				"YogaKit/include/YogaKit/YGLayout+Private.h",
-				"YogaKit/UIView+Yoga.mm",
-				YogaKit/YGLayout.mm,
-			);
-			target = 250554A22EA8ACFB005D8A1B /* Nubrick */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		250555DF2EAB61AB005D8A1B /* Sources */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				2505566D2EAB61BB005D8A1B /* Exceptions for "Sources" folder in "Nubrick" target */,
-			);
-			path = Sources;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		250554A02EA8ACFB005D8A1B /* Frameworks */ = {
@@ -98,7 +128,7 @@
 		250554992EA8ACFB005D8A1B = {
 			isa = PBXGroup;
 			children = (
-				250555DF2EAB61AB005D8A1B /* Sources */,
+				25C9F6822EB0597E00BD8267 /* Sources */,
 				250554A42EA8ACFB005D8A1B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -111,6 +141,168 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		25C9F64E2EB0597E00BD8267 /* renderer */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F6432EB0597E00BD8267 /* block.swift */,
+				25C9F6442EB0597E00BD8267 /* carousel.swift */,
+				25C9F6452EB0597E00BD8267 /* collection.swift */,
+				25C9F6462EB0597E00BD8267 /* flex.swift */,
+				25C9F6472EB0597E00BD8267 /* forms.swift */,
+				25C9F6482EB0597E00BD8267 /* grid.swift */,
+				25C9F6492EB0597E00BD8267 /* image.swift */,
+				25C9F64A2EB0597E00BD8267 /* modal-component.swift */,
+				25C9F64B2EB0597E00BD8267 /* navigation.swift */,
+				25C9F64C2EB0597E00BD8267 /* select.swift */,
+				25C9F64D2EB0597E00BD8267 /* text.swift */,
+			);
+			path = renderer;
+			sourceTree = "<group>";
+		};
+		25C9F6562EB0597E00BD8267 /* Component */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F64E2EB0597E00BD8267 /* renderer */,
+				25C9F64F2EB0597E00BD8267 /* action-listener.swift */,
+				25C9F6502EB0597E00BD8267 /* context.swift */,
+				25C9F6512EB0597E00BD8267 /* embedding.swift */,
+				25C9F6522EB0597E00BD8267 /* overlay.swift */,
+				25C9F6532EB0597E00BD8267 /* page.swift */,
+				25C9F6542EB0597E00BD8267 /* root.swift */,
+				25C9F6552EB0597E00BD8267 /* trigger.swift */,
+			);
+			path = Component;
+			sourceTree = "<group>";
+		};
+		25C9F6592EB0597E00BD8267 /* database */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F6572EB0597E00BD8267 /* database.swift */,
+				25C9F6582EB0597E00BD8267 /* helper.swift */,
+			);
+			path = database;
+			sourceTree = "<group>";
+		};
+		25C9F65B2EB0597E00BD8267 /* extraction */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F65A2EB0597E00BD8267 /* extraction.swift */,
+			);
+			path = extraction;
+			sourceTree = "<group>";
+		};
+		25C9F6652EB0597E00BD8267 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F6592EB0597E00BD8267 /* database */,
+				25C9F65B2EB0597E00BD8267 /* extraction */,
+				25C9F65C2EB0597E00BD8267 /* component.swift */,
+				25C9F65D2EB0597E00BD8267 /* cotnainer.swift */,
+				25C9F65E2EB0597E00BD8267 /* experiment.swift */,
+				25C9F65F2EB0597E00BD8267 /* form.swift */,
+				25C9F6602EB0597E00BD8267 /* network.swift */,
+				25C9F6612EB0597E00BD8267 /* request.swift */,
+				25C9F6622EB0597E00BD8267 /* track.swift */,
+				25C9F6632EB0597E00BD8267 /* user.swift */,
+				25C9F6642EB0597E00BD8267 /* variable.swift */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		25C9F6682EB0597E00BD8267 /* Interpolation */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F6662EB0597E00BD8267 /* compiler.swift */,
+				25C9F6672EB0597E00BD8267 /* formatter.swift */,
+			);
+			path = Interpolation;
+			sourceTree = "<group>";
+		};
+		25C9F66A2EB0597E00BD8267 /* Schema */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F6692EB0597E00BD8267 /* generated.swift */,
+			);
+			path = Schema;
+			sourceTree = "<group>";
+		};
+		25C9F66E2EB0597E00BD8267 /* Util */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F66B2EB0597E00BD8267 /* frequency.swift */,
+				25C9F66C2EB0597E00BD8267 /* ios-compat.swift */,
+				25C9F66D2EB0597E00BD8267 /* utils.swift */,
+			);
+			path = Util;
+			sourceTree = "<group>";
+		};
+		25C9F6712EB0597E00BD8267 /* vendor */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F66F2EB0597E00BD8267 /* blurhash.swift */,
+				25C9F6702EB0597E00BD8267 /* gif.swift */,
+			);
+			path = vendor;
+			sourceTree = "<group>";
+		};
+		25C9F6782EB0597E00BD8267 /* Nubrick */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F6562EB0597E00BD8267 /* Component */,
+				25C9F6652EB0597E00BD8267 /* Data */,
+				25C9F6682EB0597E00BD8267 /* Interpolation */,
+				25C9F66A2EB0597E00BD8267 /* Schema */,
+				25C9F66E2EB0597E00BD8267 /* Util */,
+				25C9F6712EB0597E00BD8267 /* vendor */,
+				25C9F6722EB0597E00BD8267 /* _for_bridge.swift */,
+				25C9F6732EB0597E00BD8267 /* Nubrick.h */,
+				25C9F6742EB0597E00BD8267 /* PrivacyInfo.xcprivacy */,
+				25C9F6752EB0597E00BD8267 /* remote-config.swift */,
+				25C9F6762EB0597E00BD8267 /* scalars.swift */,
+				25C9F6772EB0597E00BD8267 /* sdk.swift */,
+			);
+			path = Nubrick;
+			sourceTree = "<group>";
+		};
+		25C9F67D2EB0597E00BD8267 /* YogaKit */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F6792EB0597E00BD8267 /* module.modulemap */,
+				25C9F67A2EB0597E00BD8267 /* UIView+Yoga.h */,
+				25C9F67B2EB0597E00BD8267 /* YGLayout.h */,
+				25C9F67C2EB0597E00BD8267 /* YGLayout+Private.h */,
+			);
+			path = YogaKit;
+			sourceTree = "<group>";
+		};
+		25C9F67E2EB0597E00BD8267 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F67D2EB0597E00BD8267 /* YogaKit */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		25C9F6812EB0597E00BD8267 /* YogaKit */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F67E2EB0597E00BD8267 /* include */,
+				25C9F67F2EB0597E00BD8267 /* UIView+Yoga.mm */,
+				25C9F6802EB0597E00BD8267 /* YGLayout.mm */,
+			);
+			path = YogaKit;
+			sourceTree = "<group>";
+		};
+		25C9F6822EB0597E00BD8267 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				25C9F6782EB0597E00BD8267 /* Nubrick */,
+				25C9F6812EB0597E00BD8267 /* YogaKit */,
+			);
+			name = Sources;
+			path = ../Sources;
+			sourceTree = SOURCE_ROOT;
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -118,6 +310,10 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				25C9F6B02EB0597E00BD8267 /* UIView+Yoga.h in Headers */,
+				25C9F6B12EB0597E00BD8267 /* YGLayout+Private.h in Headers */,
+				25C9F6B22EB0597E00BD8267 /* YGLayout.h in Headers */,
+				25C9F6B32EB0597E00BD8267 /* Nubrick.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -153,7 +349,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					250554A22EA8ACFB005D8A1B = {
 						CreatedOnToolsVersion = 16.4;
@@ -187,6 +383,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				25C9F6AF2EB0597E00BD8267 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -197,6 +394,50 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				25C9F6832EB0597E00BD8267 /* collection.swift in Sources */,
+				25C9F6842EB0597E00BD8267 /* _for_bridge.swift in Sources */,
+				25C9F6852EB0597E00BD8267 /* generated.swift in Sources */,
+				25C9F6862EB0597E00BD8267 /* compiler.swift in Sources */,
+				25C9F6872EB0597E00BD8267 /* ios-compat.swift in Sources */,
+				25C9F6882EB0597E00BD8267 /* image.swift in Sources */,
+				25C9F6892EB0597E00BD8267 /* form.swift in Sources */,
+				25C9F68A2EB0597E00BD8267 /* action-listener.swift in Sources */,
+				25C9F68B2EB0597E00BD8267 /* root.swift in Sources */,
+				25C9F68C2EB0597E00BD8267 /* frequency.swift in Sources */,
+				25C9F68D2EB0597E00BD8267 /* grid.swift in Sources */,
+				25C9F68E2EB0597E00BD8267 /* track.swift in Sources */,
+				25C9F68F2EB0597E00BD8267 /* modal-component.swift in Sources */,
+				25C9F6902EB0597E00BD8267 /* component.swift in Sources */,
+				25C9F6912EB0597E00BD8267 /* utils.swift in Sources */,
+				25C9F6922EB0597E00BD8267 /* remote-config.swift in Sources */,
+				25C9F6932EB0597E00BD8267 /* trigger.swift in Sources */,
+				25C9F6942EB0597E00BD8267 /* select.swift in Sources */,
+				25C9F6952EB0597E00BD8267 /* overlay.swift in Sources */,
+				25C9F6962EB0597E00BD8267 /* embedding.swift in Sources */,
+				25C9F6972EB0597E00BD8267 /* text.swift in Sources */,
+				25C9F6982EB0597E00BD8267 /* blurhash.swift in Sources */,
+				25C9F6992EB0597E00BD8267 /* navigation.swift in Sources */,
+				25C9F69A2EB0597E00BD8267 /* variable.swift in Sources */,
+				25C9F69B2EB0597E00BD8267 /* context.swift in Sources */,
+				25C9F69C2EB0597E00BD8267 /* cotnainer.swift in Sources */,
+				25C9F69D2EB0597E00BD8267 /* user.swift in Sources */,
+				25C9F69E2EB0597E00BD8267 /* helper.swift in Sources */,
+				25C9F69F2EB0597E00BD8267 /* page.swift in Sources */,
+				25C9F6A02EB0597E00BD8267 /* YGLayout.mm in Sources */,
+				25C9F6A12EB0597E00BD8267 /* network.swift in Sources */,
+				25C9F6A22EB0597E00BD8267 /* carousel.swift in Sources */,
+				25C9F6A32EB0597E00BD8267 /* UIView+Yoga.mm in Sources */,
+				25C9F6A42EB0597E00BD8267 /* sdk.swift in Sources */,
+				25C9F6A52EB0597E00BD8267 /* flex.swift in Sources */,
+				25C9F6A62EB0597E00BD8267 /* extraction.swift in Sources */,
+				25C9F6A72EB0597E00BD8267 /* block.swift in Sources */,
+				25C9F6A82EB0597E00BD8267 /* gif.swift in Sources */,
+				25C9F6A92EB0597E00BD8267 /* database.swift in Sources */,
+				25C9F6AA2EB0597E00BD8267 /* formatter.swift in Sources */,
+				25C9F6AB2EB0597E00BD8267 /* request.swift in Sources */,
+				25C9F6AC2EB0597E00BD8267 /* scalars.swift in Sources */,
+				25C9F6AD2EB0597E00BD8267 /* experiment.swift in Sources */,
+				25C9F6AE2EB0597E00BD8267 /* forms.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -211,6 +452,7 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_DEBUG_INFORMATION_LEVEL = "line-tables-only";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -238,6 +480,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = M3LJ3SDTT4;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -261,6 +504,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -276,6 +520,7 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_DEBUG_INFORMATION_LEVEL = "line-tables-only";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -303,6 +548,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = M3LJ3SDTT4;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -319,6 +565,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
@@ -330,15 +577,17 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = M3LJ3SDTT4;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_MODULE_VERIFIER = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/Sources/YogaKit/include/YogaKit/**";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../Sources/YogaKit/include/YogaKit/**";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
@@ -354,6 +603,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				OTHER_SWIFT_FLAGS = "\"$(inherited)\" -gline-tables-only";
 				PRODUCT_BUNDLE_IDENTIFIER = com.plaid.nubrick;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -361,7 +611,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Sources/YogaKit/include/YogaKit/**";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../Sources/YogaKit/include/YogaKit";
 				SWIFT_INSTALL_MODULE = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
@@ -376,15 +626,17 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = M3LJ3SDTT4;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_MODULE_VERIFIER = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/Sources/YogaKit/include/YogaKit/**";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../Sources/YogaKit/include/YogaKit/**";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
@@ -400,6 +652,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				OTHER_SWIFT_FLAGS = "\"$(inherited)\" -gline-tables-only";
 				PRODUCT_BUNDLE_IDENTIFIER = com.plaid.nubrick;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -407,7 +660,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Sources/YogaKit/include/YogaKit/**";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../Sources/YogaKit/include/YogaKit";
 				SWIFT_INSTALL_MODULE = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";

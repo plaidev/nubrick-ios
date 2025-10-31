@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		250555512EAB4EA9005D8A1B /* nubrick in Frameworks */ = {isa = PBXBuildFile; productRef = 250555502EAB4EA9005D8A1B /* nubrick */; };
+		25C9F5CC2EAF612F00BD8267 /* Nubrick in Frameworks */ = {isa = PBXBuildFile; productRef = 25C9F5CB2EAF612F00BD8267 /* Nubrick */; };
 		C13633C22AEB777800B9F437 /* ExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633C12AEB777800B9F437 /* ExampleApp.swift */; };
 		C13633C42AEB777800B9F437 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633C32AEB777800B9F437 /* ContentView.swift */; };
 		C13633C62AEB777900B9F437 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C13633C52AEB777900B9F437 /* Assets.xcassets */; };
@@ -70,7 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				250555512EAB4EA9005D8A1B /* nubrick in Frameworks */,
+				25C9F5CC2EAF612F00BD8267 /* Nubrick in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -645,9 +645,9 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		250555502EAB4EA9005D8A1B /* nubrick */ = {
+		25C9F5CB2EAF612F00BD8267 /* Nubrick */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = nubrick;
+			productName = Nubrick;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

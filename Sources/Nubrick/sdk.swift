@@ -45,17 +45,13 @@ class AppMetrics: NSObject, MXMetricManagerSubscriber {
 
 
 // for development
-public var nubrickTrackUrl = "http://172.16.11.240:8070/track/v1"
+public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nubrickCdnUrl = "https://cdn.nativebrik.com"
 public let nubrickSdkVersion = "0.12.3"
 
-public let isNubrickAvailable: Bool = {
-    if #available(iOS 15.0, *) {
-        return true
-    } else {
-        return false
-    }
-}()
+public var isNubrickAvailable: Bool {
+    if #available(iOS 15.0, *) { true } else { false }
+}
 
 private func openLink(_ event: ComponentEvent) -> Void {
     guard let link = event.deepLink,
@@ -84,6 +80,7 @@ final class Config {
     var cdnUrl: String = nubrickCdnUrl
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
     var cachePolicy: NativebrikCachePolicy = NativebrikCachePolicy()
+    var trackCrashes : Boolean = true
 
     init() {
         self.projectId = ""
@@ -180,19 +177,13 @@ public final class NubrickClient: ObservableObject {
         self.experiment = NubrickExperiment(container: self.container, overlay: self.overlayVC)
 
         // Initialize AppMetrics only for iOS 14+
-        if #available(iOS 14.0, *) {
+        if #available(iOS 14.0, *), config.trackCrashes {
             self.appMetrics = AppMetrics(self.experiment.report)
         }
 
 
         config.addEventListener(createDispatchNubrickEvent(self))
-    }
-    
-    public func simulateCrash() {
-        // let p = UnsafeMutablePointer<Int>(bitPattern: 0)!
-        // _ = p.pointee      // <-- expect this exact line in atos/Sentry
-        fatalError("unreachable") // never reached; just silences Noreturn warnings
-    }
+    }    
 }
 
 public class NubrickExperiment {

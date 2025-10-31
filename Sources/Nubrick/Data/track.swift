@@ -95,6 +95,12 @@ struct TrackEvent: Encodable {
     var name: String?
     var timestamp: DateTime
     var exceptions: [ExceptionRecord]?
+    var threads: [ThreadRecord]?
+}
+
+struct ThreadRecord: Encodable {
+    var isMain: Bool?
+    var stacktrace: [Frame]?
 }
 
 struct TrackEventMeta: Encodable {
@@ -203,12 +209,16 @@ class TrackRespositoryImpl: TrackRepository2 {
     }
     
     private func sendAndFlush() async throws {
+        // Acquire lock to safely read and clear buffer
+        self.queueLock.lock()
         if self.buffer.count == 0 {
+            self.queueLock.unlock()
             return
         }
         let events = self.buffer
         self.buffer = []
-        
+        self.queueLock.unlock()
+
         let appId = Bundle.main.bundleIdentifier ?? ""
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         let cfBundleVersion = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
@@ -227,7 +237,7 @@ class TrackRespositoryImpl: TrackRepository2 {
             events: events,
             meta: trackMeta
         )
-        
+
         do {
             let url = URL(string: config.trackUrl)!
             let jsonData = try JSONEncoder().encode(trackRequest)
@@ -236,11 +246,17 @@ class TrackRespositoryImpl: TrackRepository2 {
             request.httpBody = jsonData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let _ = try await nativebrikSession.data(for: request)
-            
+
+            // Acquire lock before modifying timer
+            self.queueLock.lock()
             self.timer?.invalidate()
             self.timer = nil
+            self.queueLock.unlock()
         } catch {
+            // Acquire lock before restoring buffer
+            self.queueLock.lock()
             self.buffer.append(contentsOf: events)
+            self.queueLock.unlock()
         }
     }
     
@@ -251,37 +267,59 @@ class TrackRespositoryImpl: TrackRepository2 {
             from: crash.callStackTree.jsonRepresentation()
         )
         {
-            var frames = [Frame]()
+            var mainThreadFrames = [Frame]()
+            var threads = [ThreadRecord]()
 
-            // Process all call stacks, not just threadAttributed ones
+            // Process all call stacks
             if let allCallStacks = callStackTree.callStacks {
                 for currentCallStack in allCallStacks {
+                    var threadFrames = [Frame]()
                     var rawFramesToProcess = currentCallStack.callStackRootFrames ?? []
 
                     while !rawFramesToProcess.isEmpty {
                         let rawFrame = rawFramesToProcess.removeFirst()
-                        // if rawFrame.binaryName?.contains("Nubrick") ?? false {
-                        frames.append(Frame(
+                        let frame = Frame(
                             imageAddr: hex(rawFrame.offsetIntoBinaryTextSegment ?? 0),
                             instructionAddr: hex(rawFrame.address ?? 0),
                             binaryUUID: rawFrame.binaryUUID,
                             binaryName: rawFrame.binaryName
-                        ))
-                        // }
+                        )
+                        threadFrames.append(frame)
 
                         if let subFrames = rawFrame.subFrames {
                             rawFramesToProcess.insert(contentsOf: subFrames, at: 0)
                         }
                     }
+
+                    // Create a ThreadRecord for each call stack
+                    let isMainThread = currentCallStack.threadAttributed ?? false
+                    threads.append(ThreadRecord(
+                        isMain: isMainThread,
+                        stacktrace: threadFrames
+                    ))
+
+                    // Keep main thread frames for exception record
+                    if isMainThread {
+                        mainThreadFrames = threadFrames
+                    }
                 }
             }
-            
+
             let exceptionRecord = ExceptionRecord(
                 type: exceptionTypeString(crash.exceptionType),
                 message: crash.terminationReason,
-                callStacks: frames
+                callStacks: mainThreadFrames
             )
-            let causedByNativebrik = !(exceptionRecord.callStacks?.isEmpty ?? true)
+
+            // Check if crash is caused by Nubrick (at least one frame contains "Nubrick" in binaryName)
+            let causedByNativebrik = threads.contains { thread in
+                thread.stacktrace?.contains { frame in
+                    frame.binaryName?.contains("Nubrick") ?? false
+                } ?? false
+            }
+
+            // Acquire lock before modifying buffer
+            self.queueLock.lock()
             self.buffer.append(TrackEvent(
                 typename: .Event,
                 name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
@@ -296,10 +334,12 @@ class TrackRespositoryImpl: TrackRepository2 {
                 self.buffer.append(TrackEvent(
                     typename: .Crash,
                     timestamp: formatToISO8601(getCurrentDate()),
-                    exceptions: [exceptionRecord]
+                    exceptions: [exceptionRecord],
+                    threads: threads
                 ))
             }
-        
+            self.queueLock.unlock()
+
             Task.detached(priority: .utility) {
                 try await self.sendAndFlush()
             }
