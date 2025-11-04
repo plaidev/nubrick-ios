@@ -80,7 +80,7 @@ final class Config {
     var cdnUrl: String = nubrickCdnUrl
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
     var cachePolicy: NativebrikCachePolicy = NativebrikCachePolicy()
-    var trackCrashes : Boolean = true
+    var trackCrashes : Bool = true
 
     init() {
         self.projectId = ""

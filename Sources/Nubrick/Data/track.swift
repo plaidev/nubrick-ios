@@ -183,6 +183,8 @@ class TrackRespositoryImpl: TrackRepository2 {
     
     private func pushToQueue(_ event: TrackEvent) {
         self.queueLock.lock()
+        defer { self.queueLock.unlock() }
+
         if self.timer == nil {
             // here, use async not sync. main.sync will break the app.
             DispatchQueue.main.async {
@@ -194,7 +196,7 @@ class TrackRespositoryImpl: TrackRepository2 {
                 })
             }
         }
-        
+
         if self.buffer.count >= self.maxBatchSize {
             Task(priority: .low) {
                 try await self.sendAndFlush()
@@ -204,20 +206,20 @@ class TrackRespositoryImpl: TrackRepository2 {
         if self.buffer.count >= self.maxQueueSize {
             self.buffer.removeFirst(self.maxQueueSize - self.buffer.count)
         }
-        
-        self.queueLock.unlock()
     }
     
     private func sendAndFlush() async throws {
         // Acquire lock to safely read and clear buffer
-        self.queueLock.lock()
-        if self.buffer.count == 0 {
-            self.queueLock.unlock()
-            return
+        let events: [TrackEvent]
+        do {
+            self.queueLock.lock()
+            defer { self.queueLock.unlock() }
+
+            guard self.buffer.count > 0 else { return }
+
+            events = self.buffer
+            self.buffer = []
         }
-        let events = self.buffer
-        self.buffer = []
-        self.queueLock.unlock()
 
         let appId = Bundle.main.bundleIdentifier ?? ""
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
@@ -249,14 +251,14 @@ class TrackRespositoryImpl: TrackRepository2 {
 
             // Acquire lock before modifying timer
             self.queueLock.lock()
+            defer { self.queueLock.unlock() }
             self.timer?.invalidate()
             self.timer = nil
-            self.queueLock.unlock()
         } catch {
             // Acquire lock before restoring buffer
             self.queueLock.lock()
+            defer { self.queueLock.unlock() }
             self.buffer.append(contentsOf: events)
-            self.queueLock.unlock()
         }
     }
     
@@ -320,6 +322,8 @@ class TrackRespositoryImpl: TrackRepository2 {
 
             // Acquire lock before modifying buffer
             self.queueLock.lock()
+            defer { self.queueLock.unlock() }
+
             self.buffer.append(TrackEvent(
                 typename: .Event,
                 name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
@@ -338,7 +342,6 @@ class TrackRespositoryImpl: TrackRepository2 {
                     threads: threads
                 ))
             }
-            self.queueLock.unlock()
 
             Task.detached(priority: .utility) {
                 try await self.sendAndFlush()
