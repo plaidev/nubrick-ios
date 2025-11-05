@@ -9,9 +9,10 @@ import Foundation
 import SwiftUI
 import UIKit
 import YogaKit
+import SafariServices
 
 // For InAppMessage Experiment.
-class ModalRootViewController: UIViewController {
+class ModalRootViewController: UIViewController, SFSafariViewControllerDelegate {
     private let pages: [UIPageBlock]!
     private let modalViewController: ModalComponentViewController?
     private var event: UIBlockEventManager? = nil
@@ -76,7 +77,11 @@ class ModalRootViewController: UIViewController {
 
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
-            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl, dismissOnClose: page?.data?.dismissOnClose)
+            if page?.data?.dismissOnClose == true {
+                self.modalViewController?.presentWebview(url: page?.data?.webviewUrl, delegate: self)
+            } else {
+                self.modalViewController?.presentWebview(url: page?.data?.webviewUrl, delegate: nil)
+            }
             return
         }
 
@@ -93,13 +98,19 @@ class ModalRootViewController: UIViewController {
             self.modalViewController?.presentNavigation(
                 pageView: pageView,
                 modalPresentationStyle: page?.data?.modalPresentationStyle,
-                modalScreenSize: page?.data?.modalScreenSize
+                modalScreenSize: page?.data?.modalScreenSize,
+                onDismiss: nil,
             )
             break
         default:
             self.modalViewController?.dismissModal()
             break
         }
+    }
+
+    // for webview modal
+    func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+        self.modalViewController?.dismissModal()
     }
 }
 
@@ -122,7 +133,7 @@ struct RootViewRepresentable: UIViewRepresentable {
     }
 }
 
-class RootView: UIView {
+class RootView: UIView, SFSafariViewControllerDelegate {
     private let id: String!
     private let pages: [UIPageBlock]!
     // use var instead of let, because to refer weak self.
@@ -216,15 +227,17 @@ class RootView: UIView {
 
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
-            self.currentPageView = nil
-            self.modalViewController?.dismissModal()
-            self.onDismiss()
+            self.dismiss()
             return
         }
 
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
-            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl, dismissOnClose: page?.data?.dismissOnClose)
+            if page?.data?.dismissOnClose == true {
+                self.modalViewController?.presentWebview(url: page?.data?.webviewUrl, delegate: self)
+            } else {
+                self.modalViewController?.presentWebview(url: page?.data?.webviewUrl, delegate: nil)
+            }
             return
         }
 
@@ -249,7 +262,10 @@ class RootView: UIView {
             self.modalViewController?.presentNavigation(
                 pageView: pageView,
                 modalPresentationStyle: page?.data?.modalPresentationStyle,
-                modalScreenSize: page?.data?.modalScreenSize
+                modalScreenSize: page?.data?.modalScreenSize,
+                onDismiss: { [weak self] in
+                    self?.dismiss()
+                }
             )
             break
         default:
@@ -268,6 +284,17 @@ class RootView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         self.yoga.applyLayout(preservingOrigin: true)
+    }
+
+    func dismiss() {
+        self.currentPageView = nil
+        self.modalViewController?.dismissModal()
+        self.onDismiss()
+    }
+
+    // for webview modal
+    func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+        self.dismiss()
     }
 }
 

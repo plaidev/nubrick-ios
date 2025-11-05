@@ -15,7 +15,7 @@ import SafariServices
 class ModalComponentViewController: UIViewController, SFSafariViewControllerDelegate {
     private var currentModal: NavigationViewControlller? = nil
 
-    func presentWebview(url: String?, dismissOnClose: Bool?) {
+    func presentWebview(url: String?, delegate: SFSafariViewControllerDelegate?) {
         guard let url = url else {
             return
         }
@@ -23,8 +23,8 @@ class ModalComponentViewController: UIViewController, SFSafariViewControllerDele
             return
         }
         let safariVC = SFSafariViewController(url: urlObj)
-        if dismissOnClose == true {
-            safariVC.delegate = self
+        if let delegate = delegate {
+            safariVC.delegate = delegate
         }
         if let modal = self.currentModal {
             if !isPresenting(presented: self.presentedViewController, vc: modal) {
@@ -43,7 +43,8 @@ class ModalComponentViewController: UIViewController, SFSafariViewControllerDele
     func presentNavigation(
         pageView: PageView,
         modalPresentationStyle: ModalPresentationStyle?,
-        modalScreenSize: ModalScreenSize?
+        modalScreenSize: ModalScreenSize?,
+        onDismiss: (() -> Void)? = nil
     ) {
         if let modal = self.currentModal {
             if !isPresenting(presented: self.presentedViewController, vc: modal) {
@@ -52,7 +53,9 @@ class ModalComponentViewController: UIViewController, SFSafariViewControllerDele
             }
         }
 
-        let pageController = ModalPageViewController(pageView: pageView)
+        let pageController = ModalPageViewController(pageView: pageView, onDismiss: {
+            onDismiss?()
+        })
 
         if let modal = self.currentModal {
             modal.pushViewController(pageController, animated: true)
@@ -87,9 +90,5 @@ class ModalComponentViewController: UIViewController, SFSafariViewControllerDele
              modal.dismiss(animated: true)
          }
          self.currentModal = nil
-    }
-
-    func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
-        self.dismissModal()
     }
 }

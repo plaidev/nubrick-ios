@@ -13,13 +13,14 @@ import YogaKit
 class ModalPageViewController: UIViewController {
     private var isFirstModal = false
     private let pageView: PageView?
+    private var onDismiss: (() -> Void)? = nil
 
     required init?(coder: NSCoder) {
         self.pageView = nil
         super.init(coder: coder)
     }
 
-    init(pageView: PageView) {
+    init(pageView: PageView, onDismiss: (() -> Void)?) {
         self.pageView = pageView
         super.init(nibName: nil, bundle: nil)
         if pageView.page?.data?.kind == PageKind.MODAL {
@@ -91,6 +92,7 @@ class ModalPageViewController: UIViewController {
     @objc func onClickBack() {
         if self.pageView?.page?.data?.dismissOnClose == true {
             self.navigationController?.dismiss(animated: true)
+            self.onDismiss?()
         } else {
             self.navigationController?.popViewController(animated: true)
         }
