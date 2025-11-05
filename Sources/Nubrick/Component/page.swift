@@ -89,7 +89,11 @@ class ModalPageViewController: UIViewController {
     }
 
     @objc func onClickBack() {
-        self.navigationController?.popViewController(animated: true)
+        if self.pageView?.page?.data?.dismissOnClose == true {
+            self.navigationController?.dismiss(animated: true)
+        } else {
+            self.navigationController?.popViewController(animated: true)
+        }
     }
 }
 

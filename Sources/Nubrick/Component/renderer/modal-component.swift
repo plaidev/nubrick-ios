@@ -12,10 +12,10 @@ import YogaKit
 import SafariServices
 
 // vc for navigation view
-class ModalComponentViewController: UIViewController {
+class ModalComponentViewController: UIViewController, SFSafariViewControllerDelegate {
     private var currentModal: NavigationViewControlller? = nil
-    
-    func presentWebview(url: String?) {
+
+    func presentWebview(url: String?, dismissOnClose: Bool?) {
         guard let url = url else {
             return
         }
@@ -23,13 +23,16 @@ class ModalComponentViewController: UIViewController {
             return
         }
         let safariVC = SFSafariViewController(url: urlObj)
+        if dismissOnClose == true {
+            safariVC.delegate = self
+        }
         if let modal = self.currentModal {
             if !isPresenting(presented: self.presentedViewController, vc: modal) {
                 self.currentModal?.dismiss(animated: false)
                 self.currentModal = nil
             }
         }
-        
+
         if let modal = self.currentModal {
             modal.present(safariVC, animated: true)
         } else {
@@ -78,11 +81,15 @@ class ModalComponentViewController: UIViewController {
         let top = findTopPresenting(root)
         top.present(viewController, animated: true)
     }
-    
+
     @objc func dismissModal() {
          if let modal = self.currentModal {
              modal.dismiss(animated: true)
          }
          self.currentModal = nil
+    }
+
+    func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+        self.dismissModal()
     }
 }

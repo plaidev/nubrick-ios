@@ -76,7 +76,7 @@ class ModalRootViewController: UIViewController {
 
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
-            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
+            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl, dismissOnClose: page?.data?.dismissOnClose)
             return
         }
 
@@ -224,7 +224,7 @@ class RootView: UIView {
 
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
-            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
+            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl, dismissOnClose: page?.data?.dismissOnClose)
             return
         }
 
