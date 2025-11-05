@@ -86,31 +86,41 @@ func parseJustifyContent(_ data: JustifyContent?) -> YGJustify {
     }
 }
 
-func parseColor(_ data: Color?) -> UIColor {
+func parseColor(_ data: ColorValue?) -> UIColor {
     if let color = data {
-        return UIColor.init(
-            red: CGFloat(color.red ?? 0), green: CGFloat(color.green ?? 0),
-            blue: CGFloat(color.blue ?? 0), alpha: CGFloat(color.alpha ?? 0))
+        switch color {
+        case .EColor(let color):
+            return UIColor.init(
+                red: CGFloat(color.red ?? 0), green: CGFloat(color.green ?? 0),
+                blue: CGFloat(color.blue ?? 0), alpha: CGFloat(color.alpha ?? 0))
+        default:
+            return UIColor.black
+        }
     } else {
         return UIColor.black
     }
 }
 
-func parseColorToCGColor(_ data: Color?) -> CGColor {
+func parseColorToCGColor(_ data: ColorValue?) -> CGColor {
     guard
         let color = data,
         let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)
     else { return CGColor(gray: 0, alpha: 0) }
+    
+    switch color {
+    case .EColor(let color):
+        let components: [CGFloat] = [
+            CGFloat(clamp(color.red ?? 0.0, min: 0.0, max: 1.0)),
+            CGFloat(clamp(color.green ?? 0.0, min: 0.0, max: 1.0)),
+            CGFloat(clamp(color.blue ?? 0.0, min: 0.0, max: 1.0)),
+            CGFloat(clamp(color.alpha ?? 0.0, min: 0.0, max: 1.0)),
+        ]
 
-    let components: [CGFloat] = [
-        CGFloat(clamp(color.red ?? 0.0, min: 0.0, max: 1.0)),
-        CGFloat(clamp(color.green ?? 0.0, min: 0.0, max: 1.0)),
-        CGFloat(clamp(color.blue ?? 0.0, min: 0.0, max: 1.0)),
-        CGFloat(clamp(color.alpha ?? 0.0, min: 0.0, max: 1.0)),
-    ]
-
-    return CGColor(colorSpace: colorSpace, components: components)
-        ?? CGColor(gray: 0, alpha: 0)
+        return CGColor(colorSpace: colorSpace, components: components)
+            ?? CGColor(gray: 0, alpha: 0)
+    default:
+        return CGColor(gray: 0, alpha: 0)
+    }
 }
 
 func parseFontWeight(_ data: FontWeight?) -> UIFont.Weight {
