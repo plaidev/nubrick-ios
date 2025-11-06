@@ -55,25 +55,7 @@ func configureOnClickGesture(
     let gesture = ClickListener(target: target, action: action)
     gesture.onClick = {
         guard let event = event else { return }
-
-        let variable = context.getVariable()
-        let deepLink = event.deepLink
-        let name = event.name
-        let compiledEvent = UIBlockEventDispatcher(
-            name: (name != nil) ? compile(name ?? "", variable) : nil,
-            destinationPageId: event.destinationPageId,
-            deepLink: (deepLink != nil) ? compile(deepLink ?? "", variable) : nil,
-            payload: event.payload?.map({ prop in
-                return Property(
-                    name: prop.name ?? "",
-                    value: compile(prop.value ?? "", variable),
-                    ptype: prop.ptype ?? PropertyType.STRING
-                )
-            }),
-            httpRequest: event.httpRequest,
-            httpResponseAssertion: event.httpResponseAssertion
-        )
-
+        let compiledEvent = compileEvent(event: event, context: context)
         if event.httpRequest != nil {
             // set loading UI
             target.isUserInteractionEnabled = false
@@ -162,7 +144,7 @@ func getIsDisabled(requiredFields: [String]) -> (([String: Any]) -> Boolean) {
 func configureDisabled(target: UIView, context: UIBlockContext, requiredFields: [String]?) -> FormValueListener? {
     guard let requiredFields = requiredFields, !requiredFields.isEmpty else { return nil }
     let isDisabled = getIsDisabled(requiredFields: requiredFields)
-    
+
     let handleFormValueChange: FormValueListener = { values in
         Task { @MainActor in
             if isDisabled(values) {
@@ -174,11 +156,32 @@ func configureDisabled(target: UIView, context: UIBlockContext, requiredFields: 
             }
         }
     }
-    
+
     // apply the initial state
     let values = context.getFormValues()
     handleFormValueChange(values)
-    
+
     return handleFormValueChange
 }
-    
+
+func compileEvent(event: UIBlockEventDispatcher, context: UIBlockContext?) -> UIBlockEventDispatcher {
+    guard let context = context else { return event }
+
+    let variable = context.getVariable()
+    let deepLink = event.deepLink
+    let name = event.name
+    return UIBlockEventDispatcher(
+        name: (name != nil) ? compile(name ?? "", variable) : nil,
+        destinationPageId: event.destinationPageId,
+        deepLink: (deepLink != nil) ? compile(deepLink ?? "", variable) : nil,
+        payload: event.payload?.map({ prop in
+            return Property(
+                name: prop.name ?? "",
+                value: compile(prop.value ?? "", variable),
+                ptype: prop.ptype ?? PropertyType.STRING
+            )
+        }),
+        httpRequest: event.httpRequest,
+        httpResponseAssertion: event.httpResponseAssertion
+    )
+}
