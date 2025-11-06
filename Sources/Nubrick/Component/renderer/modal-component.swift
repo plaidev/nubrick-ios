@@ -14,8 +14,8 @@ import SafariServices
 // vc for navigation view
 class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
-    
-    func presentWebview(url: String?) {
+
+    func presentWebview(url: String?, backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate?) {
         guard let url = url else {
             return
         }
@@ -23,13 +23,16 @@ class ModalComponentViewController: UIViewController {
             return
         }
         let safariVC = SFSafariViewController(url: urlObj)
+        if let backButtonBehaviorDelegate = backButtonBehaviorDelegate {
+            safariVC.delegate = backButtonBehaviorDelegate
+        }
         if let modal = self.currentModal {
             if !isPresenting(presented: self.presentedViewController, vc: modal) {
                 self.currentModal?.dismiss(animated: false)
                 self.currentModal = nil
             }
         }
-        
+
         if let modal = self.currentModal {
             modal.present(safariVC, animated: true)
         } else {
@@ -40,7 +43,8 @@ class ModalComponentViewController: UIViewController {
     func presentNavigation(
         pageView: PageView,
         modalPresentationStyle: ModalPresentationStyle?,
-        modalScreenSize: ModalScreenSize?
+        modalScreenSize: ModalScreenSize?,
+        backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate?
     ) {
         if let modal = self.currentModal {
             if !isPresenting(presented: self.presentedViewController, vc: modal) {
@@ -50,6 +54,9 @@ class ModalComponentViewController: UIViewController {
         }
 
         let pageController = ModalPageViewController(pageView: pageView)
+        if let backButtonBehaviorDelegate = backButtonBehaviorDelegate {
+            pageController.backButtonBehaviorDelegate = backButtonBehaviorDelegate
+        }
 
         if let modal = self.currentModal {
             modal.pushViewController(pageController, animated: true)
@@ -78,11 +85,31 @@ class ModalComponentViewController: UIViewController {
         let top = findTopPresenting(root)
         top.present(viewController, animated: true)
     }
-    
+
     @objc func dismissModal() {
          if let modal = self.currentModal {
              modal.dismiss(animated: true)
          }
          self.currentModal = nil
+    }
+}
+
+class ModalBackButtonBehaviorDelegate: NSObject, SFSafariViewControllerDelegate {
+    private let event: UIBlockEventDispatcher?
+    private let context: UIBlockContext
+
+    init(event: UIBlockEventDispatcher?, context: UIBlockContext) {
+        self.event = event
+        self.context = context
+    }
+
+    func onBackButtonClick() {
+        guard let event = event else { return }
+        let compiledEvent = compileEvent(event: event, context: context)
+        context.dispatch(event: compiledEvent)
+    }
+
+    func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+        self.onBackButtonClick()
     }
 }

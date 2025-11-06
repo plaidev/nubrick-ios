@@ -76,7 +76,19 @@ class ModalRootViewController: UIViewController {
 
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
-            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
+            let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
+            self.modalViewController?.presentWebview(
+                url: page?.data?.webviewUrl,
+                backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
+                    event: onBackButtonClick,
+                    context: UIBlockContext(
+                        UIBlockContextInit(
+                            container: self.container,
+                            event: self.event,
+                        )
+                    )
+                ) : nil
+            )
             return
         }
 
@@ -90,10 +102,20 @@ class ModalRootViewController: UIViewController {
 
         switch page?.data?.kind {
         case .MODAL:
+            let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
             self.modalViewController?.presentNavigation(
                 pageView: pageView,
                 modalPresentationStyle: page?.data?.modalPresentationStyle,
-                modalScreenSize: page?.data?.modalScreenSize
+                modalScreenSize: page?.data?.modalScreenSize,
+                backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
+                    event: onBackButtonClick,
+                    context: UIBlockContext(
+                        UIBlockContextInit(
+                            container: self.container,
+                            event: self.event,
+                        )
+                    )
+                ) : nil
             )
             break
         default:
@@ -224,7 +246,19 @@ class RootView: UIView {
 
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
-            self.modalViewController?.presentWebview(url: page?.data?.webviewUrl)
+            let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
+            self.modalViewController?.presentWebview(
+                url: page?.data?.webviewUrl,
+                backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
+                    event: onBackButtonClick,
+                    context: UIBlockContext(
+                        UIBlockContextInit(
+                            container: self.container,
+                            event: self.event,
+                        )
+                    )
+                ) : nil
+            )
             return
         }
 
@@ -246,10 +280,20 @@ class RootView: UIView {
 
         switch page?.data?.kind {
         case .MODAL:
+            let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
             self.modalViewController?.presentNavigation(
                 pageView: pageView,
                 modalPresentationStyle: page?.data?.modalPresentationStyle,
-                modalScreenSize: page?.data?.modalScreenSize
+                modalScreenSize: page?.data?.modalScreenSize,
+                backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
+                    event: onBackButtonClick,
+                    context: UIBlockContext(
+                        UIBlockContextInit(
+                            container: self.container,
+                            event: self.event,
+                        )
+                    )
+                ) : nil
             )
             break
         default:
