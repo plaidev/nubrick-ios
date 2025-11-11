@@ -13,6 +13,7 @@ import YogaKit
 class ModalPageViewController: UIViewController {
     private var isFirstModal = false
     private let pageView: PageView?
+    public var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
 
     required init?(coder: NSCoder) {
         self.pageView = nil
@@ -89,7 +90,11 @@ class ModalPageViewController: UIViewController {
     }
 
     @objc func onClickBack() {
-        self.navigationController?.popViewController(animated: true)
+        if let backButtonBehaviorDelegate = self.backButtonBehaviorDelegate {
+            backButtonBehaviorDelegate.onBackButtonClick()
+        } else {
+            self.navigationController?.popViewController(animated: true)
+        }
     }
 }
 
