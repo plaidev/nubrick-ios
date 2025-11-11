@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-@_implementationOnly import YogaKitInternal
+@_implementationOnly import YogaKit
 
 class ImageView: AnimatedUIControl {
     private let image: UIImageView = UIImageView()

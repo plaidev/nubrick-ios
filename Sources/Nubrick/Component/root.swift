@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 import UIKit
-@_implementationOnly import YogaKitInternal
+@_implementationOnly import YogaKit
 
 // For InAppMessage Experiment.
 class ModalRootViewController: UIViewController {

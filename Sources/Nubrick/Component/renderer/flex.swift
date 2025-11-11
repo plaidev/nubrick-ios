@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-@_implementationOnly import YogaKitInternal
+@_implementationOnly import YogaKit
 
 class FlexView: AnimatedUIControl {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()

@@ -8,7 +8,7 @@
 import XCTest
 import ViewInspector
 import SwiftUI
-@testable import Nubrick
+@testable import NubrickLocal
 
 
 final class NubrickClientTests: XCTestCase {

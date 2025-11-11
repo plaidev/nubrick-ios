@@ -19,11 +19,14 @@ let package = Package(
         .package(url: "https://github.com/facebook/yoga.git", .upToNextMinor(from: "3.2.1")),
     ],
     targets: [
-        
+        // Production: Remote binary downloaded by SPM consumers
         .binaryTarget(
             name: "Nubrick",
-            path: "./Nubrick/output/Nubrick.xcframework"
+            url: "https://storage.googleapis.com/cdn.nativebrik.com/sdk/spm/Nubrick/Nubrick.xcframework.zip",
+            checksum: "4fef9b725998e9c59cb49204f8c26e899b28981e9dbccab01965d5dd63737498"
         ),
+
+        // Development: Source target for unit tests (supports @testable import)
         .target(
             name: "NubrickLocal",
             dependencies: ["YogaKit"],
@@ -39,6 +42,8 @@ let package = Package(
             path: "Sources/YogaKit",
             publicHeadersPath: "include/YogaKit"
         ),
+
+        // Unit tests use source target for @testable import
         .testTarget(
             name: "NubrickTests",
             dependencies: ["NubrickLocal", .product(name: "ViewInspector", package: "ViewInspector")]

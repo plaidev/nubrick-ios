@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-@_implementationOnly import YogaKitInternal
+@_implementationOnly import YogaKit
 import TipKit
 
 class TooltipViewController: UIViewController, UIPopoverPresentationControllerDelegate {

@@ -3,7 +3,7 @@
 //  Nubrick
 //
 
-module YogaKitInternal {
+module YogaKit {
     header "UIView+Yoga.h"
 
     export *

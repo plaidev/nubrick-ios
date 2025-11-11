@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:nubrick/Nubrick.xcodeproj">
+      location = "group:Nubrick/Nubrick.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:">
