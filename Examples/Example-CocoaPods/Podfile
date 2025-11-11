@@ -1,0 +1,6 @@
+platform :ios, '13.4'
+
+target 'Example-CocoaPods' do
+  use_frameworks!
+  pod 'Nubrick', :path => '../..'
+end
