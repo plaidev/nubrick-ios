@@ -14,27 +14,8 @@ Pod::Spec.new do |spec|
   spec.platform     = :ios
   spec.ios.deployment_target = "13.4"
 
-  spec.source       = { :git => "https://github.com/plaidev/nubrick-ios.git", :tag => "v#{spec.version}" }
+  spec.source       = { :http => 'https://storage.googleapis.com/cdn.nativebrik.com/sdk/spm/Nubrick/Nubrick.xcframework.zip',
+                        :sha256 => '2d0d5151ca4954d131224b6d909c2df1d112064ec5ddb77cc25da326eee2b9f0' }
 
-  spec.source_files  = "Sources/Nubrick/**/*.{swift,h,m}", "Sources/YogaKit/**/*.{h,m,mm,cpp}"
-  spec.preserve_paths = "Sources/YogaKit/module.modulemap"
-  spec.private_header_files = "Sources/YogaKit/include/YogaKit/**/*.h"
-
-  spec.resource_bundles = {
-    'Nubrick' => ['Sources/Nubrick/PrivacyInfo.xcprivacy']
-  }
-
-  spec.requires_arc = true
-  spec.swift_version = "5.9"
-
-  # Frameworks
-  spec.frameworks = "UIKit", "Foundation", "SwiftUI", "Combine", "ImageIO", "SafariServices"
-  spec.weak_frameworks = "TipKit"
-
-  spec.xcconfig = {
-    'HEADER_SEARCH_PATHS' => '"$(PODS_TARGET_SRCROOT)/Sources/YogaKit/include"',
-    'SWIFT_INCLUDE_PATHS' => '"$(PODS_TARGET_SRCROOT)/Sources/YogaKit"'
-  }
-
-  spec.dependency "Yoga", "~> 3.2.1"
+  spec.vendored_frameworks = "Nubrick.xcframework"
 end

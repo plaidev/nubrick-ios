@@ -1,23 +1,16 @@
 PODS:
-  - Nubrick (0.13.0):
-    - Yoga (~> 3.2.1)
-  - Yoga (3.2.1)
+  - Nubrick (0.13.1)
 
 DEPENDENCIES:
-  - Nubrick (from `../..`)
-
-SPEC REPOS:
-  trunk:
-    - Yoga
+  - Nubrick (from `../../Nubrick.podspec`)
 
 EXTERNAL SOURCES:
   Nubrick:
-    :path: "../.."
+    :podspec: "../../Nubrick.podspec"
 
 SPEC CHECKSUMS:
-  Nubrick: 6f4ac5511b516dcb6ce3fa9e152cb37bcb051d3a
-  Yoga: 636ce73bd247407928a7df089f3bc3675916b3ff
+  Nubrick: 7216ce4b75d0d3d4b8851930dbe6c520871983bc
 
-PODFILE CHECKSUM: 47695b4fda7b927db7c392b0120312eb13604fc0
+PODFILE CHECKSUM: 90a18532631ffe81b9c854a82eed6c209f4eac3b
 
 COCOAPODS: 1.16.2

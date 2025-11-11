@@ -23,7 +23,7 @@ let package = Package(
         .binaryTarget(
             name: "Nubrick",
             url: "https://storage.googleapis.com/cdn.nativebrik.com/sdk/spm/Nubrick/Nubrick.xcframework.zip",
-            checksum: "4fef9b725998e9c59cb49204f8c26e899b28981e9dbccab01965d5dd63737498"
+            checksum: "2d0d5151ca4954d131224b6d909c2df1d112064ec5ddb77cc25da326eee2b9f0"
         ),
 
         // Development: Source target for unit tests (supports @testable import)

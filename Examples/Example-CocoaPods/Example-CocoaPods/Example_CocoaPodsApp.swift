@@ -28,9 +28,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        NSSetUncaughtExceptionHandler { exception in
-            nubrick.experiment.record(exception: exception)
-        }
         return true
     }
 }
