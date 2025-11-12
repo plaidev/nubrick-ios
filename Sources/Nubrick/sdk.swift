@@ -12,7 +12,7 @@ import Combine
 // for development
 public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nubrickCdnUrl = "https://cdn.nativebrik.com"
-public let nubrickSdkVersion = "0.13.2"
+public let nubrickSdkVersion = "0.13.3"
 
 public let isNubrickAvailable: Bool = {
     if #available(iOS 15.0, *) {
