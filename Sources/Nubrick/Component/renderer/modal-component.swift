@@ -14,6 +14,7 @@ import SafariServices
 // vc for navigation view
 class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
+    private var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
 
     func presentWebview(url: String?, backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate?) {
         guard let url = url else {
@@ -24,7 +25,9 @@ class ModalComponentViewController: UIViewController {
         }
         let safariVC = SFSafariViewController(url: urlObj)
         if let backButtonBehaviorDelegate = backButtonBehaviorDelegate {
-            safariVC.delegate = backButtonBehaviorDelegate
+            // keep the instance, because it will be deallocated after the function call.
+            self.backButtonBehaviorDelegate = backButtonBehaviorDelegate
+            safariVC.delegate = self.backButtonBehaviorDelegate
         }
         if let modal = self.currentModal {
             if !isPresenting(presented: self.presentedViewController, vc: modal) {
