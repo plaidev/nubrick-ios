@@ -44,7 +44,7 @@ cd "$OUT_DIR"
 zip -r Nubrick.xcframework.zip Nubrick.xcframework LICENSE
 cd "$ROOT"
 
-sentry-cli debug-files upload --project nativebrik-ios --include-sources  output/Nubrick.xcframework
+sentry-cli debug-files upload --project nubrick-ios --include-sources  output/Nubrick.xcframework
 
 echo "XCFramework created successfully!"
 echo "Distribution zip: $OUT_DIR/Nubrick.xcframework.zip"
