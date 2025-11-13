@@ -23,6 +23,8 @@ concurrency: # to avoid race conditions
 jobs:
   release:
     runs-on: macos-26
+    environment:
+      name: Only Main
     timeout-minutes: 15
 
     env:
@@ -39,8 +41,16 @@ jobs:
       - name: Checkout (full)
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
-          fetch-depth: 0
           ref: ${{ inputs.branch }}
+
+      - name: Validate version format
+        run: |
+          set -euo pipefail
+          if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "ERROR: Version must be in format vX.X.X (e.g., v1.2.3), got: $TAG" >&2
+            exit 1
+          fi
+          echo "Version format valid: $TAG"
 
       - name: Xcode version
         run: |
@@ -108,13 +118,23 @@ jobs:
           set -euo pipefail
           gh release upload "$TAG" "${OUTPUT_DIR}/${ZIP_NAME}" --clobber
 
-      # --- Update Package.swift and Nubrick.podspec with final URL + checksum ---
-      - name: Update Package.swift and Nubrick.podspec
+      # --- Update Package.swift, Nubrick.podspec, and SDK version ---
+      - name: Update Package.swift, Nubrick.podspec, and SDK version
         env:
           URL: "https://github.com/${{ github.repository }}/releases/download/${{ env.TAG }}/${{ env.ZIP_NAME }}"
           SHA: ${{ steps.checksum.outputs.sha }}
+          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
+
+          # Update SDK version in source code
+          VERSION_NUMBER="${VERSION#v}"  # strip leading 'v'
+          perl -i -pe '
+            my $v = $ENV{VERSION_NUMBER};
+            my $found = s/(public let nubrickSdkVersion = ")[^"]*(")/$1$v$2/;
+            END { exit 1 unless $found; }
+            ' Sources/Nubrick/sdk.swift
+          echo "Updated SDK version to $VERSION_NUMBER"
 
           # Update Package.swift
           perl -0777 -i -pe '
@@ -142,20 +162,24 @@ jobs:
 
           # Update Nubrick.podspec
           perl -0777 -i -pe '
-            my($u,$s)=@ENV{qw/ URL SHA/};
-            s/(:http\s*=>\s*")[^"]*(")/$1.$u.$2/se;
-            s/(:sha256\s*=>\s*")[^"]*(")/$1.$s.$2/se;
+            my($u,$s,$v)=@ENV{qw/ URL SHA VERSION_NUMBER/};
+            my $found_version = s/(spec\.version\s*=\s*")[^"]*(")/$1$v$2/s;
+            my $found_http = s/(:http\s*=>\s*")[^"]*(")/$1.$u.$2/se;
+            my $found_sha = s/(:sha256\s*=>\s*")[^"]*(")/$1.$s.$2/se;
+            END { exit 1 unless ($found_version && $found_http && $found_sha); }
             ' Nubrick.podspec
+          echo "Updated Nubrick.podspec: version=$VERSION_NUMBER, URL, and SHA256"
 
+          git add Sources/Nubrick/sdk.swift
           git add Package.swift
           git add Nubrick.podspec
-          git commit -m "Release ${TAG}: update Package.swift and Nubrick.podspec URL + checksum"
+          git commit -m "Release ${TAG}: update version, Package.swift, and Nubrick.podspec"
 
       - name: Validate Package.swift syntax
         run: swift package dump-package > /dev/null
 
-      - name: Show diffs 
-        run: git --no-pager diff -- Package.swift Nubrick.podspec || true
+      - name: Show diffs
+        run: git --no-pager diff HEAD~1 -- Sources/Nubrick/sdk.swift Package.swift Nubrick.podspec || true
 
       - name: Push to ${{ inputs.branch }}
         run: |
@@ -167,6 +191,20 @@ jobs:
         run: |
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
+
+      - name: Verify git tag matches podspec version
+        run: |
+          set -euo pipefail
+            TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+            PODSPEC_VERSION=$(cat ./Nubrick.podspec | grep -E 's\.version\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]')
+            test "$TAG_VERSION" = "$PODSPEC_VERSION"
+  
+      - name: Publish to Cocoapods
+        run: |
+          set -euo pipefail
+          pod trunk push --verbose Nubrick.podspec
+        env:
+            COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
 
       - name: Publish release (attach tag to this commit)
         env:
