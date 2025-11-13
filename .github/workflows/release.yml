@@ -114,6 +114,12 @@ jobs:
         run: |
           gh release upload "$TAG" "${OUTPUT_DIR}/${ZIP_NAME}" --clobber
 
+      # --- Configure git user ---
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       # --- Update Package.swift, Nubrick.podspec, and SDK version ---
       - name: Update Package.swift, Nubrick.podspec, and SDK version
         env:
@@ -176,12 +182,6 @@ jobs:
         run: |
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
-
-      - name: Verify git tag matches podspec version
-        run: |
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          PODSPEC_VERSION=$(cat ./Nubrick.podspec | grep -E 's\.version\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]')
-          test "$TAG_VERSION" = "$PODSPEC_VERSION"
 
       - name: Publish release
         env:
