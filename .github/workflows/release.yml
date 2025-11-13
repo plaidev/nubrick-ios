@@ -91,7 +91,7 @@ jobs:
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             # Release exists — check draft state
-            IS_DRAFT=$(gh release view "$TAG" --json draft --jq '.draft')
+            IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft')
             if [ "$IS_DRAFT" = "true" ]; then
                 echo "Draft release '$TAG' already exists. Proceeding without changes."
             else
@@ -182,20 +182,20 @@ jobs:
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
           PODSPEC_VERSION=$(cat ./Nubrick.podspec | grep -E 's\.version\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]')
           test "$TAG_VERSION" = "$PODSPEC_VERSION"
-  
-      - name: Publish to Cocoapods
-        run: |
-          pod trunk push --verbose Nubrick.podspec
-        env:
-            COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
 
-      - name: Publish release (attach tag to this commit)
+      - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git fetch origin ${{ inputs.branch }}
           TARGET_SHA=$(git rev-parse origin/${{ inputs.branch }})
           gh release edit "$TAG" --draft=false --target "$TARGET_SHA"
+
+      - name: Publish to Cocoapods
+        run: |
+          pod trunk push --verbose Nubrick.podspec
+        env:
+            COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
 
       - name: Verify public URL + checksum
         env:
