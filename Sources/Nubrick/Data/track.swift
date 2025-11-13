@@ -182,44 +182,42 @@ class TrackRespositoryImpl: TrackRepository2 {
     }
     
     private func pushToQueue(_ event: TrackEvent) {
-        self.queueLock.lock()
-        defer { self.queueLock.unlock() }
-
-        if self.timer == nil {
-            // here, use async not sync. main.sync will break the app.
-            DispatchQueue.main.async {
-                self.timer?.invalidate()
-                self.timer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true, block: { _ in
-                    Task(priority: .low) {
-                        try await self.sendAndFlush()
-                    }
-                })
+        self.queueLock.withLock {
+            if self.timer == nil {
+                // here, use async not sync. main.sync will break the app.
+                DispatchQueue.main.async {
+                    self.timer?.invalidate()
+                    self.timer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true, block: { _ in
+                        Task(priority: .low) {
+                            try await self.sendAndFlush()
+                        }
+                    })
+                }
             }
-        }
 
-        if self.buffer.count >= self.maxBatchSize {
-            Task(priority: .low) {
-                try await self.sendAndFlush()
+            if self.buffer.count >= self.maxBatchSize {
+                Task(priority: .low) {
+                    try await self.sendAndFlush()
+                }
             }
-        }
-        self.buffer.append(event)
-        if self.buffer.count >= self.maxQueueSize {
-            self.buffer.removeFirst(self.maxQueueSize - self.buffer.count)
+            self.buffer.append(event)
+            if self.buffer.count >= self.maxQueueSize {
+                self.buffer.removeFirst(self.maxQueueSize - self.buffer.count)
+            }
         }
     }
     
     private func sendAndFlush() async throws {
         // Acquire lock to safely read and clear buffer
-        let events: [TrackEvent]
-        do {
-            self.queueLock.lock()
-            defer { self.queueLock.unlock() }
+        let events: [TrackEvent] = self.queueLock.withLock {
+            guard self.buffer.count > 0 else { return [] }
 
-            guard self.buffer.count > 0 else { return }
-
-            events = self.buffer
+            let events = self.buffer
             self.buffer = []
+            return events
         }
+
+        guard events.count > 0 else { return }
 
         let appId = Bundle.main.bundleIdentifier ?? ""
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
@@ -250,15 +248,15 @@ class TrackRespositoryImpl: TrackRepository2 {
             let _ = try await nativebrikSession.data(for: request)
 
             // Acquire lock before modifying timer
-            self.queueLock.lock()
-            defer { self.queueLock.unlock() }
-            self.timer?.invalidate()
-            self.timer = nil
+            self.queueLock.withLock {
+                self.timer?.invalidate()
+                self.timer = nil
+            }
         } catch {
             // Acquire lock before restoring buffer
-            self.queueLock.lock()
-            defer { self.queueLock.unlock() }
-            self.buffer.append(contentsOf: events)
+            self.queueLock.withLock {
+                self.buffer.append(contentsOf: events)
+            }
         }
     }
     
@@ -323,26 +321,25 @@ class TrackRespositoryImpl: TrackRepository2 {
             }
 
             // Acquire lock before modifying buffer
-            self.queueLock.lock()
-            defer { self.queueLock.unlock() }
-
-            self.buffer.append(TrackEvent(
-                typename: .Event,
-                name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
-                timestamp: formatToISO8601(getCurrentDate())
-            ))
-            if causedByNativebrik {
+            self.queueLock.withLock {
                 self.buffer.append(TrackEvent(
                     typename: .Event,
-                    name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
+                    name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
                     timestamp: formatToISO8601(getCurrentDate())
                 ))
-                self.buffer.append(TrackEvent(
-                    typename: .Crash,
-                    timestamp: formatToISO8601(getCurrentDate()),
-                    exceptions: [exceptionRecord],
-                    threads: threads
-                ))
+                if causedByNativebrik {
+                    self.buffer.append(TrackEvent(
+                        typename: .Event,
+                        name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
+                        timestamp: formatToISO8601(getCurrentDate())
+                    ))
+                    self.buffer.append(TrackEvent(
+                        typename: .Crash,
+                        timestamp: formatToISO8601(getCurrentDate()),
+                        exceptions: [exceptionRecord],
+                        threads: threads
+                    ))
+                }
             }
 
             Task.detached(priority: .utility) {
