@@ -7,12 +7,17 @@ on:
         description: "Version tag (e.g. v1.2.3)"
         required: true
         type: string
+      branch:
+        description: "Branch to release from"
+        required: false
+        type: string
+        default: "main"
 
 permissions:
   contents: write    # needed to push commits/tags and create/edit releases
 
-concurrency:
-  group: release-${{ inputs.version }}
+concurrency: # to avoid race conditions
+  group: release
   cancel-in-progress: false
 
 jobs:
@@ -31,32 +36,11 @@ jobs:
       REPO: ${{ github.repository }}
 
     steps:
-      - name: Checkout repo (full)
-        uses: actions/checkout@v4
+      - name: Checkout (full)
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           fetch-depth: 0
-
-      - name: Validate version (SemVer & > latest tag)
-        run: |
-            set -euo pipefail
-            # 1) Shape: v1.2.3, v1.2.3-beta.1, v1.2.3+build
-            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([\-+][0-9A-Za-z.\-]+)?$ ]] \
-              || { echo "Invalid version: $TAG (use vMAJOR.MINOR.PATCH)"; exit 1; }
-        
-            # 2) Find previous tag (SemVer-like)
-            git fetch --tags --quiet
-            PREV=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1 || true)
-            echo "Previous: ${PREV:-<none>}  Input: $TAG"
-        
-            # If none, accept
-            [[ -z "$PREV" ]] && exit 0
-        
-            # Strip 'v' and compare with version sort
-            P="${PREV#v}"; C="${TAG#v}"
-            [[ "$P" == "$C" ]] && { echo "Tag $TAG already exists"; exit 1; }
-            TOP=$(printf "%s\n%s\n" "$P" "$C" | sort -V | tail -n1)
-            [[ "$TOP" == "$C" ]] || { echo "$TAG must be greater than $PREV"; exit 1; }
-            echo "Version OK."
+          ref: ${{ inputs.branch }}
 
       - name: Xcode version
         run: |
@@ -124,7 +108,7 @@ jobs:
           set -euo pipefail
           gh release upload "$TAG" "${OUTPUT_DIR}/${ZIP_NAME}" --clobber
 
-      # --- Update Package.swift and Nubrick.podspec with final URL + checksum on a commit in main ---
+      # --- Update Package.swift and Nubrick.podspec with final URL + checksum ---
       - name: Update Package.swift and Nubrick.podspec
         env:
           URL: "https://github.com/${{ github.repository }}/releases/download/${{ env.TAG }}/${{ env.ZIP_NAME }}"
@@ -173,12 +157,10 @@ jobs:
       - name: Show diffs 
         run: git --no-pager diff -- Package.swift Nubrick.podspec || true
 
-      - name: Push to feat/metrickit-crash-reporting
+      - name: Push to ${{ inputs.branch }}
         run: |
           set -euo pipefail
-          git fetch origin feat/metrickit-crash-reporting
-          git rebase origin/feat/metrickit-crash-reporting
-          git push origin HEAD:feat/metrickit-crash-reporting
+          git push origin HEAD:${{ inputs.branch }}
 
       # --- Create the tag at this commit and publish the release ---
       - name: Create and push tag
@@ -191,8 +173,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git fetch origin feat/metrickit-crash-reporting
-          TARGET_SHA=$(git rev-parse origin/feat/metrickit-crash-reporting)
+          git fetch origin ${{ inputs.branch }}
+          TARGET_SHA=$(git rev-parse origin/${{ inputs.branch }})
           gh release edit "$TAG" --draft=false --target "$TARGET_SHA"
 
       - name: Verify public URL + checksum
