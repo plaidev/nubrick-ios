@@ -72,12 +72,11 @@ jobs:
         run: |
           sentry-cli debug-files upload --project nubrick-ios --include-sources ${OUTPUT_DIR}/${XCFRAMEWORK_NAME}
 
-      - name: Zip deterministically
+      - name: Create zip file
         run: |
           set -euo pipefail
-          # deterministic zip so checksum is stable
-          ditto -c -k --sequesterRsrc --keepParent \
-            "${OUTPUT_DIR}/${XCFRAMEWORK_NAME}" "LICENSE" "${OUTPUT_DIR}/${ZIP_NAME}"
+          cd "${OUTPUT_DIR}"
+          zip -r -X "${ZIP_NAME}" "${XCFRAMEWORK_NAME}" "LICENSE"
 
       - name: Compute checksum
         id: checksum
