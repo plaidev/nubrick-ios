@@ -7,19 +7,72 @@
 
 import Foundation
 import UIKit
+import MetricKit
+import Darwin.Mach
 
 private let CRASH_RECORD_KEY: String = "NATIVEBRIK_CRASH_RECORD"
 
-struct CrashRecord: Codable {
-    var reason: String?
-    var callStacks: [String]?
+// convert MetricKit exception type to string
+func exceptionTypeString(_ num: NSNumber?) -> String {
+    guard let raw = num?.uint32Value else { return "UNKNOWN(nil)" }
+    let t = exception_type_t(raw)
+    switch t {
+    case EXC_BAD_ACCESS:     return "EXC_BAD_ACCESS"
+    case EXC_BAD_INSTRUCTION:return "EXC_BAD_INSTRUCTION"
+    case EXC_ARITHMETIC:     return "EXC_ARITHMETIC"
+    case EXC_EMULATION:      return "EXC_EMULATION"
+    case EXC_SOFTWARE:       return "EXC_SOFTWARE"
+    case EXC_BREAKPOINT:     return "EXC_BREAKPOINT"
+    case EXC_SYSCALL:        return "EXC_SYSCALL"
+    case EXC_MACH_SYSCALL:   return "EXC_MACH_SYSCALL"
+    case EXC_RPC_ALERT:      return "EXC_RPC_ALERT"
+    case EXC_CRASH:          return "EXC_CRASH"
+    case EXC_RESOURCE:       return "EXC_RESOURCE"
+    case EXC_GUARD:          return "EXC_GUARD"
+    case EXC_CORPSE_NOTIFY:  return "EXC_CORPSE_NOTIFY"
+    default:                 return "UNKNOWN(\(raw))"
+    }
+}
+ 
+//internal classes that map structure of CallStack inside MetricKit object
+private struct CallStackTree: Decodable {
+    let callStacks: [CallStack]?
+    let callStackPerThread: Bool?
+}
+
+private struct CallStack: Decodable {
+    let threadAttributed: Bool?
+    let callStackRootFrames: [RawFrame]?
+}
+
+private struct RawFrame: Decodable {
+    let address: UInt64?
+    let binaryName: String?
+    let binaryUUID: String?
+    let offsetIntoBinaryTextSegment: UInt64?
+    let sampleCount: Int?
+    let subFrames: [RawFrame]?
+}
+
+struct ExceptionRecord: Encodable {
+    let type: String?
+    let message: String?
+    let callStacks: [Frame]?
+}
+
+struct Frame: Encodable {
+    let imageAddr: String?
+    let instructionAddr: String?
+    let binaryUUID: String?
+    let binaryName: String?
 }
 
 protocol TrackRepository2 {
     func trackExperimentEvent(_ event: TrackExperimentEvent)
     func trackEvent(_ event: TrackUserEvent)
-
-    func record(_ exception: NSException)
+    
+    @available(iOS 14.0, *)
+    func report(_ crash: MXCrashDiagnostic)
 }
 
 struct TrackRequest: Encodable {
@@ -34,12 +87,20 @@ struct TrackEvent: Encodable {
     enum Typename: String, Encodable {
         case Event = "event"
         case Experiment = "experiment"
+        case Crash = "crash"
     }
     var typename: Typename
     var experimentId: String?
     var variantId: String?
     var name: String?
     var timestamp: DateTime
+    var exceptions: [ExceptionRecord]?
+    var threads: [ThreadRecord]?
+}
+
+struct ThreadRecord: Encodable {
+    var isMain: Bool?
+    var stacktrace: [Frame]?
 }
 
 struct TrackEventMeta: Encodable {
@@ -49,6 +110,7 @@ struct TrackEventMeta: Encodable {
     var osName: String?
     var osVersion: String?
     var sdkVersion: String?
+    var platform: String? = "ios"
 }
 
 struct TrackUserEvent {
@@ -58,6 +120,25 @@ struct TrackUserEvent {
 struct TrackExperimentEvent {
     var experimentId: String
     var variantId: String
+}
+
+struct TrackCrashEvent {
+    var type: String
+    var message: String
+    var exceptions: [ExceptionRecord]
+}
+
+// Convert UInt64 to hex string
+private func hex(_ v: UInt64) -> String {
+    String(format: "0x%016llx", v)
+}
+
+/// Compute image_addr (load address) from a MetricKit frame.
+/// Sentry wants `image_addr` in hex.
+func imageAddrHex(addressDec: UInt64, offsetIntoTextDec: UInt64) -> String? {
+    guard addressDec >= offsetIntoTextDec else { return nil } // invalid
+    let load = addressDec - offsetIntoTextDec
+    return hex(load)
 }
 
 
@@ -77,14 +158,12 @@ class TrackRespositoryImpl: TrackRepository2 {
         self.queueLock = NSLock()
         self.buffer = []
         self.timer = nil
-
-        self.report()
     }
-
+    
     deinit {
         self.timer?.invalidate()
     }
-
+    
     func trackExperimentEvent(_ event: TrackExperimentEvent) {
         self.pushToQueue(TrackEvent(
             typename: .Experiment,
@@ -93,7 +172,7 @@ class TrackRespositoryImpl: TrackRepository2 {
             timestamp: formatToISO8601(getCurrentDate())
         ))
     }
-
+    
     func trackEvent(_ event: TrackUserEvent) {
         self.pushToQueue(TrackEvent(
             typename: .Event,
@@ -101,9 +180,11 @@ class TrackRespositoryImpl: TrackRepository2 {
             timestamp: formatToISO8601(getCurrentDate())
         ))
     }
-
+    
     private func pushToQueue(_ event: TrackEvent) {
         self.queueLock.lock()
+        defer { self.queueLock.unlock() }
+
         if self.timer == nil {
             // here, use async not sync. main.sync will break the app.
             DispatchQueue.main.async {
@@ -125,17 +206,21 @@ class TrackRespositoryImpl: TrackRepository2 {
         if self.buffer.count >= self.maxQueueSize {
             self.buffer.removeFirst(self.maxQueueSize - self.buffer.count)
         }
-
-        self.queueLock.unlock()
     }
-
+    
     private func sendAndFlush() async throws {
-        if self.buffer.count == 0 {
-            return
+        // Acquire lock to safely read and clear buffer
+        let events: [TrackEvent]
+        do {
+            self.queueLock.lock()
+            defer { self.queueLock.unlock() }
+
+            guard self.buffer.count > 0 else { return }
+
+            events = self.buffer
+            self.buffer = []
         }
-        let events = self.buffer
-        self.buffer = []
-        
+
         let appId = Bundle.main.bundleIdentifier ?? ""
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         let cfBundleVersion = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
@@ -164,27 +249,83 @@ class TrackRespositoryImpl: TrackRepository2 {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let _ = try await nativebrikSession.data(for: request)
 
+            // Acquire lock before modifying timer
+            self.queueLock.lock()
+            defer { self.queueLock.unlock() }
             self.timer?.invalidate()
             self.timer = nil
         } catch {
+            // Acquire lock before restoring buffer
+            self.queueLock.lock()
+            defer { self.queueLock.unlock() }
             self.buffer.append(contentsOf: events)
         }
     }
+    
+    @available(iOS 14.0, *)
+    func report(_ crash: MXCrashDiagnostic) {
+        if let callStackTree = try? JSONDecoder().decode(
+            CallStackTree.self,
+            from: crash.callStackTree.jsonRepresentation()
+        )
+        {
+            var mainThreadFrames = [Frame]()
+            var threads = [ThreadRecord]()
 
-    private func report() {
-        guard let data = self.user.userDB.data(forKey: CRASH_RECORD_KEY) else {
-            return
-        }
-        do {
-            self.user.userDB.removeObject(forKey: CRASH_RECORD_KEY)
-            let crashRecord = try JSONDecoder().decode(CrashRecord.self, from: data)
-            // potentially caused by nativebrik sdk.
-            let causedByNativebrik = (
-                crashRecord.callStacks?.contains(where: { callStack in
-                    return callStack.contains("Nativebrik") || callStack.contains("package:nativebrik_bridge/") // support error from flutter
-                }) ?? false
+            // Process all call stacks (limit to prevent malformed data issues)
+            if let allCallStacks = callStackTree.callStacks {
+                let maxFramesPerThread = 1000
+
+                for currentCallStack in allCallStacks {
+                    var threadFrames = [Frame]()
+                    var rawFramesToProcess = currentCallStack.callStackRootFrames ?? []
+
+                    while !rawFramesToProcess.isEmpty && threadFrames.count < maxFramesPerThread {
+                        let rawFrame = rawFramesToProcess.removeFirst()
+                        let frame = Frame(
+                            imageAddr: hex(rawFrame.offsetIntoBinaryTextSegment ?? 0),
+                            instructionAddr: hex(rawFrame.address ?? 0),
+                            binaryUUID: rawFrame.binaryUUID,
+                            binaryName: rawFrame.binaryName
+                        )
+                        threadFrames.append(frame)
+
+                        if let subFrames = rawFrame.subFrames {
+                            rawFramesToProcess.insert(contentsOf: subFrames, at: 0)
+                        }
+                    }
+
+                    // Create a ThreadRecord for each call stack
+                    let isMainThread = currentCallStack.threadAttributed ?? false
+                    threads.append(ThreadRecord(
+                        isMain: isMainThread,
+                        stacktrace: threadFrames
+                    ))
+
+                    // Keep main thread frames for exception record
+                    if isMainThread {
+                        mainThreadFrames = threadFrames
+                    }
+                }
+            }
+
+            let exceptionRecord = ExceptionRecord(
+                type: exceptionTypeString(crash.exceptionType),
+                message: crash.terminationReason,
+                callStacks: mainThreadFrames
             )
-            || (crashRecord.reason?.contains("Nativebrik") ?? false)
+
+            // Check if crash is caused by Nubrick (at least one frame contains "Nubrick" in binaryName)
+            let causedByNativebrik = threads.contains { thread in
+                thread.stacktrace?.contains { frame in
+                    frame.binaryName?.contains("Nubrick") ?? false
+                } ?? false
+            }
+
+            // Acquire lock before modifying buffer
+            self.queueLock.lock()
+            defer { self.queueLock.unlock() }
+
             self.buffer.append(TrackEvent(
                 typename: .Event,
                 name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
@@ -196,30 +337,17 @@ class TrackRespositoryImpl: TrackRepository2 {
                     name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
                     timestamp: formatToISO8601(getCurrentDate())
                 ))
+                self.buffer.append(TrackEvent(
+                    typename: .Crash,
+                    timestamp: formatToISO8601(getCurrentDate()),
+                    exceptions: [exceptionRecord],
+                    threads: threads
+                ))
             }
 
-            Task(priority: .low) {
+            Task.detached(priority: .utility) {
                 try await self.sendAndFlush()
             }
-
-        } catch {}
-    }
-
-    func record(_ exception: NSException) {
-        var callstacks: [String] = exception.callStackSymbols
-        
-        // the exception sent from flutter sdk includes call stack in userinfo.
-        if let userStack = exception.userInfo?["stack"] as? String {
-            callstacks.append(userStack)
         }
-
-        let record = CrashRecord(
-            reason: exception.reason,
-            callStacks: callstacks
-        )
-        do {
-            let json = try JSONEncoder().encode(record)
-            self.user.userDB.set(json, forKey: CRASH_RECORD_KEY)
-        } catch {}
     }
 }

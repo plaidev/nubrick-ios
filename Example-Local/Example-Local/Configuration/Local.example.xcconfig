@@ -1,0 +1,3 @@
+PROJECT_ID=<your-project-id-here>
+CDN_URL=https:/$()/storage.googleapis.com/nativebrik_cdn_dev
+TRACK_URL=http:/$()/localhost:8070/track/v1

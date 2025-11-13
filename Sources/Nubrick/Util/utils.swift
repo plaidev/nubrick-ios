@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-import YogaKit
+@_implementationOnly import YogaKit
 
 func presentOnTop(window: UIWindow?, modal: UIViewController) {
     guard let root = window?.rootViewController else {

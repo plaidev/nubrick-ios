@@ -19,8 +19,16 @@ let package = Package(
         .package(url: "https://github.com/facebook/yoga.git", .upToNextMinor(from: "3.2.1")),
     ],
     targets: [
-        .target(
+        // Production: Remote binary downloaded by SPM consumers
+        .binaryTarget(
             name: "Nubrick",
+            url: "https://storage.googleapis.com/cdn.nativebrik.com/sdk/spm/Nubrick/Nubrick.xcframework.zip",
+            checksum: "2d0d5151ca4954d131224b6d909c2df1d112064ec5ddb77cc25da326eee2b9f0"
+        ),
+
+        // Development: Source target for unit tests (supports @testable import)
+        .target(
+            name: "NubrickLocal",
             dependencies: ["YogaKit"],
             path: "Sources/Nubrick",
             exclude: ["PrivacyInfo.xcprivacy"],
@@ -34,9 +42,11 @@ let package = Package(
             path: "Sources/YogaKit",
             publicHeadersPath: "include/YogaKit"
         ),
+
+        // Unit tests use source target for @testable import
         .testTarget(
             name: "NubrickTests",
-            dependencies: ["Nubrick", .product(name: "ViewInspector", package: "ViewInspector")]
+            dependencies: ["NubrickLocal", .product(name: "ViewInspector", package: "ViewInspector")]
         ),
     ],
     cxxLanguageStandard: CXXLanguageStandard(rawValue: "c++20")

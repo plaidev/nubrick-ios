@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import Nubrick
+@testable import NubrickLocal
 
 final class ExtractionTests: XCTestCase {
     func testExtractComponentIdShouldReturnTheFirst() throws {

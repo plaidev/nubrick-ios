@@ -8,19 +8,50 @@
 import Foundation
 import SwiftUI
 import Combine
+import MetricKit
+import Darwin.Mach
+
+// For crash reporting
+@available(iOS 14.0, *)
+class AppMetrics: NSObject, MXMetricManagerSubscriber {
+   private let recordCrash: (_ crash: MXCrashDiagnostic) -> Void
+
+   init(_ recordCrash: @escaping (_ crash: MXCrashDiagnostic) -> Void) {
+       self.recordCrash = recordCrash
+       super.init()
+       
+       let shared = MXMetricManager.shared
+       shared.add(self)
+
+       // Immediately receive crash reports generated since
+       // the last allocation of the shared manager instance
+       didReceive(shared.pastDiagnosticPayloads)
+   }
+
+   deinit {
+       let shared = MXMetricManager.shared
+       shared.remove(self)
+   }
+
+   func didReceive(_ payloads: [MXDiagnosticPayload]) {
+       
+       payloads.forEach { payload in
+            payload.crashDiagnostics?.forEach { crashDiagnostic in
+                recordCrash(crashDiagnostic)
+            }
+        }
+    }
+}
+
 
 // for development
 public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nubrickCdnUrl = "https://cdn.nativebrik.com"
 public let nubrickSdkVersion = "0.13.3"
 
-public let isNubrickAvailable: Bool = {
-    if #available(iOS 15.0, *) {
-        return true
-    } else {
-        return false
-    }
-}()
+public var isNubrickAvailable: Bool {
+    if #available(iOS 15.0, *) { true } else { false }
+}
 
 private func openLink(_ event: ComponentEvent) -> Void {
     guard let link = event.deepLink,
@@ -49,6 +80,7 @@ final class Config {
     var cdnUrl: String = nubrickCdnUrl
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
     var cachePolicy: NativebrikCachePolicy = NativebrikCachePolicy()
+    var trackCrashes : Bool = true
 
     init() {
         self.projectId = ""
@@ -116,6 +148,7 @@ public final class NubrickClient: ObservableObject {
     private let overlayVC: OverlayViewController
     public final let experiment: NubrickExperiment
     public final let user: NubrickUser
+    private let appMetrics: Any?
 
     public init(
         projectId: String,
@@ -143,8 +176,15 @@ public final class NubrickClient: ObservableObject {
         self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch)
         self.experiment = NubrickExperiment(container: self.container, overlay: self.overlayVC)
 
+        // Initialize AppMetrics only for iOS 14+
+        if #available(iOS 14.0, *), config.trackCrashes {
+            self.appMetrics = AppMetrics(self.experiment.report)
+        } else {
+            self.appMetrics = nil
+        }
+
         config.addEventListener(createDispatchNubrickEvent(self))
-    }
+    }    
 }
 
 public class NubrickExperiment {
@@ -162,12 +202,19 @@ public class NubrickExperiment {
         }
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
-
-    public func record(exception: NSException) {
+    
+    @available(iOS 14.0, *)
+    public func report(crash: MXCrashDiagnostic) {
         if !isNubrickAvailable {
             return
         }
-        self.container.record(exception)
+       self.container.report(crash)
+    }
+
+    @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
+    public func record(exception: NSException) {
+        // No-op: MetricKit handles crash reporting automatically on iOS 14+
+        // This method is kept for API compatibility but does nothing
     }
 
     public func overlayViewController() -> UIViewController {

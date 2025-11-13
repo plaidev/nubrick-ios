@@ -2,6 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:Nubrick/Nubrick.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:">
    </FileRef>
    <FileRef
@@ -12,6 +15,9 @@
    </FileRef>
    <FileRef
       location = "group:Examples/Example/Example.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Example-Local/Example-Local.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:E2E/E2E.xcodeproj">

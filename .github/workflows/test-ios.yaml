@@ -41,3 +41,9 @@ jobs:
         env:
           COMPILER_INDEX_STORE_ENABLE: NO
           SWIFT_COMPILATION_MODE: wholemodule
+
+      - name: Pod lint
+        run: pod spec lint
+      - name: Verify version consistency
+        run: |
+          test $(cat ./Nubrick.podspec | grep -E 's\.version\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]') = $(cat ./Sources/Nubrick/sdk.swift | grep -E 'nubrickSdkVersion\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]')
