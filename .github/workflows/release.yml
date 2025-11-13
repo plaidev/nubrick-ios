@@ -1,0 +1,211 @@
+name: Release SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. v1.2.3)"
+        required: true
+        type: string
+
+permissions:
+  contents: write    # needed to push commits/tags and create/edit releases
+
+concurrency:
+  group: release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 15
+
+    env:
+      SCHEME: Nubrick
+      WORKSPACE: Nubrick.xcworkspace
+      FRAMEWORK_NAME: Nubrick
+      XCFRAMEWORK_NAME: Nubrick.xcframework
+      ZIP_NAME: Nubrick.xcframework.zip
+      OUTPUT_DIR: Nubrick/output
+      TAG: ${{ inputs.version }}
+      REPO: ${{ github.repository }}
+
+    steps:
+      - name: Checkout repo (full)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version (SemVer & > latest tag)
+        run: |
+            set -euo pipefail
+            # 1) Shape: v1.2.3, v1.2.3-beta.1, v1.2.3+build
+            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([\-+][0-9A-Za-z.\-]+)?$ ]] \
+              || { echo "Invalid version: $TAG (use vMAJOR.MINOR.PATCH)"; exit 1; }
+        
+            # 2) Find previous tag (SemVer-like)
+            git fetch --tags --quiet
+            PREV=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1 || true)
+            echo "Previous: ${PREV:-<none>}  Input: $TAG"
+        
+            # If none, accept
+            [[ -z "$PREV" ]] && exit 0
+        
+            # Strip 'v' and compare with version sort
+            P="${PREV#v}"; C="${TAG#v}"
+            [[ "$P" == "$C" ]] && { echo "Tag $TAG already exists"; exit 1; }
+            TOP=$(printf "%s\n%s\n" "$P" "$C" | sort -V | tail -n1)
+            [[ "$TOP" == "$C" ]] || { echo "$TAG must be greater than $PREV"; exit 1; }
+            echo "Version OK."
+
+      - name: Xcode version
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Install sentry-cli
+        run: brew install sentry-cli
+
+      - name: Build framework
+        run: |
+          set -euo pipefail
+          cd Nubrick
+          sh ./create_xcframework.sh
+
+      - name: Upload symbols to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          sentry-cli debug-files upload --project nubrick-ios --include-sources ${OUTPUT_DIR}/${XCFRAMEWORK_NAME}
+
+      - name: Zip deterministically
+        run: |
+          set -euo pipefail
+          # deterministic zip so checksum is stable
+          ditto -c -k --sequesterRsrc --keepParent \
+            "${OUTPUT_DIR}/${XCFRAMEWORK_NAME}" "LICENSE" "${OUTPUT_DIR}/${ZIP_NAME}"
+
+      - name: Compute checksum
+        id: checksum
+        run: |
+          set -euo pipefail
+          SHA=$(swift package compute-checksum "${OUTPUT_DIR}/${ZIP_NAME}")
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      # --- Create/ensure a DRAFT release for this tag (no tag yet) and upload asset ---
+      - name: Prepare draft release (auto-generate notes)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # Release exists — check draft state
+            IS_DRAFT=$(gh release view "$TAG" --json draft --jq '.draft')
+            if [ "$IS_DRAFT" = "true" ]; then
+                echo "Draft release '$TAG' already exists. Proceeding without changes."
+            else
+                echo "ERROR: Release '$TAG' already published. Aborting." >&2
+                exit 1
+            fi
+          else
+            # Create a new draft (auto-generated notes), pointing at the dispatch commit
+            gh release create "$TAG" \
+                --draft \
+                --title "$TAG" \
+                --target "$GITHUB_SHA" \
+                --generate-notes
+            echo "Created draft release '$TAG'."
+          fi
+
+      - name: Upload asset to draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG" "${OUTPUT_DIR}/${ZIP_NAME}" --clobber
+
+      # --- Update Package.swift and Nubrick.podspec with final URL + checksum on a commit in main ---
+      - name: Update Package.swift and Nubrick.podspec
+        env:
+          URL: "https://github.com/${{ github.repository }}/releases/download/${{ env.TAG }}/${{ env.ZIP_NAME }}"
+          SHA: ${{ steps.checksum.outputs.sha }}
+        run: |
+          set -euo pipefail
+
+          # Update Package.swift
+          perl -0777 -i -pe '
+            my ($u,$s) = @ENV{qw/ URL SHA/};
+
+            # Find ONE .binaryTarget( ... ) block that contains name: "Nubrick"
+            s{
+                (\.binaryTarget\(
+                (?:
+                    (?!\)\s*[,)]).        # any char that is NOT the start of a closing paren line
+                )*?
+                name:\s*"Nubrick"        # must contain name: "Nubrick" (escaped safely)
+                (?:
+                    (?!\)\s*[,)]).        
+                )*?
+                \))
+            }{
+                my $blk = $1;             # capture the whole block text we matched
+                # Inside the block, replace url: "..." and checksum: "..."
+                $blk =~ s/(url:\s*")[^"]*(")/$1$u$2/s;
+                $blk =~ s/(checksum:\s*")[^"]*(")/$1$s$2/s;
+                $blk;                     # return the modified block as the replacement
+            }egsx;
+            ' Package.swift
+
+          # Update Nubrick.podspec
+          perl -0777 -i -pe '
+            my($u,$s)=@ENV{qw/ URL SHA/};
+            s/(:http\s*=>\s*")[^"]*(")/$1.$u.$2/se;
+            s/(:sha256\s*=>\s*")[^"]*(")/$1.$s.$2/se;
+            ' Nubrick.podspec
+
+          git add Package.swift
+          git add Nubrick.podspec
+          git commit -m "Release ${TAG}: update Package.swift and Nubrick.podspec URL + checksum"
+
+      - name: Validate Package.swift syntax
+        run: swift package dump-package > /dev/null
+
+      - name: Show diffs 
+        run: git --no-pager diff -- Package.swift Nubrick.podspec || true
+
+      - name: Push to feat/metrickit-crash-reporting
+        run: |
+          set -euo pipefail
+          git fetch origin feat/metrickit-crash-reporting
+          git rebase origin/feat/metrickit-crash-reporting
+          git push origin HEAD:feat/metrickit-crash-reporting
+
+      # --- Create the tag at this commit and publish the release ---
+      - name: Create and push tag
+        run: |
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Publish release (attach tag to this commit)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch origin feat/metrickit-crash-reporting
+          TARGET_SHA=$(git rev-parse origin/feat/metrickit-crash-reporting)
+          gh release edit "$TAG" --draft=false --target "$TARGET_SHA"
+
+      - name: Verify public URL + checksum
+        env:
+          URL: "https://github.com/${{ github.repository }}/releases/download/${{ env.TAG }}/${{ env.ZIP_NAME }}"
+          EXPECTED_SHA: ${{ steps.checksum.outputs.sha }}
+        run: |
+            set -euo pipefail
+            echo "Fetching $URL"
+            curl -L --fail --retry 5 --retry-delay 2 -o /tmp/artifact.zip "$URL"
+            ACTUAL_SHA=$(shasum -a 256 /tmp/artifact.zip | awk '{print $1}')
+            test "$ACTUAL_SHA" = "$EXPECTED_SHA" || {
+              echo "Checksum mismatch! expected=$EXPECTED_SHA actual=$ACTUAL_SHA"
+              exit 1
+            }
+            echo "Public URL reachable and checksum OK."
