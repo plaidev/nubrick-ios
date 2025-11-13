@@ -75,8 +75,7 @@ jobs:
       - name: Create zip file
         run: |
           set -euo pipefail
-          cd "${OUTPUT_DIR}"
-          zip -r -X "${ZIP_NAME}" "${XCFRAMEWORK_NAME}" "LICENSE"
+          zip -r -X "${OUTPUT_DIR}/${ZIP_NAME}" "${OUTPUT_DIR}/${XCFRAMEWORK_NAME}" LICENSE
 
       - name: Compute checksum
         id: checksum
