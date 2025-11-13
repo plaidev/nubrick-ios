@@ -148,7 +148,7 @@ public final class NubrickClient: ObservableObject {
     private let overlayVC: OverlayViewController
     public final let experiment: NubrickExperiment
     public final let user: NubrickUser
-    private var appMetrics: Any?
+    private let appMetrics: Any?
 
     public init(
         projectId: String,
@@ -179,8 +179,9 @@ public final class NubrickClient: ObservableObject {
         // Initialize AppMetrics only for iOS 14+
         if #available(iOS 14.0, *), config.trackCrashes {
             self.appMetrics = AppMetrics(self.experiment.report)
+        } else {
+            self.appMetrics = nil
         }
-
 
         config.addEventListener(createDispatchNubrickEvent(self))
     }    
@@ -208,6 +209,12 @@ public class NubrickExperiment {
             return
         }
        self.container.report(crash)
+    }
+
+    @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
+    public func record(exception: NSException) {
+        // No-op: MetricKit handles crash reporting automatically on iOS 14+
+        // This method is kept for API compatibility but does nothing
     }
 
     public func overlayViewController() -> UIViewController {

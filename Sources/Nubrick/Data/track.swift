@@ -272,13 +272,15 @@ class TrackRespositoryImpl: TrackRepository2 {
             var mainThreadFrames = [Frame]()
             var threads = [ThreadRecord]()
 
-            // Process all call stacks
+            // Process all call stacks (limit to prevent malformed data issues)
             if let allCallStacks = callStackTree.callStacks {
+                let maxFramesPerThread = 1000
+
                 for currentCallStack in allCallStacks {
                     var threadFrames = [Frame]()
                     var rawFramesToProcess = currentCallStack.callStackRootFrames ?? []
 
-                    while !rawFramesToProcess.isEmpty {
+                    while !rawFramesToProcess.isEmpty && threadFrames.count < maxFramesPerThread {
                         let rawFrame = rawFramesToProcess.removeFirst()
                         let frame = Frame(
                             imageAddr: hex(rawFrame.offsetIntoBinaryTextSegment ?? 0),
