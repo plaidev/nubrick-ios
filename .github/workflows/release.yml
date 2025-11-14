@@ -127,6 +127,20 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # --- Create release branch ---
+      - name: Create release branch
+        run: |
+          BRANCH_NAME="release/${TAG}"
+
+          # Check if branch already exists remotely
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "ERROR: Branch $BRANCH_NAME already exists" >&2
+            exit 1
+          fi
+
+          # Create new branch
+          git checkout -b "$BRANCH_NAME"
+
       # --- Update Package.swift, Nubrick.podspec, and SDK version ---
       - name: Update Package.swift, Nubrick.podspec, and SDK version
         env:
@@ -180,12 +194,11 @@ jobs:
       - name: Show diffs
         run: git --no-pager diff HEAD~1 -- Sources/Nubrick/sdk.swift Package.swift Nubrick.podspec || true
 
-      - name: Push to release branch and create PR
+      - name: Push release branch and create PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           BRANCH_NAME="release/${TAG}"
-          git checkout -b "$BRANCH_NAME"
           git push origin "$BRANCH_NAME"
 
           # Create PR and enable auto-merge
@@ -219,12 +232,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Fetch main to get the merged commit
+          # Fetch and checkout the merged commit from main
           git fetch origin main
-          git checkout main
-          git pull origin main
+          git checkout origin/main
 
-          # Create tag on main
+          # Create tag on the merged commit
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
 
