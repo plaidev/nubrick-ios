@@ -55,6 +55,15 @@ jobs:
           fi
           echo "Version format valid: $TAG"
 
+      - name: Check tag does not exist
+        run: |
+          git fetch --tags
+          if git tag -l | grep -q "^${TAG}$"; then
+            echo "ERROR: Tag $TAG already exists" >&2
+            exit 1
+          fi
+          echo "Tag $TAG does not exist. Proceeding..."
+
       - name: Xcode version
         run: |
           xcodebuild -version
@@ -76,7 +85,9 @@ jobs:
 
       - name: Create zip file
         run: |
-          zip -r -X "${OUTPUT_DIR}/${ZIP_NAME}" "${OUTPUT_DIR}/${XCFRAMEWORK_NAME}" LICENSE
+          cp LICENSE "${OUTPUT_DIR}/"
+          cd "${OUTPUT_DIR}"
+          zip -r -X "${ZIP_NAME}" "${XCFRAMEWORK_NAME}" LICENSE
 
       - name: Compute checksum
         id: checksum
