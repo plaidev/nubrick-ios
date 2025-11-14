@@ -6,6 +6,8 @@ on:
 
 jobs:
   publish-e2e-app:
+    # Skip E2E for release commits (Package.swift references unreleased tag)
+    if: ${{ !startsWith(github.event.head_commit.message, '[bot] Release') }}
     runs-on: macos-26
     timeout-minutes: 15
     environment:

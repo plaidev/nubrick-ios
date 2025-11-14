@@ -186,7 +186,7 @@ jobs:
           git add Sources/Nubrick/sdk.swift
           git add Package.swift
           git add Nubrick.podspec
-          git commit -m "Release ${TAG}: update version, Package.swift, and Nubrick.podspec"
+          git commit -m "[bot] Release ${TAG}: update version, Package.swift, and Nubrick.podspec"
 
       - name: Validate Package.swift syntax
         run: swift package dump-package > /dev/null
@@ -263,3 +263,12 @@ jobs:
             exit 1
           }
           echo "Public URL reachable and checksum OK."
+
+  # Run tests and E2E after release is published since they were skipped during release
+  test:
+    needs: release
+    uses: plaidev/nubrick-ios/.github/workflows/test-ios.yaml@main
+
+  e2e:
+    needs: release
+    uses: plaidev/nubrick-ios/.github/workflows/e2e.yaml@main
