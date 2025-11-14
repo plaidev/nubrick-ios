@@ -179,22 +179,56 @@ jobs:
       - name: Show diffs
         run: git --no-pager diff HEAD~1 -- Sources/Nubrick/sdk.swift Package.swift Nubrick.podspec || true
 
-      - name: Push to main
-        run: |
-          git push origin HEAD:main
-
-      # --- Create the tag at this commit and publish the release ---
-      - name: Create and push tag
-        run: |
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
-
-      - name: Publish release
+      - name: Push to release branch and create PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          BRANCH_NAME="release/${TAG}"
+          git checkout -b "$BRANCH_NAME"
+          git push origin "$BRANCH_NAME"
+
+          # Create PR and enable auto-merge
+          PR_URL=$(gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "Release ${TAG}" \
+            --body "Automated release PR for ${TAG}")
+
+          echo "Created PR: $PR_URL"
+
+          # Enable auto-merge (requires branch protection rules to allow it)
+          gh pr merge "$BRANCH_NAME" --auto --squash || gh pr merge "$BRANCH_NAME" --auto --merge
+
+          echo "Waiting for PR to be merged..."
+          # Wait for PR to be merged (max 5 minutes)
+          for i in {1..60}; do
+            if gh pr view "$BRANCH_NAME" --json state --jq '.state' | grep -q "MERGED"; then
+              echo "PR merged successfully"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "ERROR: PR was not merged within 5 minutes" >&2
+              exit 1
+            fi
+            sleep 5
+          done
+
+      # --- Create the tag on main and publish the release ---
+      - name: Create tag and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Fetch main to get the merged commit
           git fetch origin main
-          TARGET_SHA=$(git rev-parse origin/main)
+          git checkout main
+          git pull origin main
+
+          # Create tag on main
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+          # Publish the release pointing to the main branch
+          TARGET_SHA=$(git rev-parse HEAD)
           gh release edit "$TAG" --draft=false --target "$TARGET_SHA"
 
       - name: Publish to Cocoapods
