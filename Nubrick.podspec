@@ -15,7 +15,7 @@ Pod::Spec.new do |spec|
   spec.ios.deployment_target = "13.4"
 
   spec.source       = { :http => "https://github.com/plaidev/nubrick-ios/releases/download/v0.14.0/Nubrick.xcframework.zip",
-                        :sha256 => "59e72110b2638512716048f023f363b34c8825c72cca1b645b28ed00d907ee08" }
+                        :sha256 => "91732bf8aa774d0eb7bcef0b95dd73f5bc367e635e89a9c0b4ea4c137b74a345" }
 
   spec.vendored_frameworks = "Nubrick.xcframework"
 end
