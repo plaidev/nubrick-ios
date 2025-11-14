@@ -282,5 +282,6 @@ jobs:
   e2e:
     needs: release
     uses: ./.github/workflows/e2e.yaml
+    secrets: inherit
     with:
       ref: ${{ needs.release.outputs.merge_sha }}
