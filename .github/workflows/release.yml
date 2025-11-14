@@ -9,7 +9,8 @@ on:
         type: string
 
 permissions:
-  contents: write    # needed to push commits/tags and create/edit releases
+  contents: write        # needed to push commits/tags and create/edit releases
+  pull-requests: write   # needed to create and merge pull requests
 
 concurrency: # to avoid race conditions
   group: release
