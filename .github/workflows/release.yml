@@ -22,6 +22,8 @@ jobs:
     environment:
       name: Only Main
     timeout-minutes: 15
+    outputs:
+      merge_sha: ${{ steps.create_pr.outputs.merge_sha }}
 
     defaults:
       run:
@@ -195,6 +197,7 @@ jobs:
         run: git --no-pager diff HEAD~1 -- Sources/Nubrick/sdk.swift Package.swift Nubrick.podspec || true
 
       - name: Push release branch and create PR
+        id: create_pr
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -218,6 +221,11 @@ jobs:
           for i in {1..60}; do
             if gh pr view "$BRANCH_NAME" --json state --jq '.state' | grep -q "MERGED"; then
               echo "PR merged successfully"
+
+              # Get the merge commit SHA
+              MERGE_SHA=$(gh pr view "$BRANCH_NAME" --json mergeCommit --jq '.mergeCommit.oid')
+              echo "merge_sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
+              echo "Merge commit: $MERGE_SHA"
               break
             fi
             if [ $i -eq 60 ]; then
@@ -231,18 +239,18 @@ jobs:
       - name: Create tag and publish release
         env:
           GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ steps.create_pr.outputs.merge_sha }}
         run: |
-          # Fetch and checkout the merged commit from main
-          git fetch origin main
-          git checkout origin/main
+          # Fetch the merge commit
+          git fetch origin "$MERGE_SHA"
+          git checkout "$MERGE_SHA"
 
           # Create tag on the merged commit
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
 
-          # Publish the release pointing to the main branch
-          TARGET_SHA=$(git rev-parse HEAD)
-          gh release edit "$TAG" --draft=false --target "$TARGET_SHA"
+          # Publish the release pointing to the merge commit
+          gh release edit "$TAG" --draft=false --target "$MERGE_SHA"
 
       - name: Publish to Cocoapods
         run: |
@@ -267,8 +275,12 @@ jobs:
   # Run tests and E2E after release is published since they were skipped during release
   test:
     needs: release
-    uses: plaidev/nubrick-ios/.github/workflows/test-ios.yaml@main
+    uses: ./.github/workflows/test-ios.yaml
+    with:
+      ref: ${{ needs.release.outputs.merge_sha }}
 
   e2e:
     needs: release
-    uses: plaidev/nubrick-ios/.github/workflows/e2e.yaml@main
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      ref: ${{ needs.release.outputs.merge_sha }}
