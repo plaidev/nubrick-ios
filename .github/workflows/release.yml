@@ -7,11 +7,6 @@ on:
         description: "Version tag (e.g. v1.2.3)"
         required: true
         type: string
-      branch:
-        description: "Branch to release from"
-        required: false
-        type: string
-        default: "main"
 
 permissions:
   contents: write    # needed to push commits/tags and create/edit releases
@@ -45,7 +40,7 @@ jobs:
       - name: Checkout (full)
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
-          ref: ${{ inputs.branch }}
+          ref: main
 
       - name: Validate version format
         run: |
@@ -184,9 +179,9 @@ jobs:
       - name: Show diffs
         run: git --no-pager diff HEAD~1 -- Sources/Nubrick/sdk.swift Package.swift Nubrick.podspec || true
 
-      - name: Push to ${{ inputs.branch }}
+      - name: Push to main
         run: |
-          git push origin HEAD:${{ inputs.branch }}
+          git push origin HEAD:main
 
       # --- Create the tag at this commit and publish the release ---
       - name: Create and push tag
@@ -198,8 +193,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git fetch origin ${{ inputs.branch }}
-          TARGET_SHA=$(git rev-parse origin/${{ inputs.branch }})
+          git fetch origin main
+          TARGET_SHA=$(git rev-parse origin/main)
           gh release edit "$TAG" --draft=false --target "$TARGET_SHA"
 
       - name: Publish to Cocoapods
