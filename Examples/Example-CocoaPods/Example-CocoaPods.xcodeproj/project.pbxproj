@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E6B5972D76775F8C3FEF7E93 /* Pods_Example_CocoaPods.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8D1CD7A025797D677E90490A /* Pods_Example_CocoaPods.framework */; };
+		5F7DD53A5EE21DF1E2299EF3 /* Pods_Example_CocoaPods.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F60AB11821872FBFFBD881F /* Pods_Example_CocoaPods.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		14C1F35E36A108185625DF83 /* Pods-Example-CocoaPods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example-CocoaPods.debug.xcconfig"; path = "Target Support Files/Pods-Example-CocoaPods/Pods-Example-CocoaPods.debug.xcconfig"; sourceTree = "<group>"; };
-		8D1CD7A025797D677E90490A /* Pods_Example_CocoaPods.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Example_CocoaPods.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		F241A4B757ECAC575388625C /* Pods-Example-CocoaPods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example-CocoaPods.release.xcconfig"; path = "Target Support Files/Pods-Example-CocoaPods/Pods-Example-CocoaPods.release.xcconfig"; sourceTree = "<group>"; };
+		2A3E44DB8347B442B5D13BBE /* Pods-Example-CocoaPods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example-CocoaPods.release.xcconfig"; path = "Target Support Files/Pods-Example-CocoaPods/Pods-Example-CocoaPods.release.xcconfig"; sourceTree = "<group>"; };
+		3F60AB11821872FBFFBD881F /* Pods_Example_CocoaPods.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Example_CocoaPods.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9B9B26308D01E058B50822EE /* Pods-Example-CocoaPods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example-CocoaPods.debug.xcconfig"; path = "Target Support Files/Pods-Example-CocoaPods/Pods-Example-CocoaPods.debug.xcconfig"; sourceTree = "<group>"; };
 		F44990762EA741C700F7F92E /* Example-CocoaPods.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example-CocoaPods.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -32,7 +32,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E6B5972D76775F8C3FEF7E93 /* Pods_Example_CocoaPods.framework in Frameworks */,
+				5F7DD53A5EE21DF1E2299EF3 /* Pods_Example_CocoaPods.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -42,16 +42,16 @@
 		0CBEC1E0745DD1B5AC9BB3EC /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				14C1F35E36A108185625DF83 /* Pods-Example-CocoaPods.debug.xcconfig */,
-				F241A4B757ECAC575388625C /* Pods-Example-CocoaPods.release.xcconfig */,
+				9B9B26308D01E058B50822EE /* Pods-Example-CocoaPods.debug.xcconfig */,
+				2A3E44DB8347B442B5D13BBE /* Pods-Example-CocoaPods.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		C4BE2E231EEA8CF0369E46C6 /* Frameworks */ = {
+		3641457B216515B4771E0681 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				8D1CD7A025797D677E90490A /* Pods_Example_CocoaPods.framework */,
+				3F60AB11821872FBFFBD881F /* Pods_Example_CocoaPods.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -62,7 +62,7 @@
 				F44990782EA741C700F7F92E /* Example-CocoaPods */,
 				F44990772EA741C700F7F92E /* Products */,
 				0CBEC1E0745DD1B5AC9BB3EC /* Pods */,
-				C4BE2E231EEA8CF0369E46C6 /* Frameworks */,
+				3641457B216515B4771E0681 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -81,11 +81,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F449909A2EA741C800F7F92E /* Build configuration list for PBXNativeTarget "Example-CocoaPods" */;
 			buildPhases = (
-				1C4EF2E309BE207FC8284DE1 /* [CP] Check Pods Manifest.lock */,
+				D685F633375FEEF0D139F4DC /* [CP] Check Pods Manifest.lock */,
 				F44990722EA741C700F7F92E /* Sources */,
 				F44990732EA741C700F7F92E /* Frameworks */,
 				F44990742EA741C700F7F92E /* Resources */,
-				1563CCA13EABD2713D80C9D9 /* [CP] Embed Pods Frameworks */,
+				107459AD188DF4F3444775D0 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -144,7 +144,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		1563CCA13EABD2713D80C9D9 /* [CP] Embed Pods Frameworks */ = {
+		107459AD188DF4F3444775D0 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -161,7 +161,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Example-CocoaPods/Pods-Example-CocoaPods-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		1C4EF2E309BE207FC8284DE1 /* [CP] Check Pods Manifest.lock */ = {
+		D685F633375FEEF0D139F4DC /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -317,7 +317,7 @@
 		};
 		F449909B2EA741C800F7F92E /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 14C1F35E36A108185625DF83 /* Pods-Example-CocoaPods.debug.xcconfig */;
+			baseConfigurationReference = 9B9B26308D01E058B50822EE /* Pods-Example-CocoaPods.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -347,7 +347,7 @@
 		};
 		F449909C2EA741C800F7F92E /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F241A4B757ECAC575388625C /* Pods-Example-CocoaPods.release.xcconfig */;
+			baseConfigurationReference = 2A3E44DB8347B442B5D13BBE /* Pods-Example-CocoaPods.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

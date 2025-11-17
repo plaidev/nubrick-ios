@@ -1,5 +1,5 @@
 PODS:
-  - Nubrick (0.13.1)
+  - Nubrick (0.14.0)
 
 DEPENDENCIES:
   - Nubrick (from `../../Nubrick.podspec`)
@@ -9,7 +9,7 @@ EXTERNAL SOURCES:
     :podspec: "../../Nubrick.podspec"
 
 SPEC CHECKSUMS:
-  Nubrick: 7216ce4b75d0d3d4b8851930dbe6c520871983bc
+  Nubrick: b49b28a039b3d55576172f88f7b5c9ade3d905e6
 
 PODFILE CHECKSUM: 90a18532631ffe81b9c854a82eed6c209f4eac3b
 
