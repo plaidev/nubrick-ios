@@ -54,25 +54,86 @@ private struct RawFrame: Decodable {
     let subFrames: [RawFrame]?
 }
 
-struct ExceptionRecord: Encodable {
-    let type: String?
-    let message: String?
-    let callStacks: [Frame]?
+@_spi(FlutterBridge)
+public struct StackFrame: Encodable {
+    // iOS fields
+    public let imageAddr: String?
+    public let instructionAddr: String?
+    public let binaryUUID: String?
+    public let binaryName: String?
+
+    // Android/Flutter fields
+    public let fileName: String?
+    public let className: String?
+    public let methodName: String?
+    public let lineNumber: Int?
+
+    public init(
+        imageAddr: String? = nil,
+        instructionAddr: String? = nil,
+        binaryUUID: String? = nil,
+        binaryName: String? = nil,
+        fileName: String? = nil,
+        className: String? = nil,
+        methodName: String? = nil,
+        lineNumber: Int? = nil
+    ) {
+        self.imageAddr = imageAddr
+        self.instructionAddr = instructionAddr
+        self.binaryUUID = binaryUUID
+        self.binaryName = binaryName
+        self.fileName = fileName
+        self.className = className
+        self.methodName = methodName
+        self.lineNumber = lineNumber
+    }
 }
 
-struct Frame: Encodable {
-    let imageAddr: String?
-    let instructionAddr: String?
-    let binaryUUID: String?
-    let binaryName: String?
+@_spi(FlutterBridge)
+public struct ExceptionRecord: Encodable {
+    public let type: String?
+    public let message: String?
+    public let callStacks: [StackFrame]?
+
+    public init(
+        type: String? = nil,
+        message: String? = nil,
+        callStacks: [StackFrame]? = nil
+    ) {
+        self.type = type
+        self.message = message
+        self.callStacks = callStacks
+    }
+}
+
+@_spi(FlutterBridge)
+public struct TrackCrashEvent {
+    public let exceptions: [ExceptionRecord]
+    public let threads: [ThreadRecord]?
+    public let platform: String?
+    public let flutterSdkVersion: String?
+
+    public init(
+        exceptions: [ExceptionRecord],
+        threads: [ThreadRecord]? = nil,
+        platform: String? = nil,
+        flutterSdkVersion: String? = nil
+    ) {
+        self.exceptions = exceptions
+        self.threads = threads
+        self.platform = platform
+        self.flutterSdkVersion = flutterSdkVersion
+    }
 }
 
 protocol TrackRepository2 {
     func trackExperimentEvent(_ event: TrackExperimentEvent)
     func trackEvent(_ event: TrackUserEvent)
-    
+
     @available(iOS 14.0, *)
-    func report(_ crash: MXCrashDiagnostic)
+    func processMetricKitCrash(_ crash: MXCrashDiagnostic)
+
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
 }
 
 struct TrackRequest: Encodable {
@@ -96,11 +157,14 @@ struct TrackEvent: Encodable {
     var timestamp: DateTime
     var exceptions: [ExceptionRecord]?
     var threads: [ThreadRecord]?
+    var platform: String?
+    var flutterSdkVersion: String?
 }
 
-struct ThreadRecord: Encodable {
-    var isMain: Bool?
-    var stacktrace: [Frame]?
+@_spi(FlutterBridge)
+public struct ThreadRecord: Encodable {
+    public let isMain: Bool?
+    public let stacktrace: [StackFrame]?
 }
 
 struct TrackEventMeta: Encodable {
@@ -120,12 +184,6 @@ struct TrackUserEvent {
 struct TrackExperimentEvent {
     var experimentId: String
     var variantId: String
-}
-
-struct TrackCrashEvent {
-    var type: String
-    var message: String
-    var exceptions: [ExceptionRecord]
 }
 
 // Convert UInt64 to hex string
@@ -210,7 +268,9 @@ class TrackRespositoryImpl: TrackRepository2 {
     private func sendAndFlush() async throws {
         // Acquire lock to safely read and clear buffer
         let events: [TrackEvent] = self.queueLock.withLock {
-            guard self.buffer.count > 0 else { return [] }
+            guard self.buffer.count > 0 else {
+                return []
+            }
 
             let events = self.buffer
             self.buffer = []
@@ -261,13 +321,13 @@ class TrackRespositoryImpl: TrackRepository2 {
     }
     
     @available(iOS 14.0, *)
-    func report(_ crash: MXCrashDiagnostic) {
+    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
         if let callStackTree = try? JSONDecoder().decode(
             CallStackTree.self,
             from: crash.callStackTree.jsonRepresentation()
         )
         {
-            var mainThreadFrames = [Frame]()
+            var mainThreadFrames = [StackFrame]()
             var threads = [ThreadRecord]()
 
             // Process all call stacks (limit to prevent malformed data issues)
@@ -275,12 +335,12 @@ class TrackRespositoryImpl: TrackRepository2 {
                 let maxFramesPerThread = 1000
 
                 for currentCallStack in allCallStacks {
-                    var threadFrames = [Frame]()
+                    var threadFrames = [StackFrame]()
                     var rawFramesToProcess = currentCallStack.callStackRootFrames ?? []
 
                     while !rawFramesToProcess.isEmpty && threadFrames.count < maxFramesPerThread {
                         let rawFrame = rawFramesToProcess.removeFirst()
-                        let frame = Frame(
+                        let frame = StackFrame(
                             imageAddr: hex(rawFrame.offsetIntoBinaryTextSegment ?? 0),
                             instructionAddr: hex(rawFrame.address ?? 0),
                             binaryUUID: rawFrame.binaryUUID,
@@ -313,38 +373,67 @@ class TrackRespositoryImpl: TrackRepository2 {
                 callStacks: mainThreadFrames
             )
 
-            // Check if crash is caused by Nubrick (at least one frame contains "Nubrick" in binaryName)
-            let causedByNativebrik = threads.contains { thread in
+            let crashEvent = TrackCrashEvent(
+                exceptions: [exceptionRecord],
+                threads: threads
+            )
+            sendCrashToBackend(crashEvent)
+        }
+    }
+
+    private func sendCrashToBackend(_ crashEvent: TrackCrashEvent) {
+        // Check if crash is caused by Nubrick
+        let causedByNativebrik: Bool
+        if let threads = crashEvent.threads {
+            causedByNativebrik = threads.contains { thread in
                 thread.stacktrace?.contains { frame in
-                    frame.binaryName?.contains("Nubrick") ?? false
+                    frame.binaryName?.contains("Nubrick") ?? false ||
+                    frame.className?.contains("package:nativebrik_bridge") ?? false ||
+                    frame.className?.contains("io.nubrick.nubrick") ?? false
                 } ?? false
             }
-
-            // Acquire lock before modifying buffer
-            self.queueLock.withLock {
-                self.buffer.append(TrackEvent(
-                    typename: .Event,
-                    name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
-                    timestamp: formatToISO8601(getCurrentDate())
-                ))
-                if causedByNativebrik {
-                    self.buffer.append(TrackEvent(
-                        typename: .Event,
-                        name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
-                        timestamp: formatToISO8601(getCurrentDate())
-                    ))
-                    self.buffer.append(TrackEvent(
-                        typename: .Crash,
-                        timestamp: formatToISO8601(getCurrentDate()),
-                        exceptions: [exceptionRecord],
-                        threads: threads
-                    ))
-                }
-            }
-
-            Task.detached(priority: .utility) {
-                try await self.sendAndFlush()
+        } else {
+            causedByNativebrik = crashEvent.exceptions.contains { exception in
+                exception.callStacks?.contains { frame in
+                    frame.binaryName?.contains("Nubrick") ?? false ||
+                    frame.className?.contains("package:nativebrik_bridge") ?? false ||
+                    frame.className?.contains("io.nubrick.nubrick") ?? false
+                } ?? false
             }
         }
+
+        // Acquire lock before modifying buffer
+        self.queueLock.withLock {
+            self.buffer.append(TrackEvent(
+                typename: .Event,
+                name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
+                timestamp: formatToISO8601(getCurrentDate()),
+                platform: nil
+            ))
+            if causedByNativebrik {
+                self.buffer.append(TrackEvent(
+                    typename: .Event,
+                    name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
+                    timestamp: formatToISO8601(getCurrentDate()),
+                    platform: nil
+                ))
+                self.buffer.append(TrackEvent(
+                    typename: .Crash,
+                    timestamp: formatToISO8601(getCurrentDate()),
+                    exceptions: crashEvent.exceptions,
+                    threads: crashEvent.threads,
+                    platform: crashEvent.platform,
+                    flutterSdkVersion: crashEvent.flutterSdkVersion
+                ))
+            }
+        }
+
+        Task.detached(priority: .utility) {
+            try await self.sendAndFlush()
+        }
+    }
+
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
+        sendCrashToBackend(crashEvent)
     }
 }

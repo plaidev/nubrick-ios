@@ -178,7 +178,7 @@ public final class NubrickClient: ObservableObject {
 
         // Initialize AppMetrics only for iOS 14+
         if #available(iOS 14.0, *), config.trackCrashes {
-            self.appMetrics = AppMetrics(self.experiment.report)
+            self.appMetrics = AppMetrics(self.experiment.processMetricKitCrash)
         } else {
             self.appMetrics = nil
         }
@@ -204,11 +204,22 @@ public class NubrickExperiment {
     }
     
     @available(iOS 14.0, *)
-    public func report(crash: MXCrashDiagnostic) {
+    internal func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
         if !isNubrickAvailable {
             return
         }
-       self.container.report(crash)
+       self.container.processMetricKitCrash(crash)
+    }
+
+    /// Sends a crash event from Flutter
+    ///
+    /// - Parameter crashEvent: The crash event containing exceptions, platform, and SDK version
+    @_spi(FlutterBridge)
+    public func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
+        if !isNubrickAvailable {
+            return
+        }
+        self.container.sendFlutterCrash(crashEvent)
     }
 
     @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
@@ -335,6 +346,7 @@ public class NubrickExperiment {
     }
 
     // for flutter integration
+    @_spi(FlutterBridge)
     public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NubrickError> {
         if !isNubrickAvailable {
             return .failure(.notFound)
@@ -357,6 +369,7 @@ public class NubrickExperiment {
         }
     }
 
+    @_spi(FlutterBridge)
     public func __do_not_use__render_uiview(
         json: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,

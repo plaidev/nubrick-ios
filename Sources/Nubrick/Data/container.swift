@@ -1,5 +1,5 @@
 //
-//  cotnainer.swift
+//  container.swift
 //  Nubrick
 //
 //  Created by Ryosuke Suzuki on 2024/03/06.
@@ -36,7 +36,9 @@ protocol Container {
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
     
     @available(iOS 14.0, *)
-    func report(_ crash: MXCrashDiagnostic)
+    func processMetricKitCrash(_ crash: MXCrashDiagnostic)
+
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
 }
 
 class ContainerEmptyImpl: Container {
@@ -73,7 +75,10 @@ class ContainerEmptyImpl: Container {
         return Result.failure(NubrickError.notFound)
     }
     @available(iOS 14.0, *)
-    func report(_ crash: MXCrashDiagnostic) {
+    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
+    }
+
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
     }
 }
 
@@ -349,7 +354,11 @@ class ContainerImpl: Container {
         return Result.success((experimentId, variant))
     }
     @available(iOS 14.0, *)
-    func report(_ crash: MXCrashDiagnostic) {
-        self.trackRepository.report(crash)
+    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
+        self.trackRepository.processMetricKitCrash(crash)
+    }
+
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
+        self.trackRepository.sendFlutterCrash(crashEvent)
     }
 }
