@@ -8,7 +8,6 @@
 import Foundation
 import UIKit
 import SwiftUI
-@_implementationOnly import YogaKit
 import SafariServices
 
 // vc for navigation view

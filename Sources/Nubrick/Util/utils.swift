@@ -321,6 +321,7 @@ func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDir
         layout.minWidth = YGValueUndefined
         layout.flexGrow = 1.0
         layout.flexShrink = 1.0
+        layout.flexBasis = YGValue(value: 0, unit: .point)  // Share space equally
     }
 
     // content fit
@@ -329,6 +330,7 @@ func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDir
         layout.minHeight = YGValueUndefined
         layout.flexGrow = 1.0
         layout.flexShrink = 1.0
+        layout.flexBasis = YGValue(value: 0, unit: .point)  // Share space equally
     }
 }
 

@@ -42,6 +42,10 @@ class ImageView: AnimatedUIControl {
             size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))
         )
         self.image.image = fallback
+        // Check if image is in stretch mode (not fixed size)
+        let isStretchWidth = block.data?.frame?.width == nil || block.data?.frame?.width == 0
+        let isStretchHeight = block.data?.frame?.height == nil || block.data?.frame?.height == 0
+
         self.image.configureLayout { layout in
             layout.isEnabled = true
 
@@ -49,8 +53,15 @@ class ImageView: AnimatedUIControl {
             layout.maxHeight = .init(value: 100, unit: .percent)
             layout.width = .init(value: 100, unit: .percent)
             layout.height = .init(value: 100, unit: .percent)
+
+            if isStretchWidth || isStretchHeight {
+                // Stretch mode: allow shrinking, don't set min constraints
+                layout.flexShrink = 1.0
+            } else {
+                // Fixed size: maintain minimum size
             layout.minWidth = .init(value: 100, unit: .percent)
             layout.minHeight = .init(value: 100, unit: .percent)
+            }
         }
         self.image.contentMode = parseImageContentMode(block.data?.contentMode)
         self.image.clipsToBounds = true

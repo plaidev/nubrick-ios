@@ -7,7 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		25F01C8C2EC5A30700453A04 /* Nubrick in Frameworks */ = {isa = PBXBuildFile; productRef = 25F01C8B2EC5A30700453A04 /* Nubrick */; };
+		250029EE2EE1507500B9CDD8 /* Nubrick.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 250029ED2EE1507500B9CDD8 /* Nubrick.framework */; };
+		250029EF2EE1507500B9CDD8 /* Nubrick.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 250029ED2EE1507500B9CDD8 /* Nubrick.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -27,15 +28,43 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		250029F02EE1507500B9CDD8 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				250029EF2EE1507500B9CDD8 /* Nubrick.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		250029ED2EE1507500B9CDD8 /* Nubrick.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Nubrick.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		25F01C542EC5A27E00453A04 /* Example-Local.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example-Local.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		25F01C612EC5A27E00453A04 /* Example-LocalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Example-LocalTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		25F01C6B2EC5A27E00453A04 /* Example-LocalUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Example-LocalUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		25F01C902EC5A40000453A04 /* Exceptions for "Example-Local" folder in "Example-Local" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 25F01C532EC5A27E00453A04 /* Example-Local */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		25F01C562EC5A27E00453A04 /* Example-Local */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				25F01C902EC5A40000453A04 /* Exceptions for "Example-Local" folder in "Example-Local" target */,
+			);
 			path = "Example-Local";
 			sourceTree = "<group>";
 		};
@@ -46,7 +75,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				25F01C8C2EC5A30700453A04 /* Nubrick in Frameworks */,
+				250029EE2EE1507500B9CDD8 /* Nubrick.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,6 +118,7 @@
 		25F01C8A2EC5A30700453A04 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				250029ED2EE1507500B9CDD8 /* Nubrick.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -103,6 +133,7 @@
 				25F01C502EC5A27E00453A04 /* Sources */,
 				25F01C512EC5A27E00453A04 /* Frameworks */,
 				25F01C522EC5A27E00453A04 /* Resources */,
+				250029F02EE1507500B9CDD8 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -113,7 +144,6 @@
 			);
 			name = "Example-Local";
 			packageProductDependencies = (
-				25F01C8B2EC5A30700453A04 /* Nubrick */,
 			);
 			productName = "Example-Local";
 			productReference = 25F01C542EC5A27E00453A04 /* Example-Local.app */;
@@ -388,6 +418,8 @@
 		};
 		25F01C762EC5A27E00453A04 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 25F01C562EC5A27E00453A04 /* Example-Local */;
+			baseConfigurationReferenceRelativePath = Configuration/Debug.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -396,6 +428,7 @@
 				DEVELOPMENT_TEAM = M3LJ3SDTT4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Example-Local/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -420,6 +453,8 @@
 		};
 		25F01C772EC5A27E00453A04 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 25F01C562EC5A27E00453A04 /* Example-Local */;
+			baseConfigurationReferenceRelativePath = Configuration/Release.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -428,6 +463,7 @@
 				DEVELOPMENT_TEAM = M3LJ3SDTT4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Example-Local/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -574,13 +610,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		25F01C8B2EC5A30700453A04 /* Nubrick */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Nubrick;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 25F01C4C2EC5A27E00453A04 /* Project object */;
 }

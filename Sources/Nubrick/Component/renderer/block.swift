@@ -64,6 +64,9 @@ class UIViewBlock: UIView {
             layout.flexDirection = .row
             layout.justifyContent = .center
             layout.alignItems = .center
+            layout.alignSelf = .stretch
+            layout.flexGrow = 1.0
+            layout.flexShrink = 1.0
         }
 
         self.addSubview(view)

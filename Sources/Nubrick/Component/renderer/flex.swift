@@ -196,7 +196,11 @@ class FlexOverflowView: UIScrollView {
         let _ = configureOnClickGesture(
             target: self, action: #selector(onClicked(sender:)), context: context,
             event: block.data?.onClick)
-        let flexView = FlexView(block: block, context: context, childFlexShrink: 0)  // set child's size to shrink 0.
+        // Create child context with FlexOverflowView's direction as the parent direction
+        let childContext = context.instanciateFrom(
+            UIBlockContextChildInit(parentDirection: block.data?.direction)
+        )
+        let flexView = FlexView(block: block, context: childContext, childFlexShrink: 0)  // set child's size to shrink 0.
         flexView.configureLayout { layout in
             if direction == .column {
                 layout.width = .init(value: 100, unit: .percent)
