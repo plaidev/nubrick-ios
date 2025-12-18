@@ -47,7 +47,7 @@ class AppMetrics: NSObject, MXMetricManagerSubscriber {
 // for development
 public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nubrickCdnUrl = "https://cdn.nativebrik.com"
-public let nubrickSdkVersion = "0.14.2"
+public let nubrickSdkVersion = "0.14.3"
 
 public var isNubrickAvailable: Bool {
     if #available(iOS 15.0, *) { true } else { false }
