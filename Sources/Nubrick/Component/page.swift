@@ -185,24 +185,6 @@ final class PageView: UIView {
         // setup layout
         self.configureLayout { layout in
             layout.isEnabled = true
-
-            // For modals, set fixed height based on modalScreenSize (like Android)
-            if page?.data?.kind == .MODAL {
-                let screenHeight = UIScreen.main.bounds.height
-                let safeAreaTop = UIApplication.shared.connectedScenes
-                    .compactMap { $0 as? UIWindowScene }
-                    .first?.windows.first?.safeAreaInsets.top ?? 0
-
-                switch page?.data?.modalScreenSize {
-                case .MEDIUM:
-                    layout.height = YGValue(value: Float(screenHeight * 0.5), unit: .point)
-                case .LARGE:
-                    layout.height = YGValue(value: Float(screenHeight - safeAreaTop), unit: .point)
-                default:
-                    // Resizable (both MEDIUM and LARGE): use LARGE size
-                    layout.height = YGValue(value: Float(screenHeight - safeAreaTop), unit: .point)
-                }
-            }
         }
         self.addSubview(self.view)
         self.loadDataAndTransition()
