@@ -1,5 +1,4 @@
 import Foundation
-@_implementationOnly import YogaKit
 import UIKit
 
 class TextView: AnimatedUIControl {

@@ -190,13 +190,24 @@ func parseModalPresentationStyle(_ data: ModalPresentationStyle?) -> UIModalPres
 
 @available(iOS 15.0, *)
 func parseModalScreenSize(_ data: ModalScreenSize?) -> [UISheetPresentationController.Detent] {
+    var mediumDetent, fullDetent: UISheetPresentationController.Detent
+
+    if #available(iOS 16.0, *) {
+        let halfId = UISheetPresentationController.Detent.Identifier("half")
+        let fullId = UISheetPresentationController.Detent.Identifier("full")
+        mediumDetent = .custom(identifier: halfId) { ctx in ctx.maximumDetentValue * 0.5 }
+        fullDetent = .custom(identifier: fullId) { ctx in ctx.maximumDetentValue }
+    } else {
+        mediumDetent = .medium()
+        fullDetent = .large()
+    }
     switch data {
-    case .MEDIUM:
-        return [.medium()]
-    case .LARGE:
-        return [.large()]
-    default:
-        return [.medium(), .large()]
+        case .MEDIUM:
+            return [mediumDetent]
+        case .LARGE:
+            return [fullDetent]
+        default:
+            return [mediumDetent, fullDetent]
     }
 }
 
@@ -321,6 +332,7 @@ func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDir
         layout.minWidth = YGValueUndefined
         layout.flexGrow = 1.0
         layout.flexShrink = 1.0
+        layout.flexBasis = YGValue(value: 0, unit: .point)  // Share space equally
     }
 
     // content fit
@@ -329,6 +341,7 @@ func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDir
         layout.minHeight = YGValueUndefined
         layout.flexGrow = 1.0
         layout.flexShrink = 1.0
+        layout.flexBasis = YGValue(value: 0, unit: .point)  // Share space equally
     }
 }
 

@@ -253,7 +253,37 @@ final class PageView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        self.updateModalYogaHeight()
         self.yoga.applyLayout(preservingOrigin: true)
+    }
+
+    private func updateModalYogaHeight() {
+        guard self.page?.data?.kind == .MODAL,
+              self.page?.data?.modalPresentationStyle != .DEPENDS_ON_CONTEXT_OR_FULL_SCREEN else {
+            return
+        }
+
+        // Pin Yoga height to the host window size so it stays stable when a sheet detent changes,
+        // while still respecting iPad multitasking / rotation (window size changes).
+        guard let window = self.window ?? self.modalViewController?.view.window else {
+            return
+        }
+
+        let availableHeight = window.bounds.height
+        let safeAreaTop = window.safeAreaInsets.top
+
+        let targetHeight: CGFloat
+        switch self.page?.data?.modalScreenSize {
+        case .MEDIUM:
+            targetHeight = availableHeight * 0.5
+        case .LARGE:
+            targetHeight = availableHeight - safeAreaTop
+        default:
+            // Resizable (both MEDIUM and LARGE): use LARGE size
+            targetHeight = availableHeight - safeAreaTop
+        }
+
+        self.yoga.height = YGValue(value: Float(max(0, targetHeight)), unit: .point)
     }
 
     private static func mergeProps(pageProps: [Property]?, eventProps: [Property]?) -> [Property] {
