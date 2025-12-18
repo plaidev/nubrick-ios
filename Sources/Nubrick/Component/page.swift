@@ -185,24 +185,6 @@ final class PageView: UIView {
         // setup layout
         self.configureLayout { layout in
             layout.isEnabled = true
-
-            // For modals, set fixed height based on modalScreenSize (like Android)
-            if page?.data?.kind == .MODAL {
-                let screenHeight = UIScreen.main.bounds.height
-                let safeAreaTop = UIApplication.shared.connectedScenes
-                    .compactMap { $0 as? UIWindowScene }
-                    .first?.windows.first?.safeAreaInsets.top ?? 0
-
-                switch page?.data?.modalScreenSize {
-                case .MEDIUM:
-                    layout.height = YGValue(value: Float(screenHeight * 0.5), unit: .point)
-                case .LARGE:
-                    layout.height = YGValue(value: Float(screenHeight - safeAreaTop), unit: .point)
-                default:
-                    // Resizable (both MEDIUM and LARGE): use LARGE size
-                    layout.height = YGValue(value: Float(screenHeight - safeAreaTop), unit: .point)
-                }
-            }
         }
         self.addSubview(self.view)
         self.loadDataAndTransition()
@@ -271,7 +253,37 @@ final class PageView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        self.updateModalYogaHeight()
         self.yoga.applyLayout(preservingOrigin: true)
+    }
+
+    private func updateModalYogaHeight() {
+        guard self.page?.data?.kind == .MODAL,
+              self.page?.data?.modalPresentationStyle != .DEPENDS_ON_CONTEXT_OR_FULL_SCREEN else {
+            return
+        }
+
+        // Pin Yoga height to the host window size so it stays stable when a sheet detent changes,
+        // while still respecting iPad multitasking / rotation (window size changes).
+        guard let window = self.window ?? self.modalViewController?.view.window else {
+            return
+        }
+
+        let availableHeight = window.bounds.height
+        let safeAreaTop = window.safeAreaInsets.top
+
+        let targetHeight: CGFloat
+        switch self.page?.data?.modalScreenSize {
+        case .MEDIUM:
+            targetHeight = availableHeight * 0.5
+        case .LARGE:
+            targetHeight = availableHeight - safeAreaTop
+        default:
+            // Resizable (both MEDIUM and LARGE): use LARGE size
+            targetHeight = availableHeight - safeAreaTop
+        }
+
+        self.yoga.height = YGValue(value: Float(max(0, targetHeight)), unit: .point)
     }
 
     private static func mergeProps(pageProps: [Property]?, eventProps: [Property]?) -> [Property] {
