@@ -59,8 +59,8 @@ class ImageView: AnimatedUIControl {
                 layout.flexShrink = 1.0
             } else {
                 // Fixed size: maintain minimum size
-            layout.minWidth = .init(value: 100, unit: .percent)
-            layout.minHeight = .init(value: 100, unit: .percent)
+                layout.minWidth = .init(value: 100, unit: .percent)
+                layout.minHeight = .init(value: 100, unit: .percent)
             }
         }
         self.image.contentMode = parseImageContentMode(block.data?.contentMode)

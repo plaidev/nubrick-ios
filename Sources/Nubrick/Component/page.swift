@@ -259,7 +259,7 @@ final class PageView: UIView {
 
     private func updateModalYogaHeight() {
         guard self.page?.data?.kind == .MODAL,
-              self.page?.data?.modalPresentationStyle != .DEPENDS_ON_CONTEXT_OR_FULL_SCREEN else {
+              self.page?.data?.modalPresentationStyle == .DEPENDS_ON_CONTEXT_OR_PAGE_SHEET else {
             return
         }
 
