@@ -250,6 +250,19 @@ class FlexOverflowView: UIScrollView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+
+        // Re-apply yoga to inner FlexView with flexible dimensions
+        // This allows scroll content to grow beyond the scroll view's visible bounds
+        // Set min size so inner FlexView fills at least the visible area
+        let direction = parseDirection(self.block.data?.direction)
+        if direction == .column {
+            self.flexView.yoga.minHeight = YGValue(value: Float(self.bounds.height), unit: .point)
+            self.flexView.yoga.applyLayout(preservingOrigin: true, dimensionFlexibility: .flexibleHeight)
+        } else {
+            self.flexView.yoga.minWidth = YGValue(value: Float(self.bounds.width), unit: .point)
+            self.flexView.yoga.applyLayout(preservingOrigin: true, dimensionFlexibility: .flexibleWidth)
+        }
+
         self.contentSize = self.flexView.bounds.size
         configureBorder(view: self, frame: self.block.data?.frame)
     }
