@@ -18,7 +18,7 @@ concurrency: # to avoid race conditions
 
 jobs:
   release:
-    runs-on: macos-26
+    runs-on: macos-15
     environment:
       name: Only Main
     timeout-minutes: 15
