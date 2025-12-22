@@ -259,8 +259,9 @@ class TrackRespositoryImpl: TrackRepository2 {
                 }
             }
             self.buffer.append(event)
-            if self.buffer.count >= self.maxQueueSize {
-                self.buffer.removeFirst(self.maxQueueSize - self.buffer.count)
+            if self.buffer.count > self.maxQueueSize {
+                let overflow = self.buffer.count - self.maxQueueSize
+                self.buffer.removeFirst(overflow)
             }
         }
     }
