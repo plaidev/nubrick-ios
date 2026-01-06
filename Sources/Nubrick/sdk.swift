@@ -228,10 +228,57 @@ public class NubrickExperiment {
     /// delivered by MetricKit in the next app session.
     ///
     /// - Parameter breadcrumb: The breadcrumb to record
+    @_spi(FlutterBridge)
     public func recordBreadcrumb(_ breadcrumb: Breadcrumb) {
         if !isNubrickAvailable {
             return
         }
+        self.container.recordBreadcrumb(breadcrumb)
+    }
+    
+    /// Records a breadcrumb from Flutter Bridge data
+    ///
+    /// - Parameter data: Dictionary containing breadcrumb data from Flutter's method channel.
+    ///
+    /// Expected structure from Flutter (see `lib/breadcrumb.dart`):
+    /// ```
+    /// {
+    ///   "message": String,              // Required: breadcrumb message
+    ///   "category": String,             // Optional: "navigation", "ui", "http", "console", "custom"
+    ///   "level": String,                // Optional: "debug", "info", "warning", "error", "fatal"
+    ///   "data": [String: Any]?,         // Optional: additional key-value data
+    ///   "timestamp": Int64              // Required: milliseconds since epoch
+    /// }
+    /// ```
+    @_spi(FlutterBridge)
+    public func recordBreadcrumb(_ data: [String: Any]) {
+        if !isNubrickAvailable {
+            return
+        }
+        // Flutter method channel passes String and Int64 from Dart
+        guard let message = data["message"] as? String,
+              let timestamp = data["timestamp"] as? Int64 else {
+            return
+        }
+        // category and level are optional strings with defaults
+        let categoryString = data["category"] as? String ?? "custom"
+        let levelString = data["level"] as? String ?? "info"
+        let category = BreadcrumbCategory(rawValue: categoryString) ?? .custom
+        let level = BreadcrumbLevel(rawValue: levelString) ?? .info
+
+        // data is an optional dictionary; we only keep String values
+        var stringData: [String: String]? = nil
+        if let rawData = data["data"] as? [String: Any] {
+            stringData = rawData.compactMapValues { $0 as? String }
+        }
+
+        let breadcrumb = Breadcrumb(
+            message: message,
+            category: category,
+            level: level,
+            data: stringData,
+           timestamp: timestamp
+        )
         self.container.recordBreadcrumb(breadcrumb)
     }
 
