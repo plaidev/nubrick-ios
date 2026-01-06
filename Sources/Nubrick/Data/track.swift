@@ -109,6 +109,7 @@ public struct ExceptionRecord: Encodable {
 
 /// The category of a breadcrumb.
 /// Based on Sentry's breadcrumb categories.
+@_spi(FlutterBridge)
 public enum BreadcrumbCategory: String, Codable {
     /// Screen navigation events
     case navigation
@@ -124,6 +125,7 @@ public enum BreadcrumbCategory: String, Codable {
 
 /// The severity level of a breadcrumb.
 /// Based on Sentry's breadcrumb levels.
+@_spi(FlutterBridge)
 public enum BreadcrumbLevel: String, Codable {
     case debug
     case info
@@ -133,6 +135,7 @@ public enum BreadcrumbLevel: String, Codable {
 }
 
 /// Breadcrumb for crash reporting context
+@_spi(FlutterBridge)
 public struct Breadcrumb: Codable {
     public let message: String
     public let category: BreadcrumbCategory

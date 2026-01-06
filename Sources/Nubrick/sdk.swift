@@ -228,6 +228,7 @@ public class NubrickExperiment {
     /// delivered by MetricKit in the next app session.
     ///
     /// - Parameter breadcrumb: The breadcrumb to record
+    @_spi(FlutterBridge)
     public func recordBreadcrumb(_ breadcrumb: Breadcrumb) {
         if !isNubrickAvailable {
             return
