@@ -16,6 +16,7 @@ class ModalRootViewController: UIViewController {
     private let modalViewController: ModalComponentViewController?
     private var event: UIBlockEventManager? = nil
     private let container: Container
+    private var currentPageId: String = ""
 
     init(
         root: UIRootBlock?, container: Container, modalViewController: ModalComponentViewController?
@@ -52,14 +53,19 @@ class ModalRootViewController: UIViewController {
     }
 
     func presentPage(pageId: String, props: [Property]?) {
+        let fromPageId = self.currentPageId
         var page = self.pages.first { page in
             return pageId == page.id
         }
+        var toPageId = pageId
 
         // when it's trigger
         if page?.data?.kind == PageKind.TRIGGER {
             page = self.pages.first { p in
                 return p.id == page?.data?.triggerSetting?.onTrigger?.destinationPageId
+            }
+            if let resolvedPageId = page?.id {
+                toPageId = resolvedPageId
             }
         }
 
@@ -70,12 +76,26 @@ class ModalRootViewController: UIViewController {
 
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
+            self.container.recordBreadcrumb(Breadcrumb(
+                message: "Modal dismissed",
+                category: .navigation,
+                level: .info,
+                data: ["from": fromPageId]
+            ))
+            self.currentPageId = ""
             self.modalViewController?.dismissModal()
             return
         }
 
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
+            self.container.recordBreadcrumb(Breadcrumb(
+                message: "WebView modal page navigation",
+                category: .navigation,
+                level: .info,
+                data: ["from": fromPageId, "to": toPageId]
+            ))
+            self.currentPageId = toPageId
             let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
             self.modalViewController?.presentWebview(
                 url: page?.data?.webviewUrl,
@@ -102,6 +122,13 @@ class ModalRootViewController: UIViewController {
 
         switch page?.data?.kind {
         case .MODAL:
+            self.container.recordBreadcrumb(Breadcrumb(
+                message: "Modal page navigation",
+                category: .navigation,
+                level: .info,
+                data: ["from": fromPageId, "to": toPageId]
+            ))
+            self.currentPageId = toPageId
             let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
             self.modalViewController?.presentNavigation(
                 pageView: pageView,
@@ -216,18 +243,19 @@ class RootView: UIView {
     }
 
     func presentPage(pageId: String, props: [Property]?) {
+        let fromPageId = self.currentEmbeddedPageId
         var page = self.pages.first { page in
             return pageId == page.id
         }
-        var currentPageId = pageId
+        var toPageId = pageId
 
         // when it's trigger
         if page?.data?.kind == PageKind.TRIGGER {
             page = self.pages.first { p in
                 return p.id == page?.data?.triggerSetting?.onTrigger?.destinationPageId
             }
-            if let pageId = page?.id {
-                currentPageId = pageId
+            if let resolvedPageId = page?.id {
+                toPageId = resolvedPageId
             }
         }
 
@@ -238,6 +266,12 @@ class RootView: UIView {
 
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
+            self.container.recordBreadcrumb(Breadcrumb(
+                message: "Embedded dismissed",
+                category: .navigation,
+                level: .info,
+                data: ["from": fromPageId]
+            ))
             self.currentPageView = nil
             self.modalViewController?.dismissModal()
             self.onDismiss()
@@ -246,6 +280,12 @@ class RootView: UIView {
 
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
+            self.container.recordBreadcrumb(Breadcrumb(
+                message: "WebView modal page navigation",
+                category: .navigation,
+                level: .info,
+                data: ["from": fromPageId, "to": toPageId]
+            ))
             let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
             self.modalViewController?.presentWebview(
                 url: page?.data?.webviewUrl,
@@ -264,6 +304,12 @@ class RootView: UIView {
 
         // when it's tooltip
         if page?.data?.kind == PageKind.TOOLTIP {
+            self.container.recordBreadcrumb(Breadcrumb(
+                message: "Tooltip page navigation",
+                category: .navigation,
+                level: .info,
+                data: ["from": fromPageId, "to": toPageId]
+            ))
             self.onNextTooltip(pageId)
             let anchorId = page?.data?.tooltipAnchor ?? ""
             self.currentTooltipAnchorId = anchorId
@@ -280,6 +326,12 @@ class RootView: UIView {
 
         switch page?.data?.kind {
         case .MODAL:
+            self.container.recordBreadcrumb(Breadcrumb(
+                message: "Modal page navigation",
+                category: .navigation,
+                level: .info,
+                data: ["from": fromPageId, "to": toPageId]
+            ))
             let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
             self.modalViewController?.presentNavigation(
                 pageView: pageView,
@@ -298,13 +350,19 @@ class RootView: UIView {
             break
         default:
             self.modalViewController?.dismissModal()
-            if self.currentEmbeddedPageId == currentPageId {
+            if self.currentEmbeddedPageId == toPageId {
                 return
             }
+            self.container.recordBreadcrumb(Breadcrumb(
+                message: "Embedded page navigation",
+                category: .navigation,
+                level: .info,
+                data: ["from": fromPageId, "to": toPageId]
+            ))
             self.view?.removeFromSuperview()
             self.view = pageView
             self.addSubview(pageView)
-            self.currentEmbeddedPageId = currentPageId
+            self.currentEmbeddedPageId = toPageId
             break
         }
     }

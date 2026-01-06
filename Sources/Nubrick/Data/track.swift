@@ -11,6 +11,7 @@ import MetricKit
 import Darwin.Mach
 
 private let CRASH_RECORD_KEY: String = "NATIVEBRIK_CRASH_RECORD"
+private let BREADCRUMB_RECORD_KEY: String = "NUBRICK_BREADCRUMB_RECORD"
 
 // convert MetricKit exception type to string
 func exceptionTypeString(_ num: NSNumber?) -> String {
@@ -106,23 +107,77 @@ public struct ExceptionRecord: Encodable {
     }
 }
 
+/// The category of a breadcrumb.
+/// Based on Sentry's breadcrumb categories.
+@_spi(FlutterBridge)
+public enum BreadcrumbCategory: String, Codable {
+    /// Screen navigation events
+    case navigation
+    /// User interaction events (taps, clicks, etc.)
+    case ui
+    /// HTTP request events
+    case http
+    /// Console log events
+    case console
+    /// Custom events
+    case custom
+}
+
+/// The severity level of a breadcrumb.
+/// Based on Sentry's breadcrumb levels.
+@_spi(FlutterBridge)
+public enum BreadcrumbLevel: String, Codable {
+    case debug
+    case info
+    case warning
+    case error
+    case fatal
+}
+
+/// Breadcrumb for crash reporting context
+@_spi(FlutterBridge)
+public struct Breadcrumb: Codable {
+    public let message: String
+    public let category: BreadcrumbCategory
+    public let level: BreadcrumbLevel
+    public let data: [String: String]?
+    public let timestamp: Int64
+
+    public init(
+        message: String,
+        category: BreadcrumbCategory = .custom,
+        level: BreadcrumbLevel = .info,
+        data: [String: String]? = nil,
+        timestamp: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) {
+        self.message = message
+        self.category = category
+        self.level = level
+        self.data = data
+        self.timestamp = timestamp
+    }
+}
+
 @_spi(FlutterBridge)
 public struct TrackCrashEvent {
     public let exceptions: [ExceptionRecord]
     public let threads: [ThreadRecord]?
     public let platform: String?
     public let flutterSdkVersion: String?
+    public let breadcrumbs: [Breadcrumb]?
 
     public init(
         exceptions: [ExceptionRecord],
         threads: [ThreadRecord]? = nil,
         platform: String? = nil,
-        flutterSdkVersion: String? = nil
+        flutterSdkVersion: String? = nil,
+        breadcrumbs: [Breadcrumb]? = nil
     ) {
         self.exceptions = exceptions
         self.threads = threads
         self.platform = platform
         self.flutterSdkVersion = flutterSdkVersion
+        self.breadcrumbs = breadcrumbs
     }
 }
 
@@ -134,6 +189,8 @@ protocol TrackRepository2 {
     func processMetricKitCrash(_ crash: MXCrashDiagnostic)
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
+    func recordBreadcrumb(_ breadcrumb: Breadcrumb)
+    func getBreadcrumbs() -> [Breadcrumb]
 }
 
 struct TrackRequest: Encodable {
@@ -159,6 +216,7 @@ struct TrackEvent: Encodable {
     var threads: [ThreadRecord]?
     var platform: String?
     var flutterSdkVersion: String?
+    var breadcrumbs: [Breadcrumb]?
 }
 
 @_spi(FlutterBridge)
@@ -203,18 +261,24 @@ func imageAddrHex(addressDec: UInt64, offsetIntoTextDec: UInt64) -> String? {
 class TrackRespositoryImpl: TrackRepository2 {
     private let maxQueueSize: Int
     private let maxBatchSize: Int
+    private let maxBreadcrumbSize: Int
     private let config: Config
     private let user: NubrickUser
     private let queueLock: NSLock
+    private let breadcrumbLock: NSLock
     private var timer: Timer?
     private var buffer: [TrackEvent]
+    private var breadcrumbBuffer: [Breadcrumb]
     init(config: Config, user: NubrickUser) {
         self.maxQueueSize = 300
         self.maxBatchSize = 50
+        self.maxBreadcrumbSize = 50
         self.config = config
         self.user = user
         self.queueLock = NSLock()
+        self.breadcrumbLock = NSLock()
         self.buffer = []
+        self.breadcrumbBuffer = []
         self.timer = nil
     }
     
@@ -222,7 +286,26 @@ class TrackRespositoryImpl: TrackRepository2 {
         self.timer?.invalidate()
     }
     
+    /// Tracks when an experiment variant is displayed to the user.
+    /// Called after a variant is selected and before the component is rendered.
+    ///
+    /// This data is used for:
+    /// - A/B test analytics (which variant was shown to which user)
+    /// - Conversion tracking (correlating experiment exposure with user actions)
+    ///
+    /// - Parameter event: Contains the experimentId and selected variantId
     func trackExperimentEvent(_ event: TrackExperimentEvent) {
+        // Record breadcrumb for experiment display
+        self.recordBreadcrumb(Breadcrumb(
+            message: "Experiment displayed",
+            category: .navigation,
+            level: .info,
+            data: [
+                "experimentId": event.experimentId,
+                "variantId": event.variantId
+            ]
+        ))
+
         self.pushToQueue(TrackEvent(
             typename: .Experiment,
             experimentId: event.experimentId,
@@ -374,9 +457,14 @@ class TrackRespositoryImpl: TrackRepository2 {
                 callStacks: mainThreadFrames
             )
 
+            // MetricKit delivers crash reports from the previous session on next app launch.
+            // Load persisted breadcrumbs that were saved before the crash.
+            let breadcrumbs = loadAndClearPersistedBreadcrumbs()
+
             let crashEvent = TrackCrashEvent(
                 exceptions: [exceptionRecord],
-                threads: threads
+                threads: threads,
+                breadcrumbs: breadcrumbs
             )
             sendCrashToBackend(crashEvent)
         }
@@ -424,7 +512,8 @@ class TrackRespositoryImpl: TrackRepository2 {
                     exceptions: crashEvent.exceptions,
                     threads: crashEvent.threads,
                     platform: crashEvent.platform,
-                    flutterSdkVersion: crashEvent.flutterSdkVersion
+                    flutterSdkVersion: crashEvent.flutterSdkVersion,
+                    breadcrumbs: crashEvent.breadcrumbs
                 ))
             }
         }
@@ -435,6 +524,54 @@ class TrackRespositoryImpl: TrackRepository2 {
     }
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        sendCrashToBackend(crashEvent)
+        // Flutter SDK sends crashes immediately when they occur (same session),
+        // so we use in-memory breadcrumbs. Unlike MetricKit crashes which are
+        // delivered on next launch, Flutter errors are caught and sent synchronously.
+        let breadcrumbs = getBreadcrumbs()
+        let eventWithBreadcrumbs = TrackCrashEvent(
+            exceptions: crashEvent.exceptions,
+            threads: crashEvent.threads,
+            platform: crashEvent.platform,
+            flutterSdkVersion: crashEvent.flutterSdkVersion,
+            breadcrumbs: crashEvent.breadcrumbs ?? breadcrumbs
+        )
+        sendCrashToBackend(eventWithBreadcrumbs)
+    }
+
+    func recordBreadcrumb(_ breadcrumb: Breadcrumb) {
+        self.breadcrumbLock.withLock {
+            self.breadcrumbBuffer.append(breadcrumb)
+            if self.breadcrumbBuffer.count > self.maxBreadcrumbSize {
+                let overflow = self.breadcrumbBuffer.count - self.maxBreadcrumbSize
+                self.breadcrumbBuffer.removeFirst(overflow)
+            }
+            // Persist to UserDefaults for MetricKit crash reports (delivered next session)
+            self.persistBreadcrumbs(self.breadcrumbBuffer)
+        }
+    }
+
+    func getBreadcrumbs() -> [Breadcrumb] {
+        return self.breadcrumbLock.withLock {
+            return self.breadcrumbBuffer
+        }
+    }
+
+    // MARK: - Breadcrumb Persistence for MetricKit crashes
+
+    /// Persists breadcrumbs to UserDefaults so they can be included in MetricKit crash reports
+    /// (which are delivered in the next app session)
+    private func persistBreadcrumbs(_ breadcrumbs: [Breadcrumb]) {
+        guard let data = try? JSONEncoder().encode(breadcrumbs) else { return }
+        UserDefaults.standard.set(data, forKey: BREADCRUMB_RECORD_KEY)
+    }
+
+    /// Loads persisted breadcrumbs from UserDefaults and clears them
+    private func loadAndClearPersistedBreadcrumbs() -> [Breadcrumb]? {
+        guard let data = UserDefaults.standard.data(forKey: BREADCRUMB_RECORD_KEY) else {
+            return nil
+        }
+        // Clear after loading (they should only be used once)
+        UserDefaults.standard.removeObject(forKey: BREADCRUMB_RECORD_KEY)
+        return try? JSONDecoder().decode([Breadcrumb].self, from: data)
     }
 }

@@ -39,6 +39,7 @@ protocol Container {
     func processMetricKitCrash(_ crash: MXCrashDiagnostic)
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
+    func recordBreadcrumb(_ breadcrumb: Breadcrumb)
 }
 
 class ContainerEmptyImpl: Container {
@@ -79,6 +80,9 @@ class ContainerEmptyImpl: Container {
     }
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
+    }
+
+    func recordBreadcrumb(_ breadcrumb: Breadcrumb) {
     }
 }
 
@@ -360,5 +364,9 @@ class ContainerImpl: Container {
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
         self.trackRepository.sendFlutterCrash(crashEvent)
+    }
+
+    func recordBreadcrumb(_ breadcrumb: Breadcrumb) {
+        self.trackRepository.recordBreadcrumb(breadcrumb)
     }
 }
