@@ -106,23 +106,50 @@ public struct ExceptionRecord: Encodable {
     }
 }
 
+/// Breadcrumb for crash reporting context
+@_spi(FlutterBridge)
+public struct Breadcrumb: Encodable {
+    public let message: String
+    public let category: String
+    public let level: String
+    public let data: [String: String]?
+    public let timestamp: Int64
+
+    public init(
+        message: String,
+        category: String = "custom",
+        level: String = "info",
+        data: [String: String]? = nil,
+        timestamp: Int64
+    ) {
+        self.message = message
+        self.category = category
+        self.level = level
+        self.data = data
+        self.timestamp = timestamp
+    }
+}
+
 @_spi(FlutterBridge)
 public struct TrackCrashEvent {
     public let exceptions: [ExceptionRecord]
     public let threads: [ThreadRecord]?
     public let platform: String?
     public let flutterSdkVersion: String?
+    public let breadcrumbs: [Breadcrumb]?
 
     public init(
         exceptions: [ExceptionRecord],
         threads: [ThreadRecord]? = nil,
         platform: String? = nil,
-        flutterSdkVersion: String? = nil
+        flutterSdkVersion: String? = nil,
+        breadcrumbs: [Breadcrumb]? = nil
     ) {
         self.exceptions = exceptions
         self.threads = threads
         self.platform = platform
         self.flutterSdkVersion = flutterSdkVersion
+        self.breadcrumbs = breadcrumbs
     }
 }
 
@@ -134,6 +161,8 @@ protocol TrackRepository2 {
     func processMetricKitCrash(_ crash: MXCrashDiagnostic)
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
+    func recordBreadcrumb(_ breadcrumb: Breadcrumb)
+    func getBreadcrumbs() -> [Breadcrumb]
 }
 
 struct TrackRequest: Encodable {
@@ -159,6 +188,7 @@ struct TrackEvent: Encodable {
     var threads: [ThreadRecord]?
     var platform: String?
     var flutterSdkVersion: String?
+    var breadcrumbs: [Breadcrumb]?
 }
 
 @_spi(FlutterBridge)
@@ -203,18 +233,24 @@ func imageAddrHex(addressDec: UInt64, offsetIntoTextDec: UInt64) -> String? {
 class TrackRespositoryImpl: TrackRepository2 {
     private let maxQueueSize: Int
     private let maxBatchSize: Int
+    private let maxBreadcrumbSize: Int
     private let config: Config
     private let user: NubrickUser
     private let queueLock: NSLock
+    private let breadcrumbLock: NSLock
     private var timer: Timer?
     private var buffer: [TrackEvent]
+    private var breadcrumbBuffer: [Breadcrumb]
     init(config: Config, user: NubrickUser) {
         self.maxQueueSize = 300
         self.maxBatchSize = 50
+        self.maxBreadcrumbSize = 50
         self.config = config
         self.user = user
         self.queueLock = NSLock()
+        self.breadcrumbLock = NSLock()
         self.buffer = []
+        self.breadcrumbBuffer = []
         self.timer = nil
     }
     
@@ -424,7 +460,8 @@ class TrackRespositoryImpl: TrackRepository2 {
                     exceptions: crashEvent.exceptions,
                     threads: crashEvent.threads,
                     platform: crashEvent.platform,
-                    flutterSdkVersion: crashEvent.flutterSdkVersion
+                    flutterSdkVersion: crashEvent.flutterSdkVersion,
+                    breadcrumbs: crashEvent.breadcrumbs
                 ))
             }
         }
@@ -435,6 +472,31 @@ class TrackRespositoryImpl: TrackRepository2 {
     }
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        sendCrashToBackend(crashEvent)
+        // Get current breadcrumbs and include them in the crash event
+        let breadcrumbs = getBreadcrumbs()
+        let eventWithBreadcrumbs = TrackCrashEvent(
+            exceptions: crashEvent.exceptions,
+            threads: crashEvent.threads,
+            platform: crashEvent.platform,
+            flutterSdkVersion: crashEvent.flutterSdkVersion,
+            breadcrumbs: crashEvent.breadcrumbs ?? breadcrumbs
+        )
+        sendCrashToBackend(eventWithBreadcrumbs)
+    }
+
+    func recordBreadcrumb(_ breadcrumb: Breadcrumb) {
+        self.breadcrumbLock.withLock {
+            self.breadcrumbBuffer.append(breadcrumb)
+            if self.breadcrumbBuffer.count > self.maxBreadcrumbSize {
+                let overflow = self.breadcrumbBuffer.count - self.maxBreadcrumbSize
+                self.breadcrumbBuffer.removeFirst(overflow)
+            }
+        }
+    }
+
+    func getBreadcrumbs() -> [Breadcrumb] {
+        return self.breadcrumbLock.withLock {
+            return self.breadcrumbBuffer
+        }
     }
 }

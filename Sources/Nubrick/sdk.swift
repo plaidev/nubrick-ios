@@ -222,6 +222,17 @@ public class NubrickExperiment {
         self.container.sendFlutterCrash(crashEvent)
     }
 
+    /// Records a breadcrumb for crash reporting context
+    ///
+    /// - Parameter breadcrumb: The breadcrumb to record
+    @_spi(FlutterBridge)
+    public func recordBreadcrumb(_ breadcrumb: Breadcrumb) {
+        if !isNubrickAvailable {
+            return
+        }
+        self.container.recordBreadcrumb(breadcrumb)
+    }
+
     @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
     public func record(exception: NSException) {
         // No-op: MetricKit handles crash reporting automatically on iOS 14+
