@@ -28,10 +28,10 @@ class AppMetrics: NSObject, MXMetricManagerSubscriber {
        didReceive(shared.pastDiagnosticPayloads)
    }
 
-   deinit {
-       let shared = MXMetricManager.shared
-       shared.remove(self)
-   }
+   // Note: We intentionally don't call MXMetricManager.shared.remove(self) in deinit.
+   // During app termination, the deallocation order is not guaranteed, and calling
+   // remove() on a partially deallocated object causes EXC_BAD_ACCESS crashes.
+   // The OS will clean up all subscribers when the process terminates.
 
    func didReceive(_ payloads: [MXDiagnosticPayload]) {
        
