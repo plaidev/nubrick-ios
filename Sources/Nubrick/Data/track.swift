@@ -106,19 +106,46 @@ public struct ExceptionRecord: Encodable {
     }
 }
 
+/// The category of a breadcrumb.
+/// Based on Sentry's breadcrumb categories.
+@_spi(FlutterBridge)
+public enum BreadcrumbCategory: String, Encodable {
+    /// Screen navigation events
+    case navigation
+    /// User interaction events (taps, clicks, etc.)
+    case ui
+    /// HTTP request events
+    case http
+    /// Console log events
+    case console
+    /// Custom events
+    case custom
+}
+
+/// The severity level of a breadcrumb.
+/// Based on Sentry's breadcrumb levels.
+@_spi(FlutterBridge)
+public enum BreadcrumbLevel: String, Encodable {
+    case debug
+    case info
+    case warning
+    case error
+    case fatal
+}
+
 /// Breadcrumb for crash reporting context
 @_spi(FlutterBridge)
 public struct Breadcrumb: Encodable {
     public let message: String
-    public let category: String
-    public let level: String
+    public let category: BreadcrumbCategory
+    public let level: BreadcrumbLevel
     public let data: [String: String]?
     public let timestamp: Int64
 
     public init(
         message: String,
-        category: String = "custom",
-        level: String = "info",
+        category: BreadcrumbCategory = .custom,
+        level: BreadcrumbLevel = .info,
         data: [String: String]? = nil,
         timestamp: Int64
     ) {

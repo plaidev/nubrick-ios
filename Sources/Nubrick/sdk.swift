@@ -233,6 +233,38 @@ public class NubrickExperiment {
         self.container.recordBreadcrumb(breadcrumb)
     }
 
+    /// Records a breadcrumb from Flutter Bridge data
+    ///
+    /// - Parameter data: Dictionary containing breadcrumb data with string values
+    @_spi(FlutterBridge)
+    public func recordBreadcrumb(_ data: [String: Any]) {
+        if !isNubrickAvailable {
+            return
+        }
+        guard let message = data["message"] as? String,
+              let timestamp = data["timestamp"] as? Int64 else {
+            return
+        }
+        let categoryString = data["category"] as? String ?? "custom"
+        let levelString = data["level"] as? String ?? "info"
+        let category = BreadcrumbCategory(rawValue: categoryString) ?? .custom
+        let level = BreadcrumbLevel(rawValue: levelString) ?? .info
+
+        var stringData: [String: String]? = nil
+        if let rawData = data["data"] as? [String: Any] {
+            stringData = rawData.compactMapValues { $0 as? String }
+        }
+
+        let breadcrumb = Breadcrumb(
+            message: message,
+            category: category,
+            level: level,
+            data: stringData,
+            timestamp: timestamp
+        )
+        self.container.recordBreadcrumb(breadcrumb)
+    }
+
     @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
     public func record(exception: NSException) {
         // No-op: MetricKit handles crash reporting automatically on iOS 14+
