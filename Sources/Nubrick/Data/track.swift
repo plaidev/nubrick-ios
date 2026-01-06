@@ -11,7 +11,7 @@ import MetricKit
 import Darwin.Mach
 
 private let CRASH_RECORD_KEY: String = "NATIVEBRIK_CRASH_RECORD"
-private let BREADCRUMB_RECORD_KEY: String = "NATIVEBRIK_BREADCRUMB_RECORD"
+private let BREADCRUMB_RECORD_KEY: String = "NUBRICK_BREADCRUMB_RECORD"
 
 // convert MetricKit exception type to string
 func exceptionTypeString(_ num: NSNumber?) -> String {
@@ -109,7 +109,6 @@ public struct ExceptionRecord: Encodable {
 
 /// The category of a breadcrumb.
 /// Based on Sentry's breadcrumb categories.
-@_spi(FlutterBridge)
 public enum BreadcrumbCategory: String, Codable {
     /// Screen navigation events
     case navigation
@@ -125,7 +124,6 @@ public enum BreadcrumbCategory: String, Codable {
 
 /// The severity level of a breadcrumb.
 /// Based on Sentry's breadcrumb levels.
-@_spi(FlutterBridge)
 public enum BreadcrumbLevel: String, Codable {
     case debug
     case info
@@ -135,7 +133,6 @@ public enum BreadcrumbLevel: String, Codable {
 }
 
 /// Breadcrumb for crash reporting context
-@_spi(FlutterBridge)
 public struct Breadcrumb: Codable {
     public let message: String
     public let category: BreadcrumbCategory
