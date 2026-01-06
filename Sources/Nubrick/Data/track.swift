@@ -148,7 +148,7 @@ public struct Breadcrumb: Codable {
         category: BreadcrumbCategory = .custom,
         level: BreadcrumbLevel = .info,
         data: [String: String]? = nil,
-        timestamp: Int64
+        timestamp: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
     ) {
         self.message = message
         self.category = category
@@ -286,7 +286,26 @@ class TrackRespositoryImpl: TrackRepository2 {
         self.timer?.invalidate()
     }
     
+    /// Tracks when an experiment variant is displayed to the user.
+    /// Called after a variant is selected and before the component is rendered.
+    ///
+    /// This data is used for:
+    /// - A/B test analytics (which variant was shown to which user)
+    /// - Conversion tracking (correlating experiment exposure with user actions)
+    ///
+    /// - Parameter event: Contains the experimentId and selected variantId
     func trackExperimentEvent(_ event: TrackExperimentEvent) {
+        // Record breadcrumb for experiment display
+        self.recordBreadcrumb(Breadcrumb(
+            message: "Experiment displayed",
+            category: .navigation,
+            level: .info,
+            data: [
+                "experimentId": event.experimentId,
+                "variantId": event.variantId
+            ]
+        ))
+
         self.pushToQueue(TrackEvent(
             typename: .Experiment,
             experimentId: event.experimentId,
