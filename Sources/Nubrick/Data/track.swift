@@ -435,7 +435,8 @@ class TrackRespositoryImpl: TrackRepository2 {
                 callStacks: mainThreadFrames
             )
 
-            // Load persisted breadcrumbs from previous session
+            // MetricKit delivers crash reports from the previous session on next app launch.
+            // Load persisted breadcrumbs that were saved before the crash.
             let breadcrumbs = loadAndClearPersistedBreadcrumbs()
 
             let crashEvent = TrackCrashEvent(
@@ -501,7 +502,9 @@ class TrackRespositoryImpl: TrackRepository2 {
     }
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        // Get current breadcrumbs and include them in the crash event
+        // Flutter SDK sends crashes immediately when they occur (same session),
+        // so we use in-memory breadcrumbs. Unlike MetricKit crashes which are
+        // delivered on next launch, Flutter errors are caught and sent synchronously.
         let breadcrumbs = getBreadcrumbs()
         let eventWithBreadcrumbs = TrackCrashEvent(
             exceptions: crashEvent.exceptions,
