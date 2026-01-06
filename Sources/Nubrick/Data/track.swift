@@ -11,6 +11,7 @@ import MetricKit
 import Darwin.Mach
 
 private let CRASH_RECORD_KEY: String = "NATIVEBRIK_CRASH_RECORD"
+private let BREADCRUMB_RECORD_KEY: String = "NATIVEBRIK_BREADCRUMB_RECORD"
 
 // convert MetricKit exception type to string
 func exceptionTypeString(_ num: NSNumber?) -> String {
@@ -109,7 +110,7 @@ public struct ExceptionRecord: Encodable {
 /// The category of a breadcrumb.
 /// Based on Sentry's breadcrumb categories.
 @_spi(FlutterBridge)
-public enum BreadcrumbCategory: String, Encodable {
+public enum BreadcrumbCategory: String, Codable {
     /// Screen navigation events
     case navigation
     /// User interaction events (taps, clicks, etc.)
@@ -125,7 +126,7 @@ public enum BreadcrumbCategory: String, Encodable {
 /// The severity level of a breadcrumb.
 /// Based on Sentry's breadcrumb levels.
 @_spi(FlutterBridge)
-public enum BreadcrumbLevel: String, Encodable {
+public enum BreadcrumbLevel: String, Codable {
     case debug
     case info
     case warning
@@ -135,7 +136,7 @@ public enum BreadcrumbLevel: String, Encodable {
 
 /// Breadcrumb for crash reporting context
 @_spi(FlutterBridge)
-public struct Breadcrumb: Encodable {
+public struct Breadcrumb: Codable {
     public let message: String
     public let category: BreadcrumbCategory
     public let level: BreadcrumbLevel
@@ -437,9 +438,13 @@ class TrackRespositoryImpl: TrackRepository2 {
                 callStacks: mainThreadFrames
             )
 
+            // Load persisted breadcrumbs from previous session
+            let breadcrumbs = loadAndClearPersistedBreadcrumbs()
+
             let crashEvent = TrackCrashEvent(
                 exceptions: [exceptionRecord],
-                threads: threads
+                threads: threads,
+                breadcrumbs: breadcrumbs
             )
             sendCrashToBackend(crashEvent)
         }
@@ -518,6 +523,8 @@ class TrackRespositoryImpl: TrackRepository2 {
                 let overflow = self.breadcrumbBuffer.count - self.maxBreadcrumbSize
                 self.breadcrumbBuffer.removeFirst(overflow)
             }
+            // Persist to UserDefaults for MetricKit crash reports (delivered next session)
+            self.persistBreadcrumbs(self.breadcrumbBuffer)
         }
     }
 
@@ -525,5 +532,24 @@ class TrackRespositoryImpl: TrackRepository2 {
         return self.breadcrumbLock.withLock {
             return self.breadcrumbBuffer
         }
+    }
+
+    // MARK: - Breadcrumb Persistence for MetricKit crashes
+
+    /// Persists breadcrumbs to UserDefaults so they can be included in MetricKit crash reports
+    /// (which are delivered in the next app session)
+    private func persistBreadcrumbs(_ breadcrumbs: [Breadcrumb]) {
+        guard let data = try? JSONEncoder().encode(breadcrumbs) else { return }
+        UserDefaults.standard.set(data, forKey: BREADCRUMB_RECORD_KEY)
+    }
+
+    /// Loads persisted breadcrumbs from UserDefaults and clears them
+    private func loadAndClearPersistedBreadcrumbs() -> [Breadcrumb]? {
+        guard let data = UserDefaults.standard.data(forKey: BREADCRUMB_RECORD_KEY) else {
+            return nil
+        }
+        // Clear after loading (they should only be used once)
+        UserDefaults.standard.removeObject(forKey: BREADCRUMB_RECORD_KEY)
+        return try? JSONDecoder().decode([Breadcrumb].self, from: data)
     }
 }
