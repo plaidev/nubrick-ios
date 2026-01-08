@@ -36,13 +36,3 @@ To test with Nubrick as a binary framework (required for MetricKit error attribu
 3. Open `Examples/Example` and build
 
 > **Note:** Do not commit the Package.swift change. Revert before pushing.
-
-## Make Commands
-
-| Command | Description |
-|---------|-------------|
-| `make install` | Install Swift package dependencies |
-| `make open` | Open Nubrick.xcworkspace |
-| `make app` | Install dependencies and open workspace |
-| `make pod` | Setup CocoaPods example project |
-| `make xcframework` | Build Nubrick.xcframework locally |
