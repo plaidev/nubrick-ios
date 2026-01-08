@@ -77,9 +77,7 @@ jobs:
         run: brew install sentry-cli
 
       - name: Build framework
-        run: |
-          cd Nubrick
-          sh ./create_xcframework.sh
+        run: make xcframework
 
       - name: Upload symbols to Sentry
         env:
