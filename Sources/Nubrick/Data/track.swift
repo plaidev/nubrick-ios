@@ -112,17 +112,20 @@ public struct TrackCrashEvent {
     public let threads: [ThreadRecord]?
     public let platform: String?
     public let flutterSdkVersion: String?
+    public let severity: String?
 
     public init(
         exceptions: [ExceptionRecord],
         threads: [ThreadRecord]? = nil,
         platform: String? = nil,
-        flutterSdkVersion: String? = nil
+        flutterSdkVersion: String? = nil,
+        severity: String? = nil
     ) {
         self.exceptions = exceptions
         self.threads = threads
         self.platform = platform
         self.flutterSdkVersion = flutterSdkVersion
+        self.severity = severity
     }
 }
 
@@ -159,6 +162,7 @@ struct TrackEvent: Encodable {
     var threads: [ThreadRecord]?
     var platform: String?
     var flutterSdkVersion: String?
+    var severity: String?
 }
 
 @_spi(FlutterBridge)
@@ -424,7 +428,8 @@ class TrackRespositoryImpl: TrackRepository2 {
                     exceptions: crashEvent.exceptions,
                     threads: crashEvent.threads,
                     platform: crashEvent.platform,
-                    flutterSdkVersion: crashEvent.flutterSdkVersion
+                    flutterSdkVersion: crashEvent.flutterSdkVersion,
+                    severity: crashEvent.severity
                 ))
             }
         }
