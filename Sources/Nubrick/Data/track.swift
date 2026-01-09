@@ -112,20 +112,37 @@ public struct TrackCrashEvent {
     public let threads: [ThreadRecord]?
     public let platform: String?
     public let flutterSdkVersion: String?
-    public let severity: String?
+    public let severity: CrashSeverity
 
     public init(
         exceptions: [ExceptionRecord],
         threads: [ThreadRecord]? = nil,
         platform: String? = nil,
         flutterSdkVersion: String? = nil,
-        severity: String? = nil
+        severity: CrashSeverity = .error
     ) {
         self.exceptions = exceptions
         self.threads = threads
         self.platform = platform
         self.flutterSdkVersion = flutterSdkVersion
         self.severity = severity
+    }
+}
+
+/// Severity level for crash/error reporting.
+@_spi(FlutterBridge)
+public enum CrashSeverity: String {
+    case debug, info, warning, error, fatal
+
+    /// Returns true if this severity level should be counted as an error (error or fatal).
+    public var isErrorLevel: Bool {
+        self == .error || self == .fatal
+    }
+
+    /// Parses a string into a CrashSeverity, defaulting to .error for nil, empty, or invalid values.
+    public static func from(_ string: String?) -> CrashSeverity {
+        guard let string = string, !string.isEmpty else { return .error }
+        return CrashSeverity(rawValue: string) ?? .error
     }
 }
 
@@ -409,19 +426,24 @@ class TrackRespositoryImpl: TrackRepository2 {
 
         // Acquire lock before modifying buffer
         self.queueLock.withLock {
-            self.buffer.append(TrackEvent(
-                typename: .Event,
-                name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
-                timestamp: formatToISO8601(getCurrentDate()),
-                platform: nil
-            ))
-            if causedByNativebrik {
+            // Only send error tracking events for error or fatal severity
+            if crashEvent.severity.isErrorLevel {
                 self.buffer.append(TrackEvent(
                     typename: .Event,
-                    name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
+                    name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
                     timestamp: formatToISO8601(getCurrentDate()),
                     platform: nil
                 ))
+            }
+            if causedByNativebrik {
+                if crashEvent.severity.isErrorLevel {
+                    self.buffer.append(TrackEvent(
+                        typename: .Event,
+                        name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
+                        timestamp: formatToISO8601(getCurrentDate()),
+                        platform: nil
+                    ))
+                }
                 self.buffer.append(TrackEvent(
                     typename: .Crash,
                     timestamp: formatToISO8601(getCurrentDate()),
@@ -429,7 +451,7 @@ class TrackRespositoryImpl: TrackRepository2 {
                     threads: crashEvent.threads,
                     platform: crashEvent.platform,
                     flutterSdkVersion: crashEvent.flutterSdkVersion,
-                    severity: crashEvent.severity
+                    severity: crashEvent.severity.rawValue
                 ))
             }
         }
