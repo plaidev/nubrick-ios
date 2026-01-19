@@ -13,35 +13,41 @@ import Darwin.Mach
 
 // For crash reporting
 @available(iOS 14.0, *)
-class AppMetrics: NSObject, MXMetricManagerSubscriber {
-   private let recordCrash: (_ crash: MXCrashDiagnostic) -> Void
+final class AppMetrics: NSObject, MXMetricManagerSubscriber {
 
-   init(_ recordCrash: @escaping (_ crash: MXCrashDiagnostic) -> Void) {
-       self.recordCrash = recordCrash
-       super.init()
-       
-       let shared = MXMetricManager.shared
-       shared.add(self)
+    // Keep exactly 1 subscriber per iOS process (prevents Flutter hot-restart duplicates)
+    static var shared: AppMetrics?
 
-       // Immediately receive crash reports generated since
-       // the last allocation of the shared manager instance
-       didReceive(shared.pastDiagnosticPayloads)
-   }
+    private var recordCrash: (MXCrashDiagnostic) -> Void
 
-   deinit {
-       let shared = MXMetricManager.shared
-       shared.remove(self)
-   }
+    /// Create and subscribe immediately
+    init(_ recordCrash: @escaping (MXCrashDiagnostic) -> Void) {
+        self.recordCrash = recordCrash
+        super.init()
 
-   func didReceive(_ payloads: [MXDiagnosticPayload]) {
-       
-       payloads.forEach { payload in
-            payload.crashDiagnostics?.forEach { crashDiagnostic in
+        let manager = MXMetricManager.shared
+        manager.add(self)
+
+        // Immediately receive crash reports generated since last app run / last manager allocation
+        didReceive(manager.pastDiagnosticPayloads)
+    }
+
+    /// Called during Flutter hot restart (Dart side changes, but iOS process stays alive)
+    func updateCallback(_ recordCrash: @escaping (MXCrashDiagnostic) -> Void) {
+        self.recordCrash = recordCrash
+    }
+
+    func didReceive(_ payloads: [MXDiagnosticPayload]) {
+        for payload in payloads {
+            guard let crashDiagnostics = payload.crashDiagnostics else { continue }
+            for crashDiagnostic in crashDiagnostics {
                 recordCrash(crashDiagnostic)
             }
         }
     }
 }
+
+
 
 
 // for development
@@ -148,7 +154,6 @@ public final class NubrickClient: ObservableObject {
     private let overlayVC: OverlayViewController
     public final let experiment: NubrickExperiment
     public final let user: NubrickUser
-    private let appMetrics: Any?
 
     public init(
         projectId: String,
@@ -178,9 +183,13 @@ public final class NubrickClient: ObservableObject {
 
         // Initialize AppMetrics only for iOS 14+
         if #available(iOS 14.0, *), config.trackCrashes {
-            self.appMetrics = AppMetrics(self.experiment.processMetricKitCrash)
-        } else {
-            self.appMetrics = nil
+            Task { @MainActor in
+                if let existing = AppMetrics.shared {
+                    existing.updateCallback(self.experiment.processMetricKitCrash)
+                } else {
+                    AppMetrics.shared = AppMetrics(self.experiment.processMetricKitCrash)
+                }
+            }
         }
 
         config.addEventListener(createDispatchNubrickEvent(self))
