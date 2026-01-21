@@ -605,6 +605,8 @@ struct UIPageBlockData: Decodable, Encodable {
   var tooltipPlacement: UITooltipPlacement?
   var tooltipTransitionTarget: UITooltipTransitionTarget?
   var props: [Property]?
+  var frameWidth: Int?
+  var frameHeight: Int?
   var query: String?
 }
 struct UIPageBlockPosition: Decodable, Encodable {

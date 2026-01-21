@@ -185,6 +185,19 @@ final class PageView: UIView {
         // setup layout
         self.configureLayout { layout in
             layout.isEnabled = true
+            if self.page?.data?.kind == .COMPONENT {
+                if let height = self.page?.data?.frameHeight {
+                    if height != 0 {
+                        layout.height = YGValue(value: Float(height), unit: .point)
+                    }
+                }
+
+                if let width = self.page?.data?.frameWidth {
+                    if width != 0 {
+                        layout.width = YGValue(value: Float(width), unit: .point)
+                    }
+                }
+            }
         }
         self.addSubview(self.view)
         self.loadDataAndTransition()

@@ -131,16 +131,55 @@ struct RootViewRepresentable: UIViewRepresentable {
     let container: Container
     let modalViewController: ModalComponentViewController?
     let onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?
+    @Binding var width: CGFloat?
+    @Binding var height: CGFloat?
+
+    @MainActor
+    final class SizeCoordinator {
+        private let w: Binding<CGFloat?>
+        private let h: Binding<CGFloat?>
+        private var isActive = true
+
+        init(w: Binding<CGFloat?>, h: Binding<CGFloat?>) {
+            self.w = w
+            self.h = h
+        }
+
+        func deactivate() {
+            isActive = false
+        }
+
+        func report(width: CGFloat?, height: CGFloat?) {
+            Task { @MainActor [weak self] in
+                guard let self, self.isActive else { return }
+                self.w.wrappedValue = width
+                self.h.wrappedValue = height
+            }
+        }
+    }
+
+    func makeCoordinator() -> SizeCoordinator {
+        SizeCoordinator(w: $width, h: $height)
+    }
+
 
     func makeUIView(context: Self.Context) -> Self.UIViewType {
+        let onSizeChange : (CGFloat?, CGFloat?) -> Void = { [weak coordinator = context.coordinator] w, h in
+            coordinator?.report(width: w, height: h)
+        }
         return RootView(
             root: root, container: container, modalViewController: modalViewController,
-            onEvent: onEvent)
+            onEvent: onEvent, onSizeChange: onSizeChange)
     }
 
     // データの更新に応じてラップしている UIView を更新する
     func updateUIView(_ uiView: Self.UIViewType, context: Self.Context) {
 
+    }
+
+    static func dismantleUIView(_ uiView: Self.UIViewType, coordinator: SizeCoordinator) {
+        uiView.onSizeChange = nil   // to avoid callback after view is destroyed
+        coordinator.deactivate()
     }
 }
 
@@ -157,6 +196,8 @@ class RootView: UIView {
     private var currentPageView: PageView? = nil
     private var modalViewController: ModalComponentViewController? = nil
     private let container: Container
+    // callback to transmit size to SwiftUI
+    var onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)?
 
     required init?(coder: NSCoder) {
         self.id = ""
@@ -172,7 +213,8 @@ class RootView: UIView {
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
-        onDismiss: (() -> Void)? = nil
+        onDismiss: (() -> Void)? = nil,
+        onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil
     ) {
         self.id = root?.id ?? ""
         self.container = container
@@ -183,6 +225,7 @@ class RootView: UIView {
         self.modalViewController = modalViewController
         self.onNextTooltip = onNextTooltip ?? { _ in }
         self.onDismiss = onDismiss ?? {}
+        self.onSizeChange = onSizeChange
         super.init(frame: .zero)
 
         self.configureLayout { layout in
@@ -295,7 +338,12 @@ class RootView: UIView {
                     )
                 ) : nil
             )
-            break
+        case .COMPONENT:
+            // in case of embedding update size for swiftui
+            let width = page?.data?.frameWidth.map(CGFloat.init)
+            let height = page?.data?.frameHeight.map(CGFloat.init)
+            self.onSizeChange?(width, height)
+            fallthrough
         default:
             self.modalViewController?.dismissModal()
             if self.currentEmbeddedPageId == currentPageId {
@@ -305,6 +353,8 @@ class RootView: UIView {
             self.view = pageView
             self.addSubview(pageView)
             self.currentEmbeddedPageId = currentPageId
+            self.invalidateIntrinsicContentSize()
+            self.superview?.invalidateIntrinsicContentSize() // we need to invalidate intrinsic for the EmbeddingUIView for relayout
             break
         }
     }
@@ -312,6 +362,20 @@ class RootView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         self.yoga.applyLayout(preservingOrigin: true)
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let page = self.pages.first { page in
+            return currentEmbeddedPageId == page.id
+        }
+        switch page?.data?.kind {
+        case .COMPONENT:
+            let width = page?.data?.frameWidth.map(CGFloat.init)
+            let height = page?.data?.frameHeight.map(CGFloat.init)
+            return CGSize(width: width ?? UIView.noIntrinsicMetric, height: height ?? UIView.noIntrinsicMetric)
+        default:
+            return super.intrinsicContentSize
+        }
     }
 }
 

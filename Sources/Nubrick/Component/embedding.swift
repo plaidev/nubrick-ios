@@ -129,16 +129,37 @@ class EmbeddingUIView: UIView {
             from: self.fallbackView,
             to: view,
             duration: 0.2,
-            options: .transitionCrossDissolve,
-            completion: nil)
+            options: .transitionCrossDissolve)
         self.fallbackView = view
+        self.invalidateIntrinsicContentSize()
+    }
+
+    override var intrinsicContentSize: CGSize {
+        fallbackView.intrinsicContentSize
     }
 }
 
 public struct ComponentView: View {
-    let content: RootViewRepresentable
+    @State private var width: CGFloat? = nil
+    @State private var height: CGFloat? = nil
+
+    let root: UIRootBlock?
+    let container: Container
+    let modalViewController: ModalComponentViewController?
+    let onEvent: ((_ event: ComponentEvent) -> Void)?
+
     public var body: some View {
-        self.content
+        RootViewRepresentable(
+            root: root,
+            container: container,
+            modalViewController: modalViewController,
+            onEvent: { event in
+                onEvent?(convertEvent(event))
+            },
+            width: $width, //pass for update
+            height: $height //pass for update
+        )
+        .frame(width: width, height: height)
     }
 }
 
@@ -157,7 +178,7 @@ class EmbeddingSwiftViewModel: ObservableObject {
         componentId: String? = nil,
         container: Container,
         modalViewController: ModalComponentViewController?,
-        onEvent: ((_ event: ComponentEvent) -> Void)?
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
     ) {
         Task {
             let result = await Task.detached {
@@ -169,14 +190,12 @@ class EmbeddingSwiftViewModel: ObservableObject {
                 case .success(let view):
                     switch view {
                     case .EUIRootBlock(let root):
-                        self?.phase = .completed(ComponentView(content: RootViewRepresentable(
+                        self?.phase = .completed(ComponentView(
                             root: root,
                             container: container,
                             modalViewController: modalViewController,
-                            onEvent: { event in
-                                onEvent?(convertEvent(event))
-                            }
-                        )))
+                            onEvent: onEvent
+                        ))
                     default:
                         self?.phase = .notFound
                     }
