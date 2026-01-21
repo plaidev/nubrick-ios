@@ -40,7 +40,7 @@ final class ViewController: UIViewController {
             topComponent.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             topComponent.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             topComponent.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            // topComponent.heightAnchor.constraint(equalToConstant: 230)
+            topComponent.heightAnchor.constraint(equalToConstant: 230)
         ])
 
         // add a button
