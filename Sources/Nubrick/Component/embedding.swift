@@ -130,11 +130,8 @@ class EmbeddingUIView: UIView {
             to: view,
             duration: 0.2,
             options: .transitionCrossDissolve)
-            { [weak self] _ in
-                guard let self else { return }
-                self.fallbackView = view
-                self.invalidateIntrinsicContentSize()
-            }
+        self.fallbackView = view
+        self.invalidateIntrinsicContentSize()
     }
 
     override var intrinsicContentSize: CGSize {
