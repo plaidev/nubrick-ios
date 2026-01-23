@@ -400,7 +400,7 @@ class TrackRespositoryImpl: TrackRepository2 {
             let crashEvent = TrackCrashEvent(
                 exceptions: [exceptionRecord],
                 threads: threads,
-                platform: "ios",
+                platform: "ios"
             )
             sendCrashToBackend(crashEvent)
         }
