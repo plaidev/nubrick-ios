@@ -362,9 +362,11 @@ class TrackRespositoryImpl: TrackRepository2 {
 
                     while !rawFramesToProcess.isEmpty && threadFrames.count < maxFramesPerThread {
                         let rawFrame = rawFramesToProcess.removeFirst()
+                        let address = rawFrame.address ?? 0
+                        let offset = rawFrame.offsetIntoBinaryTextSegment ?? 0
                         let frame = StackFrame(
-                            imageAddr: hex(rawFrame.offsetIntoBinaryTextSegment ?? 0),
-                            instructionAddr: hex(rawFrame.address ?? 0),
+                            imageAddr: imageAddrHex(addressDec: address, offsetIntoTextDec: offset) ?? hex(offset),
+                            instructionAddr: hex(address),
                             binaryUUID: rawFrame.binaryUUID,
                             binaryName: rawFrame.binaryName
                         )
@@ -397,7 +399,8 @@ class TrackRespositoryImpl: TrackRepository2 {
 
             let crashEvent = TrackCrashEvent(
                 exceptions: [exceptionRecord],
-                threads: threads
+                threads: threads,
+                platform: "ios",
             )
             sendCrashToBackend(crashEvent)
         }
