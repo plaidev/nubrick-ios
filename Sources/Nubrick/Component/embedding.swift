@@ -125,11 +125,8 @@ class EmbeddingUIView: UIView {
 
     func renderFallback(phase: EmbeddingPhase) {
         let view = self.fallback(phase)
-        UIView.transition(
-            from: self.fallbackView,
-            to: view,
-            duration: 0.2,
-            options: .transitionCrossDissolve)
+        self.fallbackView.removeFromSuperview()
+        self.addSubview(view)
         self.fallbackView = view
         self.invalidateIntrinsicContentSize()
     }
