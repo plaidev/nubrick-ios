@@ -365,7 +365,7 @@ public class NubrickExperiment {
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
         if !isNubrickAvailable {
-            return UIView()
+            return content(.notFound)
         }
         return EmbeddingUIView(
             experimentId: id,
