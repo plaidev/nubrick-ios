@@ -9,7 +9,7 @@ Pod::Spec.new do |spec|
   spec.homepage     = "https://docs.nativebrik.com"
   # spec.screenshots  = "www.example.com/screenshots_1.gif", "www.example.com/screenshots_2.gif"
   spec.license      = { :type => "Apache-2.0", :file => "LICENSE" }
-  spec.author       = { "Nubrick" => "dev.share+nubrick@plaid.co.jp" }
+  spec.author       = { "Nubrick" => "nubrick-support@plaid.co.jp" }
 
   spec.platform     = :ios
   spec.ios.deployment_target = "13.4"
