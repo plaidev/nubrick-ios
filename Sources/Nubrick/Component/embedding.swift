@@ -60,7 +60,8 @@ class EmbeddingUIView: UIView {
         container: Container,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
-        fallback: ((_ phase: EmbeddingPhase) -> UIView)?
+        fallback: ((_ phase: EmbeddingPhase) -> UIView)?,
+        onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil
     ) {
         self.fallback = fallback ?? { (_ phase) in
             switch phase {
@@ -100,7 +101,8 @@ class EmbeddingUIView: UIView {
                             modalViewController: modalViewController,
                             onEvent: { event in
                                 onEvent?(convertEvent(event))
-                            }
+                            },
+                            onSizeChange: onSizeChange
                         )
                         self?.renderFallback(phase: .completed(rootView))
                     default:

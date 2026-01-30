@@ -354,6 +354,29 @@ public class NubrickExperiment {
         ))
     }
 
+    // Embedding function for flutter bridge
+    // Same as embeddingUIView except it has a parameter to pass a callback to send embedding width and height updates
+    @_spi(FlutterBridge)
+    public func embeddingForFlutterBridge(
+        _ id: String,
+        arguments: Any? = nil,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil,
+        content: @escaping (_ phase: EmbeddingPhase) -> UIView
+    ) -> UIView {
+        if !isNubrickAvailable {
+            return UIView()
+        }
+        return EmbeddingUIView(
+            experimentId: id,
+            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            modalViewController: self.overlayVC.modalViewController,
+            onEvent: onEvent,
+            fallback: content,
+            onSizeChange: onSizeChange
+        )
+    }
+
     // for flutter integration
     @_spi(FlutterBridge)
     public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NubrickError> {
