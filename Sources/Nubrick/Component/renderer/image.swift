@@ -53,15 +53,10 @@ class ImageView: AnimatedUIControl {
             layout.maxHeight = .init(value: 100, unit: .percent)
             layout.width = .init(value: 100, unit: .percent)
             layout.height = .init(value: 100, unit: .percent)
+            layout.minWidth = .init(value: 100, unit: .percent)
+            layout.minHeight = .init(value: 100, unit: .percent)
 
-            if isStretchWidth || isStretchHeight {
-                // Stretch mode: allow shrinking, don't set min constraints
-                layout.flexShrink = 1.0
-            } else {
-                // Fixed size: maintain minimum size
-                layout.minWidth = .init(value: 100, unit: .percent)
-                layout.minHeight = .init(value: 100, unit: .percent)
-            }
+
         }
         self.image.contentMode = parseImageContentMode(block.data?.contentMode)
         self.image.clipsToBounds = true
