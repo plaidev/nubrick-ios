@@ -19,7 +19,7 @@ let nubrick = {
 
     return NubrickClient(
         projectId: "cgv3p3223akg00fod19g",
-        cachePolicy: NativebrikCachePolicy(cacheTime: 10 * 60, staleTime: 0)
+        cachePolicy: NubrickCachePolicy(cacheTime: 10 * 60, staleTime: 0)
     )
 }()
 
