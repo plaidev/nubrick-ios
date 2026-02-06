@@ -7,7 +7,8 @@
 import Foundation
 import UIKit
 
-public class __DO_NOT_USE__NativebrikBridgedViewAccessor {
+@_spi(FlutterBridge)
+public class NubrickBridgedViewAccessor {
     private let rootOrUIView: UIView
     
     init(rootView: RootView) {

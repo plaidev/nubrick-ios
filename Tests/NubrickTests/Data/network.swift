@@ -14,7 +14,7 @@ final class CacheStoreTests: XCTestCase {
     private var cache: CacheStore!
     
     func testSetAndGetCache() {
-        cache = CacheStore(policy: NativebrikCachePolicy())
+        cache = CacheStore(policy: NubrickCachePolicy())
         let data = "testData".data(using: .utf8)!
         cache.set(key: "testKey", data: data)
         let cacheObject = cache.get(key: "testKey")
@@ -23,7 +23,7 @@ final class CacheStoreTests: XCTestCase {
     }
     
 //    func testCacheExpired() {
-//        cache = CacheStore(policy: NativebrikCachePolicy())
+//        cache = CacheStore(policy: NubrickCachePolicy())
 //        let data = "testData".data(using: .utf8)!
 //        cache.set(key: "testKey", data: data)
 //        __for_test_sync_datetime_offset(offset: 33 * 60 * 60 * 1000) // FIXME: set +9:00 for ci runtime
@@ -32,7 +32,7 @@ final class CacheStoreTests: XCTestCase {
 //    }
 //    
 //    func testInvalidateCache() {
-//        cache = CacheStore(policy: NativebrikCachePolicy())
+//        cache = CacheStore(policy: NubrickCachePolicy())
 //        let data = "testData".data(using: .utf8)!
 //        cache.set(key: "testKey", data: data)
 //        cache.invalidate(key: "testKey")
@@ -43,7 +43,7 @@ final class CacheStoreTests: XCTestCase {
 
 final class GetDataTest: XCTestCase {
     func testGetDataAndCached() async {
-        let cache = CacheStore(policy: NativebrikCachePolicy(staleTime: 60))
+        let cache = CacheStore(policy: NubrickCachePolicy(staleTime: 60))
         let url = URL(string: "https://example.com")!
         let _ = await getData(url: url, cache: cache)
         let cached = cache.get(key: url.absoluteString)

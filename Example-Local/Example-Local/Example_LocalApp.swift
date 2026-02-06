@@ -16,7 +16,7 @@ let nubrick = {
 
     return NubrickClient(
         projectId: projectId,
-        cachePolicy: NativebrikCachePolicy(cacheTime: 10 * 60, staleTime: 0)
+        cachePolicy: NubrickCachePolicy(cacheTime: 10 * 60, staleTime: 0)
     )
 }()
 

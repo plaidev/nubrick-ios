@@ -21,7 +21,7 @@ public enum CacheStorage {
     case INMEMORY
 }
 
-public class NativebrikCachePolicy {
+public class NubrickCachePolicy {
     let cacheTime: TimeInterval
     let staleTime: TimeInterval
     let storage: CacheStorage
@@ -51,11 +51,11 @@ class CacheObject {
 }
 
 class CacheStore {
-    private let policy: NativebrikCachePolicy
+    private let policy: NubrickCachePolicy
     private var cache: [String: (Data, Date)] = [:]
     private let lock = NSLock()
 
-    init(policy: NativebrikCachePolicy) {
+    init(policy: NubrickCachePolicy) {
         self.policy = policy
     }
 

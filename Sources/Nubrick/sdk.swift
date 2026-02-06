@@ -85,7 +85,7 @@ final class Config {
     var trackUrl: String = nubrickTrackUrl
     var cdnUrl: String = nubrickCdnUrl
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
-    var cachePolicy: NativebrikCachePolicy = NativebrikCachePolicy()
+    var cachePolicy: NubrickCachePolicy = NubrickCachePolicy()
     var trackCrashes : Bool = true
 
     init() {
@@ -95,7 +95,7 @@ final class Config {
     init(
         projectId: String,
         onEvents: [((_ event: ComponentEvent) -> Void)?] = [],
-        cachePolicy: NativebrikCachePolicy? = nil
+        cachePolicy: NubrickCachePolicy? = nil
     ) {
         self.projectId = projectId
         onEvents.forEach { onEvent in
@@ -159,7 +159,7 @@ public final class NubrickClient: ObservableObject {
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
-        cachePolicy: NativebrikCachePolicy? = nil,
+        cachePolicy: NubrickCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
     ) {
         let user = NubrickUser()
@@ -379,7 +379,7 @@ public class NubrickExperiment {
 
     // for flutter integration
     @_spi(FlutterBridge)
-    public func __do_not_use__fetch_tooltip_data(trigger: String) async -> Result<String, NubrickError> {
+    public func fetchTooltipData(trigger: String) async -> Result<String, NubrickError> {
         if !isNubrickAvailable {
             return .failure(.notFound)
         }
@@ -402,20 +402,20 @@ public class NubrickExperiment {
     }
 
     @_spi(FlutterBridge)
-    public func __do_not_use__render_uiview(
+    public func renderUIView(
         json: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
-    ) -> __DO_NOT_USE__NativebrikBridgedViewAccessor {
+    ) -> NubrickBridgedViewAccessor {
         if !isNubrickAvailable {
-            return __DO_NOT_USE__NativebrikBridgedViewAccessor(uiview: UIView())
+            return NubrickBridgedViewAccessor(uiview: UIView())
         }
         do {
             let decoder = JSONDecoder()
             let data = Data(json.utf8)
             let decoded = try decoder.decode(UIRootBlock.self, from: data)
-            return __DO_NOT_USE__NativebrikBridgedViewAccessor(rootView: RootView(
+            return NubrickBridgedViewAccessor(rootView: RootView(
                 root: decoded,
                 container: self.container,
                 modalViewController: self.overlayVC.modalViewController,
@@ -426,7 +426,7 @@ public class NubrickExperiment {
                 onDismiss: onDismiss
             ))
         } catch {
-            return __DO_NOT_USE__NativebrikBridgedViewAccessor(uiview: UIView())
+            return NubrickBridgedViewAccessor(uiview: UIView())
         }
     }
 }
