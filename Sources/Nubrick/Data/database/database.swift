@@ -9,7 +9,7 @@ import Foundation
 import CoreData
 
 protocol DatabaseRepository {
-    func appendUserEvent(name: String)
+    func appendUserEvent(name: String) async
     func appendExperimentHistory(experimentId: String)
     func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) -> Boolean
     func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) -> Boolean
@@ -22,18 +22,16 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         self.persistentContainer = persistentContainer
     }
 
-    func appendUserEvent(name: String) {
-        Task {
-            await MainActor.run {
-                let context = self.persistentContainer.viewContext
-                let event = UserEventEntity(context: context)
-                event.name = name
-                event.timestamp = getCurrentDate()
-                do {
-                    try context.save()
-                } catch {
-                    print("Cound'nt save UserEventEntity \(error)")
-                }
+    func appendUserEvent(name: String) async {
+        await MainActor.run {
+            let context = self.persistentContainer.viewContext
+            let event = UserEventEntity(context: context)
+            event.name = name
+            event.timestamp = getCurrentDate()
+            do {
+                try context.save()
+            } catch {
+                print("Cound'nt save UserEventEntity \(error)")
             }
         }
     }
