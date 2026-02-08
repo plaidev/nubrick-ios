@@ -217,7 +217,7 @@ class ContainerImpl: Container {
     func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NubrickError> {
         // send the user track event and save it to database
         self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
-        self.databaseRepository.appendUserEvent(name: trigger)
+        await self.databaseRepository.appendUserEvent(name: trigger)
 
         // fetch config from cdn
         var configs: ExperimentConfigs
