@@ -33,4 +33,4 @@ jobs:
           curl --fail-with-body -L -X POST \
             -F "file=@.dist/Build/Products/Release-iphonesimulator/E2E.app.zip" \
             -H "Authorization: Token ${{ secrets.MAGICPOD_API_TOKEN }}" \
-            "https://app.magicpod.com/api/v1.0/Nativebrik.inc/Nativebrik/upload-file/"
+            "https://app.magicpod.com/api/v1.0/Nubrick.inc/Nubrick/upload-file/"
