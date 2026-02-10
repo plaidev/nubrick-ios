@@ -11,15 +11,32 @@ import UIKit
 
 class CollectionViewCell: UICollectionViewCell {
     var view: UIView?
-    func setView(view: UIView) {
-        self.contentView.subviews.forEach({ $0.removeFromSuperview() })
-        self.contentView.configureLayout { layout in
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+
+        contentView.configureLayout { layout in
             layout.isEnabled = true
             layout.justifyContent = .center
             layout.alignItems = .center
         }
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+
+        contentView.configureLayout { layout in
+            layout.isEnabled = true
+            layout.justifyContent = .center
+            layout.alignItems = .center
+        }
+    }
+
+    func setView(view: UIView) {
+        self.view?.removeFromSuperview()
         self.view = view
         self.contentView.addSubview(view)
+        setNeedsLayout()
     }
 
     override func layoutSubviews() {
@@ -31,14 +48,6 @@ class CollectionViewCell: UICollectionViewCell {
         super.prepareForReuse()
         self.view?.removeFromSuperview()
         self.view = nil
-    }
-
-    override init(frame: CGRect) {
-        super.init(frame: .zero)
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
     }
 }
 
