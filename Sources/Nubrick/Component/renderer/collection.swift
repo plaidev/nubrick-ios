@@ -151,7 +151,8 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
 
         root.configureLayout { layout in
             layout.isEnabled = true
-            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
+            layout.width = .init(value: 100, unit: .percent)
+            layout.height = .init(value: 100, unit: .percent)
         }
 
         let gesture = configureOnClickGesture(
@@ -165,6 +166,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.position = .relative
+            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
         }
         self.addSubview(root)
         
