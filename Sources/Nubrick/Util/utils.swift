@@ -355,7 +355,8 @@ private struct BorderRadius {
 private func normalizeRadius(radius: BorderRadius, width: CGFloat, height: CGFloat) -> BorderRadius
 {
     let (topLeft, topRight, bottomRight, bottomLeft) = (
-        radius.topLeft, radius.topRight, radius.bottomRight, radius.bottomLeft
+        max(0, radius.topLeft), max(0, radius.topRight), max(0, radius.bottomRight),
+        max(0, radius.bottomLeft)
     )
     var f = 1.0
 
