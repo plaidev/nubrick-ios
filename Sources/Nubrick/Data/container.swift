@@ -33,6 +33,7 @@ protocol Container {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
     func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NubrickError>
     func fetchTooltip(trigger: String) async -> Result<UIBlock, NubrickError>
+    func fetchTriggerContent(trigger: String) async -> Result<UIBlock, NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
     
     @available(iOS 14.0, *)
@@ -69,6 +70,9 @@ class ContainerEmptyImpl: Container {
         return Result.failure(NubrickError.notFound)
     }
     func fetchTooltip(trigger: String) async -> Result<UIBlock, NubrickError> {
+        return Result.failure(NubrickError.notFound)
+    }
+    func fetchTriggerContent(trigger: String) async -> Result<UIBlock, NubrickError> {
         return Result.failure(NubrickError.notFound)
     }
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
@@ -190,7 +194,7 @@ class ContainerImpl: Container {
 
         var experimentId: String
         var variant: ExperimentVariant
-        switch await self.extractVariant(configs: configs, kind: ExperimentKind.EMBED) {
+        switch await self.extractVariant(configs: configs, kinds: [.EMBED]) {
         case .success(let (id, v)):
             experimentId = id
             variant = v
@@ -215,6 +219,14 @@ class ContainerImpl: Container {
     }
 
     func fetchInAppMessage(trigger: String) async -> Result<UIBlock, NubrickError> {
+        return await self.fetchTriggerContent(trigger: trigger)
+    }
+
+    func fetchTooltip(trigger: String) async -> Result<UIBlock, NubrickError> {
+        return await self.fetchTriggerContent(trigger: trigger)
+    }
+
+    func fetchTriggerContent(trigger: String) async -> Result<UIBlock, NubrickError> {
         // send the user track event and save it to database
         self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
         await self.databaseRepository.appendUserEvent(name: trigger)
@@ -228,45 +240,10 @@ class ContainerImpl: Container {
             return Result.failure(it)
         }
 
+        // select the best matching config across both POPUP and TOOLTIP kinds
         var experimentId: String
         var variant: ExperimentVariant
-        switch await self.extractVariant(configs: configs, kind: ExperimentKind.POPUP) {
-        case .success(let (id, v)):
-            experimentId = id
-            variant = v
-        case .failure(let it):
-            return Result.failure(it)
-        }
-
-        guard let variantId = variant.id else {
-            return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
-        }
-
-        self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId: experimentId, variantId: variantId
-        ))
-        self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
-
-        guard let componentId = extractComponentId(variant: variant) else {
-            return Result.failure(NubrickError.notFound)
-        }
-
-        return await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
-    }
-
-    func fetchTooltip(trigger: String) async -> Result<UIBlock, NubrickError> {
-        // retrieve experiment config
-        var configs: ExperimentConfigs
-        switch await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger) {
-        case .success(let it):
-            configs = it
-        case .failure(let it):
-            return Result.failure(it)
-        }
-
-        var experimentId: String
-        var variant: ExperimentVariant
-        switch await self.extractVariant(configs: configs, kind: ExperimentKind.TOOLTIP) {
+        switch await self.extractVariant(configs: configs, kinds: [.POPUP, .TOOLTIP]) {
         case .success(let (id, v)):
             experimentId = id
             variant = v
@@ -301,7 +278,7 @@ class ContainerImpl: Container {
 
         var experimentId: String
         var variant: ExperimentVariant
-        switch await self.extractVariant(configs: configs, kind: ExperimentKind.CONFIG) {
+        switch await self.extractVariant(configs: configs, kinds: [.CONFIG]) {
         case .success(let (id, v)):
             experimentId = id
             variant = v
@@ -321,9 +298,10 @@ class ContainerImpl: Container {
         return Result.success((experimentId, variant))
     }
 
-    private func extractVariant(configs: ExperimentConfigs, kind: ExperimentKind) async -> Result<(String, ExperimentVariant), NubrickError> {
+    private func extractVariant(configs: ExperimentConfigs, kinds: [ExperimentKind]) async -> Result<(String, ExperimentVariant), NubrickError> {
         guard let config = extractExperimentConfigMatchedToProperties(
             configs: configs,
+            kinds: kinds,
             properties: { seed in
                 return self.user.toEventProperties(seed: seed)
             },
@@ -343,9 +321,6 @@ class ContainerImpl: Container {
         }
         guard let experimentId = config.id else {
             return Result.failure(NubrickError.irregular("Couldn't get the experiment id"))
-        }
-        if (config.kind != kind) {
-            return Result.failure(NubrickError.notFound)
         }
         let normalizedUserRnd = self.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0)
         guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUserRnd) else {

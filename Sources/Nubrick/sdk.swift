@@ -86,7 +86,6 @@ final class Config {
     var cdnUrl: String = nubrickCdnUrl
     var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
     var cachePolicy: NubrickCachePolicy = NubrickCachePolicy()
-    var trackCrashes : Bool = true
 
     init() {
         self.projectId = ""
@@ -160,7 +159,8 @@ public final class NubrickClient: ObservableObject {
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
         cachePolicy: NubrickCachePolicy? = nil,
-        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
+        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
+        trackCrashes: Bool = true
     ) {
         let user = NubrickUser()
         let config = Config(projectId: projectId, onEvents: [
@@ -182,7 +182,7 @@ public final class NubrickClient: ObservableObject {
         self.experiment = NubrickExperiment(container: self.container, overlay: self.overlayVC)
 
         // Initialize AppMetrics only for iOS 14+
-        if #available(iOS 14.0, *), config.trackCrashes {
+        if #available(iOS 14.0, *), trackCrashes {
             Task { @MainActor in
                 if let existing = AppMetrics.shared {
                     existing.updateCallback(self.experiment.processMetricKitCrash)
