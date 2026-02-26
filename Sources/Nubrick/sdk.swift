@@ -154,13 +154,54 @@ public final class NubrickClient: ObservableObject {
     public final let experiment: NubrickExperiment
     public final let user: NubrickUser
 
-    public init(
+    public convenience init(
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
         cachePolicy: NubrickCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         trackCrashes: Bool = true
+    ) {
+        self.init(
+            projectId: projectId,
+            onEvent: onEvent,
+            httpRequestInterceptor: httpRequestInterceptor,
+            cachePolicy: cachePolicy,
+            onDispatch: onDispatch,
+            trackCrashes: trackCrashes,
+            onTooltip: nil
+        )
+    }
+
+    @_spi(FlutterBridge)
+    public convenience init(
+        projectId: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
+        cachePolicy: NubrickCachePolicy? = nil,
+        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
+        trackCrashes: Bool = true,
+        onTooltip: @escaping ((_ data: String) -> Void)
+    ) {
+        self.init(
+            projectId: projectId,
+            onEvent: onEvent,
+            httpRequestInterceptor: httpRequestInterceptor,
+            cachePolicy: cachePolicy,
+            onDispatch: onDispatch,
+            trackCrashes: trackCrashes,
+            onTooltip: onTooltip as ((String) -> Void)?
+        )
+    }
+
+    private init(
+        projectId: String,
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        httpRequestInterceptor: NubrickHttpRequestInterceptor?,
+        cachePolicy: NubrickCachePolicy?,
+        onDispatch: ((_ event: NubrickEvent) -> Void)?,
+        trackCrashes: Bool,
+        onTooltip: ((_ data: String) -> Void)?
     ) {
         let user = NubrickUser()
         let config = Config(projectId: projectId, onEvents: [
@@ -178,7 +219,7 @@ public final class NubrickClient: ObservableObject {
             persistentContainer: persistentContainer,
             intercepter: httpRequestInterceptor
         )
-        self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch)
+        self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch, onTooltip: onTooltip)
         self.experiment = NubrickExperiment(container: self.container, overlay: self.overlayVC)
 
         // Initialize AppMetrics only for iOS 14+
@@ -193,7 +234,7 @@ public final class NubrickClient: ObservableObject {
         }
 
         config.addEventListener(createDispatchNubrickEvent(self))
-    }    
+    }
 }
 
 public class NubrickExperiment {
@@ -375,30 +416,6 @@ public class NubrickExperiment {
             fallback: content,
             onSizeChange: onSizeChange
         )
-    }
-
-    // for flutter integration
-    @_spi(FlutterBridge)
-    public func fetchTooltipData(trigger: String) async -> Result<String, NubrickError> {
-        if !isNubrickAvailable {
-            return .failure(.notFound)
-        }
-        switch await self.container.fetchTooltip(trigger: trigger) {
-        case .success(let result):
-            do {
-                let encoder = JSONEncoder()
-                let jsonData = try encoder.encode(result)
-                if let jsonString = String(data: jsonData, encoding: .utf8) {
-                    return .success(jsonString)
-                } else {
-                    return .failure(.failedToEncode)
-                }
-            } catch let error {
-                return .failure(.other(error))
-            }
-        case .failure(let error):
-            return .failure(error)
-        }
     }
 
     @_spi(FlutterBridge)

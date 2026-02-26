@@ -19,6 +19,7 @@ class TriggerViewController: UIViewController {
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: ModalRootViewController? = nil
     private var onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
+    private var onTooltip: ((_ data: String) -> Void)? = nil
     private var didLoaded = false
     private var ignoreFirstUserEventToForegroundEvent = true
 
@@ -28,11 +29,12 @@ class TriggerViewController: UIViewController {
         super.init(coder: coder)
     }
 
-    init(user: NubrickUser, container: Container, modalViewController: ModalComponentViewController?, onDispatch: ((_ event: NubrickEvent) -> Void)? = nil) {
+    init(user: NubrickUser, container: Container, modalViewController: ModalComponentViewController?, onDispatch: ((_ event: NubrickEvent) -> Void)? = nil, onTooltip: ((_ data: String) -> Void)? = nil) {
         self.user = user
         self.container = container
         self.modalViewController = modalViewController
         self.onDispatch = onDispatch
+        self.onTooltip = onTooltip
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -87,9 +89,22 @@ class TriggerViewController: UIViewController {
 
     func dispatch(event: NubrickEvent) {
         Task {
-            let result = await Task.detached {
-                return await self.container.fetchInAppMessage(trigger: event.name)
+            // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,
+            // so we fetch both popups and tooltips when running in Flutter, and popups only otherwise.
+            let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
+            let triggerResult = await Task.detached {
+                return await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
             }.value
+            let kind: ExperimentKind?
+            let result: Result<UIBlock, NubrickError>
+            switch triggerResult {
+            case .success(let (k, block)):
+                kind = k
+                result = .success(block)
+            case .failure(let error):
+                kind = nil
+                result = .failure(error)
+            }
 
             self.onDispatch?(event)
 
@@ -106,17 +121,25 @@ class TriggerViewController: UIViewController {
                 case .success(let block):
                     switch block {
                     case .EUIRootBlock(let root):
-                        let root = ModalRootViewController(
-                            root: root,
-                            container: ContainerImpl(container as! ContainerImpl, arguments: nil),
-                            modalViewController: self?.modalViewController
-                        )
-                        if let currentVC = self?.currentVC {
-                            currentVC.removeFromParent()
-                            self?.currentVC = nil
+                        if kind == .TOOLTIP,
+                           let onTooltip = self?.onTooltip {
+                            if let jsonData = try? JSONEncoder().encode(block),
+                               let jsonString = String(data: jsonData, encoding: .utf8) {
+                                onTooltip(jsonString)
+                            }
+                        } else {
+                            let root = ModalRootViewController(
+                                root: root,
+                                container: ContainerImpl(container as! ContainerImpl, arguments: nil),
+                                modalViewController: self?.modalViewController
+                            )
+                            if let currentVC = self?.currentVC {
+                                currentVC.removeFromParent()
+                                self?.currentVC = nil
+                            }
+                            self?.addChild(root)
+                            self?.currentVC = root
                         }
-                        self?.addChild(root)
-                        self?.currentVC = root
                     default:
                         break
                     }
