@@ -139,6 +139,7 @@ struct ExperimentConfig: Decodable, Encodable {
   var frequency: ExperimentFrequency?
   var startedAt: DateTime?
   var endedAt: DateTime?
+  var priority: Int?
 }
 struct ExperimentConfigs: Decodable, Encodable {
   var configs: [ExperimentConfig]?

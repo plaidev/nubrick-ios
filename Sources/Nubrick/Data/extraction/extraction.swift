@@ -70,6 +70,7 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
 
 func extractExperimentConfigMatchedToProperties(
     configs: ExperimentConfigs,
+    kinds: [ExperimentKind],
     properties: (_ seed: Int) -> [UserProperty],
     isNotInFrequency: (_ experimentId: String, _ frequency: ExperimentFrequency?) -> Bool,
     isMatchedToUserEventFrequencyConditions: (_ conditions: [UserEventFrequencyCondition]?) -> Bool
@@ -81,7 +82,11 @@ func extractExperimentConfigMatchedToProperties(
         return nil
     }
     let now = getCurrentDate()
-    return configs.first { config in
+    // Filter configs that match the requested kinds, are within their time window, and match all conditions
+    let matched = configs.filter { config in
+        guard let configKind = config.kind, kinds.contains(configKind) else {
+            return false
+        }
         if let startedAt = config.startedAt {
             if let startedAt = parseDateTime(startedAt) {
                 if now.compare(startedAt) == ComparisonResult.orderedAscending {
@@ -97,11 +102,31 @@ func extractExperimentConfigMatchedToProperties(
             }
         }
 
-        guard let distribution = config.distribution else {
-            return true
-        }
         let experimentId = config.id ?? ""
-        return isNotInFrequency(experimentId, config.frequency) && isMatchedToUserEventFrequencyConditions(config.eventFrequencyConditions) && isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0))
+        if !isNotInFrequency(experimentId, config.frequency) {
+            return false
+        }
+        if !isMatchedToUserEventFrequencyConditions(config.eventFrequencyConditions) {
+            return false
+        }
+        if let distribution = config.distribution {
+            if !isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0)) {
+                return false
+            }
+        }
+        return true
+    }
+    // Pick the highest-priority config. If tied, prefer the latest start date.
+    // Configs without a priority are ranked lowest; without a start date, earliest.
+    return matched.max { a, b in
+        let aPriority = a.priority ?? Int.min
+        let bPriority = b.priority ?? Int.min
+        if aPriority != bPriority {
+            return aPriority < bPriority
+        }
+        let aDate = a.startedAt.flatMap { parseDateTime($0) } ?? .distantPast
+        let bDate = b.startedAt.flatMap { parseDateTime($0) } ?? .distantPast
+        return aDate < bDate
     }
 }
 
