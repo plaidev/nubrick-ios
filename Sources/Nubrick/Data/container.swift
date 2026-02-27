@@ -9,6 +9,12 @@ import Foundation
 import CoreData
 import MetricKit
 
+struct ExtractedVariant {
+    let experimentId: String
+    let kind: ExperimentKind?
+    let variant: ExperimentVariant
+}
+
 public enum NubrickError: Error {
     case notFound
     case failedToDecode
@@ -183,30 +189,28 @@ class ContainerImpl: Container {
             return Result.failure(it)
         }
 
-        var experimentId: String
-        var variant: ExperimentVariant
+        var extracted: ExtractedVariant
         switch await self.extractVariant(configs: configs, kinds: [.EMBED]) {
-        case .success(let (id, _, v)):
-            experimentId = id
-            variant = v
+        case .success(let it):
+            extracted = it
         case .failure(let it):
             return Result.failure(it)
         }
 
-        guard let variantId = variant.id else {
+        guard let variantId = extracted.variant.id else {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
 
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId: experimentId, variantId: variantId
+            experimentId: extracted.experimentId, variantId: variantId
         ))
-        self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+        self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
 
-        guard let componentId = extractComponentId(variant: variant) else {
+        guard let componentId = extractComponentId(variant: extracted.variant) else {
             return Result.failure(NubrickError.notFound)
         }
 
-        return await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
+        return await self.componentRepository.fetchComponent(experimentId: extracted.experimentId, id: componentId)
     }
 
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(ExperimentKind?, UIBlock), NubrickError> {
@@ -224,34 +228,30 @@ class ContainerImpl: Container {
         }
 
         // select the best matching config for the specified kinds
-        var experimentId: String
-        var experimentKind: ExperimentKind?
-        var variant: ExperimentVariant
+        var extracted: ExtractedVariant
         switch await self.extractVariant(configs: configs, kinds: kinds) {
-        case .success(let (id, kind, v)):
-            experimentId = id
-            experimentKind = kind
-            variant = v
+        case .success(let it):
+            extracted = it
         case .failure(let it):
             return Result.failure(it)
         }
 
-        guard let variantId = variant.id else {
+        guard let variantId = extracted.variant.id else {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
 
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId: experimentId, variantId: variantId
+            experimentId: extracted.experimentId, variantId: variantId
         ))
-        self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+        self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
 
-        guard let componentId = extractComponentId(variant: variant) else {
+        guard let componentId = extractComponentId(variant: extracted.variant) else {
             return Result.failure(NubrickError.notFound)
         }
 
-        switch await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId) {
+        switch await self.componentRepository.fetchComponent(experimentId: extracted.experimentId, id: componentId) {
         case .success(let block):
-            return .success((experimentKind, block))
+            return .success((extracted.kind, block))
         case .failure(let error):
             return .failure(error)
         }
@@ -266,29 +266,27 @@ class ContainerImpl: Container {
             return Result.failure(it)
         }
 
-        var experimentId: String
-        var variant: ExperimentVariant
+        var extracted: ExtractedVariant
         switch await self.extractVariant(configs: configs, kinds: [.CONFIG]) {
-        case .success(let (id, _, v)):
-            experimentId = id
-            variant = v
+        case .success(let it):
+            extracted = it
         case .failure(let it):
             return Result.failure(it)
         }
 
-        guard let variantId = variant.id else {
+        guard let variantId = extracted.variant.id else {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
 
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId: experimentId, variantId: variantId
+            experimentId: extracted.experimentId, variantId: variantId
         ))
-        self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+        self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
 
-        return Result.success((experimentId, variant))
+        return Result.success((extracted.experimentId, extracted.variant))
     }
 
-    private func extractVariant(configs: ExperimentConfigs, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, ExperimentVariant), NubrickError> {
+    private func extractVariant(configs: ExperimentConfigs, kinds: [ExperimentKind]) async -> Result<ExtractedVariant, NubrickError> {
         guard let config = extractExperimentConfigMatchedToProperties(
             configs: configs,
             kinds: kinds,
@@ -316,7 +314,7 @@ class ContainerImpl: Container {
         guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUserRnd) else {
             return Result.failure(NubrickError.notFound)
         }
-        return Result.success((experimentId, config.kind, variant))
+        return Result.success(ExtractedVariant(experimentId: experimentId, kind: config.kind, variant: variant))
     }
     @available(iOS 14.0, *)
     func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
