@@ -23,7 +23,7 @@ let package = Package(
         .binaryTarget(
             name: "Nubrick",
             url: "https://github.com/plaidev/nubrick-ios/releases/download/v0.16.2/Nubrick.xcframework.zip",
-            checksum: "1993c1092c158a691591304f774e6ae2a43deaa405218c860d7b1e5f5533d8ca"
+            checksum: "7a58ca46a4d20760fdf2035f2384f88169684ce4f778a6f1f8ae8bcc5eb5406c"
         ),
 
         // Development: Source target for unit tests (supports @testable import)
