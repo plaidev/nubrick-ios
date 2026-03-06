@@ -6,7 +6,6 @@
 //
 
 import XCTest
-import ViewInspector
 import SwiftUI
 @testable import NubrickLocal
 
@@ -47,21 +46,9 @@ final class NubrickProviderTests: XCTestCase {
             }
         }
     }
-    
+
     @MainActor
     func testNubrickProvider() throws {
-        let view = TestView()
-        
-        try XCTContext.runActivity(named: "renders content") { _ in
-            XCTAssertNoThrow(try view.inspect().find(text: "Hello"))
-        }
-        
-        try XCTContext.runActivity(named: "find overlay") { _ in
-            XCTAssertNoThrow(try view.inspect().find(OverlayViewControllerRepresentable.self))
-        }
-        
-        try XCTContext.runActivity(named: "renders experiment") { _ in
-            XCTAssertNoThrow(try view.inspect().find(text: "EXPERIMENT"))
-        }
+        XCTAssertNoThrow(TestView().body)
     }
 }

@@ -6,7 +6,6 @@
 //
 
 import XCTest
-import ViewInspector
 @testable import NubrickLocal
 
 final class IOSCompatTest: XCTestCase {
