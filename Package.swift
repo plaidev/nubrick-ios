@@ -15,7 +15,6 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/nalexn/ViewInspector", exact: "0.10.3"),
         .package(url: "https://github.com/facebook/yoga.git", .upToNextMinor(from: "3.2.1")),
     ],
     targets: [
@@ -46,7 +45,7 @@ let package = Package(
         // Unit tests use source target for @testable import
         .testTarget(
             name: "NubrickTests",
-            dependencies: ["NubrickLocal", .product(name: "ViewInspector", package: "ViewInspector")]
+            dependencies: ["NubrickLocal"]
         ),
     ],
     cxxLanguageStandard: CXXLanguageStandard(rawValue: "c++20")
