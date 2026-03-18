@@ -14,6 +14,10 @@ class CollectionViewCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        backgroundColor = .clear
+        isOpaque = false
+        contentView.backgroundColor = .clear
+        contentView.isOpaque = false
 
         contentView.configureLayout { layout in
             layout.isEnabled = true
@@ -24,6 +28,10 @@ class CollectionViewCell: UICollectionViewCell {
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        backgroundColor = .clear
+        isOpaque = false
+        contentView.backgroundColor = .clear
+        contentView.isOpaque = false
 
         contentView.configureLayout { layout in
             layout.isEnabled = true
@@ -143,6 +151,9 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             collectionViewLayout: layout
         )
         self.collectionView = root
+        root.backgroundColor = .clear
+        root.isOpaque = false
+        root.backgroundView = nil
         root.showsVerticalScrollIndicator = false
         root.showsHorizontalScrollIndicator = false
         root.register(CollectionViewCell.self, forCellWithReuseIdentifier: "CellView")
