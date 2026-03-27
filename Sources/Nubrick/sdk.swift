@@ -181,7 +181,7 @@ public final class NubrickClient: ObservableObject {
         cachePolicy: NubrickCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         trackCrashes: Bool = true,
-        onTooltip: @escaping ((_ data: String) -> Void)
+        onTooltip: @escaping ((_ data: String, _ experimentId: String) -> Void)
     ) {
         self.init(
             projectId: projectId,
@@ -190,7 +190,7 @@ public final class NubrickClient: ObservableObject {
             cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             trackCrashes: trackCrashes,
-            onTooltip: onTooltip as ((String) -> Void)?
+            onTooltip: onTooltip as ((String, String) -> Void)?
         )
     }
 
@@ -201,7 +201,7 @@ public final class NubrickClient: ObservableObject {
         cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
-        onTooltip: ((_ data: String) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
         let user = NubrickUser()
         let config = Config(projectId: projectId, onEvents: [
@@ -270,6 +270,17 @@ public class NubrickExperiment {
             return
         }
         self.container.sendFlutterCrash(crashEvent)
+    }
+
+    @_spi(FlutterBridge)
+    public func appendTooltipExperimentHistory(experimentId: String) {
+        if !isNubrickAvailable {
+            return
+        }
+        if experimentId.isEmpty {
+            return
+        }
+        self.container.appendExperimentHistory(experimentId: experimentId)
     }
 
     @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")

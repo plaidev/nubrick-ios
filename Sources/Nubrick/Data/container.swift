@@ -36,8 +36,9 @@ protocol Container {
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(ExperimentKind?, UIBlock), NubrickError>
+    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
+    func appendExperimentHistory(experimentId: String)
     
     @available(iOS 14.0, *)
     func processMetricKitCrash(_ crash: MXCrashDiagnostic)
@@ -69,7 +70,7 @@ class ContainerEmptyImpl: Container {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError> {
         return Result.failure(NubrickError.notFound)
     }
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(ExperimentKind?, UIBlock), NubrickError> {
+    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError> {
         return Result.failure(NubrickError.notFound)
     }
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
@@ -80,6 +81,9 @@ class ContainerEmptyImpl: Container {
     }
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
+    }
+
+    func appendExperimentHistory(experimentId: String) {
     }
 }
 
@@ -213,7 +217,7 @@ class ContainerImpl: Container {
         return await self.componentRepository.fetchComponent(experimentId: extracted.experimentId, id: componentId)
     }
 
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(ExperimentKind?, UIBlock), NubrickError> {
+    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError> {
         // send the user track event and save it to database
         self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
         await self.databaseRepository.appendUserEvent(name: trigger)
@@ -243,7 +247,11 @@ class ContainerImpl: Container {
         self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
         ))
-        self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
+        // Tooltip is a Flutter-only flow. Persist tooltip history only after
+        // Flutter confirms the tooltip actually started rendering.
+        if extracted.kind != .TOOLTIP {
+            self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
+        }
 
         guard let componentId = extractComponentId(variant: extracted.variant) else {
             return Result.failure(NubrickError.notFound)
@@ -251,7 +259,7 @@ class ContainerImpl: Container {
 
         switch await self.componentRepository.fetchComponent(experimentId: extracted.experimentId, id: componentId) {
         case .success(let block):
-            return .success((extracted.kind, block))
+            return .success((extracted.experimentId, extracted.kind, block))
         case .failure(let error):
             return .failure(error)
         }
@@ -284,6 +292,10 @@ class ContainerImpl: Container {
         self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
 
         return Result.success((extracted.experimentId, extracted.variant))
+    }
+
+    func appendExperimentHistory(experimentId: String) {
+        self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
     }
 
     private func extractVariant(configs: ExperimentConfigs, kinds: [ExperimentKind]) async -> Result<ExtractedVariant, NubrickError> {
