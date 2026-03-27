@@ -19,7 +19,7 @@ class TriggerViewController: UIViewController {
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: ModalRootViewController? = nil
     private var onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
-    private var onTooltip: ((_ data: String) -> Void)? = nil
+    private var onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
     private var didLoaded = false
     private var ignoreFirstUserEventToForegroundEvent = true
 
@@ -29,7 +29,13 @@ class TriggerViewController: UIViewController {
         super.init(coder: coder)
     }
 
-    init(user: NubrickUser, container: Container, modalViewController: ModalComponentViewController?, onDispatch: ((_ event: NubrickEvent) -> Void)? = nil, onTooltip: ((_ data: String) -> Void)? = nil) {
+    init(
+        user: NubrickUser,
+        container: Container,
+        modalViewController: ModalComponentViewController?,
+        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
+        onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
+    ) {
         self.user = user
         self.container = container
         self.modalViewController = modalViewController
@@ -95,13 +101,16 @@ class TriggerViewController: UIViewController {
             let triggerResult = await Task.detached {
                 return await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
             }.value
+            let experimentId: String?
             let kind: ExperimentKind?
             let result: Result<UIBlock, NubrickError>
             switch triggerResult {
-            case .success(let (k, block)):
+            case .success(let (id, k, block)):
+                experimentId = id
                 kind = k
                 result = .success(block)
             case .failure(let error):
+                experimentId = nil
                 kind = nil
                 result = .failure(error)
             }
@@ -122,10 +131,11 @@ class TriggerViewController: UIViewController {
                     switch block {
                     case .EUIRootBlock(let root):
                         if kind == .TOOLTIP,
-                           let onTooltip = self?.onTooltip {
+                           let onTooltip = self?.onTooltip,
+                           let experimentId = experimentId {
                             if let jsonData = try? JSONEncoder().encode(block),
                                let jsonString = String(data: jsonData, encoding: .utf8) {
-                                onTooltip(jsonString)
+                                onTooltip(jsonString, experimentId)
                             }
                         } else {
                             let root = ModalRootViewController(
@@ -150,4 +160,3 @@ class TriggerViewController: UIViewController {
         }
     } // END dispatch
 }
-
