@@ -12,7 +12,7 @@ Pod::Spec.new do |spec|
   spec.author       = { "Nubrick" => "nubrick-support@plaid.co.jp" }
 
   spec.platform     = :ios
-  spec.ios.deployment_target = "13.4"
+  spec.ios.deployment_target = "15.0"
 
   spec.source       = { :http => "https://github.com/plaidev/nubrick-ios/releases/download/v0.16.4/Nubrick.xcframework.zip",
                         :sha256 => "6089c3af92740a175dc20e4fa987ce5d9f33df653e179d59b21a675dae72e5db" }

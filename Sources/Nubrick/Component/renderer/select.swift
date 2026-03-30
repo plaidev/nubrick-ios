@@ -13,7 +13,6 @@ import TipKit
 let noneValue = ""
 let noneLabel = "None"
 
-@available(iOS 15.0, *)
 class SelectInputView: UIControl {
     let formKey: String?
     let context: UIBlockContext?
@@ -177,10 +176,8 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
         super.init(nibName: nil, bundle: nil)
 
         self.modalPresentationStyle = .formSheet
-        if #available(iOS 15.0, *) {
-            if let sheet = self.sheetPresentationController {
-                sheet.detents = .init([.large(), .medium()])
-            }
+        if let sheet = self.sheetPresentationController {
+            sheet.detents = .init([.large(), .medium()])
         }
     }
 
@@ -321,28 +318,26 @@ class MultiSelectInputView: UIControl {
         self.addSubview(label)
         self.addSubview(iconView)
 
-        if #available(iOS 14.0, *) {
-            self.addAction(.init { _ in
-                let tableView = MultiSelectTableViewController(values: self.values, options: block.data?.options) { [weak self] options in
-                    var values: [String] = []
-                    options.forEach { option in
-                        guard let value = option.value else {
-                            return
-                        }
-                        values.append(value)
+        self.addAction(.init { _ in
+            let tableView = MultiSelectTableViewController(values: self.values, options: block.data?.options) { [weak self] options in
+                var values: [String] = []
+                options.forEach { option in
+                    guard let value = option.value else {
+                        return
                     }
-                    self?.values = values
-                    let text = getMultiSelectText(self?.values)
-                    self?.label?.text = text ?? block.data?.placeholder ?? "Please select"
-                    self?.label?.textColor = text != nil ? textColor : .placeholderText
-
-                    if let formKey = self?.formKey {
-                        self?.context?.writeToForm(key: formKey, value: values)
-                    }
+                    values.append(value)
                 }
-                presentOnTop(window: self.window, modal: tableView)
-            }, for: .touchDown)
-        }
+                self?.values = values
+                let text = getMultiSelectText(self?.values)
+                self?.label?.text = text ?? block.data?.placeholder ?? "Please select"
+                self?.label?.textColor = text != nil ? textColor : .placeholderText
+
+                if let formKey = self?.formKey {
+                    self?.context?.writeToForm(key: formKey, value: values)
+                }
+            }
+            presentOnTop(window: self.window, modal: tableView)
+        }, for: .touchDown)
     }
 
     override func layoutSubviews() {

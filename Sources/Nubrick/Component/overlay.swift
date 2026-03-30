@@ -28,10 +28,6 @@ class OverlayViewController: UIViewController {
         )
         super.init(nibName: nil, bundle: nil)
 
-        if !isNubrickAvailable {
-            return
-        }
-
         self.addChild(self.modalViewController)
         self.addChild(self.modalForTriggerViewController)
         self.addChild(self.triggerViewController)
@@ -42,10 +38,6 @@ class OverlayViewController: UIViewController {
     }
 
     override func viewDidLoad() {
-        if !isNubrickAvailable {
-            return
-        }
-
         self.triggerViewController.initialLoad()
     }
 

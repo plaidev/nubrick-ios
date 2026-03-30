@@ -12,7 +12,6 @@ import MetricKit
 import Darwin.Mach
 
 // For crash reporting
-@available(iOS 14.0, *)
 final class AppMetrics: NSObject, MXMetricManagerSubscriber {
 
     // Keep exactly 1 subscriber per iOS process (prevents Flutter hot-restart duplicates)
@@ -54,10 +53,6 @@ final class AppMetrics: NSObject, MXMetricManagerSubscriber {
 public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
 public var nubrickCdnUrl = "https://cdn.nativebrik.com"
 public let nubrickSdkVersion = "0.16.4"
-
-public var isNubrickAvailable: Bool {
-    if #available(iOS 15.0, *) { true } else { false }
-}
 
 private func openLink(_ event: ComponentEvent) -> Void {
     guard let link = event.deepLink,
@@ -222,8 +217,7 @@ public final class NubrickClient: ObservableObject {
         self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch, onTooltip: onTooltip)
         self.experiment = NubrickExperiment(container: self.container, overlay: self.overlayVC)
 
-        // Initialize AppMetrics only for iOS 14+
-        if #available(iOS 14.0, *), trackCrashes {
+        if trackCrashes {
             Task { @MainActor in
                 if let existing = AppMetrics.shared {
                     existing.updateCallback(self.experiment.processMetricKitCrash)
@@ -247,17 +241,10 @@ public class NubrickExperiment {
     }
 
     public func dispatch(_ event: NubrickEvent) {
-        if !isNubrickAvailable {
-            return
-        }
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
     
-    @available(iOS 14.0, *)
     internal func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
-        if !isNubrickAvailable {
-            return
-        }
        self.container.processMetricKitCrash(crash)
     }
 
@@ -266,17 +253,11 @@ public class NubrickExperiment {
     /// - Parameter crashEvent: The crash event containing exceptions, platform, and SDK version
     @_spi(FlutterBridge)
     public func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        if !isNubrickAvailable {
-            return
-        }
         self.container.sendFlutterCrash(crashEvent)
     }
 
     @_spi(FlutterBridge)
     public func appendTooltipExperimentHistory(experimentId: String) {
-        if !isNubrickAvailable {
-            return
-        }
         if experimentId.isEmpty {
             return
         }
@@ -290,18 +271,10 @@ public class NubrickExperiment {
     }
 
     public func overlayViewController() -> UIViewController {
-        if !isNubrickAvailable {
-            let vc = UIViewController()
-            vc.view.frame = .zero
-            return vc
-        }
         return self.overlayVC
     }
 
     public func overlay() -> some View {
-        if !isNubrickAvailable {
-            return AnyView(EmptyView())
-        }
         return AnyView(OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0))
     }
 
@@ -310,9 +283,6 @@ public class NubrickExperiment {
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
-        if !isNubrickAvailable {
-            return AnyView(EmptyView())
-        }
         return AnyView(EmbeddingSwiftView(
             experimentId: id,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
@@ -327,9 +297,6 @@ public class NubrickExperiment {
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
     ) -> some View {
-        if !isNubrickAvailable {
-            return AnyView(content(.notFound))
-        }
         return AnyView(EmbeddingSwiftView.init<V>(
             experimentId: id,
             componentId: nil,
@@ -345,9 +312,6 @@ public class NubrickExperiment {
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView {
-        if !isNubrickAvailable {
-            return UIView()
-        }
         return EmbeddingUIView(
             experimentId: id,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
@@ -363,9 +327,6 @@ public class NubrickExperiment {
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
-        if !isNubrickAvailable {
-            return content(.notFound)
-        }
         return EmbeddingUIView(
             experimentId: id,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
@@ -379,10 +340,6 @@ public class NubrickExperiment {
         _ id: String,
         phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
     ) {
-        if !isNubrickAvailable {
-            phase(.notFound)
-            return
-        }
         let _ = RemoteConfig(
             experimentId: id,
             container: self.container,
@@ -395,9 +352,6 @@ public class NubrickExperiment {
         _ id: String,
         @ViewBuilder phase: @escaping ((_ phase: RemoteConfigPhase) -> V)
     ) -> some View {
-        if !isNubrickAvailable {
-            return AnyView(phase(.notFound))
-        }
         return AnyView(RemoteConfigAsView(
             experimentId: id,
             container: self.container,
@@ -416,9 +370,6 @@ public class NubrickExperiment {
         onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
-        if !isNubrickAvailable {
-            return content(.notFound)
-        }
         return EmbeddingUIView(
             experimentId: id,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
@@ -436,9 +387,6 @@ public class NubrickExperiment {
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> NubrickBridgedViewAccessor {
-        if !isNubrickAvailable {
-            return NubrickBridgedViewAccessor(uiview: UIView())
-        }
         do {
             let decoder = JSONDecoder()
             let data = Data(json.utf8)

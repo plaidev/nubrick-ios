@@ -62,13 +62,6 @@ public class NubrickUser {
     internal var userDB: UserDefaults
 
     init() {
-        if !isNubrickAvailable {
-            self.properties = [:]
-            self.customProperties = [:]
-            self.userDB = UserDefaults.standard
-            return
-        }
-
         let suiteName = "\(Bundle.main.bundleIdentifier ?? "app").nativebrik.com"
         self.userDB = UserDefaults(suiteName: suiteName) ?? UserDefaults.standard
         self.properties = [:]
@@ -90,7 +83,7 @@ public class NubrickUser {
         let regionCode = getRegionCode()
         self.properties[BuiltinUserProperty.regionCode.rawValue] = regionCode
 
-        let firstBootTime = self.userDB.object(forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue) as? String ?? formatToISO8601(getCurrentDate())
+        let firstBootTime = self.userDB.object(forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue) as? String ?? getCurrentDate().ISO8601Format()
         self.userDB.set(firstBootTime, forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue)
         self.properties[BuiltinUserProperty.firstBootTime.rawValue] = firstBootTime
 
@@ -174,7 +167,7 @@ public class NubrickUser {
     public func comeBack() {
         let now = getCurrentDate()
         let lastBootTime = getCurrentDate()
-        self.properties[BuiltinUserProperty.lastBootTime.rawValue] = formatToISO8601(lastBootTime)
+        self.properties[BuiltinUserProperty.lastBootTime.rawValue] = lastBootTime.ISO8601Format()
         self.lastBootTime = lastBootTime.timeIntervalSince1970
 
         let retentionTimestamp = self.userDB.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue) as? Int ?? Int(now.timeIntervalSince1970)
@@ -218,7 +211,7 @@ public class NubrickUser {
         // set properties that depend on current time.
         eventProps.append(UserProperty(
             name: BuiltinUserProperty.currentTime.rawValue,
-            value: formatToISO8601(now),
+            value: now.ISO8601Format(),
             type: .TIMESTAMPZ
         ))
 

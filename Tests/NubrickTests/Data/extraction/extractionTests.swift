@@ -178,18 +178,18 @@ final class ExtractionTests: XCTestCase {
                 ExperimentConfig(
                     id: "id_0",
                     kind: .POPUP,
-                    startedAt: formatToISO8601(day1)
+                    startedAt: day1.ISO8601Format()
                 ),
                 ExperimentConfig(
                     id: "id_1",
                     kind: .POPUP,
-                    endedAt: formatToISO8601(dayM1)
+                    endedAt: dayM1.ISO8601Format()
                 ),
                 ExperimentConfig(
                     id: "now",
                     kind: .POPUP,
-                    startedAt: formatToISO8601(dayM1),
-                    endedAt: formatToISO8601(day2)
+                    startedAt: dayM1.ISO8601Format(),
+                    endedAt: day2.ISO8601Format()
                 ),
             ]
         )
@@ -232,8 +232,8 @@ final class ExtractionTests: XCTestCase {
 
         let configs = ExperimentConfigs(
             configs: [
-                ExperimentConfig(id: "earlier", kind: .POPUP, startedAt: formatToISO8601(earlier), priority: 5),
-                ExperimentConfig(id: "later", kind: .POPUP, startedAt: formatToISO8601(later), priority: 5),
+                ExperimentConfig(id: "earlier", kind: .POPUP, startedAt: earlier.ISO8601Format(), priority: 5),
+                ExperimentConfig(id: "later", kind: .POPUP, startedAt: later.ISO8601Format(), priority: 5),
             ]
         )
 
