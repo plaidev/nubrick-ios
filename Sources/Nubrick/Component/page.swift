@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-@_implementationOnly import YogaKit
+internal import YogaKit
 
 // child of modal
 class ModalPageViewController: UIViewController {
