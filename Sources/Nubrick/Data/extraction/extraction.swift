@@ -423,11 +423,11 @@ func compareSemver(a: String, b: [String], op: ConditionOperator) -> Bool {
         return compareSemverAsComparisonResult(a, b[0]) <= 0
     case .In:
         return b.contains { value in
-            return compareSemverAsComparisonResult(a, b[0]) == 0
+            return compareSemverAsComparisonResult(a, value) == 0
         }
     case .NotIn:
         return !b.contains { value in
-            return compareSemverAsComparisonResult(a, b[0]) == 0
+            return compareSemverAsComparisonResult(a, value) == 0
         }
     case .Between:
         if b.count != 2 {
