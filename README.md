@@ -1,6 +1,11 @@
 # Nubrick SDK for iOS
 
-documentations
+## Requirements
+
+- iOS 15.0+
+- Xcode 16.0+
+
+# Documentation
 
 [https://docs.nativebrik.com](https://docs.nativebrik.com/)
 
