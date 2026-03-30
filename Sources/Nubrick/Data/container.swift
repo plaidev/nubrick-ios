@@ -40,7 +40,6 @@ protocol Container {
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
     func appendExperimentHistory(experimentId: String)
     
-    @available(iOS 14.0, *)
     func processMetricKitCrash(_ crash: MXCrashDiagnostic)
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
@@ -76,7 +75,6 @@ class ContainerEmptyImpl: Container {
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
         return Result.failure(NubrickError.notFound)
     }
-    @available(iOS 14.0, *)
     func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
     }
 
@@ -328,7 +326,6 @@ class ContainerImpl: Container {
         }
         return Result.success(ExtractedVariant(experimentId: experimentId, kind: config.kind, variant: variant))
     }
-    @available(iOS 14.0, *)
     func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
         self.trackRepository.processMetricKitCrash(crash)
     }

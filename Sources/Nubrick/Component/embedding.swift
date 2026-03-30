@@ -228,11 +228,7 @@ struct EmbeddingSwiftView: View {
             case .completed(let component):
                 return AnyView(component)
             case .loading:
-                if #available(iOS 14.0, *) {
-                    return AnyView(ProgressView())
-                } else {
-                    return AnyView(EmptyView())
-                }
+                return AnyView(ProgressView())
             default:
                 return AnyView(EmptyView())
             }

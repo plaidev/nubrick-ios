@@ -42,12 +42,7 @@ func syncDateFromHTTPURLResponse(t0: Date, res: HTTPURLResponse) {
 }
 
 func getCurrentDate() -> Date {
-    let currentMillis: Int64
-    if #available(iOS 15, *) {
-        currentMillis = Int64(Date.now.timeIntervalSince1970 * 1000)
-    } else {
-        currentMillis = Int64(Date().timeIntervalSince1970 * 1000)
-    }
+    let currentMillis = Int64(Date.now.timeIntervalSince1970 * 1000)
     // device time + (server time - device time) = server.time
     return Date(timeIntervalSince1970: Double(currentMillis + DATETIME_OFFSET) / 1000.0)
 }
@@ -114,15 +109,6 @@ func getLocalDateComponent(_ date: Date) -> LocalDateComponent {
     )
 }
 
-func formatToISO8601(_ date: Date) -> String {
-    if #available(iOS 15, *) {
-        return date.ISO8601Format()
-    } else {
-        let formatter = ISO8601DateFormatter()
-        return formatter.string(from: date)
-    }
-}
-
 func getLanguageCode() -> String {
     if #available(iOS 16, *) {
         return Locale.current.language.languageCode?.identifier ?? "en"
@@ -138,4 +124,3 @@ func getRegionCode() -> String {
         return Locale.current.regionCode ?? "US"
     }
 }
-

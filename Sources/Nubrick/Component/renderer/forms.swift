@@ -80,7 +80,7 @@ class InputIconView: UIControl {
             iconView.tintColor = color
         }
 
-        if #available(iOS 14.0, *), let message = message {
+        if let message = message {
             self.addAction(.init { _ in
                 if #available(iOS 17.0, *) {
                     let tooltip = TooltipViewController(message: message, source: iconView)
@@ -277,13 +277,9 @@ class SwitchInputView: UIControl {
             }
         }
 
-        if #available(iOS 14.0, *) {
-            toggle.addAction(.init(handler: { _ in
-                self.handleValueChange(toggle)
-            }), for: .valueChanged)
-        } else {
-            toggle.addTarget(self, action: #selector(self.handleValueChange(_:)), for: .valueChanged)
-        }
+        toggle.addAction(.init(handler: { _ in
+            self.handleValueChange(toggle)
+        }), for: .valueChanged)
         self.configureLayout { layout in
             layout.isEnabled = true
         }

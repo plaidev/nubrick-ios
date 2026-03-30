@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "Nubrick",
     platforms: [
-        .iOS("13.4"),
+        .iOS("15.0"),
     ],
     products: [
         .library(

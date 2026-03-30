@@ -150,7 +150,6 @@ protocol TrackRepository2 {
     func trackExperimentEvent(_ event: TrackExperimentEvent)
     func trackEvent(_ event: TrackUserEvent)
 
-    @available(iOS 14.0, *)
     func processMetricKitCrash(_ crash: MXCrashDiagnostic)
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
@@ -248,7 +247,7 @@ class TrackRespositoryImpl: TrackRepository2 {
             typename: .Experiment,
             experimentId: event.experimentId,
             variantId: event.variantId,
-            timestamp: formatToISO8601(getCurrentDate())
+            timestamp: getCurrentDate().ISO8601Format()
         ))
     }
     
@@ -256,7 +255,7 @@ class TrackRespositoryImpl: TrackRepository2 {
         self.pushToQueue(TrackEvent(
             typename: .Event,
             name: event.name,
-            timestamp: formatToISO8601(getCurrentDate())
+            timestamp: getCurrentDate().ISO8601Format()
         ))
     }
     
@@ -315,7 +314,7 @@ class TrackRespositoryImpl: TrackRepository2 {
         let trackRequest = TrackRequest(
             projectId: self.config.projectId,
             userId: self.user.id,
-            timestamp: formatToISO8601(getCurrentDate()),
+            timestamp: getCurrentDate().ISO8601Format(),
             events: events,
             meta: trackMeta
         )
@@ -342,7 +341,6 @@ class TrackRespositoryImpl: TrackRepository2 {
         }
     }
     
-    @available(iOS 14.0, *)
     func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
         if let callStackTree = try? JSONDecoder().decode(
             CallStackTree.self,
@@ -436,7 +434,7 @@ class TrackRespositoryImpl: TrackRepository2 {
                 self.buffer.append(TrackEvent(
                     typename: .Event,
                     name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
-                    timestamp: formatToISO8601(getCurrentDate()),
+                    timestamp: getCurrentDate().ISO8601Format(),
                     platform: nil
                 ))
             }
@@ -445,13 +443,13 @@ class TrackRespositoryImpl: TrackRepository2 {
                     self.buffer.append(TrackEvent(
                         typename: .Event,
                         name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
-                        timestamp: formatToISO8601(getCurrentDate()),
+                        timestamp: getCurrentDate().ISO8601Format(),
                         platform: nil
                     ))
                 }
                 self.buffer.append(TrackEvent(
                     typename: .Crash,
-                    timestamp: formatToISO8601(getCurrentDate()),
+                    timestamp: getCurrentDate().ISO8601Format(),
                     exceptions: crashEvent.exceptions,
                     threads: crashEvent.threads,
                     platform: crashEvent.platform,
