@@ -413,7 +413,8 @@ class TrackRespositoryImpl: TrackRepository2 {
             causedByNativebrik = threads.contains { thread in
                 thread.stacktrace?.contains { frame in
                     frame.binaryName?.contains("Nubrick") ?? false ||
-                    frame.className?.contains("package:nativebrik_bridge") ?? false ||
+                    frame.className?.contains("package:nubrick_flutter") ?? false ||
+                    frame.className?.contains("app.nubrick.flutter.nubrick_flutter") ?? false ||
                     frame.className?.contains("io.nubrick.nubrick") ?? false
                 } ?? false
             }
@@ -421,7 +422,8 @@ class TrackRespositoryImpl: TrackRepository2 {
             causedByNativebrik = crashEvent.exceptions.contains { exception in
                 exception.callStacks?.contains { frame in
                     frame.binaryName?.contains("Nubrick") ?? false ||
-                    frame.className?.contains("package:nativebrik_bridge") ?? false ||
+                    frame.className?.contains("package:nubrick_flutter") ?? false ||
+                    frame.className?.contains("app.nubrick.flutter.nubrick_flutter") ?? false ||
                     frame.className?.contains("io.nubrick.nubrick") ?? false
                 } ?? false
             }
