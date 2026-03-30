@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-@_implementationOnly import YogaKit
+internal import YogaKit
 
 func childrenToUIViews(data: [UIBlock]?, context: UIBlockContext) -> [UIView] {
     if let children = data {
