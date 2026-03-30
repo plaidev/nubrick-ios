@@ -381,6 +381,7 @@ final class CompareTests: XCTestCase {
         
         // in
         XCTAssertTrue(compareSemver(a: "1.0", b: ["1", "2"], op: .In))
+        XCTAssertTrue(compareSemver(a: "1.0", b: ["2", "1"], op: .In))
         XCTAssertFalse(compareSemver(a: "1.0", b: ["2", "3"], op: .In))
         XCTAssertFalse(compareSemver(a: "1.0", b: [], op: .In))
         
@@ -388,6 +389,7 @@ final class CompareTests: XCTestCase {
         XCTAssertTrue(compareSemver(a: "1.0", b: [], op: .NotIn))
         XCTAssertTrue(compareSemver(a: "1.0", b: ["2", "3"], op: .NotIn))
         XCTAssertFalse(compareSemver(a: "1.0", b: ["1", "2"], op: .NotIn))
+        XCTAssertFalse(compareSemver(a: "1.0", b: ["2", "1"], op: .NotIn))
         
         // between
         XCTAssertTrue(compareSemver(a: "1.0", b: ["0.0.9", "1.0.1"], op: .Between))
