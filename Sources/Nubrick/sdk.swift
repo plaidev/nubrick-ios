@@ -278,6 +278,7 @@ public class NubrickExperiment {
         return AnyView(OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0))
     }
 
+    @MainActor
     public func embedding(
         _ id: String,
         arguments: Any? = nil,
@@ -291,13 +292,14 @@ public class NubrickExperiment {
         ))
     }
 
+    @MainActor
     public func embedding<V: View>(
         _ id: String,
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
+        @ViewBuilder content: @escaping (_ phase: AsyncEmbeddingPhase) -> V
     ) -> some View {
-        return AnyView(EmbeddingSwiftView.init<V>(
+        return AnyView(EmbeddingSwiftView(
             experimentId: id,
             componentId: nil,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),

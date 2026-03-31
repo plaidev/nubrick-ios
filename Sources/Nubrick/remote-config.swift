@@ -75,6 +75,7 @@ public class RemoteConfigVariant {
         return data
     }
 
+    @MainActor
     public func getAsView(
         _ key: String,
         arguments: Any? = nil,
@@ -90,6 +91,7 @@ public class RemoteConfigVariant {
         )
     }
 
+    @MainActor
     public func getAsView<V: View>(
         _ key: String,
         arguments: Any? = nil,
@@ -97,7 +99,7 @@ public class RemoteConfigVariant {
         @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
     ) -> some View {
         let componentId = self.get(key)
-        return EmbeddingSwiftView.init<V>(
+        return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
