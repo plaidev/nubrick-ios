@@ -23,8 +23,9 @@ class DatabaseRepositoryImpl: DatabaseRepository {
     }
 
     func appendUserEvent(name: String) async {
+        let persistentContainer = self.persistentContainer
         await MainActor.run {
-            let context = self.persistentContainer.viewContext
+            let context = persistentContainer.viewContext
             let event = UserEventEntity(context: context)
             event.name = name
             event.timestamp = getCurrentDate()
@@ -37,9 +38,10 @@ class DatabaseRepositoryImpl: DatabaseRepository {
     }
 
     func appendExperimentHistory(experimentId: String) {
+        let persistentContainer = self.persistentContainer
         Task {
             await MainActor.run {
-                let context = self.persistentContainer.viewContext
+                let context = persistentContainer.viewContext
                 let history = ExperimentHistoryEntity(context: context)
                 history.experimentId = experimentId
                 history.timestamp = getCurrentDate()

@@ -14,15 +14,15 @@ let nubrick = {
         fatalError("Missing or invalid PROJECT_ID in Info.plist")
     }
 
-    if let cdnUrl = Bundle.main.object(forInfoDictionaryKey: "CDN_URL") as? String, !cdnUrl.isEmpty {
-        nubrickCdnUrl = cdnUrl
-    }
-    if let trackUrl = Bundle.main.object(forInfoDictionaryKey: "TRACK_URL") as? String, !trackUrl.isEmpty {
-        nubrickTrackUrl = trackUrl
-    }
+    let cdnUrl = (Bundle.main.object(forInfoDictionaryKey: "CDN_URL") as? String)?
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    let trackUrl = (Bundle.main.object(forInfoDictionaryKey: "TRACK_URL") as? String)?
+        .trimmingCharacters(in: .whitespacesAndNewlines)
 
     return NubrickClient(
         projectId: projectId,
+        trackUrl: (trackUrl?.isEmpty == false) ? trackUrl : nil,
+        cdnUrl: (cdnUrl?.isEmpty == false) ? cdnUrl : nil,
         cachePolicy: NubrickCachePolicy(cacheTime: 10 * 60, staleTime: 0)
     )
 }()

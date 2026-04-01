@@ -12,7 +12,8 @@ import MetricKit
 import Darwin.Mach
 
 // For crash reporting
-final class AppMetrics: NSObject, MXMetricManagerSubscriber {
+@MainActor
+final class AppMetrics: NSObject, @MainActor MXMetricManagerSubscriber {
 
     // Keep exactly 1 subscriber per iOS process (prevents Flutter hot-restart duplicates)
     static var shared: AppMetrics?
@@ -49,11 +50,12 @@ final class AppMetrics: NSObject, MXMetricManagerSubscriber {
 
 
 
-// for development
-public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
-public var nubrickCdnUrl = "https://cdn.nativebrik.com"
+// Default backend endpoints (used unless overridden per client instance)
+public let nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
+public let nubrickCdnUrl = "https://cdn.nativebrik.com"
 public let nubrickSdkVersion = "0.16.4"
 
+@MainActor
 private func openLink(_ event: ComponentEvent) -> Void {
     guard let link = event.deepLink,
           let url = URL(string: link),
@@ -77,21 +79,27 @@ private func createDispatchNubrickEvent(_ client: NubrickClient) -> (_ event: Co
 final class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
-    var trackUrl: String = nubrickTrackUrl
-    var cdnUrl: String = nubrickCdnUrl
-    var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
+    let trackUrl: String
+    let cdnUrl: String
+    var eventListeners: [(@MainActor (_ event: ComponentEvent) -> Void)] = []
     var cachePolicy: NubrickCachePolicy = NubrickCachePolicy()
 
     init() {
         self.projectId = ""
+        self.trackUrl = nubrickTrackUrl
+        self.cdnUrl = nubrickCdnUrl
     }
 
     init(
         projectId: String,
-        onEvents: [((_ event: ComponentEvent) -> Void)?] = [],
+        onEvents: [ (@MainActor(_ event: ComponentEvent) -> Void)?] = [],
+        trackUrl: String? = nil,
+        cdnUrl: String? = nil,
         cachePolicy: NubrickCachePolicy? = nil
     ) {
         self.projectId = projectId
+        self.trackUrl = trackUrl ?? nubrickTrackUrl
+        self.cdnUrl = cdnUrl ?? nubrickCdnUrl
         onEvents.forEach { onEvent in
             if let onEvent = onEvent {
                 self.eventListeners.append(onEvent)
@@ -133,7 +141,7 @@ public struct ComponentEvent {
     public let payload: [EventProperty]?
 }
 
-public struct NubrickEvent {
+public struct NubrickEvent : Sendable {
     public let name: String
     public init(_ name: String) {
         self.name = name
@@ -153,6 +161,8 @@ public final class NubrickClient: ObservableObject {
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
+        trackUrl: String? = nil,
+        cdnUrl: String? = nil,
         cachePolicy: NubrickCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         trackCrashes: Bool = true
@@ -161,6 +171,8 @@ public final class NubrickClient: ObservableObject {
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
+            trackUrl: trackUrl,
+            cdnUrl: cdnUrl,
             cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             trackCrashes: trackCrashes,
@@ -173,6 +185,8 @@ public final class NubrickClient: ObservableObject {
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
+        trackUrl: String? = nil,
+        cdnUrl: String? = nil,
         cachePolicy: NubrickCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         trackCrashes: Bool = true,
@@ -182,6 +196,8 @@ public final class NubrickClient: ObservableObject {
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
+            trackUrl: trackUrl,
+            cdnUrl: cdnUrl,
             cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             trackCrashes: trackCrashes,
@@ -193,6 +209,8 @@ public final class NubrickClient: ObservableObject {
         projectId: String,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
+        trackUrl: String?,
+        cdnUrl: String?,
         cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
@@ -203,6 +221,8 @@ public final class NubrickClient: ObservableObject {
             openLink,
             onEvent
         ],
+        trackUrl: trackUrl,
+        cdnUrl: cdnUrl,
         cachePolicy: cachePolicy)
         let persistentContainer = createNativebrikCoreDataHelper()
         self.user = user
@@ -241,9 +261,12 @@ public class NubrickExperiment {
     }
 
     public func dispatch(_ event: NubrickEvent) {
-        self.overlayVC.triggerViewController.dispatch(event: event)
+        let overlayVC = self.overlayVC
+        Task { @MainActor in
+            overlayVC.triggerViewController.dispatch(event: event)
+        }
     }
-    
+
     internal func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
        self.container.processMetricKitCrash(crash)
     }
@@ -309,6 +332,7 @@ public class NubrickExperiment {
         ))
     }
 
+    @MainActor
     public func embeddingUIView(
         _ id: String,
         arguments: Any? = nil,
@@ -323,6 +347,7 @@ public class NubrickExperiment {
         )
     }
 
+    @MainActor
     public func embeddingUIView(
         _ id: String,
         arguments: Any? = nil,
@@ -350,6 +375,7 @@ public class NubrickExperiment {
         )
     }
 
+    @MainActor
     public func remoteConfigAsView<V: View>(
         _ id: String,
         @ViewBuilder phase: @escaping ((_ phase: RemoteConfigPhase) -> V)
