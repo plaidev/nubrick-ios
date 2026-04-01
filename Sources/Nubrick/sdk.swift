@@ -65,7 +65,7 @@ private func openLink(_ event: ComponentEvent) -> Void {
     UIApplication.shared.open(url)
 }
 
-private func createDispatchNubrickEvent(_ client: NubrickClient) -> (_ event: ComponentEvent) -> Void {
+private func createDispatchNubrickEvent(_ client: NubrickClient) -> (@MainActor (_ event: ComponentEvent) -> Void) {
     return { [weak client] event in
         guard let client,
               let name = event.name,
@@ -81,18 +81,21 @@ final class Config {
     var url: String = "https://nativebrik.com/client"
     let trackUrl: String
     let cdnUrl: String
-    var eventListeners: [(@MainActor (_ event: ComponentEvent) -> Void)] = []
+    private let userEventListener: (@Sendable (_ event: ComponentEvent) -> Void)?
+    private var dispatchEventListener: (@MainActor (_ event: ComponentEvent) -> Void)?
     var cachePolicy: NubrickCachePolicy = NubrickCachePolicy()
 
     init() {
         self.projectId = ""
         self.trackUrl = nubrickTrackUrl
         self.cdnUrl = nubrickCdnUrl
+        self.userEventListener = nil
+        self.dispatchEventListener = nil
     }
 
     init(
         projectId: String,
-        onEvents: [ (@MainActor(_ event: ComponentEvent) -> Void)?] = [],
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
         trackUrl: String? = nil,
         cdnUrl: String? = nil,
         cachePolicy: NubrickCachePolicy? = nil
@@ -100,42 +103,40 @@ final class Config {
         self.projectId = projectId
         self.trackUrl = trackUrl ?? nubrickTrackUrl
         self.cdnUrl = cdnUrl ?? nubrickCdnUrl
-        onEvents.forEach { onEvent in
-            if let onEvent = onEvent {
-                self.eventListeners.append(onEvent)
-            }
-        }
+        self.userEventListener = onEvent
+        self.dispatchEventListener = nil
         if let cachePolicy = cachePolicy {
             self.cachePolicy = cachePolicy
         }
     }
 
-    func addEventListener(_ onEvent: @escaping (_ event: ComponentEvent) -> Void) {
-        self.eventListeners.append(onEvent)
+    func setDispatchEventListener(_ listener: @escaping @MainActor (_ event: ComponentEvent) -> Void) {
+        self.dispatchEventListener = listener
     }
 
+    @MainActor
     func dispatchUIBlockEvent(event: UIBlockEventDispatcher) {
         let e = convertEvent(event)
-        for listener in eventListeners {
-            listener(e)
-        }
+        openLink(e)
+        self.userEventListener?(e)
+        self.dispatchEventListener?(e)
     }
 }
 
-public enum EventPropertyType {
+public enum EventPropertyType: Sendable {
     case INTEGER
     case STRING
     case TIMESTAMPZ
     case UNKNOWN
 }
 
-public struct EventProperty {
+public struct EventProperty: Sendable {
     public let name: String
     public let value: String
     public let type: EventPropertyType
 }
 
-public struct ComponentEvent {
+public struct ComponentEvent: Sendable {
     public let name: String?
     public let deepLink: String?
     public let payload: [EventProperty]?
@@ -159,7 +160,7 @@ public final class NubrickClient: ObservableObject {
 
     public convenience init(
         projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
         trackUrl: String? = nil,
         cdnUrl: String? = nil,
@@ -183,7 +184,7 @@ public final class NubrickClient: ObservableObject {
     @_spi(FlutterBridge)
     public convenience init(
         projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
         trackUrl: String? = nil,
         cdnUrl: String? = nil,
@@ -207,7 +208,7 @@ public final class NubrickClient: ObservableObject {
 
     private init(
         projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
         trackUrl: String?,
         cdnUrl: String?,
@@ -217,13 +218,13 @@ public final class NubrickClient: ObservableObject {
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
         let user = NubrickUser()
-        let config = Config(projectId: projectId, onEvents: [
-            openLink,
-            onEvent
-        ],
-        trackUrl: trackUrl,
-        cdnUrl: cdnUrl,
-        cachePolicy: cachePolicy)
+        let config = Config(
+            projectId: projectId,
+            onEvent: onEvent,
+            trackUrl: trackUrl,
+            cdnUrl: cdnUrl,
+            cachePolicy: cachePolicy
+        )
         let persistentContainer = createNativebrikCoreDataHelper()
         self.user = user
         self.config = config
@@ -247,7 +248,7 @@ public final class NubrickClient: ObservableObject {
             }
         }
 
-        config.addEventListener(createDispatchNubrickEvent(self))
+        config.setDispatchEventListener(createDispatchNubrickEvent(self))
     }
 }
 

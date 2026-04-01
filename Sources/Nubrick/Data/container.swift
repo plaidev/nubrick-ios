@@ -25,6 +25,7 @@ public enum NubrickError: Error {
 }
 
 protocol Container {
+    @MainActor
     func handleEvent(_ it: UIBlockEventDispatcher)
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
 
@@ -46,6 +47,7 @@ protocol Container {
 }
 
 class ContainerEmptyImpl: Container {
+    @MainActor
     func handleEvent(_ it: UIBlockEventDispatcher) {
     }
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
@@ -130,6 +132,7 @@ class ContainerImpl: Container {
         self.arguments = arguments
     }
 
+    @MainActor
     func handleEvent(_ it: UIBlockEventDispatcher) {
         self.config.dispatchUIBlockEvent(event: it)
     }
