@@ -122,7 +122,7 @@ func _getData(url: URL, syncDateTime: Bool = false) async -> Result<Data, Nubric
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
     do {
-        let t0 = getCurrentDate()
+        let t0 = Date()
         let (data, response) = try await nativebrikSession.data(for: request)
         guard let res = response as? HTTPURLResponse else {
             return Result.failure(NubrickError.irregular("Failed to parse as HttpURLResponse"))
