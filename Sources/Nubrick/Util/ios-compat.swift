@@ -7,18 +7,35 @@
 
 import Foundation
 
-private var DATETIME_OFFSET: Int64 = 0
+private final class DateTimeOffsetStore : @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: Int64 = 0
+
+    func set(_ offset: Int64) {
+        lock.lock()
+        defer { lock.unlock() }
+        value = offset
+    }
+
+    func get() -> Int64 {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
+private let DATETIME_OFFSET = DateTimeOffsetStore()
 
 func __for_test_sync_datetime_offset(offset: Int64) {
-    DATETIME_OFFSET = offset
+    DATETIME_OFFSET.set(offset)
 }
 
 func __for_test_get_datetime_offset() -> Int64 {
-    return DATETIME_OFFSET
+    return DATETIME_OFFSET.get()
 }
 
 func syncDateFromHTTPURLResponse(t0: Date, res: HTTPURLResponse) {
-    let t1 = getCurrentDate()
+    let t1 = Date()
 
     guard let dateStr = res.allHeaderFields["Date"] as? String else {
         return
@@ -38,13 +55,13 @@ func syncDateFromHTTPURLResponse(t0: Date, res: HTTPURLResponse) {
     let estimatedServerTimeUnix = serverTimeUnix + networkDelay
     let offset = estimatedServerTimeUnix - t1Unix
 
-    DATETIME_OFFSET = offset
+    DATETIME_OFFSET.set(offset)
 }
 
 func getCurrentDate() -> Date {
     let currentMillis = Int64(Date.now.timeIntervalSince1970 * 1000)
     // device time + (server time - device time) = server.time
-    return Date(timeIntervalSince1970: Double(currentMillis + DATETIME_OFFSET) / 1000.0)
+    return Date(timeIntervalSince1970: Double(currentMillis + DATETIME_OFFSET.get()) / 1000.0)
 }
 
 func parseDateTime(_ date: DateTime) -> Date? {
