@@ -49,6 +49,7 @@ class ClickListener: UITapGestureRecognizer {
 }
 
 // configureOnClickGesture sets up a click listener for the target view.
+@MainActor
 func configureOnClickGesture(
     target: UIView, action: Selector, context: UIBlockContext, event: UIBlockEventDispatcher?
 ) -> ClickListener {
@@ -141,6 +142,7 @@ func getIsDisabled(requiredFields: [String]) -> (([String: Any]) -> Boolean) {
     }
 }
 
+@MainActor
 func configureDisabled(target: UIView, context: UIBlockContext, requiredFields: [String]?) -> FormValueListener? {
     guard let requiredFields = requiredFields, !requiredFields.isEmpty else { return nil }
     let isDisabled = getIsDisabled(requiredFields: requiredFields)
@@ -164,6 +166,7 @@ func configureDisabled(target: UIView, context: UIBlockContext, requiredFields: 
     return handleFormValueChange
 }
 
+@MainActor
 func compileEvent(event: UIBlockEventDispatcher, context: UIBlockContext?) -> UIBlockEventDispatcher {
     guard let context = context else { return event }
 

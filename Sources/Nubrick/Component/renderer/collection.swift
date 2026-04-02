@@ -59,6 +59,7 @@ class CollectionViewCell: UICollectionViewCell {
     }
 }
 
+@MainActor
 fileprivate func calcCollectionHeight(_ data: UICollectionBlockData?) -> CGFloat {
     let top = data?.frame?.paddingTop ?? 0
     let bottom = data?.frame?.paddingBottom ?? 0
@@ -73,6 +74,7 @@ fileprivate func calcCollectionHeight(_ data: UICollectionBlockData?) -> CGFloat
     return CGFloat(gridSize * itemHeight + (gridSize - 1) * gap + top + bottom)
 }
 
+@MainActor
 fileprivate func calcCollectionWidth(_ data: UICollectionBlockData?) -> CGFloat {
     let left = data?.frame?.paddingLeft ?? 0
     let right = data?.frame?.paddingRight ?? 0
@@ -87,6 +89,7 @@ fileprivate func calcCollectionWidth(_ data: UICollectionBlockData?) -> CGFloat 
     return CGFloat(gridSize * itemWidth + (gridSize - 1) * gap + left + right)
 }
 
+@MainActor
 fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollectionViewFlowLayout {
     switch block.data?.kind {
     case .GRID:
@@ -215,7 +218,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         })
     }
     
-    deinit {
+    isolated deinit {
         self.timer?.invalidate()
         self.context.removeFormValueListener(self.block?.id ?? "")
     }

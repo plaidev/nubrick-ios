@@ -294,10 +294,12 @@ public class NubrickExperiment {
         // This method is kept for API compatibility but does nothing
     }
 
+    @MainActor
     public func overlayViewController() -> UIViewController {
         return self.overlayVC
     }
 
+    @MainActor
     public func overlay() -> some View {
         return AnyView(OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0))
     }
@@ -392,6 +394,7 @@ public class NubrickExperiment {
     // Embedding function for flutter bridge
     // Same as embeddingUIView except it has a parameter to pass a callback to send embedding width and height updates
     @_spi(FlutterBridge)
+    @MainActor
     public func embeddingForFlutterBridge(
         _ id: String,
         arguments: Any? = nil,
@@ -410,6 +413,7 @@ public class NubrickExperiment {
     }
 
     @_spi(FlutterBridge)
+    @MainActor
     public func renderUIView(
         json: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,

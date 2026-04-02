@@ -65,7 +65,7 @@ class TextView: AnimatedUIControl {
         })
     }
     
-    deinit {
+    isolated deinit {
         self.context?.removeFormValueListener(self.block.id ?? "")
     }
     

@@ -42,9 +42,6 @@ class ImageView: AnimatedUIControl {
             size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))
         )
         self.image.image = fallback
-        // Check if image is in stretch mode (not fixed size)
-        let isStretchWidth = block.data?.frame?.width == nil || block.data?.frame?.width == 0
-        let isStretchHeight = block.data?.frame?.height == nil || block.data?.frame?.height == 0
 
         self.image.configureLayout { layout in
             layout.isEnabled = true
@@ -83,7 +80,7 @@ class ImageView: AnimatedUIControl {
         })
     }
     
-    deinit {
+    isolated deinit {
         self.context?.removeFormValueListener(self.block.id ?? "")
     }
 
@@ -93,6 +90,7 @@ class ImageView: AnimatedUIControl {
     }
 }
 
+@MainActor
 func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
     guard let requestUrl = URL(string: url) else {
         return
@@ -151,6 +149,7 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
     }
 }
 
+@MainActor
 func loadAsyncImage(url: String, view: UIView, image: UIImageView) {
     guard let requestUrl = URL(string: url) else {
         return

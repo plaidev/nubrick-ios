@@ -92,7 +92,8 @@ class TriggerViewController: UIViewController {
             self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_15.rawValue))
         }
     }
-
+    
+    @MainActor
     func dispatch(event: NubrickEvent) {
         Task {
             // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,

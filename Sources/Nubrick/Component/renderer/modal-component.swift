@@ -94,7 +94,8 @@ class ModalComponentViewController: UIViewController {
     }
 }
 
-class ModalBackButtonBehaviorDelegate: NSObject, SFSafariViewControllerDelegate {
+@MainActor
+class ModalBackButtonBehaviorDelegate: NSObject, @MainActor SFSafariViewControllerDelegate {
     private let event: UIBlockEventDispatcher?
     private let context: UIBlockContext
 

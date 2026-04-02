@@ -8,6 +8,7 @@ import Foundation
 import UIKit
 
 @_spi(FlutterBridge)
+@MainActor
 public class NubrickBridgedViewAccessor {
     private let rootOrUIView: UIView
     

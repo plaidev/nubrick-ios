@@ -92,7 +92,7 @@ class InputIconView: UIControl {
         self.addSubview(iconView)
     }
 
-    deinit {
+    isolated deinit {
         if self.window?.rootViewController?.presentedViewController is TooltipViewController {
             self.window?.rootViewController?.dismiss(animated: true)
         }

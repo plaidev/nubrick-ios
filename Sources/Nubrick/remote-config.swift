@@ -109,6 +109,7 @@ public class RemoteConfigVariant {
         )
     }
 
+    @MainActor
     public func getAsUIView(
         _ key: String,
         arguments: Any? = nil,
@@ -128,6 +129,7 @@ public class RemoteConfigVariant {
         return uiview
     }
 
+    @MainActor
     public func getAsUIView(
         _ key: String,
         arguments: Any? = nil,

@@ -379,6 +379,7 @@ class RootView: UIView {
     }
 }
 
+@MainActor
 func findTopPresenting(_ viewContorller: UIViewController) -> UIViewController {
     if let presented = viewContorller.presentedViewController {
         if presented.isBeingDismissed {
@@ -390,6 +391,7 @@ func findTopPresenting(_ viewContorller: UIViewController) -> UIViewController {
     }
 }
 
+@MainActor
 func isPresenting(presented: UIViewController?, vc: UIViewController) -> Bool {
     if let presented = presented {
         if presented == vc {
