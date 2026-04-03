@@ -9,6 +9,7 @@ import Foundation
 import UIKit
 internal import YogaKit
 
+@MainActor
 func childrenToUIViews(data: [UIBlock]?, context: UIBlockContext) -> [UIView] {
     if let children = data {
         return children.map { uiblockToUIView(data: $0, context: context) }
@@ -17,6 +18,7 @@ func childrenToUIViews(data: [UIBlock]?, context: UIBlockContext) -> [UIView] {
     }
 }
 
+@MainActor
 func uiblockToUIView(data: UIBlock, context: UIBlockContext, respectSafeArea: Bool? = false) -> UIView {
     switch data {
     case .EUIFlexContainerBlock(let block):

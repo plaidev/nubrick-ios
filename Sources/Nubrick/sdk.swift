@@ -7,15 +7,15 @@
 
 import Foundation
 import SwiftUI
-import Combine
 import MetricKit
 import Darwin.Mach
 
 // For crash reporting
-final class AppMetrics: NSObject, MXMetricManagerSubscriber {
+@MainActor
+private final class AppMetrics: NSObject, @MainActor MXMetricManagerSubscriber {
 
     // Keep exactly 1 subscriber per iOS process (prevents Flutter hot-restart duplicates)
-    static var shared: AppMetrics?
+    fileprivate static var shared: AppMetrics?
 
     private var recordCrash: (MXCrashDiagnostic) -> Void
 
@@ -46,15 +46,13 @@ final class AppMetrics: NSObject, MXMetricManagerSubscriber {
     }
 }
 
-
-
-
-// for development
-public var nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
-public var nubrickCdnUrl = "https://cdn.nativebrik.com"
+// Default backend endpoints (used unless overridden per client instance)
+public let nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
+public let nubrickCdnUrl = "https://cdn.nativebrik.com"
 public let nubrickSdkVersion = "0.16.4"
 
-private func openLink(_ event: ComponentEvent) -> Void {
+@MainActor
+private func openLink(_ event: ComponentEvent) {
     guard let link = event.deepLink,
           let url = URL(string: link),
           UIApplication.shared.canOpenURL(url) else {
@@ -63,77 +61,69 @@ private func openLink(_ event: ComponentEvent) -> Void {
     UIApplication.shared.open(url)
 }
 
-private func createDispatchNubrickEvent(_ client: NubrickClient) -> (_ event: ComponentEvent) -> Void {
-    return { [weak client] event in
-        guard let client,
-              let name = event.name,
-              !name.isEmpty else {
-            return
-        }
-        client.experiment.dispatch(NubrickEvent(name))
-    }
+private func nubrickWarn(_ message: String) {
+    print("[Nubrick] \(message)")
 }
 
 final class Config {
     let projectId: String
     var url: String = "https://nativebrik.com/client"
-    var trackUrl: String = nubrickTrackUrl
-    var cdnUrl: String = nubrickCdnUrl
-    var eventListeners: [((_ event: ComponentEvent) -> Void)] = []
+    let trackUrl: String
+    let cdnUrl: String
+    private let userEventListener: (@Sendable (_ event: ComponentEvent) -> Void)?
+    private var dispatchEventListener: (@MainActor (_ event: ComponentEvent) -> Void)?
     var cachePolicy: NubrickCachePolicy = NubrickCachePolicy()
-
-    init() {
-        self.projectId = ""
-    }
 
     init(
         projectId: String,
-        onEvents: [((_ event: ComponentEvent) -> Void)?] = [],
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
+        trackUrl: String? = nil,
+        cdnUrl: String? = nil,
         cachePolicy: NubrickCachePolicy? = nil
     ) {
         self.projectId = projectId
-        onEvents.forEach { onEvent in
-            if let onEvent = onEvent {
-                self.eventListeners.append(onEvent)
-            }
-        }
+        self.trackUrl = trackUrl ?? nubrickTrackUrl
+        self.cdnUrl = cdnUrl ?? nubrickCdnUrl
+        self.userEventListener = onEvent
+        self.dispatchEventListener = nil
         if let cachePolicy = cachePolicy {
             self.cachePolicy = cachePolicy
         }
     }
 
-    func addEventListener(_ onEvent: @escaping (_ event: ComponentEvent) -> Void) {
-        self.eventListeners.append(onEvent)
+    func setDispatchEventListener(_ listener: @escaping @MainActor (_ event: ComponentEvent) -> Void) {
+        self.dispatchEventListener = listener
     }
 
+    @MainActor
     func dispatchUIBlockEvent(event: UIBlockEventDispatcher) {
-        let e = convertEvent(event)
-        for listener in eventListeners {
-            listener(e)
-        }
+        let converted = convertEvent(event)
+        openLink(converted)
+        self.userEventListener?(converted)
+        self.dispatchEventListener?(converted)
     }
 }
 
-public enum EventPropertyType {
+public enum EventPropertyType: Sendable {
     case INTEGER
     case STRING
     case TIMESTAMPZ
     case UNKNOWN
 }
 
-public struct EventProperty {
+public struct EventProperty: Sendable {
     public let name: String
     public let value: String
     public let type: EventPropertyType
 }
 
-public struct ComponentEvent {
+public struct ComponentEvent: Sendable {
     public let name: String?
     public let deepLink: String?
     public let payload: [EventProperty]?
 }
 
-public struct NubrickEvent {
+public struct NubrickEvent: Sendable {
     public let name: String
     public init(_ name: String) {
         self.name = name
@@ -142,149 +132,99 @@ public struct NubrickEvent {
 
 public typealias NubrickHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
 
-public final class NubrickClient: ObservableObject {
+@MainActor
+final class NubrickCore {
+    private let user: NubrickUser
     private let container: Container
     private let config: Config
     private let overlayVC: OverlayViewController
-    public final let experiment: NubrickExperiment
-    public final let user: NubrickUser
 
-    public convenience init(
+    init(
         projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
-        cachePolicy: NubrickCachePolicy? = nil,
-        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
-        trackCrashes: Bool = true
-    ) {
-        self.init(
-            projectId: projectId,
-            onEvent: onEvent,
-            httpRequestInterceptor: httpRequestInterceptor,
-            cachePolicy: cachePolicy,
-            onDispatch: onDispatch,
-            trackCrashes: trackCrashes,
-            onTooltip: nil
-        )
-    }
-
-    @_spi(FlutterBridge)
-    public convenience init(
-        projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
-        cachePolicy: NubrickCachePolicy? = nil,
-        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
-        trackCrashes: Bool = true,
-        onTooltip: @escaping ((_ data: String, _ experimentId: String) -> Void)
-    ) {
-        self.init(
-            projectId: projectId,
-            onEvent: onEvent,
-            httpRequestInterceptor: httpRequestInterceptor,
-            cachePolicy: cachePolicy,
-            onDispatch: onDispatch,
-            trackCrashes: trackCrashes,
-            onTooltip: onTooltip as ((String, String) -> Void)?
-        )
-    }
-
-    private init(
-        projectId: String,
-        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
+        trackUrl: String?,
+        cdnUrl: String?,
         cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
         let user = NubrickUser()
-        let config = Config(projectId: projectId, onEvents: [
-            openLink,
-            onEvent
-        ],
-        cachePolicy: cachePolicy)
+        let config = Config(
+            projectId: projectId,
+            onEvent: onEvent,
+            trackUrl: trackUrl,
+            cdnUrl: cdnUrl,
+            cachePolicy: cachePolicy
+        )
         let persistentContainer = createNativebrikCoreDataHelper()
+
         self.user = user
         self.config = config
         self.container = ContainerImpl(
             config: config,
             cache: CacheStore(policy: config.cachePolicy),
-            user: user,
+            user: self.user,
             persistentContainer: persistentContainer,
             intercepter: httpRequestInterceptor
         )
-        self.overlayVC = OverlayViewController(user: self.user, container: self.container, onDispatch: onDispatch, onTooltip: onTooltip)
-        self.experiment = NubrickExperiment(container: self.container, overlay: self.overlayVC)
+        self.overlayVC = OverlayViewController(
+            user: self.user,
+            container: self.container,
+            onDispatch: onDispatch,
+            onTooltip: onTooltip
+        )
 
-        if trackCrashes {
-            Task { @MainActor in
-                if let existing = AppMetrics.shared {
-                    existing.updateCallback(self.experiment.processMetricKitCrash)
-                } else {
-                    AppMetrics.shared = AppMetrics(self.experiment.processMetricKitCrash)
-                }
+        config.setDispatchEventListener { [weak self] event in
+            guard let self,
+                  let name = event.name,
+                  !name.isEmpty else {
+                return
             }
+            self.dispatch(NubrickEvent(name))
         }
 
-        config.addEventListener(createDispatchNubrickEvent(self))
-    }
-}
-
-public class NubrickExperiment {
-    private let container: Container
-    private let overlayVC: OverlayViewController
-
-    fileprivate init(container: Container, overlay: OverlayViewController) {
-        self.container = container
-        self.overlayVC = overlay
+        if trackCrashes {
+            if let existing = AppMetrics.shared {
+                existing.updateCallback(self.processMetricKitCrash)
+            } else {
+                AppMetrics.shared = AppMetrics(self.processMetricKitCrash)
+            }
+        }
     }
 
-    public func dispatch(_ event: NubrickEvent) {
+    func dispatch(_ event: NubrickEvent) {
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
-    
-    internal func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
-       self.container.processMetricKitCrash(crash)
-    }
 
-    /// Sends a crash event from Flutter
-    ///
-    /// - Parameter crashEvent: The crash event containing exceptions, platform, and SDK version
-    @_spi(FlutterBridge)
-    public func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
         self.container.sendFlutterCrash(crashEvent)
     }
 
-    @_spi(FlutterBridge)
-    public func appendTooltipExperimentHistory(experimentId: String) {
-        if experimentId.isEmpty {
-            return
-        }
+    func appendTooltipExperimentHistory(experimentId: String) {
+        guard !experimentId.isEmpty else { return }
         self.container.appendExperimentHistory(experimentId: experimentId)
     }
 
-    @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
-    public func record(exception: NSException) {
-        // No-op: MetricKit handles crash reporting automatically on iOS 14+
-        // This method is kept for API compatibility but does nothing
+    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
+        self.container.processMetricKitCrash(crash)
     }
 
-    public func overlayViewController() -> UIViewController {
-        return self.overlayVC
+    func overlayViewController() -> UIViewController {
+        self.overlayVC
     }
 
-    public func overlay() -> some View {
-        return AnyView(OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0))
+    func overlay() -> some View {
+        AnyView(OverlayViewControllerRepresentable(overlayVC: self.overlayVC).frame(width: 0, height: 0))
     }
 
-    @MainActor
-    public func embedding(
+    func embedding(
         _ id: String,
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
-        return AnyView(EmbeddingSwiftView(
+        AnyView(EmbeddingSwiftView(
             experimentId: id,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
@@ -292,14 +232,13 @@ public class NubrickExperiment {
         ))
     }
 
-    @MainActor
-    public func embedding<V: View>(
+    func embedding<V: View>(
         _ id: String,
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: @escaping (_ phase: AsyncEmbeddingPhase) -> V
     ) -> some View {
-        return AnyView(EmbeddingSwiftView(
+        AnyView(EmbeddingSwiftView(
             experimentId: id,
             componentId: nil,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
@@ -309,12 +248,12 @@ public class NubrickExperiment {
         ))
     }
 
-    public func embeddingUIView(
+    func embeddingUIView(
         _ id: String,
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView {
-        return EmbeddingUIView(
+        EmbeddingUIView(
             experimentId: id,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
@@ -323,13 +262,13 @@ public class NubrickExperiment {
         )
     }
 
-    public func embeddingUIView(
+    func embeddingUIView(
         _ id: String,
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
-        return EmbeddingUIView(
+        EmbeddingUIView(
             experimentId: id,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
@@ -338,7 +277,7 @@ public class NubrickExperiment {
         )
     }
 
-    public func remoteConfig(
+    func remoteConfig(
         _ id: String,
         phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
     ) {
@@ -350,11 +289,11 @@ public class NubrickExperiment {
         )
     }
 
-    public func remoteConfigAsView<V: View>(
+    func remoteConfigAsView<V: View>(
         _ id: String,
         @ViewBuilder phase: @escaping ((_ phase: RemoteConfigPhase) -> V)
     ) -> some View {
-        return AnyView(RemoteConfigAsView(
+        AnyView(RemoteConfigAsView(
             experimentId: id,
             container: self.container,
             modalViewController: self.overlayVC.modalViewController,
@@ -362,17 +301,14 @@ public class NubrickExperiment {
         ))
     }
 
-    // Embedding function for flutter bridge
-    // Same as embeddingUIView except it has a parameter to pass a callback to send embedding width and height updates
-    @_spi(FlutterBridge)
-    public func embeddingForFlutterBridge(
+    func embeddingForFlutterBridge(
         _ id: String,
         arguments: Any? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
-        return EmbeddingUIView(
+        EmbeddingUIView(
             experimentId: id,
             container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
@@ -382,8 +318,7 @@ public class NubrickExperiment {
         )
     }
 
-    @_spi(FlutterBridge)
-    public func renderUIView(
+    func renderUIView(
         json: String,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
@@ -409,19 +344,220 @@ public class NubrickExperiment {
     }
 }
 
+public enum Nubrick {
+    @MainActor
+    private static var runtime: NubrickCore? = nil
+
+    @MainActor
+    private static func warnUninitialized() {
+        let message = "Nubrick used before Nubrick.initialize(...)."
+        #if DEBUG
+        assertionFailure(message)
+        #endif
+        nubrickWarn(message)
+    }
+
+    @MainActor
+    static func requireRuntime() -> NubrickCore? {
+        guard let runtime else {
+            warnUninitialized()
+            return nil
+        }
+        return runtime
+    }
+
+    @MainActor
+    static func initializeInternal(
+        projectId: String,
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
+        httpRequestInterceptor: NubrickHttpRequestInterceptor?,
+        trackUrl: String?,
+        cdnUrl: String?,
+        cachePolicy: NubrickCachePolicy?,
+        onDispatch: ((_ event: NubrickEvent) -> Void)?,
+        trackCrashes: Bool,
+        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+    ) {
+        guard runtime == nil else {
+            nubrickWarn("Nubrick.initialize(...) called more than once. Ignoring subsequent call.")
+            return
+        }
+
+        runtime = NubrickCore(
+            projectId: projectId,
+            onEvent: onEvent,
+            httpRequestInterceptor: httpRequestInterceptor,
+            trackUrl: trackUrl,
+            cdnUrl: cdnUrl,
+            cachePolicy: cachePolicy,
+            onDispatch: onDispatch,
+            trackCrashes: trackCrashes,
+            onTooltip: onTooltip
+        )
+    }
+
+    @MainActor
+    public static func initialize(
+        projectId: String,
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
+        httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
+        trackUrl: String? = nil,
+        cdnUrl: String? = nil,
+        cachePolicy: NubrickCachePolicy? = nil,
+        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
+        trackCrashes: Bool = true
+    ) {
+        initializeInternal(
+            projectId: projectId,
+            onEvent: onEvent,
+            httpRequestInterceptor: httpRequestInterceptor,
+            trackUrl: trackUrl,
+            cdnUrl: cdnUrl,
+            cachePolicy: cachePolicy,
+            onDispatch: onDispatch,
+            trackCrashes: trackCrashes,
+            onTooltip: nil
+        )
+    }
+
+    public nonisolated static func dispatch(_ event: NubrickEvent) {
+        Task { @MainActor in
+            guard let runtime = requireRuntime() else {
+                nubrickWarn("Dropping event before initialize: \(event.name)")
+                return
+            }
+            runtime.dispatch(event)
+        }
+    }
+
+    @MainActor
+    public static func overlayViewController() -> UIViewController {
+        guard let runtime = requireRuntime() else {
+            return UIViewController()
+        }
+        return runtime.overlayViewController()
+    }
+
+    @MainActor
+    public static func overlay() -> some View {
+        guard let runtime = requireRuntime() else {
+            return AnyView(EmptyView())
+        }
+        return AnyView(runtime.overlay())
+    }
+
+    @MainActor
+    public static func embedding(
+        _ id: String,
+        arguments: Any? = nil,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+    ) -> some View {
+        guard let runtime = requireRuntime() else {
+            return AnyView(EmptyView())
+        }
+        return AnyView(runtime.embedding(id, arguments: arguments, onEvent: onEvent))
+    }
+
+    @MainActor
+    public static func embedding<V: View>(
+        _ id: String,
+        arguments: Any? = nil,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        @ViewBuilder content: @escaping (_ phase: AsyncEmbeddingPhase) -> V
+    ) -> some View {
+        guard let runtime = requireRuntime() else {
+            return AnyView(EmptyView())
+        }
+        return AnyView(runtime.embedding(id, arguments: arguments, onEvent: onEvent, content: content))
+    }
+
+    @MainActor
+    public static func embeddingUIView(
+        _ id: String,
+        arguments: Any? = nil,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+    ) -> UIView {
+        guard let runtime = requireRuntime() else {
+            return UIView()
+        }
+        return runtime.embeddingUIView(id, arguments: arguments, onEvent: onEvent)
+    }
+
+    @MainActor
+    public static func embeddingUIView(
+        _ id: String,
+        arguments: Any? = nil,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        content: @escaping (_ phase: EmbeddingPhase) -> UIView
+    ) -> UIView {
+        guard let runtime = requireRuntime() else {
+            return UIView()
+        }
+        return runtime.embeddingUIView(id, arguments: arguments, onEvent: onEvent, content: content)
+    }
+
+    public static func remoteConfig(
+        _ id: String,
+        phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
+    ) {
+        Task { @MainActor in
+            guard let runtime = requireRuntime() else {
+                return
+            }
+            runtime.remoteConfig(id, phase: phase)
+        }
+    }
+
+    @MainActor
+    public static func remoteConfigAsView<V: View>(
+        _ id: String,
+        @ViewBuilder phase: @escaping ((_ phase: RemoteConfigPhase) -> V)
+    ) -> some View {
+        guard let runtime = requireRuntime() else {
+            return AnyView(EmptyView())
+        }
+        return AnyView(runtime.remoteConfigAsView(id, phase: phase))
+    }
+
+    /// Sends a crash event from Flutter
+    ///
+    /// - Parameter crashEvent: The crash event containing exceptions, platform, and SDK version
+    @_spi(FlutterBridge)
+    @MainActor
+    public static func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
+        guard let runtime = requireRuntime() else {
+            return
+        }
+        runtime.sendFlutterCrash(crashEvent)
+    }
+
+    @_spi(FlutterBridge)
+    @MainActor
+    public static func appendTooltipExperimentHistory(experimentId: String) {
+        guard let runtime = requireRuntime() else {
+            return
+        }
+        runtime.appendTooltipExperimentHistory(experimentId: experimentId)
+    }
+
+    @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
+    public static func record(exception: NSException) {
+        // No-op: MetricKit handles crash reporting automatically on iOS 14+
+    }
+}
+
+@MainActor
 public struct NubrickProvider<Content: View>: View {
     private let content: Content
-    private let client: NubrickClient
 
-    public init(client: NubrickClient, @ViewBuilder content: () -> Content) {
+    public init(@ViewBuilder content: () -> Content) {
         self.content = content()
-        self.client = client
     }
 
     public var body: some View {
         ZStack(alignment: .top) {
-            self.client.experiment.overlay()
-            content.environmentObject(self.client)
+            Nubrick.overlay()
+            content
         }
     }
 }

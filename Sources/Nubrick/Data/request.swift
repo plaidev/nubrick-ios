@@ -7,7 +7,7 @@
 
 import Foundation
 
-class JSONData: NSObject {
+final class JSONData: NSObject, @unchecked Sendable {
     let data: JSON?
     init(data: JSON?) {
         self.data = data

@@ -46,7 +46,7 @@ class NavigationViewControlller: UINavigationController {
         self.interactivePopGestureRecognizer?.isEnabled = true
     }
 
-    deinit {
+    isolated deinit {
         delegate = nil
         interactivePopGestureRecognizer?.delegate = nil
     }

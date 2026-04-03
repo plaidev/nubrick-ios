@@ -11,44 +11,44 @@ import SwiftUI
 
 
 final class NubrickClientTests: XCTestCase {
+    @MainActor
     func testInitializeNubrickClientWithoutError() throws {
-        let client = NubrickClient(projectId: "Nothing")
+        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
 
         XCTContext.runActivity(named: "initialize and create overlay") { _ in
-            XCTAssertNoThrow(client.experiment.overlayViewController())
+            XCTAssertNoThrow(Nubrick.overlayViewController())
         }
 
         XCTContext.runActivity(named: "dispatch event") { _ in
-            XCTAssertNoThrow(client.experiment.dispatch(NubrickEvent("Hello")))
+            XCTAssertNoThrow(Nubrick.dispatch(NubrickEvent("Hello")))
         }
     }
 }
 
 final class NubrickProviderTests: XCTestCase {
-    struct ClientConsumerView: View {
-        @EnvironmentObject var nubrick: NubrickClient
+    struct NubrickConsumerView: View {
         var body: some View {
-            nubrick
-                .experiment
-                .embedding("Nothing", onEvent: nil) { phase in
-                    switch phase {
-                    default:
-                        Text("EXPERIMENT")
-                    }
+            Nubrick.embedding(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
+                switch phase {
+                default:
+                    Text("EXPERIMENT")
                 }
+            }
         }
     }
+
     struct TestView: View {
         var body: some View {
-            NubrickProvider(client: NubrickClient(projectId: "Nothing")) {
+            NubrickProvider {
                 Text("Hello")
-                ClientConsumerView()
+                NubrickConsumerView()
             }
         }
     }
 
     @MainActor
     func testNubrickProvider() throws {
+        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
         XCTAssertNoThrow(TestView().body)
     }
 }

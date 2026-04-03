@@ -5,12 +5,13 @@ import SwiftUI
 let EMBEDDING_ID_1_FOR_TEST = "EMBEDDING_1"
 
 final class EmbeddingUIViewTests: XCTestCase {
+    @MainActor
     func testEmbeddingShouldFetch() {
         let expectation = expectation(description: "Fetch an embedding for test")
 
         var didLoadingPhaseCome = false
-        let client = NubrickClient(projectId: PROJECT_ID_FOR_TEST)
-        let view = client.experiment.embeddingUIView(EMBEDDING_ID_1_FOR_TEST, onEvent: nil) { phase in
+        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
+        let view = Nubrick.embeddingUIView(EMBEDDING_ID_1_FOR_TEST, onEvent: nil) { phase in
             switch phase {
             case .completed:
                 expectation.fulfill()
@@ -33,12 +34,13 @@ final class EmbeddingUIViewTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testEmbeddingShouldNotFetch() {
         let expectation = expectation(description: "Fetch an embedding for test")
 
         var didLoadingPhaseCome = false
-        let client = NubrickClient(projectId: PROJECT_ID_FOR_TEST)
-        let view = client.experiment.embeddingUIView(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
+        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
+        let view = Nubrick.embeddingUIView(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
             switch phase {
             case .completed:
                 XCTFail("should found the remote config")

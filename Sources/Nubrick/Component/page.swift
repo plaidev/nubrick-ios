@@ -149,30 +149,31 @@ final class PageView: UIView {
                 }
             }
             if let httpRequest = dispatchedEvent.httpRequest {
-                Task {
-                    Task.detached { [weak self] in
-                        let result = await self?.container.sendHttpRequest(
-                            req: httpRequest,
-                            assertion: assertion,
-                            variable: variable
-                        )
-                        switch result {
-                        case .success:
-                            await MainActor.run {
-                                options?.onHttpSettled?()
-                                options?.onHttpSuccess?()
-                            }
-                            handleEvent()
-                        case .failure:
-                            await MainActor.run {
-                                options?.onHttpSettled?()
-                                options?.onHttpError?()
-                            }
-	                        // TODO: handle error
-                            handleEvent()
-                        default:
-                            break
+                Task { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    let result = await self.container.sendHttpRequest(
+                        req: httpRequest,
+                        assertion: assertion,
+                        variable: variable
+                    )
+                    switch result {
+                    case .success:
+                        await MainActor.run {
+                            options?.onHttpSettled?()
+                            options?.onHttpSuccess?()
                         }
+                        handleEvent()
+                    case .failure:
+                        await MainActor.run {
+                            options?.onHttpSettled?()
+                            options?.onHttpError?()
+                        }
+                        // TODO: handle error
+                        handleEvent()
+                    default:
+                        break
                     }
                 }
             } else {
@@ -219,10 +220,11 @@ final class PageView: UIView {
         Task {
             let variable = self.container.createVariableForTemplate(
                 data: nil, properties: self.props)
-            let result = await Task.detached {
-                return await self.container.sendHttpRequest(
-                    req: httpRequest, assertion: nil, variable: variable)
-            }.value
+            let result = await self.container.sendHttpRequest(
+                req: httpRequest,
+                assertion: nil,
+                variable: variable
+            )
             await MainActor.run { [weak self] in
                 switch result {
                 case .success(let response):

@@ -9,6 +9,7 @@ import Foundation
 import UIKit
 internal import YogaKit
 
+@MainActor
 func presentOnTop(window: UIWindow?, modal: UIViewController) {
     guard let root = window?.rootViewController else {
         return
@@ -188,6 +189,7 @@ func parseModalPresentationStyle(_ data: ModalPresentationStyle?) -> UIModalPres
     }
 }
 
+@MainActor
 func parseModalScreenSize(_ data: ModalScreenSize?) -> [UISheetPresentationController.Detent] {
     var mediumDetent, fullDetent: UISheetPresentationController.Detent
 
@@ -387,6 +389,7 @@ private func normalizeSingleRadius(radius: CGFloat, width: CGFloat, height: CGFl
 }
 
 // NOTE: should be called in viewDidLayoutSubviews to wait until view.bounds are set
+@MainActor
 func configureBorder(view: UIView, frame: FrameData?) {
     if let bg = frame?.background {
         view.layer.backgroundColor = parseColorToCGColor(bg)
@@ -486,6 +489,7 @@ func configureBorder(view: UIView, frame: FrameData?) {
     view.layer.addSublayer(shapeLayer)
 }
 
+@MainActor
 func configureShadow(view: UIView, shadow: BoxShadow?) {
     if let shadow = shadow {
         view.layer.shadowColor = parseColorToCGColor(shadow.color)
@@ -497,6 +501,7 @@ func configureShadow(view: UIView, shadow: BoxShadow?) {
     }
 }
 
+@MainActor
 func configureSkelton(view: UIView, showSkelton: Bool) {
     if showSkelton == false {
         return
@@ -520,6 +525,7 @@ func configureSkelton(view: UIView, showSkelton: Bool) {
     }
 }
 
+@MainActor
 func configureSkeltonText(view: UILabel, showSkelton: Bool) {
     if showSkelton == false {
         return

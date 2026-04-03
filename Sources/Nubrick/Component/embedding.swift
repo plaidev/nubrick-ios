@@ -86,9 +86,7 @@ class EmbeddingUIView: UIView {
         self.fallbackView = fallbackView
         
         Task {
-            let result = await Task.detached {
-                return await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
-            }.value
+            let result = await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
             
             await MainActor.run { [weak self] in
                 switch result {
@@ -180,9 +178,7 @@ class EmbeddingSwiftViewModel: ObservableObject {
         onEvent: ((_ event: ComponentEvent) -> Void)?,
     ) {
         Task {
-            let result = await Task.detached {
-                return await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
-            }.value
+            let result = await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
     
             await MainActor.run { [weak self] in
                 switch result {

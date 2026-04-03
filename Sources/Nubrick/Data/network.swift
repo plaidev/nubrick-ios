@@ -33,7 +33,7 @@ public class NubrickCachePolicy {
     }
 }
 
-class CacheObject {
+final class CacheObject : Sendable{
     let staleTime: TimeInterval
     let data: Data
     let timestamp: Date
@@ -50,18 +50,15 @@ class CacheObject {
     }
 }
 
-class CacheStore {
+actor CacheStore {
     private let policy: NubrickCachePolicy
     private var cache: [String: (Data, Date)] = [:]
-    private let lock = NSLock()
 
     init(policy: NubrickCachePolicy) {
         self.policy = policy
     }
 
     func get(key: String) -> CacheObject? {
-        lock.lock()
-        defer { lock.unlock() }
         guard let (data, timestamp) = cache[key] else {
             return nil
         }
@@ -76,14 +73,10 @@ class CacheStore {
     }
 
     func set(key: String, data: Data) {
-        lock.lock()
-        defer { lock.unlock() }
         cache[key] = (data, getCurrentDate())
     }
 
     func invalidate(key: String) {
-        lock.lock()
-        defer { lock.unlock() }
         cache.removeValue(forKey: key)
     }
 }
@@ -91,10 +84,10 @@ class CacheStore {
 func getData(url: URL, syncDateTime: Bool = false, cache: CacheStore) async -> Result<Data, NubrickError> {
     let urlStr = url.absoluteString
 
-    guard let cached = cache.get(key: urlStr) else {
+    guard let cached = await cache.get(key: urlStr) else {
         switch await _getData(url: url, syncDateTime: syncDateTime) {
         case .success(let data):
-            cache.set(key: urlStr, data: data)
+            await cache.set(key: urlStr, data: data)
             return Result.success(data)
 
         case .failure(let error):
@@ -106,10 +99,10 @@ func getData(url: URL, syncDateTime: Bool = false, cache: CacheStore) async -> R
         Task(priority: .background) {
             switch await _getData(url: url, syncDateTime: syncDateTime) {
             case .success(let data):
-                cache.set(key: urlStr, data: data)
+                await cache.set(key: urlStr, data: data)
 
             case .failure(_):
-                cache.invalidate(key: urlStr)
+                await cache.invalidate(key: urlStr)
             }
         }
     }

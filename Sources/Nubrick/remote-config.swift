@@ -109,6 +109,7 @@ public class RemoteConfigVariant {
         )
     }
 
+    @MainActor
     public func getAsUIView(
         _ key: String,
         arguments: Any? = nil,
@@ -128,6 +129,7 @@ public class RemoteConfigVariant {
         return uiview
     }
 
+    @MainActor
     public func getAsUIView(
         _ key: String,
         arguments: Any? = nil,
@@ -165,9 +167,7 @@ class RemoteConfig {
     ) {
         phase(.loading)
         Task {
-            let result = await Task.detached {
-                return await container.fetchRemoteConfig(experimentId: experimentId)
-            }.value
+            let result = await container.fetchRemoteConfig(experimentId: experimentId)
             await MainActor.run {
                 switch result {
                 case .success(let (experimentId, variant)):

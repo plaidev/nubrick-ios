@@ -8,18 +8,16 @@
 import UIKit
 import Nubrick
 
-let nubrick = {
-    return NubrickClient(projectId: "cgv3p3223akg00fod19g")
-}()
-
 final class ViewController: UIViewController {
     private var button: UIButton?
     private var count: Int = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        Nubrick.initialize(projectId: "cgv3p3223akg00fod19g")
+
         // add Nativebrik.overlay at first
-        let overlay = nubrick.experiment.overlayViewController()
+        let overlay = Nubrick.overlayViewController()
         self.addChild(overlay)
         self.view.addSubview(overlay.view)
         overlay.didMove(toParent: self)
@@ -32,7 +30,7 @@ final class ViewController: UIViewController {
         ])
 
         // embed nativebrik TOP_COMPONENT
-        let topComponent = nubrick.experiment.embeddingUIView("TOP_COMPONENT")
+        let topComponent = Nubrick.embeddingUIView("TOP_COMPONENT")
         self.view.addSubview(topComponent)
 
         topComponent.translatesAutoresizingMaskIntoConstraints = false

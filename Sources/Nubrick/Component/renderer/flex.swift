@@ -124,7 +124,7 @@ class FlexView: AnimatedUIControl {
         })
     }
     
-    deinit {
+    isolated deinit {
         self.context?.removeFormValueListener(self.block.id ?? "")
     }
 
@@ -236,7 +236,7 @@ class FlexOverflowView: UIScrollView {
         })
     }
     
-    deinit {
+    isolated deinit {
         self.context?.removeFormValueListener(self.block.id ?? "")
     }
 

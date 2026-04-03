@@ -16,12 +16,13 @@ let REMOTE_CONFIG_1_FOR_TEST_MESSAGE = "hello"
 let UNKNOWN_EXPERIMENT_ID = "UNKNOWN_ID_XXXXXX"
 
 final class RemoteConfigTests: XCTestCase {
+    @MainActor
     func testRemoteConfigShouldFetch() {
         let expectation = expectation(description: "Fetch remote config for test")
 
         var didLoadingPhaseCome = false
-        let client = NubrickClient(projectId: PROJECT_ID_FOR_TEST)
-        client.experiment.remoteConfig(REMOTE_CONFIG_ID_1_FOR_TEST) { phase in
+        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
+        Nubrick.remoteConfig(REMOTE_CONFIG_ID_1_FOR_TEST) { phase in
             switch phase {
             case .completed(let variant):
                 let message = variant.getAsString("message")
@@ -43,12 +44,13 @@ final class RemoteConfigTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoteConfigShouldNotFetch() {
         let expectation = expectation(description: "Fetch non-exist remote config for test")
 
         var didLoadingPhaseCome = false
-        let client = NubrickClient(projectId: PROJECT_ID_FOR_TEST)
-        client.experiment.remoteConfig(UNKNOWN_EXPERIMENT_ID) { phase in
+        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
+        Nubrick.remoteConfig(UNKNOWN_EXPERIMENT_ID) { phase in
             switch phase {
             case .completed:
                 XCTFail("should found the remote config")

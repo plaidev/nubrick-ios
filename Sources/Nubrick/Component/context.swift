@@ -48,6 +48,7 @@ struct UIBlockContextChildInit {
     var loading: Bool? = false
 }
 
+@MainActor
 class UIBlockContext {
     // variable that page fetched with http request
     private let variable: Any?
@@ -161,14 +162,22 @@ class UIBlockContext {
     }
 
     func getFloatByReferenceKey(key: String?) -> Float? {
-        if let value = self.getByReferenceKey(key: key) as? Double {
+        let value = self.getByReferenceKey(key: key)
+        if let value = value as? Double {
+            return Float(value)
+        }
+        if let value = value as? Int {
             return Float(value)
         }
         return nil
     }
 
     func getIntByReferenceKey(key: String?) -> Int? {
-        if let value = self.getByReferenceKey(key: key) as? Double {
+        let value = self.getByReferenceKey(key: key)
+        if let value = value as? Int {
+            return value
+        }
+        if let value = value as? Double {
             return Int(value)
         }
         return nil

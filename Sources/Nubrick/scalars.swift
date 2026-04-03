@@ -11,7 +11,8 @@ typealias DateTime = String
 typealias Boolean = Bool
 typealias UIBlockJSON = UIBlock
 
-struct JSON: Decodable {
+// TODO(sendable): Replace Any-backed JSON with a typed JSONValue enum and checked Sendable conformance.
+struct JSON: Decodable, @unchecked Sendable {
   var value: Any?
 
   private struct CodingKeys: CodingKey {
