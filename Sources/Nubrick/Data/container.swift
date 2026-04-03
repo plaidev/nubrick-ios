@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import MetricKit
 
 public enum NubrickError: Error {
     case notFound
@@ -32,11 +31,6 @@ protocol Container {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
-    func appendExperimentHistory(experimentId: String)
-    
-    func processMetricKitCrash(_ crash: MXCrashDiagnostic)
-
-    func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
 }
 
 class ContainerEmptyImpl: Container {
@@ -70,21 +64,11 @@ class ContainerEmptyImpl: Container {
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
         return Result.failure(NubrickError.notFound)
     }
-    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
-    }
-
-    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-    }
-
-    func appendExperimentHistory(experimentId: String) {
-    }
 }
 
 class ContainerImpl: Container {
     private let config: Config
     private let user: NubrickUser
-    private let trackRepository: TrackRepository2
-    private let databaseRepository: DatabaseRepository
     private let experimentContentUseCase: ExperimentContentUseCase
     private let httpRequestUseCase: HttpRequestUseCase
 
@@ -103,8 +87,6 @@ class ContainerImpl: Container {
         self.init(
             config: config,
             user: user,
-            trackRepository: trackRepository,
-            databaseRepository: databaseRepository,
             experimentContentUseCase: ExperimentContentUseCaseImpl(
                 user: user,
                 experimentRepository: experimentRepository,
@@ -120,16 +102,12 @@ class ContainerImpl: Container {
     init(
         config: Config,
         user: NubrickUser,
-        trackRepository: TrackRepository2,
-        databaseRepository: DatabaseRepository,
         experimentContentUseCase: ExperimentContentUseCase,
         httpRequestUseCase: HttpRequestUseCase,
         arguments: Any? = nil
     ) {
         self.config = config
         self.user = user
-        self.trackRepository = trackRepository
-        self.databaseRepository = databaseRepository
         self.experimentContentUseCase = experimentContentUseCase
         self.httpRequestUseCase = httpRequestUseCase
         self.formRepository = FormRepositoryImpl()
@@ -140,8 +118,6 @@ class ContainerImpl: Container {
         self.init(
             config: container.config,
             user: container.user,
-            trackRepository: container.trackRepository,
-            databaseRepository: container.databaseRepository,
             experimentContentUseCase: container.experimentContentUseCase,
             httpRequestUseCase: container.httpRequestUseCase,
             arguments: arguments
@@ -197,17 +173,5 @@ class ContainerImpl: Container {
 
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
         return await self.experimentContentUseCase.fetchRemoteConfig(experimentId: experimentId)
-    }
-
-    func appendExperimentHistory(experimentId: String) {
-        self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
-    }
-
-    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
-        self.trackRepository.processMetricKitCrash(crash)
-    }
-
-    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        self.trackRepository.sendFlutterCrash(crashEvent)
     }
 }

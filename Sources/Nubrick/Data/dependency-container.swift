@@ -50,8 +50,6 @@ struct NubrickDependencyContainer {
         ContainerImpl(
             config: config,
             user: user,
-            trackRepository: trackRepository,
-            databaseRepository: databaseRepository,
             experimentContentUseCase: experimentContentUseCase,
             httpRequestUseCase: httpRequestUseCase
         )

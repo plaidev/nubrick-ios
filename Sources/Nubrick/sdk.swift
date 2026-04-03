@@ -201,16 +201,16 @@ final class NubrickCore {
     }
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        self.container.sendFlutterCrash(crashEvent)
+        self.dependencies.trackRepository.sendFlutterCrash(crashEvent)
     }
 
     func appendTooltipExperimentHistory(experimentId: String) {
         guard !experimentId.isEmpty else { return }
-        self.container.appendExperimentHistory(experimentId: experimentId)
+        self.dependencies.databaseRepository.appendExperimentHistory(experimentId: experimentId)
     }
 
     func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
-        self.container.processMetricKitCrash(crash)
+        self.dependencies.trackRepository.processMetricKitCrash(crash)
     }
 
     func overlayViewController() -> UIViewController {
