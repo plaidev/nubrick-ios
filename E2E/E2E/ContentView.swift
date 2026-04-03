@@ -9,13 +9,9 @@ import SwiftUI
 import Nubrick
 
 struct ContentView: View {
-    @EnvironmentObject var nubrick: NubrickClient
-
     var body: some View {
         VStack {
-            nubrick
-                .experiment
-                .embedding("EMBEDDING_FOR_E2E", onEvent: nil, content: { phase in
+            Nubrick.embedding("EMBEDDING_FOR_E2E", onEvent: nil, content: { phase in
                     switch phase {
                     case .completed(let view):
                         view
@@ -25,10 +21,8 @@ struct ContentView: View {
                         Text("EMBED IS FAILED")
                     }
                 })
-                .frame(height: 240)
-            nubrick
-                .experiment
-                .remoteConfigAsView("REMOTE_CONFIG_FOR_E2E") { phase in
+            .frame(height: 240)
+            Nubrick.remoteConfigAsView("REMOTE_CONFIG_FOR_E2E") { phase in
                     switch phase {
                     case .completed(let config):
                         Text(config.getAsString("message") ?? "")
@@ -43,7 +37,8 @@ struct ContentView: View {
 }
 
 #Preview {
-    NubrickProvider(client: NubrickClient(projectId: "ckto7v223akg00ag3jsg")) {
+    Nubrick.initialize(projectId: "ckto7v223akg00ag3jsg")
+    NubrickProvider {
         ContentView()
     }
 }

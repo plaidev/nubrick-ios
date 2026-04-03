@@ -9,10 +9,15 @@ import SwiftUI
 import Nubrick
 
 @main
+@MainActor
 struct E2EApp: App {
+    init() {
+        Nubrick.initialize(projectId: "ckto7v223akg00ag3jsg")
+    }
+
     var body: some Scene {
         WindowGroup {
-            NubrickProvider(client: NubrickClient(projectId: "ckto7v223akg00ag3jsg")) {
+            NubrickProvider {
                 ContentView()
             }
         }

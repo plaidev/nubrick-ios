@@ -13,11 +13,11 @@ import XCTest
 final class CacheStoreTests: XCTestCase {
     private var cache: CacheStore!
     
-    func testSetAndGetCache() {
+    func testSetAndGetCache() async {
         cache = CacheStore(policy: NubrickCachePolicy())
         let data = "testData".data(using: .utf8)!
-        cache.set(key: "testKey", data: data)
-        let cacheObject = cache.get(key: "testKey")
+        await cache.set(key: "testKey", data: data)
+        let cacheObject = await cache.get(key: "testKey")
         XCTAssertNotNil(cacheObject)
         XCTAssertEqual(cacheObject?.data, data)
     }
@@ -46,7 +46,7 @@ final class GetDataTest: XCTestCase {
         let cache = CacheStore(policy: NubrickCachePolicy(staleTime: 60))
         let url = URL(string: "https://example.com")!
         let _ = await getData(url: url, cache: cache)
-        let cached = cache.get(key: url.absoluteString)
+        let cached = await cache.get(key: url.absoluteString)
         XCTAssertNotNil(cached)
         XCTAssertEqual(cached?.isStale(), false)
         
