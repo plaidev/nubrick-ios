@@ -459,7 +459,7 @@ class TrackRespositoryImpl: TrackRepository2 {
             }
         }
 
-        Task.detached(priority: .utility) {
+        Task(priority: .utility) {
             try await self.sendAndFlush()
         }
     }

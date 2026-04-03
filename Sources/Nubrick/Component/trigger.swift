@@ -99,9 +99,7 @@ class TriggerViewController: UIViewController {
             // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,
             // so we fetch both popups and tooltips when running in Flutter, and popups only otherwise.
             let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
-            let triggerResult = await Task.detached {
-                return await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
-            }.value
+            let triggerResult = await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
             let experimentId: String?
             let kind: ExperimentKind?
             let result: Result<UIBlock, NubrickError>
