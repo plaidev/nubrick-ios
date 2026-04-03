@@ -134,6 +134,7 @@ public typealias NubrickHttpRequestInterceptor = (_ request: URLRequest) -> URLR
 
 @MainActor
 final class NubrickCore {
+    private let dependencies: NubrickDependencyContainer
     private let user: NubrickUser
     private let container: Container
     private let config: Config
@@ -159,16 +160,17 @@ final class NubrickCore {
             cachePolicy: cachePolicy
         )
         let persistentContainer = createNativebrikCoreDataHelper()
+        let dependencies = NubrickDependencyContainer(
+            config: config,
+            user: user,
+            persistentContainer: persistentContainer,
+            httpRequestInterceptor: httpRequestInterceptor
+        )
 
         self.user = user
         self.config = config
-        self.container = ContainerImpl(
-            config: config,
-            cache: CacheStore(policy: config.cachePolicy),
-            user: self.user,
-            persistentContainer: persistentContainer,
-            intercepter: httpRequestInterceptor
-        )
+        self.dependencies = dependencies
+        self.container = dependencies.makeRootContainer()
         self.overlayVC = OverlayViewController(
             user: self.user,
             container: self.container,

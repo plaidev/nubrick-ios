@@ -59,7 +59,15 @@ final class ContainerTests: XCTestCase {
         let user = NubrickUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
         let cache = CacheStore(policy: NubrickCachePolicy())
-        let container = ContainerImpl(config: config, cache: cache, user: user, persistentContainer: db)
+        let container = ContainerImpl(
+            config: config,
+            user: user,
+            experimentRepository: ExperimentRepositoryImpl(config: config, cache: cache),
+            componentRepository: ComponentRepositoryImpl(config: config, cache: cache),
+            trackRepository: TrackRespositoryImpl(config: config, user: user),
+            databaseRepository: DatabaseRepositoryImpl(persistentContainer: db),
+            httpRequestRepository: HttpRequestRepositoryImpl(intercepter: nil)
+        )
         let expectation = expectation(description: "Request should be expected.")
 
         Task {

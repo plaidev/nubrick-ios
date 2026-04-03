@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import CoreData
 import MetricKit
 
 struct ExtractedVariant {
@@ -90,7 +89,6 @@ class ContainerEmptyImpl: Container {
 class ContainerImpl: Container {
     private let config: Config
     private let user: NubrickUser
-    private let persistentContainer: NSPersistentContainer
 
     private let experimentRepository: ExperimentRepository2
     private let componentRepository: ComponentRepository2
@@ -101,16 +99,23 @@ class ContainerImpl: Container {
 
     private let arguments: Any?
 
-    init(config: Config, cache: CacheStore, user: NubrickUser, persistentContainer: NSPersistentContainer, intercepter: NubrickHttpRequestInterceptor? = nil) {
+    init(
+        config: Config,
+        user: NubrickUser,
+        experimentRepository: ExperimentRepository2,
+        componentRepository: ComponentRepository2,
+        trackRepository: TrackRepository2,
+        databaseRepository: DatabaseRepository,
+        httpRequestRepository: HttpRequestRepository
+    ) {
         self.config = config
         self.user = user
-        self.persistentContainer = persistentContainer
-        self.experimentRepository = ExperimentRepositoryImpl(config: config, cache: cache)
-        self.componentRepository = ComponentRepositoryImpl(config: config, cache: cache)
-        self.trackRepository = TrackRespositoryImpl(config: config, user: user)
+        self.experimentRepository = experimentRepository
+        self.componentRepository = componentRepository
+        self.trackRepository = trackRepository
         self.formRepository = FormRepositoryImpl()
-        self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
-        self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: intercepter)
+        self.databaseRepository = databaseRepository
+        self.httpRequestRepository = httpRequestRepository
 
         self.arguments = nil
     }
@@ -122,7 +127,6 @@ class ContainerImpl: Container {
     init(_ container: ContainerImpl, arguments: Any?) {
         self.config = container.config
         self.user = container.user
-        self.persistentContainer = container.persistentContainer
         self.experimentRepository = container.experimentRepository
         self.componentRepository = container.componentRepository
         self.trackRepository = container.trackRepository
