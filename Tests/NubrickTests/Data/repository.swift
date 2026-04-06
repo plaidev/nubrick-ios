@@ -59,7 +59,7 @@ final class ContainerTests: XCTestCase {
         let user = NubrickUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
         let cache = CacheStore(policy: NubrickCachePolicy())
-        let container = ContainerImpl(
+        let container = RenderContextImpl(
             config: config,
             user: user,
             experimentRepository: ExperimentRepositoryImpl(config: config, cache: cache),

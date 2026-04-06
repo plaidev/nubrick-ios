@@ -34,45 +34,7 @@ protocol RenderContext {
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
-typealias Container = RenderContext
-
-class ContainerEmptyImpl: RenderContext {
-    @MainActor
-    func handleEvent(_ it: UIBlockEventDispatcher) {
-    }
-    func makeChild(arguments: Any?) -> RenderContext {
-        return self
-    }
-    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
-        return nil
-    }
-    func getFormValue(key: String) -> Any? {
-        return nil
-    }
-    func getFormValues() -> [String: Any] {
-        return [:]
-    }
-    func setFormValue(key: String, value: Any) {
-    }
-    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) { }
-    func removeFormValueListener(_ id: String) { }
-
-
-    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError> {
-        return Result.failure(NubrickError.skipRequest)
-    }
-    func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError> {
-        return Result.failure(NubrickError.notFound)
-    }
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError> {
-        return Result.failure(NubrickError.notFound)
-    }
-    func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
-        return Result.failure(NubrickError.notFound)
-    }
-}
-
-class ContainerImpl: RenderContext {
+class RenderContextImpl: RenderContext {
     private let config: Config
     private let user: NubrickUser
     private let experimentContentUseCase: ExperimentContentUseCase
@@ -120,12 +82,12 @@ class ContainerImpl: RenderContext {
         self.arguments = arguments
     }
 
-    private convenience init(_ container: ContainerImpl, arguments: Any?) {
+    private convenience init(_ baseContext: RenderContextImpl, arguments: Any?) {
         self.init(
-            config: container.config,
-            user: container.user,
-            experimentContentUseCase: container.experimentContentUseCase,
-            httpRequestUseCase: container.httpRequestUseCase,
+            config: baseContext.config,
+            user: baseContext.user,
+            experimentContentUseCase: baseContext.experimentContentUseCase,
+            httpRequestUseCase: baseContext.httpRequestUseCase,
             arguments: arguments
         )
     }
@@ -136,7 +98,7 @@ class ContainerImpl: RenderContext {
     }
 
     func makeChild(arguments: Any?) -> RenderContext {
-        return ContainerImpl(self, arguments: arguments)
+        return RenderContextImpl(self, arguments: arguments)
     }
 
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {

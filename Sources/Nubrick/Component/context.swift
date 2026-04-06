@@ -29,7 +29,7 @@ class UIBlockEventManager {
 }
 
 struct UIBlockContextInit {
-    var container: Container? = nil
+    var renderContext: RenderContext? = nil
     var variable: Any? = nil
     var childData: Any? = nil
     var properties: [Property]? = nil
@@ -54,7 +54,7 @@ class UIBlockContext {
     private let variable: Any?
     // page properties
     private let properties: [Property]?
-    private let container: Container?
+    private let renderContext: RenderContext?
     private let event: UIBlockEventManager?
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
@@ -67,19 +67,19 @@ class UIBlockContext {
         self.parentClickListener = args.parentClickListener
         self.parentDirection = args.parentDirection
         self.loading = args.loading ?? false
-        self.container = args.container
+        self.renderContext = args.renderContext
     }
 
     func instanciateFrom(_ args: UIBlockContextChildInit) -> UIBlockContext {
         var v = self.variable
         if let childData = args.childData {
             v = _mergeVariable(
-                base: v, self.container?.createVariableForTemplate(data: childData, properties: nil)
+                base: v, self.renderContext?.createVariableForTemplate(data: childData, properties: nil)
             )
         }
         return UIBlockContext(
             UIBlockContextInit(
-                container: self.container,
+                renderContext: self.renderContext,
                 variable: v,
                 properties: args.properties ?? self.properties,
                 event: args.event ?? self.event,
@@ -110,24 +110,24 @@ class UIBlockContext {
     }
 
     func writeToForm(key: String, value: Any) {
-        self.container?.setFormValue(key: key, value: value)
+        self.renderContext?.setFormValue(key: key, value: value)
     }
 
     func getFormValueByKey(key: String) -> Any? {
-        return self.container?.getFormValue(key: key)
+        return self.renderContext?.getFormValue(key: key)
     }
     
     func getFormValues() -> [String: Any] {
-        return self.container?.getFormValues() ?? [:]
+        return self.renderContext?.getFormValues() ?? [:]
     }
         
     
     func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
-        self.container?.addFormValueListener(id, listener)
+        self.renderContext?.addFormValueListener(id, listener)
     }
     
     func removeFormValueListener(_ id: String) {
-        self.container?.removeFormValueListener(id)
+        self.renderContext?.removeFormValueListener(id)
     }
 
     /**

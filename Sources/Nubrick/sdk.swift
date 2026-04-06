@@ -173,7 +173,7 @@ final class NubrickCore {
         self.renderContext = dependencies.makeRootRenderContext()
         self.overlayVC = OverlayViewController(
             user: self.user,
-            container: self.renderContext,
+            renderContext: self.renderContext,
             onDispatch: onDispatch,
             onTooltip: onTooltip
         )
@@ -228,7 +228,7 @@ final class NubrickCore {
     ) -> some View {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
-            container: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent
         ))
@@ -243,7 +243,7 @@ final class NubrickCore {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
             componentId: nil,
-            container: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             content: content
@@ -257,7 +257,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -272,7 +272,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content
@@ -285,7 +285,7 @@ final class NubrickCore {
     ) {
         let _ = RemoteConfig(
             experimentId: id,
-            container: self.renderContext,
+            renderContext: self.renderContext,
             modalViewController: self.overlayVC.modalViewController,
             phase: phase
         )
@@ -297,7 +297,7 @@ final class NubrickCore {
     ) -> some View {
         AnyView(RemoteConfigAsView(
             experimentId: id,
-            container: self.renderContext,
+            renderContext: self.renderContext,
             modalViewController: self.overlayVC.modalViewController,
             content: phase
         ))
@@ -312,7 +312,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content,
@@ -332,7 +332,7 @@ final class NubrickCore {
             let decoded = try decoder.decode(UIRootBlock.self, from: data)
             return NubrickBridgedViewAccessor(rootView: RootView(
                 root: decoded,
-                container: self.renderContext,
+                renderContext: self.renderContext,
                 modalViewController: self.overlayVC.modalViewController,
                 onEvent: { event in
                     onEvent?(convertEvent(event))

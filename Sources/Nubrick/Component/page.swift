@@ -15,9 +15,9 @@ class ModalPageViewController: UIViewController {
     private let pageView: PageView?
     public var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
 
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(pageView:).")
     required init?(coder: NSCoder) {
-        self.pageView = nil
-        super.init(coder: coder)
+        fatalError("init(coder:) has not been implemented")
     }
 
     init(pageView: PageView) {
@@ -99,7 +99,7 @@ class ModalPageViewController: UIViewController {
 final class PageView: UIView {
     fileprivate let page: UIPageBlock?
     private let props: [Property]?
-    private let container: Container
+    private let renderContext: RenderContext
     private var data: Any? = nil
     private var event: UIBlockEventManager? = nil
     private var fullScreenInitialNavItemVisibility = false
@@ -108,29 +108,27 @@ final class PageView: UIView {
 
     private var modalViewController: ModalComponentViewController? = nil
 
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(page:props:renderContext:event:modalViewController:).")
     required init?(coder: NSCoder) {
-        self.page = nil
-        self.props = nil
-        self.container = ContainerEmptyImpl()
-        super.init(coder: coder)
+        fatalError("init(coder:) has not been implemented")
     }
 
     init(
         page: UIPageBlock?,
         props: [Property]?,
-        container: Container,
+        renderContext: RenderContext,
         event: UIBlockEventManager?,
         modalViewController: ModalComponentViewController?
     ) {
         self.page = page
-        self.container = container
+        self.renderContext = renderContext
         self.modalViewController = modalViewController
 
         // build placeholder input. init.props is passed from other pages, and page.data.props are the page.props.
         // so merge them and create self.props.
         self.props = Self.mergeProps(pageProps: page?.data?.props, eventProps: props)
 
-        self.data = container.createVariableForTemplate(data: nil, properties: self.props)
+        self.data = renderContext.createVariableForTemplate(data: nil, properties: self.props)
         super.init(frame: .zero)
 
         let parentEventManager = event
@@ -139,7 +137,7 @@ final class PageView: UIView {
         self.event = UIBlockEventManager(on: { [weak self] dispatchedEvent, options in
             let variable = _mergeVariable(
                 base: self?.data,
-                self?.container.createVariableForTemplate(data: nil, properties: self?.props)
+                self?.renderContext.createVariableForTemplate(data: nil, properties: self?.props)
             )
 
             let assertion = dispatchedEvent.httpResponseAssertion
@@ -153,7 +151,7 @@ final class PageView: UIView {
                     guard let self else {
                         return
                     }
-                    let result = await self.container.sendHttpRequest(
+                    let result = await self.renderContext.sendHttpRequest(
                         req: httpRequest,
                         assertion: assertion,
                         variable: variable
@@ -218,9 +216,9 @@ final class PageView: UIView {
         self.renderView()
 
         Task {
-            let variable = self.container.createVariableForTemplate(
+            let variable = self.renderContext.createVariableForTemplate(
                 data: nil, properties: self.props)
-            let result = await self.container.sendHttpRequest(
+            let result = await self.renderContext.sendHttpRequest(
                 req: httpRequest,
                 assertion: nil,
                 variable: variable
@@ -228,7 +226,7 @@ final class PageView: UIView {
             await MainActor.run { [weak self] in
                 switch result {
                 case .success(let response):
-                    self?.data = self?.container.createVariableForTemplate(
+                    self?.data = self?.renderContext.createVariableForTemplate(
                         data: response.data?.value, properties: self?.props)
                 default:
                     break
@@ -246,7 +244,7 @@ final class PageView: UIView {
                 data: renderAs,
                 context: UIBlockContext(
                     UIBlockContextInit(
-                        container: self.container,
+                        renderContext: self.renderContext,
                         variable: self.data,
                         event: self.event,
                         loading: self.loading
