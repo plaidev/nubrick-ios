@@ -135,8 +135,6 @@ public typealias NubrickHttpRequestInterceptor = (_ request: URLRequest) -> URLR
 @MainActor
 final class NubrickCore {
     private let dependencies: NubrickDependencyContainer
-    private let user: NubrickUser
-    private let config: Config
     private let overlayVC: OverlayViewController
 
     init(
@@ -166,11 +164,9 @@ final class NubrickCore {
             httpRequestInterceptor: httpRequestInterceptor
         )
 
-        self.user = user
-        self.config = config
         self.dependencies = dependencies
         self.overlayVC = OverlayViewController(
-            user: self.user,
+            user: user,
             renderContext: dependencies.makeRenderContext(),
             onDispatch: onDispatch,
             onTooltip: onTooltip

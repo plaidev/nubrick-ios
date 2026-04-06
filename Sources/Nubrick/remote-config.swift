@@ -16,7 +16,13 @@ public class RemoteConfigVariant {
     private let renderContext: RenderContext
     private let modalViewController: ModalComponentViewController
 
-    init(experimentId: String, variantId: String, configs: [VariantConfig], renderContext: RenderContext, modalViewController: ModalComponentViewController) {
+    init(
+        experimentId: String,
+        variantId: String,
+        configs: [VariantConfig],
+        renderContext: RenderContext,
+        modalViewController: ModalComponentViewController
+    ) {
         self.experimentId = experimentId
         self.variantId = variantId
         self.configs = configs
@@ -85,7 +91,7 @@ public class RemoteConfigVariant {
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
-            renderContext: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.renderContext.makeContext(arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent
         )
@@ -102,7 +108,7 @@ public class RemoteConfigVariant {
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
-            renderContext: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.renderContext.makeContext(arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             content: content
@@ -121,7 +127,7 @@ public class RemoteConfigVariant {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            renderContext: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.renderContext.makeContext(arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -142,7 +148,7 @@ public class RemoteConfigVariant {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            renderContext: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.renderContext.makeContext(arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: content
@@ -166,30 +172,28 @@ class RemoteConfig {
         phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
     ) {
         phase(.loading)
-        Task {
+        Task { @MainActor in
             let result = await renderContext.fetchRemoteConfig(experimentId: experimentId)
-            await MainActor.run {
-                switch result {
-                case .success(let (experimentId, variant)):
-                    guard let variantId = variant.id else {
-                        phase(.notFound)
-                        return
-                    }
-                    phase(.completed(RemoteConfigVariant(
-                        experimentId: experimentId,
-                        variantId: variantId,
-                        configs: variant.configs ?? [],
-                        renderContext: renderContext,
-                        modalViewController: modalViewController
-                    )))
-                    break
-                case .failure(let err):
-                    switch err {
-                    case .notFound:
-                        phase(.notFound)
-                    default:
-                        phase(.failed(err))
-                    }
+            switch result {
+            case .success(let (experimentId, variant)):
+                guard let variantId = variant.id else {
+                    phase(.notFound)
+                    return
+                }
+                phase(.completed(RemoteConfigVariant(
+                    experimentId: experimentId,
+                    variantId: variantId,
+                    configs: variant.configs ?? [],
+                    renderContext: renderContext,
+                    modalViewController: modalViewController
+                )))
+                break
+            case .failure(let err):
+                switch err {
+                case .notFound:
+                    phase(.notFound)
+                default:
+                    phase(.failed(err))
                 }
             }
         }

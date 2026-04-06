@@ -116,12 +116,11 @@ class TriggerViewController: UIViewController {
             self.onDispatch?(event)
 
             await MainActor.run { [weak self] in
-                let didLoaded = self?.didLoaded ?? false
-                if !didLoaded {
-                    print("nativebrik.dispatch should be called after nativebrik.overlay did load")
+                guard let self else {
                     return
                 }
-                guard let renderContext = self?.renderContext else {
+                if !self.didLoaded {
+                    print("nativebrik.dispatch should be called after nativebrik.overlay did load")
                     return
                 }
                 switch result {
@@ -129,7 +128,7 @@ class TriggerViewController: UIViewController {
                     switch block {
                     case .EUIRootBlock(let root):
                         if kind == .TOOLTIP,
-                           let onTooltip = self?.onTooltip,
+                           let onTooltip = self.onTooltip,
                            let experimentId = experimentId {
                             if let jsonData = try? JSONEncoder().encode(block),
                                let jsonString = String(data: jsonData, encoding: .utf8) {
@@ -138,15 +137,15 @@ class TriggerViewController: UIViewController {
                         } else {
                             let root = ModalRootViewController(
                                 root: root,
-                                renderContext: renderContext.makeChild(arguments: nil),
-                                modalViewController: self?.modalViewController
+                                renderContext: self.renderContext.makeContext(arguments: nil),
+                                modalViewController: self.modalViewController
                             )
-                            if let currentVC = self?.currentVC {
+                            if let currentVC = self.currentVC {
                                 currentVC.removeFromParent()
-                                self?.currentVC = nil
+                                self.currentVC = nil
                             }
-                            self?.addChild(root)
-                            self?.currentVC = root
+                            self.addChild(root)
+                            self.currentVC = root
                         }
                     default:
                         break

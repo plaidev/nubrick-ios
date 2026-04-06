@@ -19,7 +19,7 @@ public enum NubrickError: Error {
 protocol RenderContext {
     @MainActor
     func handleEvent(_ it: UIBlockEventDispatcher)
-    func makeChild(arguments: Any?) -> RenderContext
+    func makeContext(arguments: Any?) -> RenderContext
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
 
     func getFormValue(key: String) -> Any?
@@ -39,33 +39,8 @@ class RenderContextImpl: RenderContext {
     private let user: NubrickUser
     private let experimentContentUseCase: ExperimentContentUseCase
     private let httpRequestUseCase: HttpRequestUseCase
-
     private let formRepository: FormRepository
     private let arguments: Any?
-
-    convenience init(
-        config: Config,
-        user: NubrickUser,
-        experimentRepository: ExperimentRepository2,
-        componentRepository: ComponentRepository2,
-        trackRepository: TrackRepository2,
-        databaseRepository: DatabaseRepository,
-        httpRequestRepository: HttpRequestRepository
-    ) {
-        self.init(
-            config: config,
-            user: user,
-            experimentContentUseCase: ExperimentContentUseCaseImpl(
-                user: user,
-                experimentRepository: experimentRepository,
-                componentRepository: componentRepository,
-                trackRepository: trackRepository,
-                databaseRepository: databaseRepository
-            ),
-            httpRequestUseCase: HttpRequestUseCaseImpl(httpRequestRepository: httpRequestRepository),
-            arguments: nil
-        )
-    }
 
     init(
         config: Config,
@@ -82,23 +57,19 @@ class RenderContextImpl: RenderContext {
         self.arguments = arguments
     }
 
-    private convenience init(_ baseContext: RenderContextImpl, arguments: Any?) {
-        self.init(
-            config: baseContext.config,
-            user: baseContext.user,
-            experimentContentUseCase: baseContext.experimentContentUseCase,
-            httpRequestUseCase: baseContext.httpRequestUseCase,
-            arguments: arguments
-        )
-    }
-
     @MainActor
     func handleEvent(_ it: UIBlockEventDispatcher) {
         self.config.dispatchUIBlockEvent(event: it)
     }
 
-    func makeChild(arguments: Any?) -> RenderContext {
-        return RenderContextImpl(self, arguments: arguments)
+    func makeContext(arguments: Any?) -> RenderContext {
+        return RenderContextImpl(
+            config: self.config,
+            user: self.user,
+            experimentContentUseCase: self.experimentContentUseCase,
+            httpRequestUseCase: self.httpRequestUseCase,
+            arguments: arguments
+        )
     }
 
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {

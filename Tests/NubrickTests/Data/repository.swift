@@ -53,25 +53,22 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 }
 
-final class ContainerTests: XCTestCase {
+final class RenderContextTests: XCTestCase {
     func testShouldCallApiHttpRequest() throws {
         let db = createNativebrikCoreDataHelper()
         let user = NubrickUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
-        let cache = CacheStore(policy: NubrickCachePolicy())
-        let container = RenderContextImpl(
+        let dependencies = NubrickDependencyContainer(
             config: config,
             user: user,
-            experimentRepository: ExperimentRepositoryImpl(config: config, cache: cache),
-            componentRepository: ComponentRepositoryImpl(config: config, cache: cache),
-            trackRepository: TrackRespositoryImpl(config: config, user: user),
-            databaseRepository: DatabaseRepositoryImpl(persistentContainer: db),
-            httpRequestRepository: HttpRequestRepositoryImpl(intercepter: nil)
+            persistentContainer: db,
+            httpRequestInterceptor: nil
         )
+        let renderContext = dependencies.makeRenderContext()
         let expectation = expectation(description: "Request should be expected.")
 
         Task {
-            let result = await container.fetchRemoteConfig(experimentId: REMOTE_CONFIG_ID_1_FOR_TEST)
+            let result = await renderContext.fetchRemoteConfig(experimentId: REMOTE_CONFIG_ID_1_FOR_TEST)
             switch result {
             case .success:
                 XCTAssertTrue(true)
