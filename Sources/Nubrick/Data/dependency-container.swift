@@ -46,12 +46,13 @@ struct NubrickDependencyContainer {
         )
     }
 
-    func makeRootRenderContext() -> RenderContext {
+    func makeRenderContext(arguments: Any? = nil) -> RenderContext {
         RenderContextImpl(
             config: config,
             user: user,
             experimentContentUseCase: experimentContentUseCase,
-            httpRequestUseCase: httpRequestUseCase
+            httpRequestUseCase: httpRequestUseCase,
+            arguments: arguments
         )
     }
 }

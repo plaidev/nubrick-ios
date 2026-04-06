@@ -136,7 +136,6 @@ public typealias NubrickHttpRequestInterceptor = (_ request: URLRequest) -> URLR
 final class NubrickCore {
     private let dependencies: NubrickDependencyContainer
     private let user: NubrickUser
-    private let renderContext: RenderContext
     private let config: Config
     private let overlayVC: OverlayViewController
 
@@ -170,10 +169,9 @@ final class NubrickCore {
         self.user = user
         self.config = config
         self.dependencies = dependencies
-        self.renderContext = dependencies.makeRootRenderContext()
         self.overlayVC = OverlayViewController(
             user: self.user,
-            renderContext: self.renderContext,
+            renderContext: dependencies.makeRenderContext(),
             onDispatch: onDispatch,
             onTooltip: onTooltip
         )
@@ -213,6 +211,10 @@ final class NubrickCore {
         self.dependencies.trackRepository.processMetricKitCrash(crash)
     }
 
+    private func makeRenderContext(arguments: Any? = nil) -> RenderContext {
+        self.dependencies.makeRenderContext(arguments: arguments)
+    }
+
     func overlayViewController() -> UIViewController {
         self.overlayVC
     }
@@ -228,7 +230,7 @@ final class NubrickCore {
     ) -> some View {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
-            renderContext: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent
         ))
@@ -243,7 +245,7 @@ final class NubrickCore {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
             componentId: nil,
-            renderContext: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             content: content
@@ -257,7 +259,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            renderContext: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -272,7 +274,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            renderContext: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content
@@ -285,7 +287,7 @@ final class NubrickCore {
     ) {
         let _ = RemoteConfig(
             experimentId: id,
-            renderContext: self.renderContext,
+            renderContext: self.makeRenderContext(),
             modalViewController: self.overlayVC.modalViewController,
             phase: phase
         )
@@ -297,7 +299,7 @@ final class NubrickCore {
     ) -> some View {
         AnyView(RemoteConfigAsView(
             experimentId: id,
-            renderContext: self.renderContext,
+            renderContext: self.makeRenderContext(),
             modalViewController: self.overlayVC.modalViewController,
             content: phase
         ))
@@ -312,7 +314,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            renderContext: self.renderContext.makeChild(arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content,
@@ -332,7 +334,7 @@ final class NubrickCore {
             let decoded = try decoder.decode(UIRootBlock.self, from: data)
             return NubrickBridgedViewAccessor(rootView: RootView(
                 root: decoded,
-                renderContext: self.renderContext,
+                renderContext: self.makeRenderContext(),
                 modalViewController: self.overlayVC.modalViewController,
                 onEvent: { event in
                     onEvent?(convertEvent(event))
