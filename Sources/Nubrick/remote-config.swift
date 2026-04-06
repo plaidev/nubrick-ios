@@ -13,14 +13,20 @@ public class RemoteConfigVariant {
     public let experimentId: String
     public let variantId: String
     private let configs: [VariantConfig]
-    private let container: Container
+    private let renderContext: RenderContext
     private let modalViewController: ModalComponentViewController
 
-    init(experimentId: String, variantId: String, configs: [VariantConfig], container: Container, modalViewController: ModalComponentViewController) {
+    init(
+        experimentId: String,
+        variantId: String,
+        configs: [VariantConfig],
+        renderContext: RenderContext,
+        modalViewController: ModalComponentViewController
+    ) {
         self.experimentId = experimentId
         self.variantId = variantId
         self.configs = configs
-        self.container = container
+        self.renderContext = renderContext
         self.modalViewController = modalViewController
     }
 
@@ -85,7 +91,7 @@ public class RemoteConfigVariant {
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            renderContext: self.renderContext.makeContext(arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent
         )
@@ -102,7 +108,7 @@ public class RemoteConfigVariant {
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            renderContext: self.renderContext.makeContext(arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             content: content
@@ -121,7 +127,7 @@ public class RemoteConfigVariant {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            renderContext: self.renderContext.makeContext(arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -142,7 +148,7 @@ public class RemoteConfigVariant {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            renderContext: self.renderContext.makeContext(arguments: arguments),
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: content
@@ -161,13 +167,13 @@ public enum RemoteConfigPhase {
 class RemoteConfig {
     init(
         experimentId: String,
-        container: Container,
+        renderContext: RenderContext,
         modalViewController: ModalComponentViewController,
         phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
     ) {
         phase(.loading)
         Task {
-            let result = await container.fetchRemoteConfig(experimentId: experimentId)
+            let result = await renderContext.fetchRemoteConfig(experimentId: experimentId)
             await MainActor.run {
                 switch result {
                 case .success(let (experimentId, variant)):
@@ -179,7 +185,7 @@ class RemoteConfig {
                         experimentId: experimentId,
                         variantId: variantId,
                         configs: variant.configs ?? [],
-                        container: container,
+                        renderContext: renderContext,
                         modalViewController: modalViewController
                     )))
                     break
@@ -201,12 +207,12 @@ class RemoteConfigSwiftViewModel: ObservableObject {
 
     func fetchAndUpdate(
         experimentId: String,
-        container: Container,
+        renderContext: RenderContext,
         modalViewController: ModalComponentViewController
     ) {
         let _ = RemoteConfig(
             experimentId: experimentId,
-            container: container,
+            renderContext: renderContext,
             modalViewController: modalViewController) { phase in
                 Task { @MainActor [weak self] in
                     switch phase {
@@ -228,7 +234,7 @@ struct RemoteConfigAsView: View {
     
     init<V: View>(
         experimentId: String,
-        container: Container,
+        renderContext: RenderContext,
         modalViewController: ModalComponentViewController,
         content: @escaping (_: RemoteConfigPhase) -> V
     ) {
@@ -238,7 +244,7 @@ struct RemoteConfigAsView: View {
         self.data = RemoteConfigSwiftViewModel()
         self.data.fetchAndUpdate(
             experimentId: experimentId,
-            container: container,
+            renderContext: renderContext,
             modalViewController: modalViewController
         )
     }

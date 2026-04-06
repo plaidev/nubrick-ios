@@ -134,9 +134,7 @@ public typealias NubrickHttpRequestInterceptor = (_ request: URLRequest) -> URLR
 
 @MainActor
 final class NubrickCore {
-    private let user: NubrickUser
-    private let container: Container
-    private let config: Config
+    private let dependencies: NubrickDependencyContainer
     private let overlayVC: OverlayViewController
 
     init(
@@ -159,19 +157,17 @@ final class NubrickCore {
             cachePolicy: cachePolicy
         )
         let persistentContainer = createNativebrikCoreDataHelper()
-
-        self.user = user
-        self.config = config
-        self.container = ContainerImpl(
+        let dependencies = NubrickDependencyContainer(
             config: config,
-            cache: CacheStore(policy: config.cachePolicy),
-            user: self.user,
+            user: user,
             persistentContainer: persistentContainer,
-            intercepter: httpRequestInterceptor
+            httpRequestInterceptor: httpRequestInterceptor
         )
+
+        self.dependencies = dependencies
         self.overlayVC = OverlayViewController(
-            user: self.user,
-            container: self.container,
+            user: user,
+            renderContext: dependencies.makeRenderContext(),
             onDispatch: onDispatch,
             onTooltip: onTooltip
         )
@@ -199,16 +195,20 @@ final class NubrickCore {
     }
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        self.container.sendFlutterCrash(crashEvent)
+        self.dependencies.trackRepository.sendFlutterCrash(crashEvent)
     }
 
     func appendTooltipExperimentHistory(experimentId: String) {
         guard !experimentId.isEmpty else { return }
-        self.container.appendExperimentHistory(experimentId: experimentId)
+        self.dependencies.databaseRepository.appendExperimentHistory(experimentId: experimentId)
     }
 
     func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
-        self.container.processMetricKitCrash(crash)
+        self.dependencies.trackRepository.processMetricKitCrash(crash)
+    }
+
+    private func makeRenderContext(arguments: Any? = nil) -> RenderContext {
+        self.dependencies.makeRenderContext(arguments: arguments)
     }
 
     func overlayViewController() -> UIViewController {
@@ -226,7 +226,7 @@ final class NubrickCore {
     ) -> some View {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent
         ))
@@ -241,7 +241,7 @@ final class NubrickCore {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
             componentId: nil,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             content: content
@@ -255,7 +255,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -270,7 +270,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content
@@ -283,7 +283,7 @@ final class NubrickCore {
     ) {
         let _ = RemoteConfig(
             experimentId: id,
-            container: self.container,
+            renderContext: self.makeRenderContext(),
             modalViewController: self.overlayVC.modalViewController,
             phase: phase
         )
@@ -295,7 +295,7 @@ final class NubrickCore {
     ) -> some View {
         AnyView(RemoteConfigAsView(
             experimentId: id,
-            container: self.container,
+            renderContext: self.makeRenderContext(),
             modalViewController: self.overlayVC.modalViewController,
             content: phase
         ))
@@ -310,7 +310,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            renderContext: self.makeRenderContext(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content,
@@ -330,7 +330,7 @@ final class NubrickCore {
             let decoded = try decoder.decode(UIRootBlock.self, from: data)
             return NubrickBridgedViewAccessor(rootView: RootView(
                 root: decoded,
-                container: self.container,
+                renderContext: self.makeRenderContext(),
                 modalViewController: self.overlayVC.modalViewController,
                 onEvent: { event in
                     onEvent?(convertEvent(event))

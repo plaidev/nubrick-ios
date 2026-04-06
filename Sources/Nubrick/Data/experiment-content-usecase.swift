@@ -1,182 +1,43 @@
 //
-//  container.swift
+//  experiment-content-usecase.swift
 //  Nubrick
 //
-//  Created by Ryosuke Suzuki on 2024/03/06.
+//  Created by Codex on 2026/04/03.
 //
 
 import Foundation
-import CoreData
-import MetricKit
 
-struct ExtractedVariant {
+private struct ExtractedVariant {
     let experimentId: String
     let kind: ExperimentKind?
     let variant: ExperimentVariant
 }
 
-public enum NubrickError: Error {
-    case notFound
-    case failedToDecode
-    case unexpected
-    case skipRequest
-    case irregular(String)
-    case other(Error)
-}
-
-protocol Container {
-    @MainActor
-    func handleEvent(_ it: UIBlockEventDispatcher)
-    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
-
-    func getFormValue(key: String) -> Any?
-    func getFormValues() -> [String: Any]
-    func setFormValue(key: String, value: Any)
-    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener)
-    func removeFormValueListener(_ id: String)
-
-    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError>
+protocol ExperimentContentUseCase {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
-    func appendExperimentHistory(experimentId: String)
-    
-    func processMetricKitCrash(_ crash: MXCrashDiagnostic)
-
-    func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
 }
 
-class ContainerEmptyImpl: Container {
-    @MainActor
-    func handleEvent(_ it: UIBlockEventDispatcher) {
-    }
-    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
-        return nil
-    }
-    func getFormValue(key: String) -> Any? {
-        return nil
-    }
-    func getFormValues() -> [String: Any] {
-        return [:]
-    }
-    func setFormValue(key: String, value: Any) {
-    }
-    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) { }
-    func removeFormValueListener(_ id: String) { }
-
-
-    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError> {
-        return Result.failure(NubrickError.skipRequest)
-    }
-    func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError> {
-        return Result.failure(NubrickError.notFound)
-    }
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError> {
-        return Result.failure(NubrickError.notFound)
-    }
-    func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError> {
-        return Result.failure(NubrickError.notFound)
-    }
-    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
-    }
-
-    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-    }
-
-    func appendExperimentHistory(experimentId: String) {
-    }
-}
-
-class ContainerImpl: Container {
-    private let config: Config
+final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
     private let user: NubrickUser
-    private let persistentContainer: NSPersistentContainer
-
     private let experimentRepository: ExperimentRepository2
     private let componentRepository: ComponentRepository2
     private let trackRepository: TrackRepository2
-    private let formRepository: FormRepository?
     private let databaseRepository: DatabaseRepository
-    private let httpRequestRepository: HttpRequestRepository
 
-    private let arguments: Any?
-
-    init(config: Config, cache: CacheStore, user: NubrickUser, persistentContainer: NSPersistentContainer, intercepter: NubrickHttpRequestInterceptor? = nil) {
-        self.config = config
+    init(
+        user: NubrickUser,
+        experimentRepository: ExperimentRepository2,
+        componentRepository: ComponentRepository2,
+        trackRepository: TrackRepository2,
+        databaseRepository: DatabaseRepository
+    ) {
         self.user = user
-        self.persistentContainer = persistentContainer
-        self.experimentRepository = ExperimentRepositoryImpl(config: config, cache: cache)
-        self.componentRepository = ComponentRepositoryImpl(config: config, cache: cache)
-        self.trackRepository = TrackRespositoryImpl(config: config, user: user)
-        self.formRepository = FormRepositoryImpl()
-        self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
-        self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: intercepter)
-
-        self.arguments = nil
-    }
-
-    // should be refactored.
-    // this is because, i wanted to initialize form instance for each component, not to share the same instance from every components.
-    // this is called when component is instantiated.
-    // bad code.
-    init(_ container: ContainerImpl, arguments: Any?) {
-        self.config = container.config
-        self.user = container.user
-        self.persistentContainer = container.persistentContainer
-        self.experimentRepository = container.experimentRepository
-        self.componentRepository = container.componentRepository
-        self.trackRepository = container.trackRepository
-        self.formRepository = FormRepositoryImpl()
-        self.databaseRepository = container.databaseRepository
-        self.httpRequestRepository = container.httpRequestRepository
-        self.arguments = arguments
-    }
-
-    @MainActor
-    func handleEvent(_ it: UIBlockEventDispatcher) {
-        self.config.dispatchUIBlockEvent(event: it)
-    }
-
-    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
-        return _createVariableForTemplate(
-            user: self.user,
-            data: data,
-            properties: properties,
-            form: self.formRepository?.getFormData(),
-            arguments: self.arguments,
-            projectId: self.config.projectId
-        )
-    }
-
-    func getFormValue(key: String) -> Any? {
-        return self.formRepository?.getValue(key: key)
-    }
-
-    func getFormValues() -> [String: Any] {
-        return self.formRepository?.getFormData() ?? [:]
-    }
-
-    func setFormValue(key: String, value: Any) {
-        self.formRepository?.setValue(key: key, value: value)
-    }
-
-    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
-        self.formRepository?.addFormValueListener(id: id, listener: listener)
-    }
-    func removeFormValueListener(_ id: String) {
-        self.formRepository?.removeFormValueListener(id: id)
-    }
-
-    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError> {
-        let request = ApiHttpRequest(
-            url: compile(req.url ?? "", variable),
-            method: req.method,
-            headers: req.headers?.map { it in
-                return ApiHttpHeader(name: compile(it.name ?? "", variable), value: compile(it.value ?? "", variable))
-            },
-            body: compile(req.body ?? "", variable)
-        )
-        return await self.httpRequestRepository.request(req: request, assetion: assertion)
+        self.experimentRepository = experimentRepository
+        self.componentRepository = componentRepository
+        self.trackRepository = trackRepository
+        self.databaseRepository = databaseRepository
     }
 
     func fetchEmbedding(experimentId: String, componentId: String? = nil) async -> Result<UIBlock, NubrickError> {
@@ -185,7 +46,6 @@ class ContainerImpl: Container {
             return component
         }
 
-        // retrieve experiment config
         var configs: ExperimentConfigs
         switch await self.experimentRepository.fetchExperimentConfigs(id: experimentId) {
         case .success(let it):
@@ -219,11 +79,9 @@ class ContainerImpl: Container {
     }
 
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError> {
-        // send the user track event and save it to database
         self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
         await self.databaseRepository.appendUserEvent(name: trigger)
 
-        // fetch config from cdn
         var configs: ExperimentConfigs
         switch await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger) {
         case .success(let it):
@@ -232,7 +90,6 @@ class ContainerImpl: Container {
             return Result.failure(it)
         }
 
-        // select the best matching config for the specified kinds
         var extracted: ExtractedVariant
         switch await self.extractVariant(configs: configs, kinds: kinds) {
         case .success(let it):
@@ -295,10 +152,6 @@ class ContainerImpl: Container {
         return Result.success((extracted.experimentId, extracted.variant))
     }
 
-    func appendExperimentHistory(experimentId: String) {
-        self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
-    }
-
     private func extractVariant(configs: ExperimentConfigs, kinds: [ExperimentKind]) async -> Result<ExtractedVariant, NubrickError> {
         guard let config = extractExperimentConfigMatchedToProperties(
             configs: configs,
@@ -328,12 +181,5 @@ class ContainerImpl: Container {
             return Result.failure(NubrickError.notFound)
         }
         return Result.success(ExtractedVariant(experimentId: experimentId, kind: config.kind, variant: variant))
-    }
-    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
-        self.trackRepository.processMetricKitCrash(crash)
-    }
-
-    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        self.trackRepository.sendFlutterCrash(crashEvent)
     }
 }

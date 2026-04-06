@@ -15,7 +15,7 @@ enum UserDefaultsKeys: String {
 
 class TriggerViewController: UIViewController {
     private let user: NubrickUser
-    private let container: Container
+    private let renderContext: RenderContext
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: ModalRootViewController? = nil
     private var onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
@@ -23,21 +23,20 @@ class TriggerViewController: UIViewController {
     private var didLoaded = false
     private var ignoreFirstUserEventToForegroundEvent = true
 
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:renderContext:modalViewController:onDispatch:onTooltip:).")
     required init?(coder: NSCoder) {
-        self.user = NubrickUser()
-        self.container = ContainerEmptyImpl()
-        super.init(coder: coder)
+        fatalError("init(coder:) has not been implemented")
     }
 
     init(
         user: NubrickUser,
-        container: Container,
+        renderContext: RenderContext,
         modalViewController: ModalComponentViewController?,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
     ) {
         self.user = user
-        self.container = container
+        self.renderContext = renderContext
         self.modalViewController = modalViewController
         self.onDispatch = onDispatch
         self.onTooltip = onTooltip
@@ -99,7 +98,7 @@ class TriggerViewController: UIViewController {
             // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,
             // so we fetch both popups and tooltips when running in Flutter, and popups only otherwise.
             let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
-            let triggerResult = await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
+            let triggerResult = await self.renderContext.fetchTriggerContent(trigger: event.name, kinds: kinds)
             let experimentId: String?
             let kind: ExperimentKind?
             let result: Result<UIBlock, NubrickError>
@@ -117,12 +116,11 @@ class TriggerViewController: UIViewController {
             self.onDispatch?(event)
 
             await MainActor.run { [weak self] in
-                let didLoaded = self?.didLoaded ?? false
-                if !didLoaded {
-                    print("nativebrik.dispatch should be called after nativebrik.overlay did load")
+                guard let self else {
                     return
                 }
-                guard let container = self?.container else {
+                if !self.didLoaded {
+                    print("nativebrik.dispatch should be called after nativebrik.overlay did load")
                     return
                 }
                 switch result {
@@ -130,7 +128,7 @@ class TriggerViewController: UIViewController {
                     switch block {
                     case .EUIRootBlock(let root):
                         if kind == .TOOLTIP,
-                           let onTooltip = self?.onTooltip,
+                           let onTooltip = self.onTooltip,
                            let experimentId = experimentId {
                             if let jsonData = try? JSONEncoder().encode(block),
                                let jsonString = String(data: jsonData, encoding: .utf8) {
@@ -139,15 +137,15 @@ class TriggerViewController: UIViewController {
                         } else {
                             let root = ModalRootViewController(
                                 root: root,
-                                container: ContainerImpl(container as! ContainerImpl, arguments: nil),
-                                modalViewController: self?.modalViewController
+                                renderContext: self.renderContext.makeContext(arguments: nil),
+                                modalViewController: self.modalViewController
                             )
-                            if let currentVC = self?.currentVC {
+                            if let currentVC = self.currentVC {
                                 currentVC.removeFromParent()
-                                self?.currentVC = nil
+                                self.currentVC = nil
                             }
-                            self?.addChild(root)
-                            self?.currentVC = root
+                            self.addChild(root)
+                            self.currentVC = root
                         }
                     default:
                         break

@@ -15,10 +15,10 @@ class ModalRootViewController: UIViewController {
     private let pages: [UIPageBlock]!
     private let modalViewController: ModalComponentViewController?
     private var event: UIBlockEventManager? = nil
-    private let container: Container
+    private let renderContext: RenderContext
 
     init(
-        root: UIRootBlock?, container: Container, modalViewController: ModalComponentViewController?
+        root: UIRootBlock?, renderContext: RenderContext, modalViewController: ModalComponentViewController?
     ) {
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
@@ -26,7 +26,7 @@ class ModalRootViewController: UIViewController {
         }
         self.modalViewController = modalViewController
         self.modalViewController?.dismissModal()
-        self.container = container
+        self.renderContext = renderContext
         super.init(nibName: nil, bundle: nil)
 
         self.event = UIBlockEventManager(on: { [weak self] event, _ in
@@ -36,7 +36,7 @@ class ModalRootViewController: UIViewController {
                     props: event.payload
                 )
             }
-            self?.container.handleEvent(event)
+            self?.renderContext.handleEvent(event)
         })
 
         if let onTrigger = trigger?.data?.triggerSetting?.onTrigger {
@@ -44,11 +44,9 @@ class ModalRootViewController: UIViewController {
         }
     }
 
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(root:renderContext:modalViewController:).")
     required init?(coder: NSCoder) {
-        self.pages = []
-        self.modalViewController = nil
-        self.container = ContainerEmptyImpl()
-        super.init(coder: coder)
+        fatalError("init(coder:) has not been implemented")
     }
 
     func presentPage(pageId: String, props: [Property]?) {
@@ -83,7 +81,7 @@ class ModalRootViewController: UIViewController {
                     event: onBackButtonClick,
                     context: UIBlockContext(
                         UIBlockContextInit(
-                            container: self.container,
+                            renderContext: self.renderContext,
                             event: self.event,
                         )
                     )
@@ -95,7 +93,7 @@ class ModalRootViewController: UIViewController {
         let pageView = PageView(
             page: page,
             props: props,
-            container: self.container,
+            renderContext: self.renderContext,
             event: self.event,
             modalViewController: self.modalViewController
         )
@@ -111,7 +109,7 @@ class ModalRootViewController: UIViewController {
                     event: onBackButtonClick,
                     context: UIBlockContext(
                         UIBlockContextInit(
-                            container: self.container,
+                            renderContext: self.renderContext,
                             event: self.event,
                         )
                     )
@@ -128,7 +126,7 @@ class ModalRootViewController: UIViewController {
 struct RootViewRepresentable: UIViewRepresentable {
     typealias UIViewType = RootView
     let root: UIRootBlock?
-    let container: Container
+    let renderContext: RenderContext
     let modalViewController: ModalComponentViewController?
     let onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?
     @Binding var width: CGFloat?
@@ -168,7 +166,7 @@ struct RootViewRepresentable: UIViewRepresentable {
             coordinator?.report(width: w, height: h)
         }
         return RootView(
-            root: root, container: container, modalViewController: modalViewController,
+            root: root, renderContext: renderContext, modalViewController: modalViewController,
             onEvent: onEvent, onSizeChange: onSizeChange)
     }
 
@@ -195,21 +193,18 @@ class RootView: UIView {
     private var view: UIView? = nil
     private var currentPageView: PageView? = nil
     private var modalViewController: ModalComponentViewController? = nil
-    private let container: Container
+    private let renderContext: RenderContext
     // callback to transmit size to SwiftUI
     var onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)?
 
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(root:renderContext:modalViewController:onEvent:onNextTooltip:onDismiss:onSizeChange:).")
     required init?(coder: NSCoder) {
-        self.id = ""
-        self.pages = []
-        self.view = UIView()
-        self.container = ContainerEmptyImpl()
-        super.init(coder: coder)
+        fatalError("init(coder:) has not been implemented")
     }
 
     init(
         root: UIRootBlock?,
-        container: Container,
+        renderContext: RenderContext,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
@@ -217,7 +212,7 @@ class RootView: UIView {
         onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil
     ) {
         self.id = root?.id ?? ""
-        self.container = container
+        self.renderContext = renderContext
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
             return page.data?.kind == PageKind.TRIGGER
@@ -239,7 +234,7 @@ class RootView: UIView {
                     props: event.payload
                 )
             }
-            self?.container.handleEvent(event)
+            self?.renderContext.handleEvent(event)
             onEvent?(event)
         })
 
@@ -296,7 +291,7 @@ class RootView: UIView {
                     event: onBackButtonClick,
                     context: UIBlockContext(
                         UIBlockContextInit(
-                            container: self.container,
+                            renderContext: self.renderContext,
                             event: self.event,
                         )
                     )
@@ -315,7 +310,7 @@ class RootView: UIView {
         let pageView = PageView(
             page: page,
             props: props,
-            container: self.container,
+            renderContext: self.renderContext,
             event: self.event,
             modalViewController: self.modalViewController
         )
@@ -332,7 +327,7 @@ class RootView: UIView {
                     event: onBackButtonClick,
                     context: UIBlockContext(
                         UIBlockContextInit(
-                            container: self.container,
+                            renderContext: self.renderContext,
                             event: self.event,
                         )
                     )
