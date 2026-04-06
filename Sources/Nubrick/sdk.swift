@@ -136,7 +136,7 @@ public typealias NubrickHttpRequestInterceptor = (_ request: URLRequest) -> URLR
 final class NubrickCore {
     private let dependencies: NubrickDependencyContainer
     private let user: NubrickUser
-    private let container: Container
+    private let renderContext: RenderContext
     private let config: Config
     private let overlayVC: OverlayViewController
 
@@ -170,10 +170,10 @@ final class NubrickCore {
         self.user = user
         self.config = config
         self.dependencies = dependencies
-        self.container = dependencies.makeRootContainer()
+        self.renderContext = dependencies.makeRootRenderContext()
         self.overlayVC = OverlayViewController(
             user: self.user,
-            container: self.container,
+            container: self.renderContext,
             onDispatch: onDispatch,
             onTooltip: onTooltip
         )
@@ -228,7 +228,7 @@ final class NubrickCore {
     ) -> some View {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            container: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent
         ))
@@ -243,7 +243,7 @@ final class NubrickCore {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
             componentId: nil,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            container: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             content: content
@@ -257,7 +257,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            container: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -272,7 +272,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            container: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content
@@ -285,7 +285,7 @@ final class NubrickCore {
     ) {
         let _ = RemoteConfig(
             experimentId: id,
-            container: self.container,
+            container: self.renderContext,
             modalViewController: self.overlayVC.modalViewController,
             phase: phase
         )
@@ -297,7 +297,7 @@ final class NubrickCore {
     ) -> some View {
         AnyView(RemoteConfigAsView(
             experimentId: id,
-            container: self.container,
+            container: self.renderContext,
             modalViewController: self.overlayVC.modalViewController,
             content: phase
         ))
@@ -312,7 +312,7 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: ContainerImpl(self.container as! ContainerImpl, arguments: arguments),
+            container: self.renderContext.makeChild(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content,
@@ -332,7 +332,7 @@ final class NubrickCore {
             let decoded = try decoder.decode(UIRootBlock.self, from: data)
             return NubrickBridgedViewAccessor(rootView: RootView(
                 root: decoded,
-                container: self.container,
+                container: self.renderContext,
                 modalViewController: self.overlayVC.modalViewController,
                 onEvent: { event in
                     onEvent?(convertEvent(event))

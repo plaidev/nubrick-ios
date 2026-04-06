@@ -16,9 +16,10 @@ public enum NubrickError: Error {
     case other(Error)
 }
 
-protocol Container {
+protocol RenderContext {
     @MainActor
     func handleEvent(_ it: UIBlockEventDispatcher)
+    func makeChild(arguments: Any?) -> RenderContext
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
 
     func getFormValue(key: String) -> Any?
@@ -33,9 +34,14 @@ protocol Container {
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
-class ContainerEmptyImpl: Container {
+typealias Container = RenderContext
+
+class ContainerEmptyImpl: RenderContext {
     @MainActor
     func handleEvent(_ it: UIBlockEventDispatcher) {
+    }
+    func makeChild(arguments: Any?) -> RenderContext {
+        return self
     }
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
         return nil
@@ -66,7 +72,7 @@ class ContainerEmptyImpl: Container {
     }
 }
 
-class ContainerImpl: Container {
+class ContainerImpl: RenderContext {
     private let config: Config
     private let user: NubrickUser
     private let experimentContentUseCase: ExperimentContentUseCase
@@ -114,7 +120,7 @@ class ContainerImpl: Container {
         self.arguments = arguments
     }
 
-    convenience init(_ container: ContainerImpl, arguments: Any?) {
+    private convenience init(_ container: ContainerImpl, arguments: Any?) {
         self.init(
             config: container.config,
             user: container.user,
@@ -127,6 +133,10 @@ class ContainerImpl: Container {
     @MainActor
     func handleEvent(_ it: UIBlockEventDispatcher) {
         self.config.dispatchUIBlockEvent(event: it)
+    }
+
+    func makeChild(arguments: Any?) -> RenderContext {
+        return ContainerImpl(self, arguments: arguments)
     }
 
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
