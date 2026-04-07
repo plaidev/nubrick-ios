@@ -18,7 +18,7 @@ public enum NubrickError: Error {
 
 protocol RenderContext {
     @MainActor
-    func handleEvent(_ it: UIBlockEventDispatcher)
+    func handleEvent(_ it: UIBlockAction)
     func makeContext(arguments: Any?) -> RenderContext
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
 
@@ -37,6 +37,7 @@ protocol RenderContext {
 class RenderContextImpl: RenderContext {
     private let config: Config
     private let user: NubrickUser
+    private let actionHandler: UIBlockActionHandler
     private let experimentContentUseCase: ExperimentContentUseCase
     private let httpRequestUseCase: HttpRequestUseCase
     private let formRepository: FormRepository
@@ -45,12 +46,14 @@ class RenderContextImpl: RenderContext {
     init(
         config: Config,
         user: NubrickUser,
+        actionHandler: @escaping UIBlockActionHandler,
         experimentContentUseCase: ExperimentContentUseCase,
         httpRequestUseCase: HttpRequestUseCase,
         arguments: Any? = nil
     ) {
         self.config = config
         self.user = user
+        self.actionHandler = actionHandler
         self.experimentContentUseCase = experimentContentUseCase
         self.httpRequestUseCase = httpRequestUseCase
         self.formRepository = FormRepositoryImpl()
@@ -58,14 +61,15 @@ class RenderContextImpl: RenderContext {
     }
 
     @MainActor
-    func handleEvent(_ it: UIBlockEventDispatcher) {
-        self.config.dispatchUIBlockEvent(event: it)
+    func handleEvent(_ it: UIBlockAction) {
+        self.actionHandler(it, nil)
     }
 
     func makeContext(arguments: Any?) -> RenderContext {
         return RenderContextImpl(
             config: self.config,
             user: self.user,
+            actionHandler: self.actionHandler,
             experimentContentUseCase: self.experimentContentUseCase,
             httpRequestUseCase: self.httpRequestUseCase,
             arguments: arguments

@@ -52,8 +52,8 @@ class FlexView: AnimatedUIControl {
         }
 
         let gesture = configureOnClickGesture(
-            target: self, action: #selector(onClicked(sender:)), context: context,
-            event: block.data?.onClick)
+            target: self, selector: #selector(onClicked(sender:)), context: context,
+            uiBlockAction: block.data?.onClick)
         let children =
             block.data?.children?.map {
                 uiblockToUIView(
@@ -194,8 +194,8 @@ class FlexOverflowView: UIScrollView {
         self.isScrollEnabled = (block.data?.overflow == Overflow.SCROLL) ? true : false
         
         let _ = configureOnClickGesture(
-            target: self, action: #selector(onClicked(sender:)), context: context,
-            event: block.data?.onClick)
+            target: self, selector: #selector(onClicked(sender:)), context: context,
+            uiBlockAction: block.data?.onClick)
         // Create child context with FlexOverflowView's direction as the parent direction
         let childContext = context.instanciateFrom(
             UIBlockContextChildInit(parentDirection: block.data?.direction)

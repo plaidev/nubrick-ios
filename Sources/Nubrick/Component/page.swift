@@ -101,14 +101,14 @@ final class PageView: UIView {
     private let props: [Property]?
     private let renderContext: RenderContext
     private var data: Any? = nil
-    private var event: UIBlockEventManager? = nil
+    private var actionHandler: UIBlockActionHandler? = nil
     private var fullScreenInitialNavItemVisibility = false
     private var loading: Bool = false
     private var view: UIView = UIView()
 
     private var modalViewController: ModalComponentViewController? = nil
 
-    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(page:props:renderContext:event:modalViewController:).")
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(page:props:renderContext:actionHandler:modalViewController:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -117,7 +117,7 @@ final class PageView: UIView {
         page: UIPageBlock?,
         props: [Property]?,
         renderContext: RenderContext,
-        event: UIBlockEventManager?,
+        actionHandler: UIBlockActionHandler?,
         modalViewController: ModalComponentViewController?
     ) {
         self.page = page
@@ -126,27 +126,30 @@ final class PageView: UIView {
 
         // build placeholder input. init.props is passed from other pages, and page.data.props are the page.props.
         // so merge them and create self.props.
-        self.props = Self.mergeProps(pageProps: page?.data?.props, eventProps: props)
+        self.props = Self.mergeProps(pageProps: page?.data?.props, actionProps: props)
 
         self.data = renderContext.createVariableForTemplate(data: nil, properties: self.props)
         super.init(frame: .zero)
 
-        let parentEventManager = event
-        // handle events that has http request, and then dispatch the event to parent.
-        // here, we only process http request.
-        self.event = UIBlockEventManager(on: { [weak self] dispatchedEvent, options in
+        let parentActionHandler = actionHandler
+        self.actionHandler = { [weak self] action, onHttpSettled in
+            guard let self else {
+                return
+            }
+
             let variable = _mergeVariable(
-                base: self?.data,
-                self?.renderContext.createVariableForTemplate(data: nil, properties: self?.props)
+                base: self.data,
+                self.renderContext.createVariableForTemplate(data: nil, properties: self.props)
             )
 
-            let assertion = dispatchedEvent.httpResponseAssertion
-            let handleEvent = { () -> Void in
+            let assertion = action.httpResponseAssertion
+            let forwardAction = { () -> Void in
                 Task { @MainActor in
-                    parentEventManager?.dispatch(event: dispatchedEvent)
+                    parentActionHandler?(action, nil)
                 }
             }
-            if let httpRequest = dispatchedEvent.httpRequest {
+
+            if let httpRequest = action.httpRequest {
                 Task { [weak self] in
                     guard let self else {
                         return
@@ -158,26 +161,20 @@ final class PageView: UIView {
                     )
                     switch result {
                     case .success:
-                        await MainActor.run {
-                            options?.onHttpSettled?()
-                            options?.onHttpSuccess?()
-                        }
-                        handleEvent()
+                        await MainActor.run { onHttpSettled?() }
+                        forwardAction()
                     case .failure:
-                        await MainActor.run {
-                            options?.onHttpSettled?()
-                            options?.onHttpError?()
-                        }
+                        await MainActor.run { onHttpSettled?() }
                         // TODO: handle error
-                        handleEvent()
+                        forwardAction()
                     default:
                         break
                     }
                 }
             } else {
-                handleEvent()
+                forwardAction()
             }
-        })
+        }
 
         // setup layout
         self.configureLayout { layout in
@@ -200,8 +197,13 @@ final class PageView: UIView {
         self.loadDataAndTransition()
     }
 
-    func dispatch(event: UIBlockEventDispatcher) {
-        self.event?.dispatch(event: event)
+    func dispatchAction(_ action: UIBlockAction) {
+        self.actionHandler?(action, nil)
+    }
+
+    @available(*, deprecated, renamed: "dispatchAction(_:)")
+    func dispatch(action: UIBlockAction) {
+        self.dispatchAction(action)
     }
 
     func loadDataAndTransition() {
@@ -246,7 +248,7 @@ final class PageView: UIView {
                     UIBlockContextInit(
                         renderContext: self.renderContext,
                         variable: self.data,
-                        event: self.event,
+                        actionHandler: self.actionHandler,
                         loading: self.loading
                     )
                 ),
@@ -297,16 +299,16 @@ final class PageView: UIView {
         self.yoga.height = YGValue(value: Float(max(0, targetHeight)), unit: .point)
     }
 
-    private static func mergeProps(pageProps: [Property]?, eventProps: [Property]?) -> [Property] {
+    private static func mergeProps(pageProps: [Property]?, actionProps: [Property]?) -> [Property] {
         guard let pageProps = pageProps else {
             return []
         }
 
         return pageProps.map { property in
-            let eventProp = eventProps?.first { $0.name == property.name }
+            let actionProp = actionProps?.first { $0.name == property.name }
             return Property(
                 name: property.name ?? "",
-                value: eventProp?.value ?? property.value ?? "",
+                value: actionProp?.value ?? property.value ?? "",
                 ptype: property.ptype ?? PropertyType.STRING
             )
         }

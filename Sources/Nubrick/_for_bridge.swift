@@ -26,17 +26,22 @@ public final class NubrickBridgedViewAccessor {
         }
     }
     
-    // event must be UIBlockEventDispatcher with json format.
-    // this method is used to forcefully dispatch an event from the page view.
-    public func dispatch(event: String) throws {
+    // actionJSON must be UIBlockAction with json format.
+    // this method force-dispatches a UI block action from the page view.
+    public func dispatchAction(_ actionJSON: String) throws {
         guard let rootView = self.rootOrUIView as? RootView else {
             return
         }
-        guard let data = event.data(using: .utf8) else {
+        guard let data = actionJSON.data(using: .utf8) else {
             return
         }
-        let dispatcher = try JSONDecoder().decode(UIBlockEventDispatcher.self, from: data)
-        rootView.dispatch(event: dispatcher)
+        let action = try JSONDecoder().decode(UIBlockAction.self, from: data)
+        rootView.dispatchAction(action)
+    }
+
+    @available(*, deprecated, renamed: "dispatchAction(_:)")
+    public func dispatch(event: String) throws {
+        try self.dispatchAction(event)
     }
 }
 

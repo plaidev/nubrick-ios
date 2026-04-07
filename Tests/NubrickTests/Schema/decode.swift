@@ -25,13 +25,23 @@ final class DecodeJsonTests: XCTestCase {
         XCTAssertEqual("http://localhost:8070/health", result.url)
     }
     
-    func testShouldDecodeUIBlockEventDispatcher() throws {
+    func testShouldDecodeUIBlockAction() throws {
         let decoder = JSONDecoder()
         let json = """
-{"__typename":"UIBlockEventDispatcher","destinationPageId":"0.2c4944c774deb","httpRequest":{"__typename":"ApiHttpRequest","method":"GET","url":"http://localhost:8070/health"}}
+{"__typename":"UIBlockEventDispatcher","eventName":"cta_click","destinationPageId":"0.2c4944c774deb","httpRequest":{"__typename":"ApiHttpRequest","method":"GET","url":"http://localhost:8070/health"}}
 """
-        let result = try decoder.decode(UIBlockEventDispatcher.self, from: Data(json.utf8))
+        let result = try decoder.decode(UIBlockAction.self, from: Data(json.utf8))
+        XCTAssertEqual("cta_click", result.eventName)
         XCTAssertEqual("0.2c4944c774deb", result.destinationPageId)
         XCTAssertEqual("http://localhost:8070/health", result.httpRequest?.url)
+    }
+
+    func testShouldDecodeLegacyUIBlockActionName() throws {
+        let decoder = JSONDecoder()
+        let json = """
+{"__typename":"UIBlockEventDispatcher","name":"legacy_click","destinationPageId":"0.2c4944c774deb"}
+"""
+        let result = try decoder.decode(UIBlockAction.self, from: Data(json.utf8))
+        XCTAssertEqual("legacy_click", result.name)
     }
 }

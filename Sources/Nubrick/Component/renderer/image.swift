@@ -63,9 +63,9 @@ class ImageView: AnimatedUIControl {
 
         _ = configureOnClickGesture(
             target: self,
-            action: #selector(onClicked(sender:)),
+            selector: #selector(onClicked(sender:)),
             context: context,
-            event: block.data?.onClick
+            uiBlockAction: block.data?.onClick
         )
 
         loadAsyncImage(url: compiledSrc, view: self, image: self.image)

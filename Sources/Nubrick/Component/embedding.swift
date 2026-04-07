@@ -17,7 +17,7 @@ public enum EmbeddingPhase {
     case failed(Error)
 }
 
-func convertEvent(_ event: UIBlockEventDispatcher) -> ComponentEvent {
+func convertEvent(_ event: UIBlockAction) -> ComponentEvent {
     let convertType: (_ t: PropertyType?) -> EventPropertyType = { t in
         switch t {
         case .INTEGER:
@@ -31,7 +31,7 @@ func convertEvent(_ event: UIBlockEventDispatcher) -> ComponentEvent {
         }
     }
     return ComponentEvent(
-        name: event.name,
+        name: event.eventName ?? event.name,
         deepLink: event.deepLink,
         payload: event.payload?.map({ prop in
             return EventProperty(
