@@ -61,6 +61,7 @@ final class RenderContextTests: XCTestCase {
         let dependencies = NubrickDependencyContainer(
             config: config,
             user: user,
+            actionHandler: { _, _ in },
             persistentContainer: db,
             httpRequestInterceptor: nil
         )

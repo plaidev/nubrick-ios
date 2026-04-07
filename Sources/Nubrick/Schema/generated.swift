@@ -388,7 +388,7 @@ enum TriggerEventNameDefs: String, Decodable, Encodable {
   }
 }
 struct TriggerSetting: Decodable, Encodable {
-  var onTrigger: UIBlockEventDispatcher?
+  var onTrigger: UIBlockAction?
   var trigger: TriggerEventDef?
 }
 indirect enum UIBlock: Decodable, Encodable, Sendable {
@@ -506,7 +506,8 @@ indirect enum UIBlock: Decodable, Encodable, Sendable {
     }
   }
 }
-struct UIBlockEventDispatcher: Decodable, Encodable {
+struct UIBlockAction: Decodable, Encodable {
+  var eventName: String?
   var name: String?
   var destinationPageId: String?
   var deepLink: String?
@@ -523,7 +524,7 @@ struct UICarouselBlockData: Decodable, Encodable {
   var children: [UIBlock]?
   var frame: FrameData?
   var gap: Int?
-  var onClick: UIBlockEventDispatcher?
+  var onClick: UIBlockAction?
 }
 struct UICollectionBlock: Decodable, Encodable {
   var id: ID?
@@ -543,7 +544,7 @@ struct UICollectionBlockData: Decodable, Encodable {
   var pageControl: Boolean?
   var autoScroll: Boolean?
   var autoScrollInterval: Float?
-  var onClick: UIBlockEventDispatcher?
+  var onClick: UIBlockAction?
 }
 struct UIFlexContainerBlock: Decodable, Encodable {
   var id: ID?
@@ -557,7 +558,7 @@ struct UIFlexContainerBlockData: Decodable, Encodable {
   var gap: Int?
   var frame: FrameData?
   var overflow: Overflow?
-  var onClick: UIBlockEventDispatcher?
+  var onClick: UIBlockAction?
 }
 struct UIImageBlock: Decodable, Encodable {
   var id: ID?
@@ -567,7 +568,7 @@ struct UIImageBlockData: Decodable, Encodable {
   var src: String?
   var contentMode: ImageContentMode?
   var frame: FrameData?
-  var onClick: UIBlockEventDispatcher?
+  var onClick: UIBlockAction?
 }
 struct UIMultiSelectInputBlock: Decodable, Encodable {
   var id: ID?
@@ -663,7 +664,7 @@ struct UITextBlockData: Decodable, Encodable {
   var weight: FontWeight?
   var maxLines: Int?
   var frame: FrameData?
-  var onClick: UIBlockEventDispatcher?
+  var onClick: UIBlockAction?
 }
 struct UITextInputBlock: Decodable, Encodable {
   var id: ID?

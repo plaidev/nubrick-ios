@@ -65,42 +65,33 @@ private func nubrickWarn(_ message: String) {
     print("[Nubrick] \(message)")
 }
 
+@MainActor
+private func dispatchMainActor(_ event: NubrickEvent) {
+    guard let runtime = Nubrick.requireRuntime() else {
+        nubrickWarn("Dropping event before initialize: \(event.name)")
+        return
+    }
+    runtime.dispatch(event)
+}
+
 final class Config {
     let projectId: String
-    var url: String = "https://nativebrik.com/client"
+    let url: String
     let trackUrl: String
     let cdnUrl: String
-    private let userEventListener: (@Sendable (_ event: ComponentEvent) -> Void)?
-    private var dispatchEventListener: (@MainActor (_ event: ComponentEvent) -> Void)?
-    var cachePolicy: NubrickCachePolicy = NubrickCachePolicy()
+    let cachePolicy: NubrickCachePolicy
 
     init(
         projectId: String,
-        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
         trackUrl: String? = nil,
         cdnUrl: String? = nil,
         cachePolicy: NubrickCachePolicy? = nil
     ) {
         self.projectId = projectId
+        self.url = "https://nativebrik.com/client"
         self.trackUrl = trackUrl ?? nubrickTrackUrl
         self.cdnUrl = cdnUrl ?? nubrickCdnUrl
-        self.userEventListener = onEvent
-        self.dispatchEventListener = nil
-        if let cachePolicy = cachePolicy {
-            self.cachePolicy = cachePolicy
-        }
-    }
-
-    func setDispatchEventListener(_ listener: @escaping @MainActor (_ event: ComponentEvent) -> Void) {
-        self.dispatchEventListener = listener
-    }
-
-    @MainActor
-    func dispatchUIBlockEvent(event: UIBlockEventDispatcher) {
-        let converted = convertEvent(event)
-        openLink(converted)
-        self.userEventListener?(converted)
-        self.dispatchEventListener?(converted)
+        self.cachePolicy = cachePolicy ?? NubrickCachePolicy()
     }
 }
 
@@ -149,9 +140,20 @@ final class NubrickCore {
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
         let user = NubrickUser()
+        let actionHandler: UIBlockActionHandler = { action, _ in
+            // Terminal sdk pipeline: convert -> side effects -> trigger dispatch.
+            let converted = convertEvent(action)
+            openLink(converted)
+            onEvent?(converted)
+
+            guard let name = converted.name,
+                  !name.isEmpty else {
+                return
+            }
+            dispatchMainActor(NubrickEvent(name))
+        }
         let config = Config(
             projectId: projectId,
-            onEvent: onEvent,
             trackUrl: trackUrl,
             cdnUrl: cdnUrl,
             cachePolicy: cachePolicy
@@ -160,6 +162,7 @@ final class NubrickCore {
         let dependencies = NubrickDependencyContainer(
             config: config,
             user: user,
+            actionHandler: actionHandler,
             persistentContainer: persistentContainer,
             httpRequestInterceptor: httpRequestInterceptor
         )
@@ -171,15 +174,6 @@ final class NubrickCore {
             onDispatch: onDispatch,
             onTooltip: onTooltip
         )
-
-        config.setDispatchEventListener { [weak self] event in
-            guard let self,
-                  let name = event.name,
-                  !name.isEmpty else {
-                return
-            }
-            self.dispatch(NubrickEvent(name))
-        }
 
         if trackCrashes {
             if let existing = AppMetrics.shared {
@@ -422,11 +416,7 @@ public enum Nubrick {
 
     public nonisolated static func dispatch(_ event: NubrickEvent) {
         Task { @MainActor in
-            guard let runtime = requireRuntime() else {
-                nubrickWarn("Dropping event before initialize: \(event.name)")
-                return
-            }
-            runtime.dispatch(event)
+            dispatchMainActor(event)
         }
     }
 

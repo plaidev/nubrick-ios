@@ -7,33 +7,14 @@
 
 import Foundation
 
-struct UIBlockEventDispatchOptions {
-    var onHttpSuccess: (() -> Void)? = nil
-    var onHttpError: (() -> Void)? = nil
-    var onHttpSettled: (() -> Void)? = nil
-}
-
-class UIBlockEventManager {
-    private let callback:
-        (_ event: UIBlockEventDispatcher, _ options: UIBlockEventDispatchOptions?) -> Void
-    init(
-        on: @escaping (_ event: UIBlockEventDispatcher, _ options: UIBlockEventDispatchOptions?) ->
-            Void
-    ) {
-        self.callback = on
-    }
-
-    func dispatch(event: UIBlockEventDispatcher, options: UIBlockEventDispatchOptions? = nil) {
-        self.callback(event, options)
-    }
-}
+typealias UIBlockActionHandler = @MainActor (_ action: UIBlockAction, _ onHttpSettled: (() -> Void)?) -> Void
 
 struct UIBlockContextInit {
     var renderContext: RenderContext? = nil
     var variable: Any? = nil
     var childData: Any? = nil
     var properties: [Property]? = nil
-    var event: UIBlockEventManager? = nil
+    var actionHandler: UIBlockActionHandler? = nil
     var parentClickListener: ClickListener? = nil
     var parentDirection: FlexDirection? = nil
     var loading: Bool? = false
@@ -42,7 +23,7 @@ struct UIBlockContextInit {
 struct UIBlockContextChildInit {
     var childData: Any? = nil
     var properties: [Property]? = nil
-    var event: UIBlockEventManager? = nil
+    var actionHandler: UIBlockActionHandler? = nil
     var parentClickListener: ClickListener? = nil
     var parentDirection: FlexDirection? = nil
     var loading: Bool? = false
@@ -55,7 +36,7 @@ class UIBlockContext {
     // page properties
     private let properties: [Property]?
     private let renderContext: RenderContext?
-    private let event: UIBlockEventManager?
+    private let actionHandler: UIBlockActionHandler?
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
     private var loading: Bool = false
@@ -63,7 +44,7 @@ class UIBlockContext {
     init(_ args: UIBlockContextInit) {
         self.variable = args.variable
         self.properties = args.properties
-        self.event = args.event
+        self.actionHandler = args.actionHandler
         self.parentClickListener = args.parentClickListener
         self.parentDirection = args.parentDirection
         self.loading = args.loading ?? false
@@ -82,7 +63,7 @@ class UIBlockContext {
                 renderContext: self.renderContext,
                 variable: v,
                 properties: args.properties ?? self.properties,
-                event: args.event ?? self.event,
+                actionHandler: args.actionHandler ?? self.actionHandler,
                 parentClickListener: args.parentClickListener ?? self.parentClickListener,
                 parentDirection: args.parentDirection ?? self.parentDirection,
                 loading: args.loading ?? self.loading
@@ -105,8 +86,9 @@ class UIBlockContext {
         return self.parentDirection
     }
 
-    func dispatch(event: UIBlockEventDispatcher, options: UIBlockEventDispatchOptions? = nil) {
-        self.event?.dispatch(event: event, options: options)
+    // Entry point for UI-block actions created by gestures and triggers.
+    func dispatch(action: UIBlockAction, onHttpSettled: (() -> Void)? = nil) {
+        self.actionHandler?(action, onHttpSettled)
     }
 
     func writeToForm(key: String, value: Any) {

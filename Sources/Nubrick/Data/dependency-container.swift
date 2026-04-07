@@ -18,10 +18,12 @@ struct NubrickDependencyContainer {
     let httpRequestRepository: HttpRequestRepository
     let experimentContentUseCase: ExperimentContentUseCase
     let httpRequestUseCase: HttpRequestUseCase
+    private let actionHandler: UIBlockActionHandler
 
     init(
         config: Config,
         user: NubrickUser,
+        actionHandler: @escaping UIBlockActionHandler,
         persistentContainer: NSPersistentContainer,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil
     ) {
@@ -44,12 +46,14 @@ struct NubrickDependencyContainer {
         self.httpRequestUseCase = HttpRequestUseCaseImpl(
             httpRequestRepository: self.httpRequestRepository
         )
+        self.actionHandler = actionHandler
     }
 
     func makeRenderContext(arguments: Any? = nil) -> RenderContext {
         RenderContextImpl(
             config: config,
             user: user,
+            actionHandler: actionHandler,
             experimentContentUseCase: experimentContentUseCase,
             httpRequestUseCase: httpRequestUseCase,
             arguments: arguments

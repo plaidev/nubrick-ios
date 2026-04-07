@@ -51,33 +51,32 @@ class ClickListener: UITapGestureRecognizer {
 // configureOnClickGesture sets up a click listener for the target view.
 @MainActor
 func configureOnClickGesture(
-    target: UIView, action: Selector, context: UIBlockContext, event: UIBlockEventDispatcher?
+    target: UIView, selector: Selector, context: UIBlockContext, uiBlockAction: UIBlockAction?
 ) -> ClickListener {
-    let gesture = ClickListener(target: target, action: action)
+    let gesture = ClickListener(target: target, action: selector)
     gesture.onClick = {
-        guard let event = event else { return }
-        let compiledEvent = compileEvent(event: event, context: context)
-        if event.httpRequest != nil {
+        guard let uiBlockAction = uiBlockAction else { return }
+        let compiledAction = compileAction(action: uiBlockAction, context: context)
+        if uiBlockAction.httpRequest != nil {
             // set loading UI
             target.isUserInteractionEnabled = false
             target.alpha = 0.8
         }
         context.dispatch(
-            event: compiledEvent,
-            options: UIBlockEventDispatchOptions(
-                onHttpSettled: {
-                    // reset loading UI
-                    target.isUserInteractionEnabled = true
-                    target.alpha = 1
-                }
-            ))
+            action: compiledAction,
+            onHttpSettled: {
+                // reset loading UI
+                target.isUserInteractionEnabled = true
+                target.alpha = 1
+            }
+        )
     }
-    if event != nil {
+    if uiBlockAction != nil {
         target.addGestureRecognizer(gesture)
     }
 
     gesture.onTouchBegan = {
-        if event != nil && context.hasParent() {
+        if uiBlockAction != nil && context.hasParent() {
             UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -92,7 +91,7 @@ func configureOnClickGesture(
         }
     }
     gesture.onTouchEnded = {
-        if event != nil && context.hasParent() {
+        if uiBlockAction != nil && context.hasParent() {
             UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -108,7 +107,7 @@ func configureOnClickGesture(
 
     }
     gesture.onTouchCanceled = {
-        if event != nil && context.hasParent() {
+        if uiBlockAction != nil && context.hasParent() {
             UIView.animate(
                 withDuration: 0.1,
                 delay: 0,
@@ -167,24 +166,27 @@ func configureDisabled(target: UIView, context: UIBlockContext, requiredFields: 
 }
 
 @MainActor
-func compileEvent(event: UIBlockEventDispatcher, context: UIBlockContext?) -> UIBlockEventDispatcher {
-    guard let context = context else { return event }
+func compileAction(action: UIBlockAction, context: UIBlockContext?) -> UIBlockAction {
+    guard let context = context else { return action }
 
     let variable = context.getVariable()
-    let deepLink = event.deepLink
-    let name = event.name
-    return UIBlockEventDispatcher(
-        name: (name != nil) ? compile(name ?? "", variable) : nil,
-        destinationPageId: event.destinationPageId,
+    let deepLink = action.deepLink
+    let eventName = action.eventName ?? action.name
+    let legacyName = action.name ?? action.eventName
+    return UIBlockAction(
+        eventName: (eventName != nil) ? compile(eventName ?? "", variable) : nil,
+        name: (legacyName != nil) ? compile(legacyName ?? "", variable) : nil,
+        destinationPageId: action.destinationPageId,
         deepLink: (deepLink != nil) ? compile(deepLink ?? "", variable) : nil,
-        payload: event.payload?.map({ prop in
+        payload: action.payload?.map({ prop in
             return Property(
                 name: prop.name ?? "",
                 value: compile(prop.value ?? "", variable),
                 ptype: prop.ptype ?? PropertyType.STRING
             )
         }),
-        httpRequest: event.httpRequest,
-        httpResponseAssertion: event.httpResponseAssertion
+        requiredFields: action.requiredFields,
+        httpRequest: action.httpRequest,
+        httpResponseAssertion: action.httpResponseAssertion
     )
 }

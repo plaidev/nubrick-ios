@@ -14,7 +14,7 @@ internal import YogaKit
 class ModalRootViewController: UIViewController {
     private let pages: [UIPageBlock]!
     private let modalViewController: ModalComponentViewController?
-    private var event: UIBlockEventManager? = nil
+    private var actionHandler: UIBlockActionHandler? = nil
     private let renderContext: RenderContext
 
     init(
@@ -29,18 +29,18 @@ class ModalRootViewController: UIViewController {
         self.renderContext = renderContext
         super.init(nibName: nil, bundle: nil)
 
-        self.event = UIBlockEventManager(on: { [weak self] event, _ in
-            if let destPageId = event.destinationPageId {
-                self?.presentPage(
-                    pageId: destPageId,
-                    props: event.payload
-                )
+        self.actionHandler = { [weak self] action, _ in
+            guard let self else {
+                return
             }
-            self?.renderContext.handleEvent(event)
-        })
+            if let destinationPageId = action.destinationPageId {
+                self.presentPage(pageId: destinationPageId, props: action.payload)
+            }
+            self.renderContext.handleEvent(action)
+        }
 
         if let onTrigger = trigger?.data?.triggerSetting?.onTrigger {
-            self.event?.dispatch(event: onTrigger)
+            self.actionHandler?(onTrigger, nil)
         }
     }
 
@@ -82,7 +82,7 @@ class ModalRootViewController: UIViewController {
                     context: UIBlockContext(
                         UIBlockContextInit(
                             renderContext: self.renderContext,
-                            event: self.event,
+                            actionHandler: self.actionHandler,
                         )
                     )
                 ) : nil
@@ -94,7 +94,7 @@ class ModalRootViewController: UIViewController {
             page: page,
             props: props,
             renderContext: self.renderContext,
-            event: self.event,
+            actionHandler: self.actionHandler,
             modalViewController: self.modalViewController
         )
 
@@ -110,7 +110,7 @@ class ModalRootViewController: UIViewController {
                     context: UIBlockContext(
                         UIBlockContextInit(
                             renderContext: self.renderContext,
-                            event: self.event,
+                            actionHandler: self.actionHandler,
                         )
                     )
                 ) : nil
@@ -128,7 +128,7 @@ struct RootViewRepresentable: UIViewRepresentable {
     let root: UIRootBlock?
     let renderContext: RenderContext
     let modalViewController: ModalComponentViewController?
-    let onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?
+    let onEvent: ((_ action: UIBlockAction) -> Void)?
     @Binding var width: CGFloat?
     @Binding var height: CGFloat?
 
@@ -185,7 +185,7 @@ class RootView: UIView {
     private let id: String!
     private let pages: [UIPageBlock]!
     // use var instead of let, because to refer weak self.
-    private var event: UIBlockEventManager? = nil
+    private var actionHandler: UIBlockActionHandler? = nil
     private var currentEmbeddedPageId: String = ""
     private var currentTooltipAnchorId: String? = nil
     private var onNextTooltip: ((_ pageId: String) -> Void) = { _ in }
@@ -206,7 +206,7 @@ class RootView: UIView {
         root: UIRootBlock?,
         renderContext: RenderContext,
         modalViewController: ModalComponentViewController?,
-        onEvent: ((_ event: UIBlockEventDispatcher) -> Void)?,
+        onEvent: ((_ action: UIBlockAction) -> Void)?,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil,
         onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil
@@ -227,30 +227,34 @@ class RootView: UIView {
             layout.isEnabled = true
         }
 
-        self.event = UIBlockEventManager(on: { [weak self] event, _ in
-            if let destPageId = event.destinationPageId {
-                self?.presentPage(
-                    pageId: destPageId,
-                    props: event.payload
-                )
+        self.actionHandler = { [weak self] action, _ in
+            guard let self else {
+                return
             }
-            self?.renderContext.handleEvent(event)
-            onEvent?(event)
-        })
+            if let destinationPageId = action.destinationPageId {
+                self.presentPage(pageId: destinationPageId, props: action.payload)
+            }
+            self.renderContext.handleEvent(action)
+            onEvent?(action)
+        }
 
         if let onTrigger = trigger?.data?.triggerSetting?.onTrigger {
-            self.event?.dispatch(event: onTrigger)
+            self.actionHandler?(onTrigger, nil)
         }
     }
 
-    func dispatch(event: UIBlockEventDispatcher) {
+    // Canonical entrypoint for actions coming from UI gestures or bridge dispatch.
+    func dispatchAction(_ action: UIBlockAction) {
         if let page = self.currentPageView {
-            // call event dispatch from the page view.
-            page.dispatch(event: event)
+            page.dispatchAction(action)
         } else {
-            // fallback
-            self.event?.dispatch(event: event)
+            self.actionHandler?(action, nil)
         }
+    }
+
+    @available(*, deprecated, renamed: "dispatchAction(_:)")
+    func dispatch(action: UIBlockAction) {
+        self.dispatchAction(action)
     }
 
     func presentPage(pageId: String, props: [Property]?) {
@@ -292,7 +296,7 @@ class RootView: UIView {
                     context: UIBlockContext(
                         UIBlockContextInit(
                             renderContext: self.renderContext,
-                            event: self.event,
+                            actionHandler: self.actionHandler,
                         )
                     )
                 ) : nil
@@ -311,7 +315,7 @@ class RootView: UIView {
             page: page,
             props: props,
             renderContext: self.renderContext,
-            event: self.event,
+            actionHandler: self.actionHandler,
             modalViewController: self.modalViewController
         )
         self.currentPageView = pageView
@@ -328,7 +332,7 @@ class RootView: UIView {
                     context: UIBlockContext(
                         UIBlockContextInit(
                             renderContext: self.renderContext,
-                            event: self.event,
+                            actionHandler: self.actionHandler,
                         )
                     )
                 ) : nil
