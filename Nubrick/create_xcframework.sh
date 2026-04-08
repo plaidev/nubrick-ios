@@ -8,6 +8,13 @@ OUT_DIR="$ROOT/output"
 IOS_ARCHIVE="$BUILD_DIR/Nubrick-iOS.xcarchive"
 SIM_ARCHIVE="$BUILD_DIR/Nubrick-iOS-Simulator.xcarchive"
 
+echo "DEVELOPER_DIR=${DEVELOPER_DIR:-<unset>}"
+xcode-select -p
+which xcodebuild
+xcodebuild -version
+xcodebuild -showsdks
+xcodebuild -showdestinations -project "$PROJECT_PATH" -scheme Nubrick
+
 rm -rf "$BUILD_DIR" "$OUT_DIR"
 mkdir -p "$BUILD_DIR" "$OUT_DIR"
 

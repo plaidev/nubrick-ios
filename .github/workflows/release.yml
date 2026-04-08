@@ -95,6 +95,15 @@ jobs:
       - name: Install sentry-cli
         run: brew install sentry-cli
 
+      - name: Debug XCFramework build environment
+        run: |
+          echo "DEVELOPER_DIR=${DEVELOPER_DIR:-<unset>}"
+          xcode-select -p
+          which xcodebuild
+          xcodebuild -version
+          xcodebuild -showsdks
+          xcodebuild -showdestinations -project Nubrick/Nubrick.xcodeproj -scheme Nubrick
+
       - name: Build framework
         run: make xcframework
 
