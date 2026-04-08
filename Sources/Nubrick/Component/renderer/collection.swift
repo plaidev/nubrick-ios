@@ -116,6 +116,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     private var timer: Timer? = nil
     private var counter: Int = 0
     private var formValueListenerId: String?
+    private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
     
@@ -211,7 +212,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         )
 
         if let id = block.id, let handleDisabled = handleDisabled {
-            self.formValueListenerId = id
+            self.formValueListenerId = "\(id)::\(self.formValueListenerInstanceId)"
             self.formValueListener = handleDisabled
         }
     }

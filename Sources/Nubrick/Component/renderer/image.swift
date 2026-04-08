@@ -14,6 +14,7 @@ class ImageView: AnimatedUIControl {
     private var block: UIImageBlock = UIImageBlock()
     private var context: UIBlockContext?
     private var formValueListenerId: String?
+    private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
 
@@ -80,7 +81,7 @@ class ImageView: AnimatedUIControl {
         )
 
         if let id = block.id, let handleDisabled = handleDisabled {
-            self.formValueListenerId = id
+            self.formValueListenerId = "\(id)::\(self.formValueListenerInstanceId)"
             self.formValueListener = handleDisabled
         }
     }

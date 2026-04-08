@@ -6,6 +6,7 @@ class TextView: AnimatedUIControl {
     var block: UITextBlock = UITextBlock()
     var context: UIBlockContext?
     private var formValueListenerId: String?
+    private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
 
@@ -66,7 +67,7 @@ class TextView: AnimatedUIControl {
         )
 
         if let id = block.id, let handleDisabled = handleDisabled {
-            self.formValueListenerId = id
+            self.formValueListenerId = "\(id)::\(self.formValueListenerInstanceId)"
             self.formValueListener = handleDisabled
         }
     }

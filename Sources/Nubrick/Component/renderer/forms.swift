@@ -83,8 +83,12 @@ class InputIconView: UIControl {
         }
 
         if let message = message {
-            self.addAction(.init { _ in
+            self.addAction(.init { [weak self] _ in
+                guard let self = self else { return }
                 if #available(iOS 17.0, *) {
+                    if let existingTooltip = self.presentedTooltip, existingTooltip.presentingViewController != nil {
+                        existingTooltip.dismiss(animated: false)
+                    }
                     let tooltip = TooltipViewController(message: message, source: iconView)
                     self.presentedTooltip = tooltip
                     presentOnTop(window: self.window, modal: tooltip)

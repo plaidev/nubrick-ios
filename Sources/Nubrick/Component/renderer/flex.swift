@@ -16,6 +16,7 @@ class FlexView: AnimatedUIControl {
     private var respectSafeArea = false
     private var hasActivatedConstraints = false
     private var formValueListenerId: String?
+    private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
 
@@ -125,7 +126,7 @@ class FlexView: AnimatedUIControl {
         )
 
         if let id = block.id, let handleDisabled = handleDisabled {
-            self.formValueListenerId = id
+            self.formValueListenerId = "\(id)::\(self.formValueListenerInstanceId)"
             self.formValueListener = handleDisabled
         }
     }
@@ -190,6 +191,7 @@ class FlexOverflowView: UIScrollView {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     private var context: UIBlockContext?
     private var formValueListenerId: String?
+    private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
     
@@ -268,7 +270,7 @@ class FlexOverflowView: UIScrollView {
         )
 
         if let id = block.id, let handleDisabled = handleDisabled {
-            self.formValueListenerId = id
+            self.formValueListenerId = "\(id)::\(self.formValueListenerInstanceId)"
             self.formValueListener = handleDisabled
         }
     }
