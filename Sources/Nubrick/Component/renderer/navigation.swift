@@ -46,11 +46,6 @@ class NavigationViewControlller: UINavigationController {
         self.interactivePopGestureRecognizer?.isEnabled = true
     }
 
-    isolated deinit {
-        delegate = nil
-        interactivePopGestureRecognizer?.delegate = nil
-    }
-
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         self.parent?.viewDidLayoutSubviews()

@@ -50,6 +50,8 @@ class TooltipViewController: UIViewController, UIPopoverPresentationControllerDe
 }
 
 class InputIconView: UIControl {
+    private weak var presentedTooltip: TooltipViewController?
+
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
@@ -81,9 +83,14 @@ class InputIconView: UIControl {
         }
 
         if let message = message {
-            self.addAction(.init { _ in
+            self.addAction(.init { [weak self] _ in
+                guard let self = self else { return }
                 if #available(iOS 17.0, *) {
+                    if let existingTooltip = self.presentedTooltip, existingTooltip.presentingViewController != nil {
+                        existingTooltip.dismiss(animated: false)
+                    }
                     let tooltip = TooltipViewController(message: message, source: iconView)
+                    self.presentedTooltip = tooltip
                     presentOnTop(window: self.window, modal: tooltip)
                 }
             }, for: .touchDown)
@@ -92,10 +99,13 @@ class InputIconView: UIControl {
         self.addSubview(iconView)
     }
 
-    isolated deinit {
-        if self.window?.rootViewController?.presentedViewController is TooltipViewController {
-            self.window?.rootViewController?.dismiss(animated: true)
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+
+        if self.window == nil, let tooltip = self.presentedTooltip, tooltip.presentingViewController != nil {
+            tooltip.dismiss(animated: true)
         }
+        self.presentedTooltip = nil
     }
 
     override func layoutSubviews() {

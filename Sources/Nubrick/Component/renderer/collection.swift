@@ -115,6 +115,10 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     // for auto scroll
     private var timer: Timer? = nil
     private var counter: Int = 0
+    private var formValueListenerId: String?
+    private let formValueListenerInstanceId = UUID().uuidString
+    private var formValueListener: FormValueListener?
+    private var hasRegisteredFormValueListener = false
     
     required init?(coder aDecoder: NSCoder) {
         self.block = nil
@@ -200,27 +204,70 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             self.pageControl = pageControl
             self.addSubview(pageControl)
         }
-        
-        if block.data?.kind == CollectionKind.CAROUSEL && block.data?.fullItemWidth == true && block.data?.autoScroll == true {
-            let timeInterval = block.data?.autoScrollInterval ?? 3.0
-            DispatchQueue.main.async { [self] in
-                self.timer = Timer.scheduledTimer(timeInterval: TimeInterval(timeInterval), target: self, selector: #selector(automaticScroll), userInfo: nil, repeats: true)
-            }
+
+        let handleDisabled = makeDisabledStateListener(
+            target: self,
+            context: context,
+            requiredFields: block.data?.onClick?.requiredFields
+        )
+
+        if let id = block.id, let handleDisabled = handleDisabled {
+            self.formValueListenerId = "\(id)::\(self.formValueListenerInstanceId)"
+            self.formValueListener = handleDisabled
         }
-        
-        let handleDisabled = configureDisabled(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)
-        
-        guard let id = block.id, let handleDisabled = handleDisabled else {
-            return
-        }
-        context.addFormValueListener(id, { values in
-            handleDisabled(values)
-        })
     }
-    
-    isolated deinit {
+
+    private func registerFormValueListenerIfNeeded() {
+        guard !self.hasRegisteredFormValueListener else { return }
+        guard
+            let id = self.formValueListenerId,
+            let listener = self.formValueListener
+        else { return }
+
+        self.context.addFormValueListener(id, listener)
+        listener(self.context.getFormValues())
+        self.hasRegisteredFormValueListener = true
+    }
+
+    private func unregisterFormValueListenerIfNeeded() {
+        guard self.hasRegisteredFormValueListener else { return }
+        guard let id = self.formValueListenerId else { return }
+
+        self.context.removeFormValueListener(id)
+        self.hasRegisteredFormValueListener = false
+    }
+
+    private func shouldAutoScroll() -> Bool {
+        return self.block?.data?.kind == CollectionKind.CAROUSEL
+            && self.block?.data?.fullItemWidth == true
+            && self.block?.data?.autoScroll == true
+    }
+
+    private func startAutoScrollTimerIfNeeded() {
+        guard self.timer == nil else { return }
+        guard self.shouldAutoScroll() else { return }
+
+        let timeInterval = self.block?.data?.autoScrollInterval ?? 3.0
+        self.timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(timeInterval), repeats: true) { [weak self] _ in
+            self?.automaticScroll()
+        }
+    }
+
+    private func stopAutoScrollTimer() {
         self.timer?.invalidate()
-        self.context.removeFormValueListener(self.block?.id ?? "")
+        self.timer = nil
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+
+        if self.window == nil {
+            self.unregisterFormValueListenerIfNeeded()
+            self.stopAutoScrollTimer()
+        } else {
+            self.registerFormValueListenerIfNeeded()
+            self.startAutoScrollTimerIfNeeded()
+        }
     }
 
     override func layoutSubviews() {
@@ -309,7 +356,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         return pageControl.currentPage
     }
     
-    @objc func automaticScroll() {
+    func automaticScroll() {
         if self.counter >= self.childrenCount - 1 {
             self.counter = 0
         } else {
