@@ -249,7 +249,9 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
 
         let timeInterval = self.block?.data?.autoScrollInterval ?? 3.0
         self.timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(timeInterval), repeats: true) { [weak self] _ in
-            self?.automaticScroll()
+            Task { @MainActor in
+                self?.automaticScroll()
+            }
         }
     }
 

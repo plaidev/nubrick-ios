@@ -12,17 +12,21 @@ import Darwin.Mach
 
 // For crash reporting
 @MainActor
-private final class AppMetrics: NSObject, @MainActor MXMetricManagerSubscriber {
+private final class AppMetrics: NSObject, MXMetricManagerSubscriber {
 
     // Keep exactly 1 subscriber per iOS process (prevents Flutter hot-restart duplicates)
-    fileprivate static var shared: AppMetrics?
+    fileprivate static let shared = AppMetrics()
+    private var isRegistered = false
 
-    private var recordCrash: (MXCrashDiagnostic) -> Void
-
-    /// Create and subscribe immediately
-    init(_ recordCrash: @escaping (MXCrashDiagnostic) -> Void) {
-        self.recordCrash = recordCrash
+    /// Create singleton only; registration is explicit and ordered by SDK initialization.
+    private override init() {
         super.init()
+    }
+
+    @MainActor
+    func register() {
+        guard !isRegistered else { return }
+        isRegistered = true
 
         let manager = MXMetricManager.shared
         manager.add(self)
@@ -31,16 +35,21 @@ private final class AppMetrics: NSObject, @MainActor MXMetricManagerSubscriber {
         didReceive(manager.pastDiagnosticPayloads)
     }
 
-    /// Called during Flutter hot restart (Dart side changes, but iOS process stays alive)
-    func updateCallback(_ recordCrash: @escaping (MXCrashDiagnostic) -> Void) {
-        self.recordCrash = recordCrash
-    }
-
-    func didReceive(_ payloads: [MXDiagnosticPayload]) {
+    nonisolated func didReceive(_ payloads: [MXDiagnosticPayload]) {
         for payload in payloads {
             guard let crashDiagnostics = payload.crashDiagnostics else { continue }
             for crashDiagnostic in crashDiagnostics {
-                recordCrash(crashDiagnostic)
+                let callStackTreeJSON = crashDiagnostic.callStackTree.jsonRepresentation()
+                let terminationReason = crashDiagnostic.terminationReason
+                let exceptionType = crashDiagnostic.exceptionType?.uint32Value
+
+                Task { @MainActor in
+                    NubrickSDK.runtime?.processMetricKitCrash(
+                        callStackTreeJSON: callStackTreeJSON,
+                        terminationReason: terminationReason,
+                        exceptionType: exceptionType
+                    )
+                }
             }
         }
     }
@@ -138,7 +147,6 @@ final class NubrickCore {
         cdnUrl: String?,
         cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
-        trackCrashes: Bool,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
         let user = NubrickUser()
@@ -176,14 +184,6 @@ final class NubrickCore {
             onDispatch: onDispatch,
             onTooltip: onTooltip
         )
-
-        if trackCrashes {
-            if let existing = AppMetrics.shared {
-                existing.updateCallback(self.processMetricKitCrash)
-            } else {
-                AppMetrics.shared = AppMetrics(self.processMetricKitCrash)
-            }
-        }
     }
 
     func dispatch(_ event: NubrickEvent) {
@@ -201,9 +201,17 @@ final class NubrickCore {
         self.dependencies.databaseRepository.appendExperimentHistory(experimentId: experimentId)
     }
 
-    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
+    func processMetricKitCrash(
+        callStackTreeJSON: Data,
+        terminationReason: String?,
+        exceptionType: UInt32?
+    ) {
         Task {
-            await self.dependencies.trackRepository.processMetricKitCrash(crash)
+            await self.dependencies.trackRepository.processMetricKitCrash(
+                callStackTreeJSON: callStackTreeJSON,
+                terminationReason: terminationReason,
+                exceptionType: exceptionType
+            )
         }
     }
 
@@ -346,7 +354,7 @@ final class NubrickCore {
 
 public enum NubrickSDK {
     @MainActor
-    private static var runtime: NubrickCore? = nil
+    fileprivate static var runtime: NubrickCore? = nil
 
     @MainActor
     private static func warnUninitialized() {
@@ -391,9 +399,12 @@ public enum NubrickSDK {
             cdnUrl: cdnUrl,
             cachePolicy: cachePolicy,
             onDispatch: onDispatch,
-            trackCrashes: trackCrashes,
             onTooltip: onTooltip
         )
+
+        if trackCrashes {
+            AppMetrics.shared.register()
+        }
     }
 
     @MainActor
