@@ -48,27 +48,13 @@ jobs:
       - name: Show available Xcodes
         run: ls /Applications
   
-      - name: Select Xcode 16.0 (compat baseline)
-        run: |
-          if [ -d "/Applications/Xcode_16.0.app/Contents/Developer" ]; then
-            sudo xcode-select -s "/Applications/Xcode_16.0.app/Contents/Developer"
-          elif [ -d "/Applications/Xcode_16.app/Contents/Developer" ]; then
-            sudo xcode-select -s "/Applications/Xcode_16.app/Contents/Developer"
-          else
-            echo "ERROR: Xcode 16.0 is not installed on this runner." >&2
-            ls -1 /Applications >&2
-            exit 1
-          fi
+      - name: Select Xcode 16.1
+        run: sudo xcode-select -s "/Applications/Xcode_16.1.app/Contents/Developer"
 
       - name: Confirm Xcode version
         run: |
           xcodebuild -version
           swift --version
-
-      - name: Ensure iOS platform is installed for selected Xcode
-        run: |
-          sudo xcodebuild -downloadPlatform iOS
-          xcodebuild -showsdks
 
       - name: Validate version format
         run: |
@@ -89,15 +75,6 @@ jobs:
 
       - name: Install sentry-cli
         run: brew install sentry-cli
-
-      - name: Debug XCFramework build environment
-        run: |
-          echo "DEVELOPER_DIR=${DEVELOPER_DIR:-<unset>}"
-          xcode-select -p
-          which xcodebuild
-          xcodebuild -version
-          xcodebuild -showsdks
-          xcodebuild -showdestinations -project Nubrick/Nubrick.xcodeproj -scheme Nubrick
 
       - name: Build framework
         run: make xcframework
