@@ -2,6 +2,7 @@
 set -e
 
 ROOT="$(pwd)"
+PROJECT_PATH="$ROOT/Nubrick.xcodeproj"
 BUILD_DIR="$ROOT/build"
 OUT_DIR="$ROOT/output"
 IOS_ARCHIVE="$BUILD_DIR/Nubrick-iOS.xcarchive"
@@ -12,6 +13,7 @@ mkdir -p "$BUILD_DIR" "$OUT_DIR"
 
 # Build for iOS
 xcodebuild archive \
+  -project "$PROJECT_PATH" \
   -scheme Nubrick \
   -configuration Release \
   -destination "generic/platform=iOS" \
@@ -21,6 +23,7 @@ xcodebuild archive \
 
 # Build for iOS Simulator
 xcodebuild archive \
+  -project "$PROJECT_PATH" \
   -scheme Nubrick \
   -configuration Release \
   -destination "generic/platform=iOS Simulator" \
