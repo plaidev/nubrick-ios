@@ -82,9 +82,9 @@ class SelectInputView: UIControl {
         )
 
         let foregroundColor = block.data?.color.flatMap(parseColor) ?? .label
-        config.titleTextAttributesTransformer = .init({ _ in
+        config.titleTextAttributesTransformer = .init({ [weak self] _ in
             return .init([
-                .font: parseTextBlockDataToUIFont(self.block.data?.size, self.block.data?.weight, self.block.data?.design),
+                .font: parseTextBlockDataToUIFont(self?.block.data?.size, self?.block.data?.weight, self?.block.data?.design),
                 .foregroundColor: hasValue ? foregroundColor : UIColor.placeholderText
             ])
         })
@@ -93,7 +93,8 @@ class SelectInputView: UIControl {
     }
 
     private func createMenuActions() -> [UIAction] {
-        let handleSelect = { (action: UIAction) in
+        let handleSelect = { [weak self] (action: UIAction) in
+            guard let self else { return }
             self.button.configuration = self.buttonConfig(hasValue: true)
 
             if let formKey = self.formKey {
@@ -318,7 +319,8 @@ class MultiSelectInputView: UIControl {
         self.addSubview(label)
         self.addSubview(iconView)
 
-        self.addAction(.init { _ in
+        self.addAction(.init { [weak self] _ in
+            guard let self else { return }
             let tableView = MultiSelectTableViewController(values: self.values, options: block.data?.options) { [weak self] options in
                 var values: [String] = []
                 options.forEach { option in

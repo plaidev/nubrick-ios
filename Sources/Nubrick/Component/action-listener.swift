@@ -54,20 +54,20 @@ func configureOnClickGesture(
     target: UIView, selector: Selector, context: UIBlockContext, uiBlockAction: UIBlockAction?
 ) -> ClickListener {
     let gesture = ClickListener(target: target, action: selector)
-    gesture.onClick = {
+    gesture.onClick = { [weak target] in
         guard let uiBlockAction = uiBlockAction else { return }
         let compiledAction = compileAction(action: uiBlockAction, context: context)
         if uiBlockAction.httpRequest != nil {
             // set loading UI
-            target.isUserInteractionEnabled = false
-            target.alpha = 0.8
+            target?.isUserInteractionEnabled = false
+            target?.alpha = 0.8
         }
         context.dispatch(
             action: compiledAction,
-            onHttpSettled: {
+            onHttpSettled: { [weak target] in
                 // reset loading UI
-                target.isUserInteractionEnabled = true
-                target.alpha = 1
+                target?.isUserInteractionEnabled = true
+                target?.alpha = 1
             }
         )
     }

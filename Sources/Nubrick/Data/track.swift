@@ -7,14 +7,13 @@
 
 import Foundation
 import UIKit
-import MetricKit
 import Darwin.Mach
 
 private let CRASH_RECORD_KEY: String = "NATIVEBRIK_CRASH_RECORD"
 
-// convert MetricKit exception type to string
-func exceptionTypeString(_ num: NSNumber?) -> String {
-    guard let raw = num?.uint32Value else { return "UNKNOWN(nil)" }
+// Convert MetricKit exception type to string after copying the raw value out of the diagnostic.
+func exceptionTypeString(_ raw: UInt32?) -> String {
+    guard let raw else { return "UNKNOWN(nil)" }
     let t = exception_type_t(raw)
     switch t {
     case EXC_BAD_ACCESS:     return "EXC_BAD_ACCESS"
@@ -150,7 +149,11 @@ protocol TrackRepository2 : Actor {
     func trackExperimentEvent(_ event: TrackExperimentEvent)
     func trackEvent(_ event: TrackUserEvent)
 
-    func processMetricKitCrash(_ crash: MXCrashDiagnostic)
+    func processMetricKitCrash(
+        callStackTreeJSON: Data,
+        terminationReason: String?,
+        exceptionType: UInt32?
+    )
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
 }
@@ -328,10 +331,14 @@ actor TrackRespositoryImpl: TrackRepository2 {
         }
     }
     
-    func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
+    func processMetricKitCrash(
+        callStackTreeJSON: Data,
+        terminationReason: String?,
+        exceptionType: UInt32?
+    ) {
         if let callStackTree = try? JSONDecoder().decode(
             CallStackTree.self,
-            from: crash.callStackTree.jsonRepresentation()
+            from: callStackTreeJSON
         )
         {
             var mainThreadFrames = [StackFrame]()
@@ -377,8 +384,8 @@ actor TrackRespositoryImpl: TrackRepository2 {
             }
 
             let exceptionRecord = ExceptionRecord(
-                type: exceptionTypeString(crash.exceptionType),
-                message: crash.terminationReason,
+                type: exceptionTypeString(exceptionType),
+                message: terminationReason,
                 callStacks: mainThreadFrames
             )
 

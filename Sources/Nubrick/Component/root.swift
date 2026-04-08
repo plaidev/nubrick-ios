@@ -82,7 +82,7 @@ class ModalRootViewController: UIViewController {
                     context: UIBlockContext(
                         UIBlockContextInit(
                             renderContext: self.renderContext,
-                            actionHandler: self.actionHandler,
+                            actionHandler: self.actionHandler
                         )
                     )
                 ) : nil
@@ -110,7 +110,7 @@ class ModalRootViewController: UIViewController {
                     context: UIBlockContext(
                         UIBlockContextInit(
                             renderContext: self.renderContext,
-                            actionHandler: self.actionHandler,
+                            actionHandler: self.actionHandler
                         )
                     )
                 ) : nil
@@ -296,7 +296,7 @@ class RootView: UIView {
                     context: UIBlockContext(
                         UIBlockContextInit(
                             renderContext: self.renderContext,
-                            actionHandler: self.actionHandler,
+                            actionHandler: self.actionHandler
                         )
                     )
                 ) : nil
@@ -332,7 +332,7 @@ class RootView: UIView {
                     context: UIBlockContext(
                         UIBlockContextInit(
                             renderContext: self.renderContext,
-                            actionHandler: self.actionHandler,
+                            actionHandler: self.actionHandler
                         )
                     )
                 ) : nil

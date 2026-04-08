@@ -174,7 +174,7 @@ class EmbeddingSwiftViewModel: ObservableObject {
         componentId: String? = nil,
         renderContext: RenderContext,
         modalViewController: ModalComponentViewController?,
-        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        onEvent: ((_ event: ComponentEvent) -> Void)?
     ) {
         Task {
             let result = await renderContext.fetchEmbedding(experimentId: experimentId, componentId: componentId)

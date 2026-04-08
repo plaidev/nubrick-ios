@@ -287,7 +287,8 @@ class SwitchInputView: UIControl {
             }
         }
 
-        toggle.addAction(.init(handler: { _ in
+        toggle.addAction(.init(handler: { [weak self, weak toggle] _ in
+            guard let self, let toggle else { return }
             self.handleValueChange(toggle)
         }), for: .valueChanged)
         self.configureLayout { layout in
