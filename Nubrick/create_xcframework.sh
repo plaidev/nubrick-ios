@@ -23,7 +23,7 @@ xcodebuild archive \
   -project "$PROJECT_PATH" \
   -scheme Nubrick \
   -configuration Release \
-  -destination "generic/platform=iOS" \
+  -sdk iphoneos \
   -archivePath "$IOS_ARCHIVE" \
   SKIP_INSTALL=NO \
   BUILD_LIBRARY_FOR_DISTRIBUTION=YES 
@@ -33,7 +33,7 @@ xcodebuild archive \
   -project "$PROJECT_PATH" \
   -scheme Nubrick \
   -configuration Release \
-  -destination "generic/platform=iOS Simulator" \
+  -sdk iphonesimulator \
   -archivePath "$SIM_ARCHIVE" \
   SKIP_INSTALL=NO \
   BUILD_LIBRARY_FOR_DISTRIBUTION=YES
