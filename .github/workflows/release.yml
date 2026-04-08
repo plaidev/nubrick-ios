@@ -67,12 +67,7 @@ jobs:
 
       - name: Ensure iOS platform is installed for selected Xcode
         run: |
-          if xcodebuild -showsdks | grep -q "iphoneos"; then
-            echo "iOS platform already installed."
-          else
-            echo "iOS platform missing for selected Xcode. Downloading..."
-            sudo xcodebuild -downloadPlatform iOS
-          fi
+          sudo xcodebuild -downloadPlatform iOS
           xcodebuild -showsdks
 
       - name: Validate version format
