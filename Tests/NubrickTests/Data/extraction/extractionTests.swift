@@ -115,8 +115,8 @@ final class ExtractionTests: XCTestCase {
         XCTAssertFalse(actual)
     }
     
-    func testExtractExperimentConfigMatchedToPropertiesShouldReturnNilWhenItsZeroConfig() throws {
-        let actual = extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: []), kinds: [.POPUP]) { seed in
+    func testExtractExperimentConfigMatchedToPropertiesShouldReturnNilWhenItsZeroConfig() async throws {
+        let actual = await extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: []), kinds: [.POPUP]) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true
@@ -126,7 +126,7 @@ final class ExtractionTests: XCTestCase {
         XCTAssertNil(actual)
     }
     
-    func testExtractExperimentConfigMatchedToProperties() throws {
+    func testExtractExperimentConfigMatchedToProperties() async throws {
         let userId = "hello"
         let userRnd = "50"
         let distribution: [ExperimentCondition] = [
@@ -156,7 +156,7 @@ final class ExtractionTests: XCTestCase {
             ]
         )
 
-        let actual = extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: configs.configs), kinds: [.POPUP]) { seed in
+        let actual = await extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: configs.configs), kinds: [.POPUP]) { seed in
             return props
         } isNotInFrequency: { experimentId, frequency in
             return true
@@ -167,7 +167,7 @@ final class ExtractionTests: XCTestCase {
         XCTAssertEqual(configs.configs?[1].id, actual?.id)
     }
     
-    func testExtractExperimentConfigMatchedToPropertiesWhenItsScheduled() throws {
+    func testExtractExperimentConfigMatchedToPropertiesWhenItsScheduled() async throws {
         let now = getCurrentDate()
         let dayM1 = now.addingTimeInterval(-1000)
         let day1 = now.addingTimeInterval(1000)
@@ -194,7 +194,7 @@ final class ExtractionTests: XCTestCase {
             ]
         )
         
-        let actual = extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: configs.configs), kinds: [.POPUP]) { seed in
+        let actual = await extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: configs.configs), kinds: [.POPUP]) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true
@@ -205,7 +205,7 @@ final class ExtractionTests: XCTestCase {
         XCTAssertEqual("now", actual?.id)
     }
 
-    func testExtractExperimentConfigMatchedToPropertiesSelectsHighestPriority() throws {
+    func testExtractExperimentConfigMatchedToPropertiesSelectsHighestPriority() async throws {
         let configs = ExperimentConfigs(
             configs: [
                 ExperimentConfig(id: "low", kind: .POPUP, priority: 1),
@@ -214,7 +214,7 @@ final class ExtractionTests: XCTestCase {
             ]
         )
 
-        let actual = extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP]) { seed in
+        let actual = await extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP]) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true
@@ -225,7 +225,7 @@ final class ExtractionTests: XCTestCase {
         XCTAssertEqual("high", actual?.id)
     }
 
-    func testExtractExperimentConfigMatchedToPropertiesTiedPriorityPrefersLatestStartDate() throws {
+    func testExtractExperimentConfigMatchedToPropertiesTiedPriorityPrefersLatestStartDate() async throws {
         let now = getCurrentDate()
         let earlier = now.addingTimeInterval(-2000)
         let later = now.addingTimeInterval(-1000)
@@ -237,7 +237,7 @@ final class ExtractionTests: XCTestCase {
             ]
         )
 
-        let actual = extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP]) { seed in
+        let actual = await extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP]) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true
@@ -248,7 +248,7 @@ final class ExtractionTests: XCTestCase {
         XCTAssertEqual("later", actual?.id)
     }
 
-    func testExtractExperimentConfigMatchedToPropertiesNilPriorityRankedLowest() throws {
+    func testExtractExperimentConfigMatchedToPropertiesNilPriorityRankedLowest() async throws {
         let configs = ExperimentConfigs(
             configs: [
                 ExperimentConfig(id: "no_priority", kind: .POPUP),
@@ -256,7 +256,7 @@ final class ExtractionTests: XCTestCase {
             ]
         )
 
-        let actual = extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP]) { seed in
+        let actual = await extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP]) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true
@@ -267,7 +267,7 @@ final class ExtractionTests: XCTestCase {
         XCTAssertEqual("has_priority", actual?.id)
     }
 
-    func testExtractExperimentConfigMatchedToPropertiesFiltersbyKind() throws {
+    func testExtractExperimentConfigMatchedToPropertiesFiltersbyKind() async throws {
         let configs = ExperimentConfigs(
             configs: [
                 ExperimentConfig(id: "popup", kind: .POPUP),
@@ -275,7 +275,7 @@ final class ExtractionTests: XCTestCase {
             ]
         )
 
-        let popupOnly = extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP]) { seed in
+        let popupOnly = await extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP]) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true
@@ -284,7 +284,7 @@ final class ExtractionTests: XCTestCase {
         }
         XCTAssertEqual("popup", popupOnly?.id)
 
-        let tooltipOnly = extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.TOOLTIP]) { seed in
+        let tooltipOnly = await extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.TOOLTIP]) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true
@@ -293,7 +293,7 @@ final class ExtractionTests: XCTestCase {
         }
         XCTAssertEqual("tooltip", tooltipOnly?.id)
 
-        let both = extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP, .TOOLTIP]) { seed in
+        let both = await extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.POPUP, .TOOLTIP]) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true
@@ -302,7 +302,7 @@ final class ExtractionTests: XCTestCase {
         }
         XCTAssertNotNil(both)
 
-        let configOnly = extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.CONFIG]) { seed in
+        let configOnly = await extractExperimentConfigMatchedToProperties(configs: configs, kinds: [.CONFIG]) { seed in
             return []
         } isNotInFrequency: { experimentId, frequency in
             return true

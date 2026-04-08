@@ -17,11 +17,11 @@ let nativebrikSession: URLSession = {
     return URLSession(configuration: sessionConfig)
 }()
 
-public enum CacheStorage {
+public enum CacheStorage : Sendable {
     case INMEMORY
 }
 
-public class NubrickCachePolicy {
+public final class NubrickCachePolicy : Sendable {
     let cacheTime: TimeInterval
     let staleTime: TimeInterval
     let storage: CacheStorage

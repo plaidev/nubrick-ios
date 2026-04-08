@@ -21,8 +21,8 @@ final class RemoteConfigTests: XCTestCase {
         let expectation = expectation(description: "Fetch remote config for test")
 
         var didLoadingPhaseCome = false
-        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
-        Nubrick.remoteConfig(REMOTE_CONFIG_ID_1_FOR_TEST) { phase in
+        NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
+        NubrickSDK.remoteConfig(REMOTE_CONFIG_ID_1_FOR_TEST) { phase in
             switch phase {
             case .completed(let variant):
                 let message = variant.getAsString("message")
@@ -49,8 +49,8 @@ final class RemoteConfigTests: XCTestCase {
         let expectation = expectation(description: "Fetch non-exist remote config for test")
 
         var didLoadingPhaseCome = false
-        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
-        Nubrick.remoteConfig(UNKNOWN_EXPERIMENT_ID) { phase in
+        NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
+        NubrickSDK.remoteConfig(UNKNOWN_EXPERIMENT_ID) { phase in
             switch phase {
             case .completed:
                 XCTFail("should found the remote config")

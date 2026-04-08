@@ -128,7 +128,7 @@ Morondava is a charming coastal town located on the western coast of Madagascar.
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Nubrick.embedding("HEADER_INFORMATION") { phase in
+            NubrickSDK.embedding("HEADER_INFORMATION") { phase in
                     switch phase {
                     case .completed(let view):
                         view.frame(height: 60)
@@ -138,7 +138,7 @@ Morondava is a charming coastal town located on the western coast of Madagascar.
                 }
             Header()
             ScrollView(.vertical) {
-                Nubrick.embedding("TOP_COMPONENT") { phase in
+                NubrickSDK.embedding("TOP_COMPONENT") { phase in
                         switch phase {
                         case .completed(let view):
                             view.frame(width: nil, height: 280)
@@ -161,7 +161,7 @@ struct ContentView: View {
 }
 
 #Preview {
-    Nubrick.initialize(projectId: "cgv3p3223akg00fod19g")
+    NubrickSDK.initialize(projectId: "cgv3p3223akg00fod19g")
     NubrickProvider {
         ContentView()
     }

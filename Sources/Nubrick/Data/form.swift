@@ -9,7 +9,8 @@ import Foundation
 
 typealias FormValueListener = ([String: Any]) -> Void
 
-protocol FormRepository {
+@MainActor
+protocol FormRepository : Sendable {
     func getFormData() -> [String:Any]
     func setValue(key: String, value: Any)
     func getValue(key: String) -> Any?
@@ -17,7 +18,8 @@ protocol FormRepository {
     func removeFormValueListener(id: String)
 }
 
-class FormRepositoryImpl: FormRepository {
+@MainActor
+final class FormRepositoryImpl: FormRepository {
     private var map: [String: Any] = [:]
     private var listeners: [String: FormValueListener] = [:]
     

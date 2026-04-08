@@ -23,11 +23,11 @@ enum HttpRequestAssertionError: Error {
     case unexpected
 }
 
-protocol HttpRequestRepository {
+protocol HttpRequestRepository : Sendable {
     func request(req: ApiHttpRequest, assetion: ApiHttpResponseAssertion?) async -> Result<JSONData, NubrickError>
 }
 
-class HttpRequestRepositoryImpl: HttpRequestRepository {
+final class HttpRequestRepositoryImpl: HttpRequestRepository {
     private let intercepter: NubrickHttpRequestInterceptor
     init(intercepter: NubrickHttpRequestInterceptor? = nil) {
         self.intercepter = intercepter ?? { req in return req }

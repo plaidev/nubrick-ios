@@ -55,6 +55,7 @@ private let USER_CUSTOM_PROPERTY_KEY_PREFIX = "NATIVEBRIK_CUSTOM_"
 private let USER_SEED_KEY: String = "NATIVEBRIK_USER_SEED"
 private let USER_SEED_MAX: Int = 100000000
 
+@MainActor
 public class NubrickUser {
     private var properties: [String: String]
     private var customProperties: [String: String]

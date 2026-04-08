@@ -59,7 +59,7 @@ public enum NubrickBridge {
         trackCrashes: Bool = true,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
     ) {
-        Nubrick.initializeInternal(
+        NubrickSDK.initializeInternal(
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
@@ -74,12 +74,12 @@ public enum NubrickBridge {
 
     public static func embeddingForFlutterBridge(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
-        guard let runtime = Nubrick.requireRuntime() else {
+        guard let runtime = NubrickSDK.requireRuntime() else {
             return UIView()
         }
         return runtime.embeddingForFlutterBridge(
@@ -97,7 +97,7 @@ public enum NubrickBridge {
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> NubrickBridgedViewAccessor {
-        guard let runtime = Nubrick.requireRuntime() else {
+        guard let runtime = NubrickSDK.requireRuntime() else {
             return NubrickBridgedViewAccessor(uiview: UIView())
         }
         return runtime.renderUIView(

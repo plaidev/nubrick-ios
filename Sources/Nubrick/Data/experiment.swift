@@ -7,12 +7,12 @@
 
 import Foundation
 
-protocol ExperimentRepository2 {
+protocol ExperimentRepository2 : Sendable {
     func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NubrickError>
     func fetchTriggerExperimentConfigs(name: String) async -> Result<ExperimentConfigs, NubrickError>
 }
 
-class ExperimentRepositoryImpl: ExperimentRepository2 {
+final class ExperimentRepositoryImpl: ExperimentRepository2 {
     private let config: Config
     private let cache: CacheStore
     init(config: Config, cache: CacheStore) {

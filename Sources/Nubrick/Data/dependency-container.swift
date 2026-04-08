@@ -8,7 +8,7 @@
 import Foundation
 import CoreData
 
-struct NubrickDependencyContainer {
+struct NubrickDependencyContainer : Sendable {
     let config: Config
     let user: NubrickUser
     let experimentRepository: ExperimentRepository2
@@ -49,7 +49,8 @@ struct NubrickDependencyContainer {
         self.actionHandler = actionHandler
     }
 
-    func makeRenderContext(arguments: Any? = nil) -> RenderContext {
+    @MainActor
+    func makeRenderContext(arguments: NubrickArguments? = nil) -> RenderContext {
         RenderContextImpl(
             config: config,
             user: user,

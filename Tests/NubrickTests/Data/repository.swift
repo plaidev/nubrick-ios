@@ -53,8 +53,9 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 }
 
+@MainActor
 final class RenderContextTests: XCTestCase {
-    private func makeRenderContext(arguments: Any? = nil) -> RenderContext {
+    private func makeRenderContext(arguments: NubrickArguments? = nil) -> RenderContext {
         let db = createNativebrikCoreDataHelper()
         let user = NubrickUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
@@ -68,27 +69,22 @@ final class RenderContextTests: XCTestCase {
         return dependencies.makeRenderContext(arguments: arguments)
     }
 
-    func testShouldCallApiHttpRequest() throws {
+    func testShouldCallApiHttpRequest() async throws {
         let renderContext = makeRenderContext()
-        let expectation = expectation(description: "Request should be expected.")
 
-        Task {
-            let result = await renderContext.fetchRemoteConfig(experimentId: REMOTE_CONFIG_ID_1_FOR_TEST)
-            switch result {
-            case .success:
-                XCTAssertTrue(true)
-            case .failure(let err):
-                XCTFail("should found the remote config \(err)")
-            }
-            expectation.fulfill()
+        let result = await renderContext.fetchRemoteConfig(experimentId: REMOTE_CONFIG_ID_1_FOR_TEST)
+        switch result {
+        case .success:
+            XCTAssertTrue(true)
+        case .failure(let err):
+            XCTFail("should found the remote config \(err)")
         }
-
-        wait(for: [expectation], timeout: 30)
     }
 
     func testMakeContextShouldApplyArgumentsPerContext() {
         let root = makeRenderContext()
-        let child = root.makeContext(arguments: ["bannerId": "banner_123"])
+        let arguments: NubrickArguments = ["bannerId": "banner_123"]
+        let child = root.makeContext(arguments: arguments)
 
         let rootVariable = root.createVariableForTemplate(data: nil, properties: nil)
         let childVariable = child.createVariableForTemplate(data: nil, properties: nil)
@@ -102,11 +98,15 @@ final class RenderContextTests: XCTestCase {
         root.setFormValue(key: "email", value: "root@example.com")
 
         let child = root.makeContext(arguments: nil)
-        XCTAssertEqual("root@example.com", root.getFormValue(key: "email") as? String)
-        XCTAssertNil(child.getFormValue(key: "email"))
+        let rootEmailBefore = root.getFormValue(key: "email") as? String
+        let childEmailBefore = child.getFormValue(key: "email") as? String
+        XCTAssertEqual("root@example.com", rootEmailBefore)
+        XCTAssertNil(childEmailBefore)
 
         child.setFormValue(key: "email", value: "child@example.com")
-        XCTAssertEqual("root@example.com", root.getFormValue(key: "email") as? String)
-        XCTAssertEqual("child@example.com", child.getFormValue(key: "email") as? String)
+        let rootEmailAfter = root.getFormValue(key: "email") as? String
+        let childEmailAfter = child.getFormValue(key: "email") as? String
+        XCTAssertEqual("root@example.com", rootEmailAfter)
+        XCTAssertEqual("child@example.com", childEmailAfter)
     }
 }

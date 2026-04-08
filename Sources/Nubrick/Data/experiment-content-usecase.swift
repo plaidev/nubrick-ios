@@ -13,7 +13,7 @@ private struct ExtractedVariant {
     let variant: ExperimentVariant
 }
 
-protocol ExperimentContentUseCase {
+protocol ExperimentContentUseCase : Sendable {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
@@ -65,8 +65,8 @@ final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
         guard let variantId = extracted.variant.id else {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
-
-        self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
+        
+        await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
         ))
         self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
@@ -79,7 +79,7 @@ final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
     }
 
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError> {
-        self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
+        await self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
         await self.databaseRepository.appendUserEvent(name: trigger)
 
         var configs: ExperimentConfigs
@@ -102,7 +102,7 @@ final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
 
-        self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
+        await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
         ))
         // Tooltip is a Flutter-only flow. Persist tooltip history only after
@@ -144,7 +144,7 @@ final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
 
-        self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
+        await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
         ))
         self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
@@ -152,23 +152,27 @@ final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
         return Result.success((extracted.experimentId, extracted.variant))
     }
 
+    
     private func extractVariant(configs: ExperimentConfigs, kinds: [ExperimentKind]) async -> Result<ExtractedVariant, NubrickError> {
-        guard let config = extractExperimentConfigMatchedToProperties(
+        guard let config = await extractExperimentConfigMatchedToProperties(
             configs: configs,
             kinds: kinds,
             properties: { seed in
-                return self.user.toEventProperties(seed: seed)
+                return await self.user.toEventProperties(seed: seed)
             },
             isNotInFrequency: { experimentId, frequency in
-                return self.databaseRepository.isNotInFrequency(experimentId: experimentId, frequency: frequency)
+                return await self.databaseRepository.isNotInFrequency(experimentId: experimentId, frequency: frequency)
             },
             isMatchedToUserEventFrequencyConditions: { conditions in
                 guard let conditions = conditions else {
                     return true
                 }
-                return conditions.allSatisfy { condition in
-                    return self.databaseRepository.isMatchedToUserEventFrequencyCondition(condition: condition)
+                for condition in conditions {
+                    if !(await self.databaseRepository.isMatchedToUserEventFrequencyCondition(condition: condition)) {
+                        return false
+                    }
                 }
+                return true
             }
         ) else {
             return Result.failure(NubrickError.notFound)
@@ -176,7 +180,7 @@ final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
         guard let experimentId = config.id else {
             return Result.failure(NubrickError.irregular("Couldn't get the experiment id"))
         }
-        let normalizedUserRnd = self.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0)
+        let normalizedUserRnd = await self.user.getSeededNormalizedUserRnd(seed: config.seed ?? 0)
         guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUserRnd) else {
             return Result.failure(NubrickError.notFound)
         }

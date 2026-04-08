@@ -7,11 +7,11 @@
 
 import Foundation
 
-protocol ComponentRepository2 {
+protocol ComponentRepository2 : Sendable {
     func fetchComponent(experimentId: String, id: String) async -> Result<UIBlock, NubrickError>
 }
 
-class ComponentRepositoryImpl: ComponentRepository2 {
+final class ComponentRepositoryImpl: ComponentRepository2 {
     private let config: Config
     private let cache: CacheStore
     init(config: Config, cache: CacheStore) {
