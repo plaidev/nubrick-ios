@@ -142,19 +142,21 @@ func getIsDisabled(requiredFields: [String]) -> (([String: Any]) -> Boolean) {
 }
 
 @MainActor
-func configureDisabled(target: UIView, context: UIBlockContext, requiredFields: [String]?) -> FormValueListener? {
+func makeDisabledStateListener(target: UIView, context: UIBlockContext, requiredFields: [String]?) -> FormValueListener? {
     guard let requiredFields = requiredFields, !requiredFields.isEmpty else { return nil }
     let isDisabled = getIsDisabled(requiredFields: requiredFields)
 
-    let handleFormValueChange: FormValueListener = { values in
-        Task { @MainActor in
-            if isDisabled(values) {
-                target.isUserInteractionEnabled = false
-                target.alpha = 0.5
-            } else {
-                target.isUserInteractionEnabled = true
-                target.alpha = 1.0
-            }
+    let handleFormValueChange: FormValueListener = { [weak target] values in
+        guard let target = target else {
+            return
+        }
+
+        if isDisabled(values) {
+            target.isUserInteractionEnabled = false
+            target.alpha = 0.5
+        } else {
+            target.isUserInteractionEnabled = true
+            target.alpha = 1.0
         }
     }
 

@@ -15,6 +15,9 @@ class FlexView: AnimatedUIControl {
     private var isOverflowView = false
     private var respectSafeArea = false
     private var hasActivatedConstraints = false
+    private var formValueListenerId: String?
+    private var formValueListener: FormValueListener?
+    private var hasRegisteredFormValueListener = false
 
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -31,6 +34,7 @@ class FlexView: AnimatedUIControl {
     init(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
         super.init(frame: .zero)
         self.block = block
+        self.context = context
         initialize(block: block, context: context, childFlexShrink: childFlexShrink)
     }
 
@@ -114,18 +118,46 @@ class FlexView: AnimatedUIControl {
             }
         }
         
-        let handleDisabled = configureDisabled(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)
-        
-        guard let id = block.id, let handleDisabled = handleDisabled else {
-            return
+        let handleDisabled = makeDisabledStateListener(
+            target: self,
+            context: context,
+            requiredFields: block.data?.onClick?.requiredFields
+        )
+
+        if let id = block.id, let handleDisabled = handleDisabled {
+            self.formValueListenerId = id
+            self.formValueListener = handleDisabled
         }
-        context.addFormValueListener(id, { values in
-            handleDisabled(values)
-        })
     }
-    
-    isolated deinit {
-        self.context?.removeFormValueListener(self.block.id ?? "")
+
+    private func registerFormValueListenerIfNeeded() {
+        guard !self.hasRegisteredFormValueListener else { return }
+        guard
+            let id = self.formValueListenerId,
+            let listener = self.formValueListener,
+            let context = self.context
+        else { return }
+
+        context.addFormValueListener(id, listener)
+        listener(context.getFormValues())
+        self.hasRegisteredFormValueListener = true
+    }
+
+    private func unregisterFormValueListenerIfNeeded() {
+        guard self.hasRegisteredFormValueListener else { return }
+        guard let id = self.formValueListenerId else { return }
+
+        self.context?.removeFormValueListener(id)
+        self.hasRegisteredFormValueListener = false
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if self.window == nil {
+            self.unregisterFormValueListenerIfNeeded()
+        } else {
+            self.registerFormValueListenerIfNeeded()
+        }
     }
 
     override func layoutSubviews() {
@@ -157,6 +189,9 @@ class FlexOverflowView: UIScrollView {
     private var flexView: UIView = UIView()
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     private var context: UIBlockContext?
+    private var formValueListenerId: String?
+    private var formValueListener: FormValueListener?
+    private var hasRegisteredFormValueListener = false
     
     required init?(coder aDecoder: NSCoder) {
         self.context = nil
@@ -226,18 +261,46 @@ class FlexOverflowView: UIScrollView {
             loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
         }
         
-        let handleDisabled = configureDisabled(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)
-        
-        guard let id = block.id, let handleDisabled = handleDisabled else {
-            return
+        let handleDisabled = makeDisabledStateListener(
+            target: self,
+            context: context,
+            requiredFields: block.data?.onClick?.requiredFields
+        )
+
+        if let id = block.id, let handleDisabled = handleDisabled {
+            self.formValueListenerId = id
+            self.formValueListener = handleDisabled
         }
-        context.addFormValueListener(id, { values in
-            handleDisabled(values)
-        })
     }
-    
-    isolated deinit {
-        self.context?.removeFormValueListener(self.block.id ?? "")
+
+    private func registerFormValueListenerIfNeeded() {
+        guard !self.hasRegisteredFormValueListener else { return }
+        guard
+            let id = self.formValueListenerId,
+            let listener = self.formValueListener,
+            let context = self.context
+        else { return }
+
+        context.addFormValueListener(id, listener)
+        listener(context.getFormValues())
+        self.hasRegisteredFormValueListener = true
+    }
+
+    private func unregisterFormValueListenerIfNeeded() {
+        guard self.hasRegisteredFormValueListener else { return }
+        guard let id = self.formValueListenerId else { return }
+
+        self.context?.removeFormValueListener(id)
+        self.hasRegisteredFormValueListener = false
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if self.window == nil {
+            self.unregisterFormValueListenerIfNeeded()
+        } else {
+            self.registerFormValueListenerIfNeeded()
+        }
     }
 
     @objc func onClicked(sender: ClickListener) {

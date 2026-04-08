@@ -115,6 +115,9 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     // for auto scroll
     private var timer: Timer? = nil
     private var counter: Int = 0
+    private var formValueListenerId: String?
+    private var formValueListener: FormValueListener?
+    private var hasRegisteredFormValueListener = false
     
     required init?(coder aDecoder: NSCoder) {
         self.block = nil
@@ -200,7 +203,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             self.pageControl = pageControl
             self.addSubview(pageControl)
         }
-        
+
         if block.data?.kind == CollectionKind.CAROUSEL && block.data?.fullItemWidth == true && block.data?.autoScroll == true {
             let timeInterval = block.data?.autoScrollInterval ?? 3.0
             DispatchQueue.main.async { [self] in
@@ -208,19 +211,50 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             }
         }
         
-        let handleDisabled = configureDisabled(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)
-        
-        guard let id = block.id, let handleDisabled = handleDisabled else {
-            return
+        let handleDisabled = makeDisabledStateListener(
+            target: self,
+            context: context,
+            requiredFields: block.data?.onClick?.requiredFields
+        )
+
+        if let id = block.id, let handleDisabled = handleDisabled {
+            self.formValueListenerId = id
+            self.formValueListener = handleDisabled
         }
-        context.addFormValueListener(id, { values in
-            handleDisabled(values)
-        })
     }
-    
+
+    private func registerFormValueListenerIfNeeded() {
+        guard !self.hasRegisteredFormValueListener else { return }
+        guard
+            let id = self.formValueListenerId,
+            let listener = self.formValueListener
+        else { return }
+
+        self.context.addFormValueListener(id, listener)
+        listener(self.context.getFormValues())
+        self.hasRegisteredFormValueListener = true
+    }
+
+    private func unregisterFormValueListenerIfNeeded() {
+        guard self.hasRegisteredFormValueListener else { return }
+        guard let id = self.formValueListenerId else { return }
+
+        self.context.removeFormValueListener(id)
+        self.hasRegisteredFormValueListener = false
+    }
+
     isolated deinit {
         self.timer?.invalidate()
-        self.context.removeFormValueListener(self.block?.id ?? "")
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+
+        if self.window == nil {
+            self.unregisterFormValueListenerIfNeeded()
+        } else {
+            self.registerFormValueListenerIfNeeded()
+        }
     }
 
     override func layoutSubviews() {
