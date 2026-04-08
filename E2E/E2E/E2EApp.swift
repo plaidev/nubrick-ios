@@ -12,7 +12,7 @@ import Nubrick
 @MainActor
 struct E2EApp: App {
     init() {
-        Nubrick.initialize(projectId: "ckto7v223akg00ag3jsg")
+        NubrickSDK.initialize(projectId: "ckto7v223akg00ag3jsg")
     }
 
     var body: some Scene {

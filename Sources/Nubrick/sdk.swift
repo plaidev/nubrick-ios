@@ -67,14 +67,14 @@ private func nubrickWarn(_ message: String) {
 
 @MainActor
 private func dispatchMainActor(_ event: NubrickEvent) {
-    guard let runtime = Nubrick.requireRuntime() else {
+    guard let runtime = NubrickSDK.requireRuntime() else {
         nubrickWarn("Dropping event before initialize: \(event.name)")
         return
     }
     runtime.dispatch(event)
 }
 
-final class Config {
+final class Config : Sendable{
     let projectId: String
     let url: String
     let trackUrl: String
@@ -121,7 +121,9 @@ public struct NubrickEvent: Sendable {
     }
 }
 
-public typealias NubrickHttpRequestInterceptor = (_ request: URLRequest) -> URLRequest
+public typealias NubrickArguments = [String: any Sendable]
+
+public typealias NubrickHttpRequestInterceptor = @Sendable (_ request: URLRequest) -> URLRequest
 
 @MainActor
 final class NubrickCore {
@@ -189,7 +191,9 @@ final class NubrickCore {
     }
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        self.dependencies.trackRepository.sendFlutterCrash(crashEvent)
+        Task {
+            await self.dependencies.trackRepository.sendFlutterCrash(crashEvent)
+        }
     }
 
     func appendTooltipExperimentHistory(experimentId: String) {
@@ -198,10 +202,12 @@ final class NubrickCore {
     }
 
     func processMetricKitCrash(_ crash: MXCrashDiagnostic) {
-        self.dependencies.trackRepository.processMetricKitCrash(crash)
+        Task {
+            await self.dependencies.trackRepository.processMetricKitCrash(crash)
+        }
     }
 
-    private func makeRenderContext(arguments: Any? = nil) -> RenderContext {
+    private func makeRenderContext(arguments: NubrickArguments? = nil) -> RenderContext {
         self.dependencies.makeRenderContext(arguments: arguments)
     }
 
@@ -215,7 +221,7 @@ final class NubrickCore {
 
     func embedding(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
         AnyView(EmbeddingSwiftView(
@@ -228,7 +234,7 @@ final class NubrickCore {
 
     func embedding<V: View>(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: @escaping (_ phase: AsyncEmbeddingPhase) -> V
     ) -> some View {
@@ -244,7 +250,7 @@ final class NubrickCore {
 
     func embeddingUIView(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView {
         EmbeddingUIView(
@@ -258,7 +264,7 @@ final class NubrickCore {
 
     func embeddingUIView(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
@@ -273,7 +279,7 @@ final class NubrickCore {
 
     func remoteConfig(
         _ id: String,
-        phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
+        phase: @escaping (@Sendable (_ phase: RemoteConfigPhase) -> Void)
     ) {
         let _ = RemoteConfig(
             experimentId: id,
@@ -297,7 +303,7 @@ final class NubrickCore {
 
     func embeddingForFlutterBridge(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
@@ -338,13 +344,13 @@ final class NubrickCore {
     }
 }
 
-public enum Nubrick {
+public enum NubrickSDK {
     @MainActor
     private static var runtime: NubrickCore? = nil
 
     @MainActor
     private static func warnUninitialized() {
-        let message = "Nubrick used before Nubrick.initialize(...)."
+        let message = "Nubrick used before NubrickSDK.initialize(...)."
         #if DEBUG
         assertionFailure(message)
         #endif
@@ -373,7 +379,7 @@ public enum Nubrick {
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
         guard runtime == nil else {
-            nubrickWarn("Nubrick.initialize(...) called more than once. Ignoring subsequent call.")
+            nubrickWarn("NubrickSDK.initialize(...) called more than once. Ignoring subsequent call.")
             return
         }
 
@@ -439,7 +445,7 @@ public enum Nubrick {
     @MainActor
     public static func embedding(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
         guard let runtime = requireRuntime() else {
@@ -451,7 +457,7 @@ public enum Nubrick {
     @MainActor
     public static func embedding<V: View>(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: @escaping (_ phase: AsyncEmbeddingPhase) -> V
     ) -> some View {
@@ -464,7 +470,7 @@ public enum Nubrick {
     @MainActor
     public static func embeddingUIView(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView {
         guard let runtime = requireRuntime() else {
@@ -476,7 +482,7 @@ public enum Nubrick {
     @MainActor
     public static func embeddingUIView(
         _ id: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView {
@@ -488,7 +494,7 @@ public enum Nubrick {
 
     public static func remoteConfig(
         _ id: String,
-        phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
+        phase: @escaping (@Sendable (_ phase: RemoteConfigPhase) -> Void)
     ) {
         Task { @MainActor in
             guard let runtime = requireRuntime() else {
@@ -546,7 +552,7 @@ public struct NubrickProvider<Content: View>: View {
 
     public var body: some View {
         ZStack(alignment: .top) {
-            Nubrick.overlay()
+            NubrickSDK.overlay()
             content
         }
     }

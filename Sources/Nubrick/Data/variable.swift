@@ -7,12 +7,13 @@
 
 import Foundation
 
+@MainActor
 func _createVariableForTemplate(
     user: NubrickUser? = nil,
     data: Any? = nil,
     properties: [Property]? = nil,
     form: [String: Any]? = nil,
-    arguments: Any? = nil,
+    arguments: NubrickArguments? = nil,
     projectId: String? = nil
 ) -> Any {
     var userData: [String: Any] = [:]

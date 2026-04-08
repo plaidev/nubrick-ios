@@ -16,16 +16,22 @@ public enum NubrickError: Error {
     case other(Error)
 }
 
-protocol RenderContext {
+protocol RenderContext : Sendable {
     @MainActor
     func handleEvent(_ it: UIBlockAction)
-    func makeContext(arguments: Any?) -> RenderContext
+    @MainActor
+    func makeContext(arguments: NubrickArguments?) -> RenderContext
+    @MainActor
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
-
+    @MainActor
     func getFormValue(key: String) -> Any?
+    @MainActor
     func getFormValues() -> [String: Any]
+    @MainActor
     func setFormValue(key: String, value: Any)
+    @MainActor
     func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener)
+    @MainActor
     func removeFormValueListener(_ id: String)
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError>
@@ -34,22 +40,23 @@ protocol RenderContext {
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
-class RenderContextImpl: RenderContext {
+final class RenderContextImpl: RenderContext {
     private let config: Config
     private let user: NubrickUser
     private let actionHandler: UIBlockActionHandler
     private let experimentContentUseCase: ExperimentContentUseCase
     private let httpRequestUseCase: HttpRequestUseCase
     private let formRepository: FormRepository
-    private let arguments: Any?
+    private let arguments: NubrickArguments?
 
+    @MainActor
     init(
         config: Config,
         user: NubrickUser,
         actionHandler: @escaping UIBlockActionHandler,
         experimentContentUseCase: ExperimentContentUseCase,
         httpRequestUseCase: HttpRequestUseCase,
-        arguments: Any? = nil
+        arguments: NubrickArguments? = nil
     ) {
         self.config = config
         self.user = user
@@ -65,7 +72,8 @@ class RenderContextImpl: RenderContext {
         self.actionHandler(it, nil)
     }
 
-    func makeContext(arguments: Any?) -> RenderContext {
+    @MainActor
+    func makeContext(arguments: NubrickArguments?) -> RenderContext {
         return RenderContextImpl(
             config: self.config,
             user: self.user,
@@ -75,7 +83,8 @@ class RenderContextImpl: RenderContext {
             arguments: arguments
         )
     }
-
+    
+    @MainActor
     func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
         return _createVariableForTemplate(
             user: self.user,
@@ -87,21 +96,27 @@ class RenderContextImpl: RenderContext {
         )
     }
 
+    @MainActor
     func getFormValue(key: String) -> Any? {
         return self.formRepository.getValue(key: key)
     }
 
+    @MainActor
     func getFormValues() -> [String: Any] {
         return self.formRepository.getFormData()
     }
 
+    @MainActor
     func setFormValue(key: String, value: Any) {
         self.formRepository.setValue(key: key, value: value)
     }
 
+    @MainActor
     func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
         self.formRepository.addFormValueListener(id: id, listener: listener)
     }
+    
+    @MainActor
     func removeFormValueListener(_ id: String) {
         self.formRepository.removeFormValueListener(id: id)
     }

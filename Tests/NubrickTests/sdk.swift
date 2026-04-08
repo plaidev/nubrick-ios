@@ -13,14 +13,14 @@ import SwiftUI
 final class NubrickClientTests: XCTestCase {
     @MainActor
     func testInitializeNubrickClientWithoutError() throws {
-        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
+        NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
 
         XCTContext.runActivity(named: "initialize and create overlay") { _ in
-            XCTAssertNoThrow(Nubrick.overlayViewController())
+            XCTAssertNoThrow(NubrickSDK.overlayViewController())
         }
 
         XCTContext.runActivity(named: "dispatch event") { _ in
-            XCTAssertNoThrow(Nubrick.dispatch(NubrickEvent("Hello")))
+            XCTAssertNoThrow(NubrickSDK.dispatch(NubrickEvent("Hello")))
         }
     }
 }
@@ -28,7 +28,7 @@ final class NubrickClientTests: XCTestCase {
 final class NubrickProviderTests: XCTestCase {
     struct NubrickConsumerView: View {
         var body: some View {
-            Nubrick.embedding(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
+            NubrickSDK.embedding(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
                 switch phase {
                 default:
                     Text("EXPERIMENT")
@@ -48,7 +48,7 @@ final class NubrickProviderTests: XCTestCase {
 
     @MainActor
     func testNubrickProvider() throws {
-        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
+        NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
         XCTAssertNoThrow(TestView().body)
     }
 }

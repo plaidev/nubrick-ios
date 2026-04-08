@@ -10,8 +10,8 @@ final class EmbeddingUIViewTests: XCTestCase {
         let expectation = expectation(description: "Fetch an embedding for test")
 
         var didLoadingPhaseCome = false
-        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
-        let view = Nubrick.embeddingUIView(EMBEDDING_ID_1_FOR_TEST, onEvent: nil) { phase in
+        NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
+        let view = NubrickSDK.embeddingUIView(EMBEDDING_ID_1_FOR_TEST, onEvent: nil) { phase in
             switch phase {
             case .completed:
                 expectation.fulfill()
@@ -39,8 +39,8 @@ final class EmbeddingUIViewTests: XCTestCase {
         let expectation = expectation(description: "Fetch an embedding for test")
 
         var didLoadingPhaseCome = false
-        Nubrick.initialize(projectId: PROJECT_ID_FOR_TEST)
-        let view = Nubrick.embeddingUIView(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
+        NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
+        let view = NubrickSDK.embeddingUIView(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
             switch phase {
             case .completed:
                 XCTFail("should found the remote config")

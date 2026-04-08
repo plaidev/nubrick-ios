@@ -14,10 +14,10 @@ final class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        Nubrick.initialize(projectId: "cgv3p3223akg00fod19g")
+        NubrickSDK.initialize(projectId: "cgv3p3223akg00fod19g")
 
         // add Nativebrik.overlay at first
-        let overlay = Nubrick.overlayViewController()
+        let overlay = NubrickSDK.overlayViewController()
         self.addChild(overlay)
         self.view.addSubview(overlay.view)
         overlay.didMove(toParent: self)
@@ -30,7 +30,7 @@ final class ViewController: UIViewController {
         ])
 
         // embed nativebrik TOP_COMPONENT
-        let topComponent = Nubrick.embeddingUIView("TOP_COMPONENT")
+        let topComponent = NubrickSDK.embeddingUIView("TOP_COMPONENT")
         self.view.addSubview(topComponent)
 
         topComponent.translatesAutoresizingMaskIntoConstraints = false

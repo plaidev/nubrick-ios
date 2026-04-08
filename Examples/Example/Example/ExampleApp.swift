@@ -33,7 +33,7 @@ struct ExampleApp: App {
         let trackUrl = (Bundle.main.object(forInfoDictionaryKey: "TRACK_URL") as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        Nubrick.initialize(
+        NubrickSDK.initialize(
             projectId: projectId,
             trackUrl: (trackUrl?.isEmpty == false) ? trackUrl : nil,
             cdnUrl: (cdnUrl?.isEmpty == false) ? cdnUrl : nil,

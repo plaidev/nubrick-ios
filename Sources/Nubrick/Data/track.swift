@@ -146,7 +146,7 @@ public enum CrashSeverity: String {
     }
 }
 
-protocol TrackRepository2 {
+protocol TrackRepository2 : Actor {
     func trackExperimentEvent(_ event: TrackExperimentEvent)
     func trackEvent(_ event: TrackUserEvent)
 
@@ -220,26 +220,20 @@ func imageAddrHex(addressDec: UInt64, offsetIntoTextDec: UInt64) -> String? {
 }
 
 
-class TrackRespositoryImpl: TrackRepository2 {
+actor TrackRespositoryImpl: TrackRepository2 {
     private let maxQueueSize: Int
     private let maxBatchSize: Int
     private let config: Config
     private let user: NubrickUser
-    private let queueLock: NSLock
-    private var timer: Timer?
+    private var flushTask: Task<Void, Never>?
     private var buffer: [TrackEvent]
     init(config: Config, user: NubrickUser) {
         self.maxQueueSize = 300
         self.maxBatchSize = 50
         self.config = config
         self.user = user
-        self.queueLock = NSLock()
         self.buffer = []
-        self.timer = nil
-    }
-    
-    deinit {
-        self.timer?.invalidate()
+        self.flushTask = nil
     }
     
     func trackExperimentEvent(_ event: TrackExperimentEvent) {
@@ -259,46 +253,45 @@ class TrackRespositoryImpl: TrackRepository2 {
         ))
     }
     
-    private func pushToQueue(_ event: TrackEvent) {
-        self.queueLock.withLock {
-            if self.timer == nil {
-                // here, use async not sync. main.sync will break the app.
-                DispatchQueue.main.async {
-                    self.timer?.invalidate()
-                    self.timer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true, block: { _ in
-                        Task(priority: .low) {
-                            try await self.sendAndFlush()
-                        }
-                    })
+    private func scheduleFlushTaskIfNeeded() {
+        guard self.flushTask == nil else {return }
+        self.flushTask = Task {
+            defer {
+                self.flushTask = nil
+                if !self.buffer.isEmpty {
+                    self.scheduleFlushTaskIfNeeded()
                 }
             }
-
-            if self.buffer.count >= self.maxBatchSize {
-                Task(priority: .low) {
-                    try await self.sendAndFlush()
-                }
+            do {
+                try await Task.sleep(nanoseconds: 4 * 1_000_000_000)
+            } catch {
+                return
             }
-            self.buffer.append(event)
-            if self.buffer.count > self.maxQueueSize {
-                let overflow = self.buffer.count - self.maxQueueSize
-                self.buffer.removeFirst(overflow)
-            }
+            await self.sendAndFlush()
         }
     }
     
-    private func sendAndFlush() async throws {
-        // Acquire lock to safely read and clear buffer
-        let events: [TrackEvent] = self.queueLock.withLock {
-            guard self.buffer.count > 0 else {
-                return []
+    private func pushToQueue(_ event: TrackEvent) {
+        scheduleFlushTaskIfNeeded()
+
+        if self.buffer.count >= self.maxBatchSize {
+            Task(priority: .low) {
+                await self.sendAndFlush()
             }
-
-            let events = self.buffer
-            self.buffer = []
-            return events
         }
+        self.buffer.append(event)
+        if self.buffer.count > self.maxQueueSize {
+            let overflow = self.buffer.count - self.maxQueueSize
+            self.buffer.removeFirst(overflow)
+        }
+        
+    }
+    
+    private func sendAndFlush() async {
+        guard self.buffer.count > 0 else { return }
 
-        guard events.count > 0 else { return }
+        let events = self.buffer
+        self.buffer = []
 
         let appId = Bundle.main.bundleIdentifier ?? ""
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
@@ -311,9 +304,12 @@ class TrackRespositoryImpl: TrackRepository2 {
             osVersion: UIDevice.current.systemVersion,
             sdkVersion: nubrickSdkVersion
         )
+        let userID = await MainActor.run {
+            self.user.id
+        }
         let trackRequest = TrackRequest(
             projectId: self.config.projectId,
-            userId: self.user.id,
+            userId: userID,
             timestamp: getCurrentDate().ISO8601Format(),
             events: events,
             meta: trackMeta
@@ -327,17 +323,8 @@ class TrackRespositoryImpl: TrackRepository2 {
             request.httpBody = jsonData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let _ = try await nativebrikSession.data(for: request)
-
-            // Acquire lock before modifying timer
-            self.queueLock.withLock {
-                self.timer?.invalidate()
-                self.timer = nil
-            }
         } catch {
-            // Acquire lock before restoring buffer
-            self.queueLock.withLock {
-                self.buffer.append(contentsOf: events)
-            }
+            self.buffer.append(contentsOf: events)
         }
     }
     
@@ -427,40 +414,37 @@ class TrackRespositoryImpl: TrackRepository2 {
             }
         }
 
-        // Acquire lock before modifying buffer
-        self.queueLock.withLock {
-            // Only send error tracking events for error or fatal severity
+        // Only send error tracking events for error or fatal severity
+        if crashEvent.severity.isErrorLevel {
+            self.buffer.append(TrackEvent(
+                typename: .Event,
+                name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
+                timestamp: getCurrentDate().ISO8601Format(),
+                platform: nil
+            ))
+        }
+        if causedByNativebrik {
             if crashEvent.severity.isErrorLevel {
                 self.buffer.append(TrackEvent(
                     typename: .Event,
-                    name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
+                    name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
                     timestamp: getCurrentDate().ISO8601Format(),
                     platform: nil
                 ))
             }
-            if causedByNativebrik {
-                if crashEvent.severity.isErrorLevel {
-                    self.buffer.append(TrackEvent(
-                        typename: .Event,
-                        name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
-                        timestamp: getCurrentDate().ISO8601Format(),
-                        platform: nil
-                    ))
-                }
-                self.buffer.append(TrackEvent(
-                    typename: .Crash,
-                    timestamp: getCurrentDate().ISO8601Format(),
-                    exceptions: crashEvent.exceptions,
-                    threads: crashEvent.threads,
-                    platform: crashEvent.platform,
-                    flutterSdkVersion: crashEvent.flutterSdkVersion,
-                    severity: crashEvent.severity.rawValue
-                ))
-            }
+            self.buffer.append(TrackEvent(
+                typename: .Crash,
+                timestamp: getCurrentDate().ISO8601Format(),
+                exceptions: crashEvent.exceptions,
+                threads: crashEvent.threads,
+                platform: crashEvent.platform,
+                flutterSdkVersion: crashEvent.flutterSdkVersion,
+                severity: crashEvent.severity.rawValue
+            ))
         }
 
         Task(priority: .utility) {
-            try await self.sendAndFlush()
+            await self.sendAndFlush()
         }
     }
 

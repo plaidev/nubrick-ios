@@ -167,8 +167,6 @@ final class PageView: UIView {
                         await MainActor.run { onHttpSettled?() }
                         // TODO: handle error
                         forwardAction()
-                    default:
-                        break
                     }
                 }
             } else {

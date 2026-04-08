@@ -8,14 +8,14 @@
 import Foundation
 import CoreData
 
-protocol DatabaseRepository {
+protocol DatabaseRepository : Sendable {
     func appendUserEvent(name: String) async
     func appendExperimentHistory(experimentId: String)
-    func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) -> Boolean
-    func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) -> Boolean
+    func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) async -> Boolean
+    func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) async -> Boolean
 }
 
-class DatabaseRepositoryImpl: DatabaseRepository {
+final class DatabaseRepositoryImpl: DatabaseRepository {
     private let persistentContainer: NSPersistentContainer
 
     init(persistentContainer: NSPersistentContainer) {
@@ -54,7 +54,7 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         }
     }
 
-    func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) -> Boolean {
+    func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) async -> Boolean {
         guard let frequency = frequency else {
             return true
         }
@@ -65,27 +65,27 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         // Use helper to compute the date boundary.
         let baseDate: Date = (unit == .MINUTE || unit == .HOUR) ? getCurrentDate() : getToday()
         let after = unit.subtract(value, from: baseDate, calendar: calendar)
-        let count = self.experimentHisotryCountAfter(experimentId: experimentId, after: after)
+        let count = await self.experimentHisotryCountAfter(experimentId: experimentId, after: after)
         return count == 0
     }
 
-    private func experimentHisotryCountAfter(experimentId: String, after: Date) -> Int {
-        let request = ExperimentHistoryEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "experimentId = %@ && timestamp >= %@", experimentId, after as NSDate)
-
+    private func experimentHisotryCountAfter(experimentId: String, after: Date) async -> Int {
         let bgContext = persistentContainer.newBackgroundContext()
-        var count: Int = 0
-        bgContext.performAndWait {
+        let count: Int = await bgContext.perform {
             do {
-                count = try bgContext.count(for: request)
+                let request = ExperimentHistoryEntity.fetchRequest()
+                request.predicate = NSPredicate(format: "experimentId = %@ && timestamp >= %@", experimentId, after as NSDate)
+
+                return try bgContext.count(for: request)
             } catch {
                 print("Couldn’t fetch ExperimentHistoryEntity: \(error)")
+                return 0
             }
         }
         return count
     }
 
-    func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) -> Boolean {
+    func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) async -> Boolean {
         guard let condition = condition else {
             return true
         }
@@ -97,7 +97,7 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         }
         let timeUnit: FrequencyUnit = condition.unit ?? .DAY
 
-        let counts = self.userEventCounts(
+        let counts = await self.userEventCounts(
             name: eventName,
             unit: timeUnit,
             lookbackPeriod: condition.lookbackPeriod,
@@ -116,7 +116,7 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         unit: FrequencyUnit,
         lookbackPeriod: Int?,
         since: String?
-    ) -> [Date: Int] {
+    ) async -> [Date: Int] {
         let calendar = Calendar(identifier: .gregorian)
         let isoFormatter = ISO8601DateFormatter()
 
@@ -139,26 +139,28 @@ class DatabaseRepositoryImpl: DatabaseRepository {
         let today = getCurrentDate()
         let startDate = unit.subtract(periodCount, from: today, calendar: calendar)
 
-        // Fetch events after latest of (startDate, sinceDate).
-        let request = UserEventEntity.fetchRequest()
-        request.predicate = NSPredicate(
-            format: "name = %@ AND timestamp >= %@ AND timestamp >= %@",
-            name,
-            startDate as NSDate,
-            sinceDate as NSDate
-        )
-
         let bgContext = persistentContainer.newBackgroundContext()
-        var counts: [Date: Int] = [:]
-        bgContext.performAndWait {
+        let counts: [Date: Int] = await bgContext.perform {
             do {
+                // Fetch events after latest of (startDate, sinceDate).
+                let request = UserEventEntity.fetchRequest()
+                request.predicate = NSPredicate(
+                    format: "name = %@ AND timestamp >= %@ AND timestamp >= %@",
+                    name,
+                    startDate as NSDate,
+                    sinceDate as NSDate
+                )
+
                 let events = try bgContext.fetch(request) as! [UserEventEntity]
+                var counts: [Date: Int] = [:]
                 for event in events {
                     let bucket = unit.bucketStart(for: event.timestamp, calendar: calendar)
                     counts[bucket, default: 0] += 1
                 }
+                return counts
             } catch {
                 print("Couldn’t fetch UserEventEntity: \(error)")
+                return [:]
             }
         }
         return counts

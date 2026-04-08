@@ -71,10 +71,10 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
 func extractExperimentConfigMatchedToProperties(
     configs: ExperimentConfigs,
     kinds: [ExperimentKind],
-    properties: (_ seed: Int) -> [UserProperty],
-    isNotInFrequency: (_ experimentId: String, _ frequency: ExperimentFrequency?) -> Bool,
-    isMatchedToUserEventFrequencyConditions: (_ conditions: [UserEventFrequencyCondition]?) -> Bool
-) -> ExperimentConfig? {
+    properties: (_ seed: Int) async -> [UserProperty],
+    isNotInFrequency: (_ experimentId: String, _ frequency: ExperimentFrequency?) async -> Bool,
+    isMatchedToUserEventFrequencyConditions: (_ conditions: [UserEventFrequencyCondition]?) async -> Bool
+) async -> ExperimentConfig? {
     guard let configs = configs.configs else {
         return nil
     }
@@ -83,38 +83,39 @@ func extractExperimentConfigMatchedToProperties(
     }
     let now = getCurrentDate()
     // Filter configs that match the requested kinds, are within their time window, and match all conditions
-    let matched = configs.filter { config in
+    var matched: [ExperimentConfig] = []
+    for config in configs {
         guard let configKind = config.kind, kinds.contains(configKind) else {
-            return false
+            continue
         }
         if let startedAt = config.startedAt {
             if let startedAt = parseDateTime(startedAt) {
                 if now.compare(startedAt) == ComparisonResult.orderedAscending {
-                    return false
+                    continue
                 }
             }
         }
         if let endedAt = config.endedAt {
             if let endedAt = parseDateTime(endedAt) {
                 if now.compare(endedAt) == ComparisonResult.orderedDescending {
-                    return false
+                    continue
                 }
             }
         }
 
         let experimentId = config.id ?? ""
-        if !isNotInFrequency(experimentId, config.frequency) {
-            return false
+        if !(await isNotInFrequency(experimentId, config.frequency)) {
+            continue
         }
-        if !isMatchedToUserEventFrequencyConditions(config.eventFrequencyConditions) {
-            return false
+        if !(await isMatchedToUserEventFrequencyConditions(config.eventFrequencyConditions)) {
+            continue
         }
         if let distribution = config.distribution {
-            if !isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0)) {
-                return false
+            if await !isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0)) {
+                continue
             }
         }
-        return true
+        matched.append(config)
     }
     // Pick the highest-priority config. If tied, prefer the latest start date.
     // Configs without a priority are ranked lowest; without a start date, earliest.

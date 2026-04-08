@@ -165,6 +165,7 @@ public enum AsyncEmbeddingPhase {
     case failed(Error)
 }
 
+@MainActor
 class EmbeddingSwiftViewModel: ObservableObject {
     @Published var phase: AsyncEmbeddingPhase = .loading
 

@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import UIKit
 
-public class RemoteConfigVariant {
+public final class RemoteConfigVariant : Sendable {
     public let experimentId: String
     public let variantId: String
     private let configs: [VariantConfig]
@@ -84,7 +84,7 @@ public class RemoteConfigVariant {
     @MainActor
     public func getAsView(
         _ key: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> some View {
         let componentId = self.get(key)
@@ -100,7 +100,7 @@ public class RemoteConfigVariant {
     @MainActor
     public func getAsView<V: View>(
         _ key: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
     ) -> some View {
@@ -118,7 +118,7 @@ public class RemoteConfigVariant {
     @MainActor
     public func getAsUIView(
         _ key: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil
     ) -> UIView? {
         guard let componentId = self.get(key) else {
@@ -138,7 +138,7 @@ public class RemoteConfigVariant {
     @MainActor
     public func getAsUIView(
         _ key: String,
-        arguments: Any? = nil,
+        arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         content: @escaping (_ phase: EmbeddingPhase) -> UIView
     ) -> UIView? {
@@ -157,7 +157,7 @@ public class RemoteConfigVariant {
     }
 }
 
-public enum RemoteConfigPhase {
+public enum RemoteConfigPhase : Sendable {
     case loading
     case completed(RemoteConfigVariant)
     case notFound
@@ -169,7 +169,7 @@ class RemoteConfig {
         experimentId: String,
         renderContext: RenderContext,
         modalViewController: ModalComponentViewController,
-        phase: @escaping ((_ phase: RemoteConfigPhase) -> Void)
+        phase: @escaping  (@Sendable (_ phase: RemoteConfigPhase) -> Void)
     ) {
         phase(.loading)
         Task {
@@ -202,6 +202,7 @@ class RemoteConfig {
     }
 }
 
+@MainActor
 class RemoteConfigSwiftViewModel: ObservableObject {
     @Published var phase: RemoteConfigPhase = .loading
 

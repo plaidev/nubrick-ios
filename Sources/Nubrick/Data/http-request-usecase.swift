@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol HttpRequestUseCase {
+protocol HttpRequestUseCase : Sendable {
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError>
 }
 
