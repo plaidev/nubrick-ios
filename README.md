@@ -3,7 +3,7 @@
 ## Requirements
 
 - iOS 15.0+
-- Xcode 16.0+
+- Xcode 16.1+
 
 # Documentation
 
