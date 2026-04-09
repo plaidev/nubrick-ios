@@ -58,7 +58,7 @@ private final class AppMetrics: NSObject, MXMetricManagerSubscriber {
 // Default backend endpoints (used unless overridden per client instance)
 public let nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
 public let nubrickCdnUrl = "https://cdn.nativebrik.com"
-public let nubrickSdkVersion = "0.16.4"
+public let nubrickSdkVersion = "0.17.0"
 
 @MainActor
 private func openLink(_ event: ComponentEvent) {
