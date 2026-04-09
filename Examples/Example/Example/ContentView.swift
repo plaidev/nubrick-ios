@@ -160,9 +160,24 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    NubrickSDK.initialize(projectId: "cgv3p3223akg00fod19g")
-    NubrickProvider {
-        ContentView()
+@MainActor
+private struct NubrickPreviewRoot: View {
+    private static var didInit = false
+
+    init() {
+        if !Self.didInit {
+            NubrickSDK.initialize(projectId: "cgv3p3223akg00fod19g")
+            Self.didInit = true
+        }
     }
+
+    var body: some View {
+        NubrickProvider {
+            ContentView()
+        }
+    }
+}
+
+#Preview {
+    NubrickPreviewRoot()
 }
