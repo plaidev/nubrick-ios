@@ -77,7 +77,7 @@ public enum NubrickBridge {
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil,
-        content: @escaping (_ phase: EmbeddingPhase) -> UIView
+        content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
     ) -> UIView {
         guard let runtime = NubrickSDK.requireRuntime() else {
             return UIView()

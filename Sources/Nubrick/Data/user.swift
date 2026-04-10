@@ -11,9 +11,9 @@ import UIKit
 typealias ExperimentHistoryRecord = TimeInterval
 
 struct UserProperty {
-    public let name: String
-    public let value: String
-    public let type: UserPropertyType
+    let name: String
+    let value: String
+    let type: UserPropertyType
 }
 
 enum NativebrikUserDefaultsKeys: String {
@@ -56,7 +56,7 @@ private let USER_SEED_KEY: String = "NATIVEBRIK_USER_SEED"
 private let USER_SEED_MAX: Int = 100000000
 
 @MainActor
-public class NubrickUser {
+class NubrickUser {
     private var properties: [String: String]
     private var customProperties: [String: String]
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
@@ -111,20 +111,20 @@ public class NubrickUser {
         self.comeBack()
     }
 
-    public var id: String {
+    var id: String {
         get {
             return self.properties[BuiltinUserProperty.userId.rawValue] ?? ""
         }
     }
 
-    public var retention: Int {
+    var retention: Int {
         get {
             return Int(self.properties[BuiltinUserProperty.retentionPeriod.rawValue] ?? "0") ?? 0
         }
     }
 
     // This is an alias of NubrickUser.setProperties
-    public func set(_ properties: [String: Any]) {
+    func set(_ properties: [String: Any]) {
         for (key, value) in properties {
             if key == BuiltinUserProperty.userId.rawValue {
                 // overwrite userId
@@ -139,11 +139,11 @@ public class NubrickUser {
         }
     }
 
-    public func setProperties(_ properties: [String: Any]) {
+    func setProperties(_ properties: [String: Any]) {
         self.set(properties)
     }
 
-    public func getProperties() -> [String:String] {
+    func getProperties() -> [String:String] {
         var props = self.customProperties
         props[BuiltinUserProperty.userId.rawValue] = self.properties[BuiltinUserProperty.userId.rawValue]
         return props
@@ -152,7 +152,7 @@ public class NubrickUser {
     /**
      print user properties for debug
      */
-    public func debugPrint() {
+    func debugPrint() {
         let props = self.toEventProperties(seed: 0)
         var dic: [String:String] = [:]
         for prop in props {
@@ -165,7 +165,7 @@ public class NubrickUser {
      This function updates the internal state that indicate how many times the user came back to the app / the time user was acitivated lastly.
      This function expects to be called when your app back to foreground from background.
      */
-    public func comeBack() {
+    func comeBack() {
         let now = getCurrentDate()
         let lastBootTime = getCurrentDate()
         self.properties[BuiltinUserProperty.lastBootTime.rawValue] = lastBootTime.ISO8601Format()

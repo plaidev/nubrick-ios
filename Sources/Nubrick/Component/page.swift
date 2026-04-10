@@ -13,7 +13,7 @@ internal import YogaKit
 class ModalPageViewController: UIViewController {
     private var isFirstModal = false
     private let pageView: PageView?
-    public var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
+    var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
 
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(pageView:).")
     required init?(coder: NSCoder) {

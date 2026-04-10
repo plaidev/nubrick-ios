@@ -7,15 +7,6 @@
 
 import Foundation
 
-public enum NubrickError: Error {
-    case notFound
-    case failedToDecode
-    case unexpected
-    case skipRequest
-    case irregular(String)
-    case other(Error)
-}
-
 protocol RenderContext : Sendable {
     @MainActor
     func handleEvent(_ it: UIBlockAction)
