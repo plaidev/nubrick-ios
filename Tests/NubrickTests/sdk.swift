@@ -23,6 +23,30 @@ final class NubrickClientTests: XCTestCase {
             XCTAssertNoThrow(NubrickSDK.dispatch(NubrickEvent("Hello")))
         }
     }
+
+    @MainActor
+    func testUserPropertiesRoundTripThroughSDK() throws {
+        NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
+
+        let originalUserId = NubrickSDK.getUserId() ?? ""
+        let testUserId = "sdk-user-id-test"
+        let testPropertyKey = "sdk_user_api_test_property"
+        let testPropertyValue = "sdk-user-api-value"
+
+        defer {
+            NubrickSDK.setUserId(originalUserId)
+            NubrickSDK.setUserProperties([testPropertyKey: ""])
+        }
+
+        NubrickSDK.setUserProperties([testPropertyKey: testPropertyValue])
+        NubrickSDK.setUserId(testUserId)
+
+        XCTAssertEqual(testUserId, NubrickSDK.getUserId())
+
+        let properties = NubrickSDK.getUserProperties()
+        XCTAssertEqual(testUserId, properties["userId"])
+        XCTAssertEqual(testPropertyValue, properties[testPropertyKey])
+    }
 }
 
 final class NubrickProviderTests: XCTestCase {

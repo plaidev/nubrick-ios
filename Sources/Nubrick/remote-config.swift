@@ -102,7 +102,7 @@ public final class RemoteConfigVariant : Sendable {
         _ key: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        @ViewBuilder content: (@escaping (_ phase: AsyncEmbeddingPhase) -> V)
+        @ViewBuilder content: (@escaping (_ phase: SwiftUIEmbeddingPhase) -> V)
     ) -> some View {
         let componentId = self.get(key)
         return EmbeddingSwiftView(
@@ -140,7 +140,7 @@ public final class RemoteConfigVariant : Sendable {
         _ key: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        content: @escaping (_ phase: EmbeddingPhase) -> UIView
+        content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
     ) -> UIView? {
         guard let componentId = self.get(key) else {
             return nil

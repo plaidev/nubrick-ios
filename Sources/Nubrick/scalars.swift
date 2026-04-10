@@ -25,11 +25,11 @@ struct JSON: Decodable, @unchecked Sendable {
     init?(stringValue: String) { self.stringValue = stringValue }
   }
 
-  public init(value: Any) {
+  init(value: Any) {
     self.value = value
   }
 
-  public init(from decoder: Decoder) throws {
+  init(from decoder: Decoder) throws {
     if let container = try? decoder.container(keyedBy: CodingKeys.self) {
       var result = [String: Any]()
       try container.allKeys.forEach { (key) throws in
@@ -65,7 +65,7 @@ struct JSON: Decodable, @unchecked Sendable {
 }
 
 extension JSON: Encodable {
-  public func encode(to encoder: Encoder) throws {
+  func encode(to encoder: Encoder) throws {
     if let array = value as? [Any] {
       var container = encoder.unkeyedContainer()
       for value in array {
@@ -128,11 +128,11 @@ extension UIBlock: Hashable {
     return value
   }
 
-  public static func == (lhs: UIBlock, rhs: UIBlock) -> Bool {
+  static func == (lhs: UIBlock, rhs: UIBlock) -> Bool {
     return lhs.rawValue == rhs.rawValue
   }
 
-  public func hash(into hasher: inout Hasher) {
+  func hash(into hasher: inout Hasher) {
     hasher.combine(rawValue)
   }
 }

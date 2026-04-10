@@ -10,7 +10,7 @@ import UIKit
 import SwiftUI
 internal import YogaKit
 
-public enum EmbeddingPhase {
+public enum UIKitEmbeddingPhase {
     case loading
     case completed(UIView)
     case notFound
@@ -44,7 +44,7 @@ func convertEvent(_ event: UIBlockAction) -> ComponentEvent {
 }
 
 class EmbeddingUIView: UIView {
-    private let fallback: ((_ phase: EmbeddingPhase) -> UIView)
+    private let fallback: ((_ phase: UIKitEmbeddingPhase) -> UIView)
     private var fallbackView: UIView = UIView()
     
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(experimentId:componentId:renderContext:modalViewController:onEvent:fallback:onSizeChange:).")
@@ -58,7 +58,7 @@ class EmbeddingUIView: UIView {
         renderContext: RenderContext,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
-        fallback: ((_ phase: EmbeddingPhase) -> UIView)?,
+        fallback: ((_ phase: UIKitEmbeddingPhase) -> UIView)?,
         onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil
     ) {
         self.fallback = fallback ?? { (_ phase) in
@@ -121,7 +121,7 @@ class EmbeddingUIView: UIView {
         self.yoga.applyLayout(preservingOrigin: true)
     }
 
-    func renderFallback(phase: EmbeddingPhase) {
+    func renderFallback(phase: UIKitEmbeddingPhase) {
         let view = self.fallback(phase)
         self.fallbackView.removeFromSuperview()
         self.addSubview(view)
@@ -134,7 +134,7 @@ class EmbeddingUIView: UIView {
     }
 }
 
-public struct ComponentView: View {
+struct ComponentView: View {
     @State private var width: CGFloat? = nil
     @State private var height: CGFloat? = nil
 
@@ -143,7 +143,7 @@ public struct ComponentView: View {
     let modalViewController: ModalComponentViewController?
     let onEvent: ((_ event: ComponentEvent) -> Void)?
 
-    public var body: some View {
+    var body: some View {
         RootViewRepresentable(
             root: root,
             renderContext: renderContext,
@@ -158,16 +158,16 @@ public struct ComponentView: View {
     }
 }
 
-public enum AsyncEmbeddingPhase {
+public enum SwiftUIEmbeddingPhase {
     case loading
-    case completed(ComponentView)
+    case completed(AnyView)
     case notFound
     case failed(Error)
 }
 
 @MainActor
 class EmbeddingSwiftViewModel: ObservableObject {
-    @Published var phase: AsyncEmbeddingPhase = .loading
+    @Published var phase: SwiftUIEmbeddingPhase = .loading
 
     func fetchEmbeddingAndUpdatePhase(
         experimentId: String,
@@ -184,11 +184,13 @@ class EmbeddingSwiftViewModel: ObservableObject {
                 case .success(let view):
                     switch view {
                     case .EUIRootBlock(let root):
-                        self?.phase = .completed(ComponentView(
-                            root: root,
-                            renderContext: renderContext,
-                            modalViewController: modalViewController,
-                            onEvent: onEvent
+                        self?.phase = .completed(AnyView(
+                            ComponentView(
+                                root: root,
+                                renderContext: renderContext,
+                                modalViewController: modalViewController,
+                                onEvent: onEvent
+                            )
                         ))
                     default:
                         self?.phase = .notFound
@@ -208,7 +210,7 @@ class EmbeddingSwiftViewModel: ObservableObject {
 }
 
 struct EmbeddingSwiftView: View {
-    @ViewBuilder private let _content: ((_ phase: AsyncEmbeddingPhase) -> AnyView)
+    @ViewBuilder private let _content: ((_ phase: SwiftUIEmbeddingPhase) -> AnyView)
     @ObservedObject private var data: EmbeddingSwiftViewModel
     
     init(
@@ -221,7 +223,7 @@ struct EmbeddingSwiftView: View {
         self._content = { phase in
             switch phase {
             case .completed(let component):
-                return AnyView(component)
+                return component
             case .loading:
                 return AnyView(ProgressView())
             default:
@@ -243,7 +245,7 @@ struct EmbeddingSwiftView: View {
         renderContext: RenderContext,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
-        content: @escaping ((_ phase: AsyncEmbeddingPhase) -> V)
+        content: @escaping ((_ phase: SwiftUIEmbeddingPhase) -> V)
     ) {
         self._content = { phase in
             AnyView(content(phase))
@@ -257,7 +259,7 @@ struct EmbeddingSwiftView: View {
         )
     }
 
-    public var body: some View {
+    var body: some View {
         self._content(data.phase)
     }
 }

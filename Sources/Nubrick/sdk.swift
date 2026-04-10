@@ -56,9 +56,9 @@ private final class AppMetrics: NSObject, MXMetricManagerSubscriber {
 }
 
 // Default backend endpoints (used unless overridden per client instance)
-public let nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
-public let nubrickCdnUrl = "https://cdn.nativebrik.com"
-public let nubrickSdkVersion = "0.17.0"
+let nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
+let nubrickCdnUrl = "https://cdn.nativebrik.com"
+let nubrickSdkVersion = "0.17.0"
 
 @MainActor
 private func openLink(_ event: ComponentEvent) {
@@ -130,6 +130,15 @@ public struct NubrickEvent: Sendable {
     }
 }
 
+public enum NubrickError: Error {
+    case notFound
+    case failedToDecode
+    case unexpected
+    case skipRequest
+    case irregular(String)
+    case other(Error)
+}
+
 public typealias NubrickArguments = [String: any Sendable]
 
 public typealias NubrickHttpRequestInterceptor = @Sendable (_ request: URLRequest) -> URLRequest
@@ -196,6 +205,22 @@ final class NubrickCore {
         }
     }
 
+    func setUserProperties(_ properties: [String: Any]) {
+        self.dependencies.user.setProperties(properties)
+    }
+
+    func setUserId(_ id: String) {
+        self.dependencies.user.set([BuiltinUserProperty.userId.rawValue: id])
+    }
+
+    func getUserId() -> String {
+        self.dependencies.user.id
+    }
+
+    func getUserProperties() -> [String: String] {
+        self.dependencies.user.getProperties()
+    }
+
     func appendTooltipExperimentHistory(experimentId: String) {
         guard !experimentId.isEmpty else { return }
         self.dependencies.databaseRepository.appendExperimentHistory(experimentId: experimentId)
@@ -244,7 +269,7 @@ final class NubrickCore {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        @ViewBuilder content: @escaping (_ phase: AsyncEmbeddingPhase) -> V
+        @ViewBuilder content: @escaping (_ phase: SwiftUIEmbeddingPhase) -> V
     ) -> some View {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
@@ -274,7 +299,7 @@ final class NubrickCore {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        content: @escaping (_ phase: EmbeddingPhase) -> UIView
+        content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
@@ -314,7 +339,7 @@ final class NubrickCore {
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil,
-        content: @escaping (_ phase: EmbeddingPhase) -> UIView
+        content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
@@ -470,7 +495,7 @@ public enum NubrickSDK {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        @ViewBuilder content: @escaping (_ phase: AsyncEmbeddingPhase) -> V
+        @ViewBuilder content: @escaping (_ phase: SwiftUIEmbeddingPhase) -> V
     ) -> some View {
         guard let runtime = requireRuntime() else {
             return AnyView(EmptyView())
@@ -495,7 +520,7 @@ public enum NubrickSDK {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        content: @escaping (_ phase: EmbeddingPhase) -> UIView
+        content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
     ) -> UIView {
         guard let runtime = requireRuntime() else {
             return UIView()
@@ -550,6 +575,38 @@ public enum NubrickSDK {
     @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
     public static func record(exception: NSException) {
         // No-op: MetricKit handles crash reporting automatically on iOS 14+
+    }
+
+    @MainActor
+    public static func setUserProperties(_ properties: [String: Any]) {
+        guard let runtime = requireRuntime() else {
+            return
+        }
+        runtime.setUserProperties(properties)
+    }
+
+    @MainActor
+    public static func setUserId(_ id: String) {
+        guard let runtime = requireRuntime() else {
+            return
+        }
+        runtime.setUserId(id)
+    }
+
+    @MainActor
+    public static func getUserId() -> String? {
+        guard let runtime = requireRuntime() else {
+            return nil
+        }
+        return runtime.getUserId()
+    }
+
+    @MainActor
+    public static func getUserProperties() -> [String: String] {
+        guard let runtime = requireRuntime() else {
+            return [:]
+        }
+        return runtime.getUserProperties()
     }
 }
 
