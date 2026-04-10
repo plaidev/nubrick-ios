@@ -145,8 +145,18 @@ public typealias NubrickHttpRequestInterceptor = @Sendable (_ request: URLReques
 
 @MainActor
 final class NubrickCore {
+    @MainActor
+    private final class BridgeCallbackStore {
+        var onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?
+
+        init(onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?) {
+            self.onEvent = onEvent
+        }
+    }
+
     private let dependencies: NubrickDependencyContainer
     private let overlayVC: OverlayViewController
+    private let bridgeCallbackStore: BridgeCallbackStore
 
     init(
         projectId: String,
@@ -159,11 +169,12 @@ final class NubrickCore {
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
         let user = NubrickUser()
+        let bridgeCallbackStore = BridgeCallbackStore(onEvent: onEvent)
         let actionHandler: UIBlockActionHandler = { action, _ in
             // Terminal sdk pipeline: convert -> side effects -> trigger dispatch.
             let converted = convertEvent(action)
             openLink(converted)
-            onEvent?(converted)
+            bridgeCallbackStore.onEvent?(converted)
 
             guard let name = converted.name,
                   !name.isEmpty else {
@@ -186,6 +197,7 @@ final class NubrickCore {
             httpRequestInterceptor: httpRequestInterceptor
         )
 
+        self.bridgeCallbackStore = bridgeCallbackStore
         self.dependencies = dependencies
         self.overlayVC = OverlayViewController(
             user: user,
@@ -199,6 +211,15 @@ final class NubrickCore {
         self.overlayVC.triggerViewController.dispatch(event: event)
     }
 
+    func updateBridgeCallbacks(
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
+        onDispatch: ((_ event: NubrickEvent) -> Void)?,
+        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+    ) {
+        self.bridgeCallbackStore.onEvent = onEvent
+        self.overlayVC.updateCallbacks(onDispatch: onDispatch, onTooltip: onTooltip)
+    }
+
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
         Task {
             await self.dependencies.trackRepository.sendFlutterCrash(crashEvent)
@@ -209,8 +230,16 @@ final class NubrickCore {
         self.dependencies.user.setProperties(properties)
     }
 
+    func setUserProperty(_ key: String, value: Any) {
+        self.dependencies.user.setProperty(key, value: value)
+    }
+
     func setUserId(_ id: String) {
-        self.dependencies.user.set([BuiltinUserProperty.userId.rawValue: id])
+        self.dependencies.user.setProperty(BuiltinUserProperty.userId.rawValue, value: id)
+    }
+
+    func getUserProperty(_ key: String) -> String? {
+        self.dependencies.user.getProperty(key)
     }
 
     func getUserId() -> String {
@@ -433,6 +462,41 @@ public enum NubrickSDK {
     }
 
     @MainActor
+    static func initializeBridge(
+        projectId: String,
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
+        httpRequestInterceptor: NubrickHttpRequestInterceptor?,
+        trackUrl: String?,
+        cdnUrl: String?,
+        cachePolicy: NubrickCachePolicy?,
+        onDispatch: ((_ event: NubrickEvent) -> Void)?,
+        trackCrashes: Bool,
+        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+    ) {
+        if let runtime {
+            runtime.updateBridgeCallbacks(
+                onEvent: onEvent,
+                onDispatch: onDispatch,
+                onTooltip: onTooltip
+            )
+            nubrickWarn("NubrickBridge.initialize(...) called more than once. Refreshed bridge callbacks on existing singleton.")
+            return
+        }
+
+        initializeInternal(
+            projectId: projectId,
+            onEvent: onEvent,
+            httpRequestInterceptor: httpRequestInterceptor,
+            trackUrl: trackUrl,
+            cdnUrl: cdnUrl,
+            cachePolicy: cachePolicy,
+            onDispatch: onDispatch,
+            trackCrashes: trackCrashes,
+            onTooltip: onTooltip
+        )
+    }
+
+    @MainActor
     public static func initialize(
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
@@ -586,11 +650,27 @@ public enum NubrickSDK {
     }
 
     @MainActor
+    public static func setUserProperty(_ key: String, value: Any) {
+        guard let runtime = requireRuntime() else {
+            return
+        }
+        runtime.setUserProperty(key, value: value)
+    }
+
+    @MainActor
     public static func setUserId(_ id: String) {
         guard let runtime = requireRuntime() else {
             return
         }
         runtime.setUserId(id)
+    }
+
+    @MainActor
+    public static func getUserProperty(_ key: String) -> String? {
+        guard let runtime = requireRuntime() else {
+            return nil
+        }
+        return runtime.getUserProperty(key)
     }
 
     @MainActor

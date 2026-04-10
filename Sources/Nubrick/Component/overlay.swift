@@ -41,6 +41,16 @@ class OverlayViewController: UIViewController {
         self.triggerViewController.initialLoad()
     }
 
+    func updateCallbacks(
+        onDispatch: ((_ event: NubrickEvent) -> Void)?,
+        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+    ) {
+        self.triggerViewController.updateCallbacks(
+            onDispatch: onDispatch,
+            onTooltip: onTooltip
+        )
+    }
+
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:renderContext:onDispatch:onTooltip:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")

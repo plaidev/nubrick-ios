@@ -43,6 +43,14 @@ class TriggerViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
+    func updateCallbacks(
+        onDispatch: ((_ event: NubrickEvent) -> Void)?,
+        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+    ) {
+        self.onDispatch = onDispatch
+        self.onTooltip = onTooltip
+    }
+
     func initialLoad() {
         self.didLoaded = true
 

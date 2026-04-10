@@ -126,21 +126,29 @@ class NubrickUser {
     // This is an alias of NubrickUser.setProperties
     func set(_ properties: [String: Any]) {
         for (key, value) in properties {
-            if key == BuiltinUserProperty.userId.rawValue {
-                // overwrite userId
-                let strValue = String(describing: value)
-                self.properties[BuiltinUserProperty.userId.rawValue] = strValue
-                self.userDB.set(strValue, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
-                continue
-            }
-            let strValue = String(describing: value)
-            self.customProperties[key] = strValue
-            self.userDB.set(strValue, forKey: USER_CUSTOM_PROPERTY_KEY_PREFIX + key)
+            self.setProperty(key, value: value)
         }
     }
 
     func setProperties(_ properties: [String: Any]) {
         self.set(properties)
+    }
+
+    func setProperty(_ key: String, value: Any) {
+        if key == BuiltinUserProperty.userId.rawValue {
+            let strValue = String(describing: value)
+            self.properties[BuiltinUserProperty.userId.rawValue] = strValue
+            self.userDB.set(strValue, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
+            return
+        }
+
+        let strValue = String(describing: value)
+        self.customProperties[key] = strValue
+        self.userDB.set(strValue, forKey: USER_CUSTOM_PROPERTY_KEY_PREFIX + key)
+    }
+
+    func getProperty(_ key: String) -> String? {
+        self.getProperties()[key]
     }
 
     func getProperties() -> [String:String] {

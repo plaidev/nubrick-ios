@@ -59,7 +59,7 @@ public enum NubrickBridge {
         trackCrashes: Bool = true,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
     ) {
-        NubrickSDK.initializeInternal(
+        NubrickSDK.initializeBridge(
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
