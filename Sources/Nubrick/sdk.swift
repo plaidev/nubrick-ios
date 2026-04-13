@@ -55,11 +55,6 @@ private final class AppMetrics: NSObject, MXMetricManagerSubscriber {
     }
 }
 
-// Default backend endpoints (used unless overridden per client instance)
-let nubrickTrackUrl = "https://track.nativebrik.com/track/v1"
-let nubrickCdnUrl = "https://cdn.nativebrik.com"
-let nubrickSdkVersion = "0.17.0"
-
 @MainActor
 private func openLink(_ event: ComponentEvent) {
     guard let link = event.deepLink,
@@ -92,14 +87,12 @@ final class Config : Sendable{
 
     init(
         projectId: String,
-        trackUrl: String? = nil,
-        cdnUrl: String? = nil,
         cachePolicy: NubrickCachePolicy? = nil
     ) {
         self.projectId = projectId
         self.url = "https://nativebrik.com/client"
-        self.trackUrl = trackUrl ?? nubrickTrackUrl
-        self.cdnUrl = cdnUrl ?? nubrickCdnUrl
+        self.trackUrl = NubrickConstants.trackUrl
+        self.cdnUrl = NubrickConstants.cdnUrl
         self.cachePolicy = cachePolicy ?? NubrickCachePolicy()
     }
 }
@@ -162,8 +155,6 @@ final class NubrickCore {
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
-        trackUrl: String?,
-        cdnUrl: String?,
         cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
@@ -184,8 +175,6 @@ final class NubrickCore {
         }
         let config = Config(
             projectId: projectId,
-            trackUrl: trackUrl,
-            cdnUrl: cdnUrl,
             cachePolicy: cachePolicy
         )
         let persistentContainer = createNativebrikCoreDataHelper()
@@ -433,8 +422,6 @@ public enum NubrickSDK {
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
-        trackUrl: String?,
-        cdnUrl: String?,
         cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
@@ -449,8 +436,6 @@ public enum NubrickSDK {
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
-            trackUrl: trackUrl,
-            cdnUrl: cdnUrl,
             cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             onTooltip: onTooltip
@@ -466,8 +451,6 @@ public enum NubrickSDK {
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
-        trackUrl: String?,
-        cdnUrl: String?,
         cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
@@ -487,8 +470,6 @@ public enum NubrickSDK {
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
-            trackUrl: trackUrl,
-            cdnUrl: cdnUrl,
             cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             trackCrashes: trackCrashes,
@@ -501,8 +482,6 @@ public enum NubrickSDK {
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
-        trackUrl: String? = nil,
-        cdnUrl: String? = nil,
         cachePolicy: NubrickCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         trackCrashes: Bool = true
@@ -511,8 +490,6 @@ public enum NubrickSDK {
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
-            trackUrl: trackUrl,
-            cdnUrl: cdnUrl,
             cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             trackCrashes: trackCrashes,

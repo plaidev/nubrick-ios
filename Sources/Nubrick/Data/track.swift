@@ -305,7 +305,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
             cfBundleVersion: cfBundleVersion,
             osName: UIDevice.current.systemName,
             osVersion: UIDevice.current.systemVersion,
-            sdkVersion: nubrickSdkVersion
+            sdkVersion: NubrickConstants.sdkVersion
         )
         let userID = await MainActor.run {
             self.user.id

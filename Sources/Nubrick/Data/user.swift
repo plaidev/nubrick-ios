@@ -88,7 +88,7 @@ class NubrickUser {
         self.userDB.set(firstBootTime, forKey: NativebrikUserDefaultsKeys.FIRST_BOOT_TIME.rawValue)
         self.properties[BuiltinUserProperty.firstBootTime.rawValue] = firstBootTime
 
-        self.properties[BuiltinUserProperty.sdkVersion.rawValue] = nubrickSdkVersion
+        self.properties[BuiltinUserProperty.sdkVersion.rawValue] = NubrickConstants.sdkVersion
         self.properties[BuiltinUserProperty.osName.rawValue] = UIDevice.current.systemName
         self.properties[BuiltinUserProperty.osVersion.rawValue] = UIDevice.current.systemVersion
 
