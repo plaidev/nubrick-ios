@@ -81,8 +81,14 @@ jobs:
       - name: Install sentry-cli
         run: brew install sentry-cli
 
-      - name: Build framework
-        run: make xcframework
+      - name: Update framework MARKETING_VERSION and build framework
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          VERSION_NUMBER="${VERSION#v}"  # strip leading 'v'
+          sed -i '' "s|\(MARKETING_VERSION = \)[^;]*\(;\)|\1${VERSION_NUMBER}\2|g" Nubrick/Nubrick.xcodeproj/project.pbxproj
+          echo "Updated Nubrick MARKETING_VERSION to $VERSION_NUMBER"
+          make xcframework
 
       - name: Upload symbols to Sentry
         env:
@@ -152,17 +158,14 @@ jobs:
           # Create new branch
           git checkout -b "$BRANCH_NAME"
 
-      # --- Update Package.swift, Nubrick.podspec, and SDK version ---
-      - name: Update Package.swift, Nubrick.podspec, and SDK version
+      # --- Commit release metadata updates ---
+      - name: Commit framework version, Package.swift, and Nubrick.podspec updates
         env:
           URL: "https://github.com/${{ github.repository }}/releases/download/${{ env.TAG }}/${{ env.ZIP_NAME }}"
           SHA: ${{ steps.checksum.outputs.sha }}
           VERSION: ${{ inputs.version }}
         run: |
-          # Update SDK version in source code
           VERSION_NUMBER="${VERSION#v}"  # strip leading 'v'
-          sed -i '' "s|\(public let nubrickSdkVersion = \"\)[^\"]*\(\"\)|\1${VERSION_NUMBER}\2|" Sources/Nubrick/sdk.swift
-          echo "Updated SDK version to $VERSION_NUMBER"
 
           # Update Package.swift
           perl -0777 -i -pe '
@@ -194,16 +197,16 @@ jobs:
           sed -i '' "s|\(:sha256[[:space:]]*=>[[:space:]]*\"\)[^\"]*\(\"\)|\1${SHA}\2|" Nubrick.podspec
           echo "Updated Nubrick.podspec: version=$VERSION_NUMBER, URL, and SHA256"
 
-          git add Sources/Nubrick/sdk.swift
+          git add Nubrick/Nubrick.xcodeproj/project.pbxproj
           git add Package.swift
           git add Nubrick.podspec
-          git commit -m "[bot] Release ${TAG}: update version, Package.swift, and Nubrick.podspec"
+          git commit -m "[bot] Release ${TAG}: update framework version, Package.swift, and Nubrick.podspec"
 
       - name: Validate Package.swift syntax
         run: swift package dump-package > /dev/null
 
       - name: Show diffs
-        run: git --no-pager diff HEAD~1 -- Sources/Nubrick/sdk.swift Package.swift Nubrick.podspec || true
+        run: git --no-pager diff HEAD~1 -- Nubrick/Nubrick.xcodeproj/project.pbxproj Package.swift Nubrick.podspec || true
 
       - name: Push release branch and create PR
         id: create_pr
