@@ -83,17 +83,12 @@ final class Config : Sendable{
     let url: String
     let trackUrl: String
     let cdnUrl: String
-    let cachePolicy: NubrickCachePolicy
 
-    init(
-        projectId: String,
-        cachePolicy: NubrickCachePolicy? = nil
-    ) {
+    init(projectId: String) {
         self.projectId = projectId
         self.url = "https://nativebrik.com/client"
         self.trackUrl = NubrickConstants.trackUrl
         self.cdnUrl = NubrickConstants.cdnUrl
-        self.cachePolicy = cachePolicy ?? NubrickCachePolicy()
     }
 }
 
@@ -155,7 +150,6 @@ final class NubrickCore {
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
-        cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
@@ -173,10 +167,7 @@ final class NubrickCore {
             }
             dispatchMainActor(NubrickEvent(name))
         }
-        let config = Config(
-            projectId: projectId,
-            cachePolicy: cachePolicy
-        )
+        let config = Config(projectId: projectId)
         guard let persistentContainer = createNativebrikCoreDataHelper() else {
             return nil
         }
@@ -435,7 +426,6 @@ public enum NubrickSDK {
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
-        cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
@@ -449,7 +439,6 @@ public enum NubrickSDK {
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
-            cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             onTooltip: onTooltip
         ) else {
@@ -472,7 +461,6 @@ public enum NubrickSDK {
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
-        cachePolicy: NubrickCachePolicy?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
@@ -491,7 +479,6 @@ public enum NubrickSDK {
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
-            cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             trackCrashes: trackCrashes,
             onTooltip: onTooltip
@@ -504,7 +491,6 @@ public enum NubrickSDK {
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
-        cachePolicy: NubrickCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         trackCrashes: Bool = true
     ) -> Bool {
@@ -512,7 +498,6 @@ public enum NubrickSDK {
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
-            cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             trackCrashes: trackCrashes,
             onTooltip: nil

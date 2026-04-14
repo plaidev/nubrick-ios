@@ -22,8 +22,7 @@ struct ExampleApp: App {
         }
 
         NubrickSDK.initialize(
-            projectId: projectId,
-            cachePolicy: NubrickCachePolicy(cacheTime: 10 * 60, staleTime: 0)
+            projectId: projectId
         )
     }
 
