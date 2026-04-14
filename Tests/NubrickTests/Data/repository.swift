@@ -55,8 +55,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
 
 @MainActor
 final class RenderContextTests: XCTestCase {
-    private func makeRenderContext(arguments: NubrickArguments? = nil) -> RenderContext {
-        let db = createNativebrikCoreDataHelper()
+    private func makeRenderContext(arguments: NubrickArguments? = nil) throws -> RenderContext {
+        let db = try XCTUnwrap(createNativebrikCoreDataHelper(), "Could not init DB")
         let user = NubrickUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
         let dependencies = NubrickDependencyContainer(
@@ -70,7 +70,7 @@ final class RenderContextTests: XCTestCase {
     }
 
     func testShouldCallApiHttpRequest() async throws {
-        let renderContext = makeRenderContext()
+        let renderContext = try makeRenderContext()
 
         let result = await renderContext.fetchRemoteConfig(experimentId: REMOTE_CONFIG_ID_1_FOR_TEST)
         switch result {
@@ -81,8 +81,8 @@ final class RenderContextTests: XCTestCase {
         }
     }
 
-    func testMakeContextShouldApplyArgumentsPerContext() {
-        let root = makeRenderContext()
+    func testMakeContextShouldApplyArgumentsPerContext() throws {
+        let root = try makeRenderContext()
         let arguments: NubrickArguments = ["bannerId": "banner_123"]
         let child = root.makeContext(arguments: arguments)
 
@@ -93,8 +93,8 @@ final class RenderContextTests: XCTestCase {
         XCTAssertEqual("banner_123", compile("{{ args.bannerId }}", childVariable))
     }
 
-    func testMakeContextShouldIsolateFormState() {
-        let root = makeRenderContext()
+    func testMakeContextShouldIsolateFormState() throws {
+        let root = try makeRenderContext()
         root.setFormValue(key: "email", value: "root@example.com")
 
         let child = root.makeContext(arguments: nil)
