@@ -108,7 +108,6 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     private var isReferenced: Bool = false
     private var data: [Any]? = nil
     private var gesture: ClickListener? = nil
-    private var layout: UICollectionViewFlowLayout? = nil
     private var pageControl: UIPageControl? = nil
     private var collectionView: UICollectionView? = nil
     
@@ -147,7 +146,6 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         super.init(frame: .zero)
 
         let layout = getCollectionLayout(block)
-        self.layout = layout
         let root = UICollectionView(
             frame: CGRect(
                 x: 0,
@@ -326,9 +324,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let width = (self.block?.data?.fullItemWidth == true) ? self.frame.width : CGFloat(self.block?.data?.itemWidth ?? 0)
-        let size = CGSize(width: width, height: CGFloat(self.block?.data?.itemHeight ?? 0))
-        self.layout?.itemSize = size
-        return size
+        return CGSize(width: width, height: CGFloat(self.block?.data?.itemHeight ?? 0))
     }
     
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {

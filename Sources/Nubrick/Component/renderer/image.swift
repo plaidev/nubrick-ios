@@ -222,12 +222,19 @@ func loadAsyncImage(url: String, view: UIView, image: UIImageView) {
 }
 
 func isGif(_ response: URLResponse?) -> Boolean {
-    guard let response = response else {
+    guard let httpResponse = response as? HTTPURLResponse else {
         return false
     }
-    let contentType = (response as! HTTPURLResponse).allHeaderFields["Content-Type"] as? String
+
+    let contentType = httpResponse.allHeaderFields.first { key, _ in
+        guard let key = key as? String else {
+            return false
+        }
+        return key.caseInsensitiveCompare("Content-Type") == .orderedSame
+    }?.value as? String
+
     guard let contentType = contentType else {
         return false
     }
-    return contentType.hasSuffix("gif")
+    return contentType.lowercased().hasSuffix("gif")
 }
