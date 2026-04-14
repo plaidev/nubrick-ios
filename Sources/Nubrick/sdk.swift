@@ -151,7 +151,7 @@ final class NubrickCore {
     private let overlayVC: OverlayViewController
     private let bridgeCallbackStore: BridgeCallbackStore
 
-    init(
+    init?(
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
@@ -177,7 +177,9 @@ final class NubrickCore {
             projectId: projectId,
             cachePolicy: cachePolicy
         )
-        let persistentContainer = createNativebrikCoreDataHelper()
+        guard let persistentContainer = createNativebrikCoreDataHelper() else {
+            return nil
+        }
         let dependencies = NubrickDependencyContainer(
             config: config,
             user: user,
@@ -400,8 +402,13 @@ public enum NubrickSDK {
     fileprivate static var runtime: NubrickCore? = nil
 
     @MainActor
-    private static func warnUninitialized() {
-        let message = "Nubrick used before NubrickSDK.initialize(...)."
+    private static func runtimeUnavailableMessage() -> String {
+        "Nubrick SDK runtime is unavailable. Ensure Nubrick is initialized successfully before using it."
+    }
+
+    @MainActor
+    private static func warnRuntimeUnavailable() {
+        let message = runtimeUnavailableMessage()
         #if DEBUG
         assertionFailure(message)
         #endif
@@ -411,13 +418,19 @@ public enum NubrickSDK {
     @MainActor
     static func requireRuntime() -> NubrickCore? {
         guard let runtime else {
-            warnUninitialized()
+            warnRuntimeUnavailable()
             return nil
         }
         return runtime
     }
 
     @MainActor
+    static func runtimeUnavailableError() -> NubrickError {
+        .irregular(runtimeUnavailableMessage())
+    }
+
+    @MainActor
+    @discardableResult
     static func initializeInternal(
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
@@ -426,27 +439,35 @@ public enum NubrickSDK {
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
-    ) {
+    ) -> Bool {
         guard runtime == nil else {
             nubrickWarn("NubrickSDK.initialize(...) called more than once. Ignoring subsequent call.")
-            return
+            return true
         }
 
-        runtime = NubrickCore(
+        guard let runtime = NubrickCore(
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
             cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             onTooltip: onTooltip
-        )
+        ) else {
+            let message = "NubrickSDK.initialize(...) failed because the local database could not be created."
+            nubrickWarn(message)
+            return false
+        }
+
+        self.runtime = runtime
 
         if trackCrashes {
             AppMetrics.shared.register()
         }
+        return true
     }
 
     @MainActor
+    @discardableResult
     static func initializeBridge(
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
@@ -455,7 +476,7 @@ public enum NubrickSDK {
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
-    ) {
+    ) -> Bool {
         if let runtime {
             runtime.updateBridgeCallbacks(
                 onEvent: onEvent,
@@ -463,10 +484,10 @@ public enum NubrickSDK {
                 onTooltip: onTooltip
             )
             nubrickWarn("NubrickBridge.initialize(...) called more than once. Refreshed bridge callbacks on existing singleton.")
-            return
+            return true
         }
 
-        initializeInternal(
+        return initializeInternal(
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
@@ -478,6 +499,7 @@ public enum NubrickSDK {
     }
 
     @MainActor
+    @discardableResult
     public static func initialize(
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
@@ -485,7 +507,7 @@ public enum NubrickSDK {
         cachePolicy: NubrickCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         trackCrashes: Bool = true
-    ) {
+    ) -> Bool {
         initializeInternal(
             projectId: projectId,
             onEvent: onEvent,
@@ -539,7 +561,7 @@ public enum NubrickSDK {
         @ViewBuilder content: @escaping (_ phase: SwiftUIEmbeddingPhase) -> V
     ) -> some View {
         guard let runtime = requireRuntime() else {
-            return AnyView(EmptyView())
+            return AnyView(content(.failed(runtimeUnavailableError())))
         }
         return AnyView(runtime.embedding(id, arguments: arguments, onEvent: onEvent, content: content))
     }
@@ -564,7 +586,7 @@ public enum NubrickSDK {
         content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
     ) -> UIView {
         guard let runtime = requireRuntime() else {
-            return UIView()
+            return content(.failed(runtimeUnavailableError()))
         }
         return runtime.embeddingUIView(id, arguments: arguments, onEvent: onEvent, content: content)
     }
@@ -575,6 +597,7 @@ public enum NubrickSDK {
     ) {
         Task { @MainActor in
             guard let runtime = requireRuntime() else {
+                phase(.failed(runtimeUnavailableError()))
                 return
             }
             runtime.remoteConfig(id, phase: phase)
@@ -587,7 +610,7 @@ public enum NubrickSDK {
         @ViewBuilder phase: @escaping ((_ phase: RemoteConfigPhase) -> V)
     ) -> some View {
         guard let runtime = requireRuntime() else {
-            return AnyView(EmptyView())
+            return AnyView(phase(.failed(runtimeUnavailableError())))
         }
         return AnyView(runtime.remoteConfigAsView(id, phase: phase))
     }

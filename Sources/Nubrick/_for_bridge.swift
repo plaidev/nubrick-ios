@@ -76,7 +76,7 @@ public enum NubrickBridge {
         content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
     ) -> UIView {
         guard let runtime = NubrickSDK.requireRuntime() else {
-            return UIView()
+            return content(.failed(NubrickSDK.runtimeUnavailableError()))
         }
         return runtime.embeddingForFlutterBridge(
             id,

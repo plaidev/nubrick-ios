@@ -8,6 +8,10 @@
 import Foundation
 import CoreData
 
+private func nubrickDatabaseWarn(_ message: String) {
+    print("[Nubrick] \(message)")
+}
+
 final class ExperimentHistoryEntity: NSManagedObject {
     @NSManaged var experimentId: String
     @NSManaged var timestamp: Date
@@ -64,15 +68,25 @@ final class UserEventEntity: NSManagedObject {
     }
 }
 
-func createNativebrikCoreDataHelper() -> NSPersistentContainer {
+func createNativebrikCoreDataHelper() -> NSPersistentContainer? {
     let model = NSManagedObjectModel()
     model.entities = [UserEventEntity.entityDescription(), ExperimentHistoryEntity.entityDescription()]
     let container = NSPersistentContainer(name: "com.nativebrik.sdk", managedObjectModel: model)
-    
-    container.loadPersistentStores { storeDescription, error in
-        if (error as NSError?) != nil {
-            fatalError("Nativebrik SDK couldn't create a coredata database.")
-        }
+    container.persistentStoreDescriptions.first?.shouldAddStoreAsynchronously = false
+
+    var loadError: Error?
+    container.loadPersistentStores { _, error in
+        loadError = error
     }
+
+    if let loadError {
+        let message = "Couldn't create a persistent Core Data store. Nubrick SDK won't initialize without local database support: \(loadError)"
+        #if DEBUG
+        assertionFailure(message)
+        #endif
+        nubrickDatabaseWarn(message)
+        return nil
+    }
+
     return container
 }
