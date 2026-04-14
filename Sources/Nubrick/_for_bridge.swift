@@ -52,7 +52,6 @@ public enum NubrickBridge {
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
-        cachePolicy: NubrickCachePolicy? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         trackCrashes: Bool = true,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
@@ -61,7 +60,6 @@ public enum NubrickBridge {
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
-            cachePolicy: cachePolicy,
             onDispatch: onDispatch,
             trackCrashes: trackCrashes,
             onTooltip: onTooltip

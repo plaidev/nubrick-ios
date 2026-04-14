@@ -27,12 +27,10 @@ struct NubrickDependencyContainer : Sendable {
         persistentContainer: NSPersistentContainer,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil
     ) {
-        let cache = CacheStore(policy: config.cachePolicy)
-
         self.config = config
         self.user = user
-        self.experimentRepository = ExperimentRepositoryImpl(config: config, cache: cache)
-        self.componentRepository = ComponentRepositoryImpl(config: config, cache: cache)
+        self.experimentRepository = ExperimentRepositoryImpl(config: config)
+        self.componentRepository = ComponentRepositoryImpl(config: config)
         self.trackRepository = TrackRespositoryImpl(config: config, user: user)
         self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
         self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: httpRequestInterceptor)

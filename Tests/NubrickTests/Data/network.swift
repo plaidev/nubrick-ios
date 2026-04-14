@@ -10,47 +10,16 @@ import Foundation
 import XCTest
 @testable import NubrickLocal
 
-final class CacheStoreTests: XCTestCase {
-    private var cache: CacheStore!
-    
-    func testSetAndGetCache() async {
-        cache = CacheStore(policy: NubrickCachePolicy())
-        let data = "testData".data(using: .utf8)!
-        await cache.set(key: "testKey", data: data)
-        let cacheObject = await cache.get(key: "testKey")
-        XCTAssertNotNil(cacheObject)
-        XCTAssertEqual(cacheObject?.data, data)
-    }
-    
-//    func testCacheExpired() {
-//        cache = CacheStore(policy: NubrickCachePolicy())
-//        let data = "testData".data(using: .utf8)!
-//        cache.set(key: "testKey", data: data)
-//        __for_test_sync_datetime_offset(offset: 33 * 60 * 60 * 1000) // FIXME: set +9:00 for ci runtime
-//        let cacheObject = cache.get(key: "testKey")
-//        XCTAssertNil(cacheObject)
-//    }
-//    
-//    func testInvalidateCache() {
-//        cache = CacheStore(policy: NubrickCachePolicy())
-//        let data = "testData".data(using: .utf8)!
-//        cache.set(key: "testKey", data: data)
-//        cache.invalidate(key: "testKey")
-//        let cacheObject = cache.get(key: "testKey")
-//        XCTAssertNil(cacheObject)
-//    }
-}
-
-final class GetDataTest: XCTestCase {
-    func testGetDataAndCached() async {
-        let cache = CacheStore(policy: NubrickCachePolicy(staleTime: 60))
+final class GetDataTests: XCTestCase {
+    func testGetDataReturnsResponse() async {
         let url = URL(string: "https://example.com")!
-        let _ = await getData(url: url, cache: cache)
-        let cached = await cache.get(key: url.absoluteString)
-        XCTAssertNotNil(cached)
-        XCTAssertEqual(cached?.isStale(), false)
-        
-        __for_test_sync_datetime_offset(offset: 60 * 1000 + 9 * 60 * 60 * 1000) // FIXME: set +9:00 for ci runtime
-        XCTAssertEqual(cached?.isStale(), true)
+        let result = await getData(url: url)
+
+        switch result {
+        case .success(let data):
+            XCTAssertFalse(data.isEmpty)
+        case .failure(let error):
+            XCTFail("Expected a response, got \(error)")
+        }
     }
 }

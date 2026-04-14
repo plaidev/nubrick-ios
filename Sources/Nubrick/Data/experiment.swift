@@ -14,10 +14,8 @@ protocol ExperimentRepository2 : Sendable {
 
 final class ExperimentRepositoryImpl: ExperimentRepository2 {
     private let config: Config
-    private let cache: CacheStore
-    init(config: Config, cache: CacheStore) {
+    init(config: Config) {
         self.config = config
-        self.cache = cache
     }
     
     func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NubrickError> {
@@ -25,7 +23,7 @@ final class ExperimentRepositoryImpl: ExperimentRepository2 {
             return Result.failure(NubrickError.irregular("Failed to create URL object"))
         }
         
-        let data = await getData(url: url, syncDateTime: true, cache: self.cache)
+        let data = await getData(url: url, syncDateTime: true)
         switch data {
         case .success(let data):
             let decoder = JSONDecoder()
@@ -44,7 +42,7 @@ final class ExperimentRepositoryImpl: ExperimentRepository2 {
             return Result.failure(NubrickError.irregular("Failed to create URL object"))
         }
         
-        let data = await getData(url: url, syncDateTime: true, cache: self.cache)
+        let data = await getData(url: url, syncDateTime: true)
         switch data {
         case .success(let data):
             let decoder = JSONDecoder()
