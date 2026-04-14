@@ -12,12 +12,15 @@ fileprivate struct TemplatePlaceholder {
     let formatter: String
 }
 
-fileprivate func getPlaceholderRegex() -> NSRegularExpression? {
-    return try? NSRegularExpression(pattern: "\\{\\{[a-zA-Z0-9_\\.-| ]{1,300}\\}\\}", options: .dotMatchesLineSeparators)
-}
+fileprivate let placeholderRegex: NSRegularExpression? = {
+    try? NSRegularExpression(
+        pattern: "\\{\\{[a-zA-Z0-9_\\.-| ]{1,300}\\}\\}",
+        options: .dotMatchesLineSeparators
+    )
+}()
 
 fileprivate func isPlaceholder(value: String) -> Bool {
-    return getPlaceholderRegex()?.firstMatch(in: value, options: [], range: NSRange(location: 0, length: value.utf16.count)) != nil
+    return placeholderRegex?.firstMatch(in: value, options: [], range: NSRange(location: 0, length: value.utf16.count)) != nil
 }
 
 fileprivate func getPlaceholder(placeholder: String) -> TemplatePlaceholder? {
@@ -40,7 +43,7 @@ fileprivate func getPlaceholder(placeholder: String) -> TemplatePlaceholder? {
 }
 
 func hasPlaceholderPath(template: String) -> Bool {
-    guard let regex = getPlaceholderRegex() else {
+    guard let regex = placeholderRegex else {
         return false
     }
     let templateAsNsstring = template as NSString
@@ -48,7 +51,7 @@ func hasPlaceholderPath(template: String) -> Bool {
 }
 
 func compile(_ template: String, _ variable: Any?) -> String {
-    guard let regex = getPlaceholderRegex() else {
+    guard let regex = placeholderRegex else {
         return template
     }
     var result = template as NSString
