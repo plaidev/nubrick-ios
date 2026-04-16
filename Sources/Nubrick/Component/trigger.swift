@@ -15,7 +15,7 @@ enum UserDefaultsKeys: String {
 
 class TriggerViewController: UIViewController {
     private let user: NubrickUser
-    private let renderContext: RenderContext
+    private let container: Container
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: ModalRootViewController? = nil
     private var onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
@@ -23,20 +23,20 @@ class TriggerViewController: UIViewController {
     private var didLoaded = false
     private var ignoreFirstUserEventToForegroundEvent = true
 
-    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:renderContext:modalViewController:onDispatch:onTooltip:).")
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:container:modalViewController:onDispatch:onTooltip:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     init(
         user: NubrickUser,
-        renderContext: RenderContext,
+        container: Container,
         modalViewController: ModalComponentViewController?,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
     ) {
         self.user = user
-        self.renderContext = renderContext
+        self.container = container
         self.modalViewController = modalViewController
         self.onDispatch = onDispatch
         self.onTooltip = onTooltip
@@ -106,7 +106,7 @@ class TriggerViewController: UIViewController {
             // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,
             // so we fetch both popups and tooltips when running in Flutter, and popups only otherwise.
             let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
-            let triggerResult = await self.renderContext.fetchTriggerContent(trigger: event.name, kinds: kinds)
+            let triggerResult = await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
             let experimentId: String?
             let kind: ExperimentKind?
             let result: Result<UIBlock, NubrickError>
@@ -145,7 +145,7 @@ class TriggerViewController: UIViewController {
                         } else {
                             let root = ModalRootViewController(
                                 root: root,
-                                renderContext: self.renderContext.makeContext(arguments: nil),
+                                container: self.container.makeContainer(arguments: nil),
                                 modalViewController: self.modalViewController
                             )
                             if let currentVC = self.currentVC {

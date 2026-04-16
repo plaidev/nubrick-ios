@@ -1,8 +1,8 @@
 //
-//  experiment-content-usecase.swift
+//  container.swift
 //  Nubrick
 //
-//  Created by Codex on 2026/04/03.
+//  Created by Ryosuke Suzuki on 2024/03/06.
 //
 
 import Foundation
@@ -13,32 +13,138 @@ private struct ExtractedVariant {
     let variant: ExperimentVariant
 }
 
-protocol ExperimentContentUseCase : Sendable {
+protocol Container : Sendable {
+    @MainActor
+    func handleEvent(_ it: UIBlockAction)
+    @MainActor
+    func makeContainer(arguments: NubrickArguments?) -> Container
+    @MainActor
+    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
+    @MainActor
+    func getFormValue(key: String) -> Any?
+    @MainActor
+    func getFormValues() -> [String: Any]
+    @MainActor
+    func setFormValue(key: String, value: Any)
+    @MainActor
+    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener)
+    @MainActor
+    func removeFormValueListener(_ id: String)
+
+    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
-final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
+final class ContainerImpl: Container {
+    private let config: Config
     private let user: NubrickUser
+    private let actionHandler: UIBlockActionHandler
     private let experimentRepository: ExperimentRepository2
     private let componentRepository: ComponentRepository2
     private let trackRepository: TrackRepository2
     private let databaseRepository: DatabaseRepository
+    private let httpRequestRepository: HttpRequestRepository
+    private let formRepository: FormRepository
+    private let arguments: NubrickArguments?
 
+    @MainActor
     init(
+        config: Config,
         user: NubrickUser,
+        actionHandler: @escaping UIBlockActionHandler,
         experimentRepository: ExperimentRepository2,
         componentRepository: ComponentRepository2,
         trackRepository: TrackRepository2,
-        databaseRepository: DatabaseRepository
+        databaseRepository: DatabaseRepository,
+        httpRequestRepository: HttpRequestRepository,
+        arguments: NubrickArguments? = nil
     ) {
+        self.config = config
         self.user = user
+        self.actionHandler = actionHandler
         self.experimentRepository = experimentRepository
         self.componentRepository = componentRepository
         self.trackRepository = trackRepository
         self.databaseRepository = databaseRepository
+        self.httpRequestRepository = httpRequestRepository
+        self.formRepository = FormRepositoryImpl()
+        self.arguments = arguments
     }
+
+    @MainActor
+    func handleEvent(_ it: UIBlockAction) {
+        self.actionHandler(it, nil)
+    }
+
+    @MainActor
+    func makeContainer(arguments: NubrickArguments?) -> Container {
+        return ContainerImpl(
+            config: self.config,
+            user: self.user,
+            actionHandler: self.actionHandler,
+            experimentRepository: self.experimentRepository,
+            componentRepository: self.componentRepository,
+            trackRepository: self.trackRepository,
+            databaseRepository: self.databaseRepository,
+            httpRequestRepository: self.httpRequestRepository,
+            arguments: arguments
+        )
+    }
+
+    @MainActor
+    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
+        return _createVariableForTemplate(
+            user: self.user,
+            data: data,
+            properties: properties,
+            form: self.formRepository.getFormData(),
+            arguments: self.arguments,
+            projectId: self.config.projectId
+        )
+    }
+
+    @MainActor
+    func getFormValue(key: String) -> Any? {
+        return self.formRepository.getValue(key: key)
+    }
+
+    @MainActor
+    func getFormValues() -> [String: Any] {
+        return self.formRepository.getFormData()
+    }
+
+    @MainActor
+    func setFormValue(key: String, value: Any) {
+        self.formRepository.setValue(key: key, value: value)
+    }
+
+    @MainActor
+    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
+        self.formRepository.addFormValueListener(id: id, listener: listener)
+    }
+
+    @MainActor
+    func removeFormValueListener(_ id: String) {
+        self.formRepository.removeFormValueListener(id: id)
+    }
+
+    // MARK: - HTTP Request
+
+    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError> {
+        let request = ApiHttpRequest(
+            url: compile(req.url ?? "", variable),
+            method: req.method,
+            headers: req.headers?.map { it in
+                return ApiHttpHeader(name: compile(it.name ?? "", variable), value: compile(it.value ?? "", variable))
+            },
+            body: compile(req.body ?? "", variable)
+        )
+        return await self.httpRequestRepository.request(req: request, assetion: assertion)
+    }
+
+    // MARK: - Experiment Content
 
     func fetchEmbedding(experimentId: String, componentId: String? = nil) async -> Result<UIBlock, NubrickError> {
         if let componentId = componentId {
@@ -65,7 +171,7 @@ final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
         guard let variantId = extracted.variant.id else {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
-        
+
         await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
         ))
@@ -152,7 +258,6 @@ final class ExperimentContentUseCaseImpl: ExperimentContentUseCase {
         return Result.success((extracted.experimentId, extracted.variant))
     }
 
-    
     private func extractVariant(configs: ExperimentConfigs, kinds: [ExperimentKind]) async -> Result<ExtractedVariant, NubrickError> {
         guard let config = await extractExperimentConfigMatchedToProperties(
             configs: configs,

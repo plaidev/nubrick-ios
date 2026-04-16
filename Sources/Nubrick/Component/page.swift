@@ -99,7 +99,7 @@ class ModalPageViewController: UIViewController {
 final class PageView: UIView {
     fileprivate let page: UIPageBlock?
     private let props: [Property]?
-    private let renderContext: RenderContext
+    private let container: Container
     private var data: Any? = nil
     private var actionHandler: UIBlockActionHandler? = nil
     private var fullScreenInitialNavItemVisibility = false
@@ -108,7 +108,7 @@ final class PageView: UIView {
 
     private var modalViewController: ModalComponentViewController? = nil
 
-    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(page:props:renderContext:actionHandler:modalViewController:).")
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(page:props:container:actionHandler:modalViewController:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -116,19 +116,19 @@ final class PageView: UIView {
     init(
         page: UIPageBlock?,
         props: [Property]?,
-        renderContext: RenderContext,
+        container: Container,
         actionHandler: UIBlockActionHandler?,
         modalViewController: ModalComponentViewController?
     ) {
         self.page = page
-        self.renderContext = renderContext
+        self.container = container
         self.modalViewController = modalViewController
 
         // build placeholder input. init.props is passed from other pages, and page.data.props are the page.props.
         // so merge them and create self.props.
         self.props = Self.mergeProps(pageProps: page?.data?.props, actionProps: props)
 
-        self.data = renderContext.createVariableForTemplate(data: nil, properties: self.props)
+        self.data = container.createVariableForTemplate(data: nil, properties: self.props)
         super.init(frame: .zero)
 
         let parentActionHandler = actionHandler
@@ -139,7 +139,7 @@ final class PageView: UIView {
 
             let variable = _mergeVariable(
                 base: self.data,
-                self.renderContext.createVariableForTemplate(data: nil, properties: self.props)
+                self.container.createVariableForTemplate(data: nil, properties: self.props)
             )
 
             let assertion = action.httpResponseAssertion
@@ -154,7 +154,7 @@ final class PageView: UIView {
                     guard let self else {
                         return
                     }
-                    let result = await self.renderContext.sendHttpRequest(
+                    let result = await self.container.sendHttpRequest(
                         req: httpRequest,
                         assertion: assertion,
                         variable: variable
@@ -216,9 +216,9 @@ final class PageView: UIView {
         self.renderView()
 
         Task {
-            let variable = self.renderContext.createVariableForTemplate(
+            let variable = self.container.createVariableForTemplate(
                 data: nil, properties: self.props)
-            let result = await self.renderContext.sendHttpRequest(
+            let result = await self.container.sendHttpRequest(
                 req: httpRequest,
                 assertion: nil,
                 variable: variable
@@ -226,7 +226,7 @@ final class PageView: UIView {
             await MainActor.run { [weak self] in
                 switch result {
                 case .success(let response):
-                    self?.data = self?.renderContext.createVariableForTemplate(
+                    self?.data = self?.container.createVariableForTemplate(
                         data: response.data?.value, properties: self?.props)
                 default:
                     break
@@ -244,7 +244,7 @@ final class PageView: UIView {
                 data: renderAs,
                 context: UIBlockContext(
                     UIBlockContextInit(
-                        renderContext: self.renderContext,
+                        container: self.container,
                         variable: self.data,
                         actionHandler: self.actionHandler,
                         loading: self.loading

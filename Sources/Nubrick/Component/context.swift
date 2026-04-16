@@ -10,7 +10,7 @@ import Foundation
 typealias UIBlockActionHandler = @MainActor (_ action: UIBlockAction, _ onHttpSettled: (() -> Void)?) -> Void
 
 struct UIBlockContextInit {
-    var renderContext: RenderContext? = nil
+    var container: Container? = nil
     var variable: Any? = nil
     var childData: Any? = nil
     var properties: [Property]? = nil
@@ -35,12 +35,12 @@ class UIBlockContext {
     private let variable: Any?
     // page properties
     private let properties: [Property]?
-    private let renderContext: RenderContext?
+    private let container: Container?
     private let actionHandler: UIBlockActionHandler?
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
     private var loading: Bool = false
-    
+
     init(_ args: UIBlockContextInit) {
         self.variable = args.variable
         self.properties = args.properties
@@ -48,19 +48,19 @@ class UIBlockContext {
         self.parentClickListener = args.parentClickListener
         self.parentDirection = args.parentDirection
         self.loading = args.loading ?? false
-        self.renderContext = args.renderContext
+        self.container = args.container
     }
 
     func instanciateFrom(_ args: UIBlockContextChildInit) -> UIBlockContext {
         var v = self.variable
         if let childData = args.childData {
             v = _mergeVariable(
-                base: v, self.renderContext?.createVariableForTemplate(data: childData, properties: nil)
+                base: v, self.container?.createVariableForTemplate(data: childData, properties: nil)
             )
         }
         return UIBlockContext(
             UIBlockContextInit(
-                renderContext: self.renderContext,
+                container: self.container,
                 variable: v,
                 properties: args.properties ?? self.properties,
                 actionHandler: args.actionHandler ?? self.actionHandler,
@@ -92,24 +92,24 @@ class UIBlockContext {
     }
 
     func writeToForm(key: String, value: Any) {
-        self.renderContext?.setFormValue(key: key, value: value)
+        self.container?.setFormValue(key: key, value: value)
     }
 
     func getFormValueByKey(key: String) -> Any? {
-        return self.renderContext?.getFormValue(key: key)
+        return self.container?.getFormValue(key: key)
     }
-    
+
     func getFormValues() -> [String: Any] {
-        return self.renderContext?.getFormValues() ?? [:]
+        return self.container?.getFormValues() ?? [:]
     }
-        
-    
+
+
     func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
-        self.renderContext?.addFormValueListener(id, listener)
+        self.container?.addFormValueListener(id, listener)
     }
-    
+
     func removeFormValueListener(_ id: String) {
-        self.renderContext?.removeFormValueListener(id)
+        self.container?.removeFormValueListener(id)
     }
 
     /**
