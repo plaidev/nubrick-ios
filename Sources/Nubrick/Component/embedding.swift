@@ -47,7 +47,7 @@ class EmbeddingUIView: UIView {
     private let fallback: ((_ phase: UIKitEmbeddingPhase) -> UIView)
     private var fallbackView: UIView = UIView()
     
-    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(experimentId:componentId:renderContext:modalViewController:onEvent:fallback:onSizeChange:).")
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(experimentId:componentId:container:modalViewController:onEvent:fallback:onSizeChange:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -55,7 +55,7 @@ class EmbeddingUIView: UIView {
     init(
         experimentId: String,
         componentId: String? = nil,
-        renderContext: RenderContext,
+        container: Container,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
         fallback: ((_ phase: UIKitEmbeddingPhase) -> UIView)?,
@@ -84,7 +84,7 @@ class EmbeddingUIView: UIView {
         self.fallbackView = fallbackView
         
         Task {
-            let result = await renderContext.fetchEmbedding(experimentId: experimentId, componentId: componentId)
+            let result = await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
             
             await MainActor.run { [weak self] in
                 switch result {
@@ -93,7 +93,7 @@ class EmbeddingUIView: UIView {
                     case .EUIRootBlock(let root):
                         let rootView = RootView(
                             root: root,
-                            renderContext: renderContext,
+                            container: container,
                             modalViewController: modalViewController,
                             onEvent: { event in
                                 onEvent?(convertEvent(event))
@@ -139,14 +139,14 @@ struct ComponentView: View {
     @State private var height: CGFloat? = nil
 
     let root: UIRootBlock?
-    let renderContext: RenderContext
+    let container: Container
     let modalViewController: ModalComponentViewController?
     let onEvent: ((_ event: ComponentEvent) -> Void)?
 
     var body: some View {
         RootViewRepresentable(
             root: root,
-            renderContext: renderContext,
+            container: container,
             modalViewController: modalViewController,
             onEvent: { event in
                 onEvent?(convertEvent(event))
@@ -172,12 +172,12 @@ class EmbeddingSwiftViewModel: ObservableObject {
     func fetchEmbeddingAndUpdatePhase(
         experimentId: String,
         componentId: String? = nil,
-        renderContext: RenderContext,
+        container: Container,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?
     ) {
         Task {
-            let result = await renderContext.fetchEmbedding(experimentId: experimentId, componentId: componentId)
+            let result = await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
     
             await MainActor.run { [weak self] in
                 switch result {
@@ -187,7 +187,7 @@ class EmbeddingSwiftViewModel: ObservableObject {
                         self?.phase = .completed(AnyView(
                             ComponentView(
                                 root: root,
-                                renderContext: renderContext,
+                                container: container,
                                 modalViewController: modalViewController,
                                 onEvent: onEvent
                             )
@@ -216,7 +216,7 @@ struct EmbeddingSwiftView: View {
     init(
         experimentId: String,
         componentId: String? = nil,
-        renderContext: RenderContext,
+        container: Container,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?
     ) {
@@ -233,7 +233,7 @@ struct EmbeddingSwiftView: View {
         self.data = EmbeddingSwiftViewModel()
         self.data.fetchEmbeddingAndUpdatePhase(
             experimentId: experimentId,
-            renderContext: renderContext,
+            container: container,
             modalViewController: modalViewController,
             onEvent: onEvent
         )
@@ -242,7 +242,7 @@ struct EmbeddingSwiftView: View {
     init<V: View>(
         experimentId: String,
         componentId: String? = nil,
-        renderContext: RenderContext,
+        container: Container,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
         content: @escaping ((_ phase: SwiftUIEmbeddingPhase) -> V)
@@ -253,7 +253,7 @@ struct EmbeddingSwiftView: View {
         self.data = EmbeddingSwiftViewModel()
         self.data.fetchEmbeddingAndUpdatePhase(
             experimentId: experimentId,
-            renderContext: renderContext,
+            container: container,
             modalViewController: modalViewController,
             onEvent: onEvent
         )

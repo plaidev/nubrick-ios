@@ -15,13 +15,13 @@ class OverlayViewController: UIViewController {
 
     init(
         user: NubrickUser,
-        renderContext: RenderContext,
+        container: Container,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
     ) {
         self.triggerViewController = TriggerViewController(
             user: user,
-            renderContext: renderContext,
+            container: container,
             modalViewController: self.modalForTriggerViewController,
             onDispatch: onDispatch,
             onTooltip: onTooltip
@@ -51,7 +51,7 @@ class OverlayViewController: UIViewController {
         )
     }
 
-    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:renderContext:onDispatch:onTooltip:).")
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:container:onDispatch:onTooltip:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }

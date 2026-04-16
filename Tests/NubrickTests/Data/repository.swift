@@ -54,8 +54,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
 }
 
 @MainActor
-final class RenderContextTests: XCTestCase {
-    private func makeRenderContext(arguments: NubrickArguments? = nil) throws -> RenderContext {
+final class ContainerTests: XCTestCase {
+    private func makeContainer(arguments: NubrickArguments? = nil) throws -> Container {
         let db = try XCTUnwrap(createNativebrikCoreDataHelper(), "Could not init DB")
         let user = NubrickUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
@@ -66,13 +66,13 @@ final class RenderContextTests: XCTestCase {
             persistentContainer: db,
             httpRequestInterceptor: nil
         )
-        return dependencies.makeRenderContext(arguments: arguments)
+        return dependencies.makeContainer(arguments: arguments)
     }
 
     func testShouldCallApiHttpRequest() async throws {
-        let renderContext = try makeRenderContext()
+        let container = try makeContainer()
 
-        let result = await renderContext.fetchRemoteConfig(experimentId: REMOTE_CONFIG_ID_1_FOR_TEST)
+        let result = await container.fetchRemoteConfig(experimentId: REMOTE_CONFIG_ID_1_FOR_TEST)
         switch result {
         case .success:
             XCTAssertTrue(true)
@@ -81,10 +81,10 @@ final class RenderContextTests: XCTestCase {
         }
     }
 
-    func testMakeContextShouldApplyArgumentsPerContext() throws {
-        let root = try makeRenderContext()
+    func testMakeContainerShouldApplyArgumentsPerContext() throws {
+        let root = try makeContainer()
         let arguments: NubrickArguments = ["bannerId": "banner_123"]
-        let child = root.makeContext(arguments: arguments)
+        let child = root.makeContainer(arguments: arguments)
 
         let rootVariable = root.createVariableForTemplate(data: nil, properties: nil)
         let childVariable = child.createVariableForTemplate(data: nil, properties: nil)
@@ -93,11 +93,11 @@ final class RenderContextTests: XCTestCase {
         XCTAssertEqual("banner_123", compile("{{ args.bannerId }}", childVariable))
     }
 
-    func testMakeContextShouldIsolateFormState() throws {
-        let root = try makeRenderContext()
+    func testMakeContainerShouldIsolateFormState() throws {
+        let root = try makeContainer()
         root.setFormValue(key: "email", value: "root@example.com")
 
-        let child = root.makeContext(arguments: nil)
+        let child = root.makeContainer(arguments: nil)
         let rootEmailBefore = root.getFormValue(key: "email") as? String
         let childEmailBefore = child.getFormValue(key: "email") as? String
         XCTAssertEqual("root@example.com", rootEmailBefore)

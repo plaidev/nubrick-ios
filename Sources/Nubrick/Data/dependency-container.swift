@@ -16,8 +16,6 @@ struct NubrickDependencyContainer : Sendable {
     let trackRepository: TrackRepository2
     let databaseRepository: DatabaseRepository
     let httpRequestRepository: HttpRequestRepository
-    let experimentContentUseCase: ExperimentContentUseCase
-    let httpRequestUseCase: HttpRequestUseCase
     private let actionHandler: UIBlockActionHandler
 
     init(
@@ -34,27 +32,20 @@ struct NubrickDependencyContainer : Sendable {
         self.trackRepository = TrackRespositoryImpl(config: config, user: user)
         self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
         self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: httpRequestInterceptor)
-        self.experimentContentUseCase = ExperimentContentUseCaseImpl(
-            user: user,
-            experimentRepository: self.experimentRepository,
-            componentRepository: self.componentRepository,
-            trackRepository: self.trackRepository,
-            databaseRepository: self.databaseRepository
-        )
-        self.httpRequestUseCase = HttpRequestUseCaseImpl(
-            httpRequestRepository: self.httpRequestRepository
-        )
         self.actionHandler = actionHandler
     }
 
     @MainActor
-    func makeRenderContext(arguments: NubrickArguments? = nil) -> RenderContext {
-        RenderContextImpl(
+    func makeContainer(arguments: NubrickArguments? = nil) -> Container {
+        ContainerImpl(
             config: config,
             user: user,
             actionHandler: actionHandler,
-            experimentContentUseCase: experimentContentUseCase,
-            httpRequestUseCase: httpRequestUseCase,
+            experimentRepository: experimentRepository,
+            componentRepository: componentRepository,
+            trackRepository: trackRepository,
+            databaseRepository: databaseRepository,
+            httpRequestRepository: httpRequestRepository,
             arguments: arguments
         )
     }
