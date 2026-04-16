@@ -258,8 +258,6 @@ final class ContainerImpl: Container {
         return Result.success((extracted.experimentId, extracted.variant))
     }
 
-    // MARK: - Private Helpers
-
     private func extractVariant(configs: ExperimentConfigs, kinds: [ExperimentKind]) async -> Result<ExtractedVariant, NubrickError> {
         guard let config = await extractExperimentConfigMatchedToProperties(
             configs: configs,
