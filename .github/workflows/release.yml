@@ -225,27 +225,11 @@ jobs:
 
           echo "Created PR: $PR_URL"
 
-          # Enable auto-merge (requires branch protection rules to allow it)
-          gh pr merge "$BRANCH_NAME" --auto --squash || gh pr merge "$BRANCH_NAME" --auto --merge
+          gh pr merge "$BRANCH_NAME" --squash || gh pr merge "$BRANCH_NAME" --merge
 
-          echo "Waiting for PR to be merged..."
-          # Wait for PR to be merged (max 5 minutes)
-          for i in {1..60}; do
-            if gh pr view "$BRANCH_NAME" --json state --jq '.state' | grep -q "MERGED"; then
-              echo "PR merged successfully"
-
-              # Get the merge commit SHA
-              MERGE_SHA=$(gh pr view "$BRANCH_NAME" --json mergeCommit --jq '.mergeCommit.oid')
-              echo "merge_sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
-              echo "Merge commit: $MERGE_SHA"
-              break
-            fi
-            if [ $i -eq 60 ]; then
-              echo "ERROR: PR was not merged within 5 minutes" >&2
-              exit 1
-            fi
-            sleep 5
-          done
+          MERGE_SHA=$(gh pr view "$BRANCH_NAME" --json mergeCommit --jq '.mergeCommit.oid')
+          echo "merge_sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
+          echo "Merge commit: $MERGE_SHA"
 
       # --- Create the tag on main and publish the release ---
       - name: Create tag and publish release
