@@ -92,6 +92,7 @@ final class Config : Sendable{
     }
 }
 
+@frozen
 public enum EventPropertyType: Sendable {
     case INTEGER
     case STRING
@@ -131,6 +132,7 @@ public typealias NubrickArguments = [String: any Sendable]
 
 public typealias NubrickHttpRequestInterceptor = @Sendable (_ request: URLRequest) -> URLRequest
 
+@frozen
 public enum NubrickSize: Sendable {
     case fixed(CGFloat)
     case fill
