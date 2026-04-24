@@ -131,6 +131,11 @@ public typealias NubrickArguments = [String: any Sendable]
 
 public typealias NubrickHttpRequestInterceptor = @Sendable (_ request: URLRequest) -> URLRequest
 
+public enum NubrickSize: Sendable {
+    case fixed(CGFloat)
+    case fill
+}
+
 @MainActor
 final class NubrickCore {
     @MainActor
@@ -266,13 +271,15 @@ final class NubrickCore {
     func embedding(
         _ id: String,
         arguments: NubrickArguments? = nil,
-        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) -> some View {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
             container: self.makeContainer(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
-            onEvent: onEvent
+            onEvent: onEvent,
+            onSizeChange: onSizeChange
         ))
     }
 
@@ -280,7 +287,8 @@ final class NubrickCore {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        @ViewBuilder content: @escaping (_ phase: SwiftUIEmbeddingPhase) -> V
+        @ViewBuilder content: @escaping (_ phase: SwiftUIEmbeddingPhase) -> V,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) -> some View {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
@@ -288,21 +296,24 @@ final class NubrickCore {
             container: self.makeContainer(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
-            content: content
+            content: content,
+            onSizeChange: onSizeChange
         ))
     }
 
     func embeddingUIView(
         _ id: String,
         arguments: NubrickArguments? = nil,
-        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
             container: self.makeContainer(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
-            fallback: nil
+            fallback: nil,
+            onSizeChange: onSizeChange
         )
     }
 
@@ -310,14 +321,16 @@ final class NubrickCore {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
+        content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
             container: self.makeContainer(arguments: arguments),
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
-            fallback: content
+            fallback: content,
+            onSizeChange: onSizeChange
         )
     }
 
@@ -349,7 +362,7 @@ final class NubrickCore {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil,
         content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
     ) -> UIView {
         EmbeddingUIView(
@@ -530,12 +543,13 @@ public enum NubrickSDK {
     public static func embedding(
         _ id: String,
         arguments: NubrickArguments? = nil,
-        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) -> some View {
         guard let runtime = requireRuntime() else {
             return AnyView(EmptyView())
         }
-        return AnyView(runtime.embedding(id, arguments: arguments, onEvent: onEvent))
+        return AnyView(runtime.embedding(id, arguments: arguments, onEvent: onEvent, onSizeChange: onSizeChange))
     }
 
     @MainActor
@@ -543,24 +557,13 @@ public enum NubrickSDK {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        @ViewBuilder content: @escaping (_ phase: SwiftUIEmbeddingPhase) -> V
+        @ViewBuilder content: @escaping (_ phase: SwiftUIEmbeddingPhase) -> V,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) -> some View {
         guard let runtime = requireRuntime() else {
             return AnyView(content(.failed(runtimeUnavailableError())))
         }
-        return AnyView(runtime.embedding(id, arguments: arguments, onEvent: onEvent, content: content))
-    }
-
-    @MainActor
-    public static func embeddingUIView(
-        _ id: String,
-        arguments: NubrickArguments? = nil,
-        onEvent: ((_ event: ComponentEvent) -> Void)? = nil
-    ) -> UIView {
-        guard let runtime = requireRuntime() else {
-            return UIView()
-        }
-        return runtime.embeddingUIView(id, arguments: arguments, onEvent: onEvent)
+        return AnyView(runtime.embedding(id, arguments: arguments, onEvent: onEvent, content: content, onSizeChange: onSizeChange))
     }
 
     @MainActor
@@ -568,12 +571,26 @@ public enum NubrickSDK {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
+    ) -> UIView {
+        guard let runtime = requireRuntime() else {
+            return UIView()
+        }
+        return runtime.embeddingUIView(id, arguments: arguments, onEvent: onEvent, onSizeChange: onSizeChange)
+    }
+
+    @MainActor
+    public static func embeddingUIView(
+        _ id: String,
+        arguments: NubrickArguments? = nil,
+        onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
+        content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) -> UIView {
         guard let runtime = requireRuntime() else {
             return content(.failed(runtimeUnavailableError()))
         }
-        return runtime.embeddingUIView(id, arguments: arguments, onEvent: onEvent, content: content)
+        return runtime.embeddingUIView(id, arguments: arguments, onEvent: onEvent, content: content, onSizeChange: onSizeChange)
     }
 
     public static func remoteConfig(

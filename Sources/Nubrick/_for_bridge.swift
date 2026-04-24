@@ -70,7 +70,7 @@ public enum NubrickBridge {
         _ id: String,
         arguments: NubrickArguments? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
-        onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil,
         content: @escaping (_ phase: UIKitEmbeddingPhase) -> UIView
     ) -> UIView {
         guard let runtime = NubrickSDK.requireRuntime() else {
