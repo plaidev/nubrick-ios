@@ -59,7 +59,7 @@ class EmbeddingUIView: UIView {
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
         fallback: ((_ phase: UIKitEmbeddingPhase) -> UIView)?,
-        onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
         self.fallback = fallback ?? { (_ phase) in
             switch phase {
@@ -135,13 +135,32 @@ class EmbeddingUIView: UIView {
 }
 
 struct ComponentView: View {
-    @State private var width: CGFloat? = nil
-    @State private var height: CGFloat? = nil
+    @State private var width: NubrickSize = .fill
+    @State private var height: NubrickSize = .fill
 
     let root: UIRootBlock?
     let container: Container
     let modalViewController: ModalComponentViewController?
     let onEvent: ((_ event: ComponentEvent) -> Void)?
+    let onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)?
+
+    private var frameWidth: CGFloat? {
+        switch width {
+        case .fixed(let value):
+            return value
+        case .fill:
+            return nil
+        }
+    }
+
+    private var frameHeight: CGFloat? {
+        switch height {
+        case .fixed(let value):
+            return value
+        case .fill:
+            return nil
+        }
+    }
 
     var body: some View {
         RootViewRepresentable(
@@ -151,10 +170,11 @@ struct ComponentView: View {
             onEvent: { event in
                 onEvent?(convertEvent(event))
             },
-            width: $width, //pass for update
-            height: $height //pass for update
+            onSizeChange: onSizeChange,
+            width: $width,
+            height: $height
         )
-        .frame(width: width, height: height)
+        .frame(width: frameWidth, height: frameHeight)
     }
 }
 
@@ -174,11 +194,11 @@ class EmbeddingSwiftViewModel: ObservableObject {
         componentId: String? = nil,
         container: Container,
         modalViewController: ModalComponentViewController?,
-        onEvent: ((_ event: ComponentEvent) -> Void)?
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
         Task {
             let result = await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
-    
             await MainActor.run { [weak self] in
                 switch result {
                 case .success(let view):
@@ -189,7 +209,8 @@ class EmbeddingSwiftViewModel: ObservableObject {
                                 root: root,
                                 container: container,
                                 modalViewController: modalViewController,
-                                onEvent: onEvent
+                                onEvent: onEvent,
+                                onSizeChange: onSizeChange
                             )
                         ))
                     default:
@@ -218,7 +239,8 @@ struct EmbeddingSwiftView: View {
         componentId: String? = nil,
         container: Container,
         modalViewController: ModalComponentViewController?,
-        onEvent: ((_ event: ComponentEvent) -> Void)?
+        onEvent: ((_ event: ComponentEvent) -> Void)?,
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
         self._content = { phase in
             switch phase {
@@ -235,7 +257,8 @@ struct EmbeddingSwiftView: View {
             experimentId: experimentId,
             container: container,
             modalViewController: modalViewController,
-            onEvent: onEvent
+            onEvent: onEvent,
+            onSizeChange: onSizeChange
         )
     }
 
@@ -245,7 +268,8 @@ struct EmbeddingSwiftView: View {
         container: Container,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
-        content: @escaping ((_ phase: SwiftUIEmbeddingPhase) -> V)
+        content: @escaping ((_ phase: SwiftUIEmbeddingPhase) -> V),
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
         self._content = { phase in
             AnyView(content(phase))
@@ -255,7 +279,8 @@ struct EmbeddingSwiftView: View {
             experimentId: experimentId,
             container: container,
             modalViewController: modalViewController,
-            onEvent: onEvent
+            onEvent: onEvent,
+            onSizeChange: onSizeChange
         )
     }
 

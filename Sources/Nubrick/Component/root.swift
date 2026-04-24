@@ -129,50 +129,58 @@ struct RootViewRepresentable: UIViewRepresentable {
     let container: Container
     let modalViewController: ModalComponentViewController?
     let onEvent: ((_ action: UIBlockAction) -> Void)?
-    @Binding var width: CGFloat?
-    @Binding var height: CGFloat?
+    let onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)?
+    @Binding var width: NubrickSize
+    @Binding var height: NubrickSize
 
     @MainActor
     final class SizeCoordinator {
-        private let w: Binding<CGFloat?>
-        private let h: Binding<CGFloat?>
+        private let w: Binding<NubrickSize>
+        private let h: Binding<NubrickSize>
+        var onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)?
         private var isActive = true
 
-        init(w: Binding<CGFloat?>, h: Binding<CGFloat?>) {
+        init(
+            w: Binding<NubrickSize>,
+            h: Binding<NubrickSize>,
+            onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)?
+        ) {
             self.w = w
             self.h = h
+            self.onSizeChange = onSizeChange
         }
 
         func deactivate() {
             isActive = false
         }
 
-        func report(width: CGFloat?, height: CGFloat?) {
-            Task { @MainActor [weak self] in
-                guard let self, self.isActive else { return }
-                self.w.wrappedValue = width
-                self.h.wrappedValue = height
-            }
+        func report(width: NubrickSize, height: NubrickSize) {
+            guard isActive else { return }
+            w.wrappedValue = width
+            h.wrappedValue = height
+            onSizeChange?(width, height)
         }
     }
 
     func makeCoordinator() -> SizeCoordinator {
-        SizeCoordinator(w: $width, h: $height)
+        SizeCoordinator(w: $width, h: $height, onSizeChange: onSizeChange)
     }
 
 
     func makeUIView(context: Self.Context) -> Self.UIViewType {
-        let onSizeChange : (CGFloat?, CGFloat?) -> Void = { [weak coordinator = context.coordinator] w, h in
-            coordinator?.report(width: w, height: h)
+        let onSizeChange: (NubrickSize, NubrickSize) -> Void = { [weak coordinator = context.coordinator] w, h in
+            Task { @MainActor in
+                coordinator?.report(width: w, height: h)
+            }
         }
         return RootView(
             root: root, container: container, modalViewController: modalViewController,
             onEvent: onEvent, onSizeChange: onSizeChange)
     }
 
-    // データの更新に応じてラップしている UIView を更新する
+    // Update the wrapped UIView when SwiftUI state changes.
     func updateUIView(_ uiView: Self.UIViewType, context: Self.Context) {
-
+        context.coordinator.onSizeChange = onSizeChange
     }
 
     static func dismantleUIView(_ uiView: Self.UIViewType, coordinator: SizeCoordinator) {
@@ -195,7 +203,7 @@ class RootView: UIView {
     private var modalViewController: ModalComponentViewController? = nil
     private let container: Container
     // callback to transmit size to SwiftUI
-    var onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)?
+    var onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)?
 
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(root:container:modalViewController:onEvent:onNextTooltip:onDismiss:onSizeChange:).")
     required init?(coder: NSCoder) {
@@ -209,7 +217,7 @@ class RootView: UIView {
         onEvent: ((_ action: UIBlockAction) -> Void)?,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil,
-        onSizeChange: ((_ width: CGFloat?, _ height: CGFloat?) -> Void)? = nil
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
         self.id = root?.id ?? ""
         self.container = container
@@ -339,8 +347,10 @@ class RootView: UIView {
             )
         case .COMPONENT:
             // in case of embedding update size for swiftui
-            let width = page?.data?.frameWidth.map(CGFloat.init)
-            let height = page?.data?.frameHeight.map(CGFloat.init)
+            let frameWidth = page?.data?.frameWidth ?? 0
+            let frameHeight = page?.data?.frameHeight ?? 0
+            let width: NubrickSize = frameWidth == 0 ? .fill : .fixed(CGFloat(frameWidth))
+            let height: NubrickSize = frameHeight == 0 ? .fill : .fixed(CGFloat(frameHeight))
             self.onSizeChange?(width, height)
             fallthrough
         default:
@@ -369,9 +379,16 @@ class RootView: UIView {
         }
         switch page?.data?.kind {
         case .COMPONENT:
-            let width = page?.data?.frameWidth.map(CGFloat.init)
-            let height = page?.data?.frameHeight.map(CGFloat.init)
-            return CGSize(width: width ?? UIView.noIntrinsicMetric, height: height ?? UIView.noIntrinsicMetric)
+            let intrinsicWidth = page?.data?.frameWidth
+                .flatMap { $0 == 0 ? nil : CGFloat($0) }
+                ?? UIView.noIntrinsicMetric
+            let intrinsicHeight = page?.data?.frameHeight
+                .flatMap { $0 == 0 ? nil : CGFloat($0) }
+                ?? UIView.noIntrinsicMetric
+            return CGSize(
+                width: intrinsicWidth,
+                height: intrinsicHeight
+            )
         default:
             return super.intrinsicContentSize
         }

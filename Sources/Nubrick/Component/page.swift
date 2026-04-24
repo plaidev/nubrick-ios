@@ -178,16 +178,12 @@ final class PageView: UIView {
         self.configureLayout { layout in
             layout.isEnabled = true
             if self.page?.data?.kind == .COMPONENT {
-                if let height = self.page?.data?.frameHeight {
-                    if height != 0 {
-                        layout.height = YGValue(value: Float(height), unit: .point)
-                    }
+                if let height = self.page?.data?.frameHeight, height != 0 {
+                    layout.height = YGValue(value: Float(height), unit: .point)
                 }
 
-                if let width = self.page?.data?.frameWidth {
-                    if width != 0 {
-                        layout.width = YGValue(value: Float(width), unit: .point)
-                    }
+                if let width = self.page?.data?.frameWidth, width != 0 {
+                    layout.width = YGValue(value: Float(width), unit: .point)
                 }
             }
         }
