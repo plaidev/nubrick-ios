@@ -10,6 +10,7 @@ import UIKit
 import SwiftUI
 internal import YogaKit
 
+@frozen
 public enum UIKitEmbeddingPhase {
     case loading
     case completed(UIView)
@@ -178,6 +179,7 @@ struct ComponentView: View {
     }
 }
 
+@frozen
 public enum SwiftUIEmbeddingPhase {
     case loading
     case completed(AnyView)

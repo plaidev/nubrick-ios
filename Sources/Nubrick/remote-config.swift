@@ -157,6 +157,7 @@ public final class RemoteConfigVariant : Sendable {
     }
 }
 
+@frozen
 public enum RemoteConfigPhase : Sendable {
     case loading
     case completed(RemoteConfigVariant)
