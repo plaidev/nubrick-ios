@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		255EEE682EC56D2F0023413B /* Nubrick in Frameworks */ = {isa = PBXBuildFile; productRef = 255EEE672EC56D2F0023413B /* Nubrick */; };
+		AA0000012F0000000000001A /* DeeplinkPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000012F0000000000001B /* DeeplinkPageView.swift */; };
 		C13633C22AEB777800B9F437 /* ExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633C12AEB777800B9F437 /* ExampleApp.swift */; };
 		C13633C42AEB777800B9F437 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13633C32AEB777800B9F437 /* ContentView.swift */; };
 		C13633C62AEB777900B9F437 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C13633C52AEB777900B9F437 /* Assets.xcassets */; };
@@ -48,6 +49,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AA0000012F0000000000001B /* DeeplinkPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeeplinkPageView.swift; sourceTree = "<group>"; };
 		C13633BE2AEB777800B9F437 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C13633C12AEB777800B9F437 /* ExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleApp.swift; sourceTree = "<group>"; };
 		C13633C32AEB777800B9F437 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -119,6 +121,7 @@
 				C13633C12AEB777800B9F437 /* ExampleApp.swift */,
 				F4377A6E2DED943B002EF91E /* Info.plist */,
 				C13633C32AEB777800B9F437 /* ContentView.swift */,
+				AA0000012F0000000000001B /* DeeplinkPageView.swift */,
 				C13633C52AEB777900B9F437 /* Assets.xcassets */,
 				C13633C72AEB777900B9F437 /* Preview Content */,
 			);
@@ -292,6 +295,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C13633C42AEB777800B9F437 /* ContentView.swift in Sources */,
+				AA0000012F0000000000001A /* DeeplinkPageView.swift in Sources */,
 				C13633C22AEB777800B9F437 /* ExampleApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -477,7 +481,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.9;
+				MARKETING_VERSION = 1.0.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.natvebrik.example;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -514,7 +518,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.9;
+				MARKETING_VERSION = 1.0.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.natvebrik.example;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

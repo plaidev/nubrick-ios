@@ -9,6 +9,10 @@ import Nubrick
 import SwiftUI
 import UIKit
 
+extension URL: @retroactive Identifiable {
+    public var id: String { absoluteString }
+}
+
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _ application: UIApplication,
@@ -22,6 +26,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 @MainActor
 struct ExampleApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @State private var deeplinkURL: URL?
 
     init() {
         guard let projectId = Bundle.main.object(forInfoDictionaryKey: "PROJECT_ID") as? String else {
@@ -37,6 +42,12 @@ struct ExampleApp: App {
         WindowGroup {
             NubrickProvider {
                 ContentView()
+            }
+            .onOpenURL { url in
+                deeplinkURL = url
+            }
+            .sheet(item: $deeplinkURL) { url in
+                DeeplinkPageView(url: url)
             }
         }
     }

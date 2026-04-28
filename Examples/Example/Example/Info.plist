@@ -6,5 +6,16 @@
 	<false/>
 	<key>PROJECT_ID</key>
 	<string>$(PROJECT_ID)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.example.nubrick</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>nubrick-example</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
