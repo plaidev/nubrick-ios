@@ -13,99 +13,99 @@ import XCTest
 final class CompileTemplateTests: XCTestCase {
     func testShouldCompileTemplate() throws {
         let template = "Hello {{ value }}"
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value": "World",
-        ]
-        let result = compile(template, json)
+        ])
+        let result = compile(template, variable)
         XCTAssertEqual("Hello World", result)
     }
-    
+
     func testShouldCompileTemplateWithMultiplePlaceholders() throws {
         let template = "{{ value1 }} {{ value2 }}"
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value1": "Hello",
             "value2": "World",
-        ]
-        let result = compile(template, json)
+        ])
+        let result = compile(template, variable)
         XCTAssertEqual("Hello World", result)
     }
-    
+
     func testShouldCompileTemplateWithoutFmtButPipelined() throws {
         let template = "Hello {{ value | }}"
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value": "World"
-        ]
-        let result = compile(template, json)
+        ])
+        let result = compile(template, variable)
         XCTAssertEqual("Hello World", result)
     }
 
     func testShouldCompileTemplateWithUnknownFmt() throws {
         let template = "Hello {{ value | unknown }}"
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value": "World"
-        ]
-        let result = compile(template, json)
+        ])
+        let result = compile(template, variable)
         XCTAssertEqual("Hello World", result)
     }
-    
+
     func testShouldCompileTemplateWithUpperFmt() throws {
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value": "world"
-        ]
+        ])
         let template = "HELLO {{ value | upper }}"
-        let result = compile(template, json)
+        let result = compile(template, variable)
         XCTAssertEqual("HELLO WORLD", result)
     }
-    
+
     func testShouldCompileTemplateWithLowerFmt() throws {
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value": "WORLD"
-        ]
+        ])
         let template = "hello {{ value | lower }}"
-        let result = compile(template, json)
+        let result = compile(template, variable)
         XCTAssertEqual("hello world", result)
     }
-    
+
     func testShouldCompileTemplateWithJsonFmt() throws {
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value": ["Key": "Value"]
-        ]
+        ])
         let template = "{{ value | json }}"
-        let result = compile(template, json)
+        let result = compile(template, variable)
         XCTAssertEqual("{\"Key\":\"Value\"}", result)
     }
-    
+
     func testShouldCompileTemplateWithJsonFmtString() throws {
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value": "hello"
-        ]
+        ])
         let template = "{{ value | json }}"
-        let result = compile(template, json)
+        let result = compile(template, variable)
         XCTAssertEqual("\"hello\"", result)
     }
-    
+
     func testShouldCompileTemplateWithJsonFmtNumber() throws {
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value": 100
-        ]
+        ])
         let template = "{{ value | json }}"
-        let result = compile(template, json)
+        let result = compile(template, variable)
         XCTAssertEqual("100", result)
     }
-    
+
     func testShouldCompileTemplateWithJsonFmtNull() throws {
-        let json: [String: Any] = [
+        let variable = Variable(value: [
             "value": NSNull()
-        ]
+        ])
         let template = "{{ value | json }}"
-        let result = compile(template, json)
+        let result = compile(template, variable)
         XCTAssertEqual("null", result)
     }
-    
+
     func testShouldCompileTemplateWithJsonFmtNull2() throws {
-        let json: [String: Any] = [:]
+        let variable = Variable(value: [:])
         let template = "{{ value.test | json }}"
-        let result = compile(template, json)
+        let result = compile(template, variable)
         XCTAssertEqual("null", result)
     }
 }

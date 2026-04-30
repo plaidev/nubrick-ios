@@ -50,10 +50,11 @@ func hasPlaceholderPath(template: String) -> Bool {
     return regex.numberOfMatches(in: template, range: NSRange(location: 0, length: templateAsNsstring.length)) > 0
 }
 
-func compile(_ template: String, _ variable: Any?) -> String {
+func compile(_ template: String, _ variable: Variable?) -> String {
     guard let regex = placeholderRegex else {
         return template
     }
+    let raw = variable?.value
     var result = template as NSString
     for _ in 1...20 { // not to loop infinitly, limit to the 20 loops at maximum.
         // search the first matched {{palceholder}}, and replace it by a value.
@@ -68,8 +69,8 @@ func compile(_ template: String, _ variable: Any?) -> String {
         if placeholder.path == "" {
             break
         }
-        let value = variableByPath(path: placeholder.path, variable: variable)
-        
+        let value = variableByPath(path: placeholder.path, variable: raw)
+
         // format value when the placeholer is like {{ path | formatter }}
         let valueStr = formatValue(formatter: placeholder.formatter, value: value)
         result = result.replacingOccurrences(of: rawPlaceholder, with: valueStr) as NSString

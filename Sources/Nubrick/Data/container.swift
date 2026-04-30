@@ -19,7 +19,7 @@ protocol Container : Sendable {
     @MainActor
     func makeContainer(arguments: NubrickArguments?) -> Container
     @MainActor
-    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any?
+    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Variable?
     @MainActor
     func getFormValue(key: String) -> Any?
     @MainActor
@@ -31,7 +31,7 @@ protocol Container : Sendable {
     @MainActor
     func removeFormValueListener(_ id: String)
 
-    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError>
+    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
@@ -94,7 +94,7 @@ final class ContainerImpl: Container {
     }
 
     @MainActor
-    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Any? {
+    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Variable? {
         return _createVariableForTemplate(
             user: self.user,
             data: data,
@@ -132,7 +132,7 @@ final class ContainerImpl: Container {
 
     // MARK: - HTTP Request
 
-    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Any?) async -> Result<JSONData, NubrickError> {
+    func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError> {
         let request = ApiHttpRequest(
             url: compile(req.url ?? "", variable),
             method: req.method,
