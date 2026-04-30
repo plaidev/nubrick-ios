@@ -11,7 +11,7 @@ typealias UIBlockActionHandler = @MainActor (_ action: UIBlockAction, _ onHttpSe
 
 struct UIBlockContextInit {
     var container: Container? = nil
-    var variable: Any? = nil
+    var variable: Variable? = nil
     var childData: Any? = nil
     var properties: [Property]? = nil
     var actionHandler: UIBlockActionHandler? = nil
@@ -31,8 +31,7 @@ struct UIBlockContextChildInit {
 
 @MainActor
 class UIBlockContext {
-    // variable that page fetched with http request
-    private let variable: Any?
+    private let variable: Variable?
     // page properties
     private let properties: [Property]?
     private let container: Container?
@@ -70,7 +69,7 @@ class UIBlockContext {
             ))
     }
 
-    func getVariable() -> Any? {
+    func getVariable() -> Variable? {
         return self.variable
     }
 
@@ -126,7 +125,7 @@ class UIBlockContext {
     }
 
     func getByReferenceKey(key: String?) -> Any? {
-        return variableByPath(path: key ?? "", variable: self.variable)
+        return variableByPath(path: key ?? "", variable: self.variable?.value)
     }
 
     func getArrayByReferenceKey(key: String?) -> [Any]? {

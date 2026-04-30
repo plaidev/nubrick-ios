@@ -54,7 +54,7 @@ private struct RawFrame: Decodable {
 }
 
 @_spi(FlutterBridge)
-public struct StackFrame: Encodable {
+public struct StackFrame: Encodable, Sendable {
     // iOS fields
     public let imageAddr: String?
     public let instructionAddr: String?
@@ -89,7 +89,7 @@ public struct StackFrame: Encodable {
 }
 
 @_spi(FlutterBridge)
-public struct ExceptionRecord: Encodable {
+public struct ExceptionRecord: Encodable, Sendable {
     public let type: String?
     public let message: String?
     public let callStacks: [StackFrame]?
@@ -106,7 +106,7 @@ public struct ExceptionRecord: Encodable {
 }
 
 @_spi(FlutterBridge)
-public struct TrackCrashEvent {
+public struct TrackCrashEvent: Sendable {
     public let exceptions: [ExceptionRecord]
     public let threads: [ThreadRecord]?
     public let platform: String?
@@ -130,7 +130,7 @@ public struct TrackCrashEvent {
 
 /// Severity level for crash/error reporting.
 @_spi(FlutterBridge)
-public enum CrashSeverity: String {
+public enum CrashSeverity: String, Sendable {
     case debug, info, warning, error, fatal
 
     /// Returns true if this severity level should be counted as an error (error or fatal).
@@ -185,7 +185,7 @@ struct TrackEvent: Encodable {
 }
 
 @_spi(FlutterBridge)
-public struct ThreadRecord: Encodable {
+public struct ThreadRecord: Encodable, Sendable {
     public let isMain: Bool?
     public let stacktrace: [StackFrame]?
 }

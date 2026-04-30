@@ -7,6 +7,12 @@
 
 import Foundation
 
+// All leaf values are JSON-primitive types (String, Int, Double, Bool, [Any], [String: Any])
+// which are inherently Sendable, but Swift can't prove that through [String: Any].
+struct Variable: @unchecked Sendable {
+    let value: [String: Any]
+}
+
 @MainActor
 func _createVariableForTemplate(
     user: NubrickUser? = nil,
@@ -15,7 +21,7 @@ func _createVariableForTemplate(
     form: [String: Any]? = nil,
     arguments: NubrickArguments? = nil,
     projectId: String? = nil
-) -> Any {
+) -> Variable {
     var userData: [String: Any] = [:]
     if let user = user {
         userData["id"] = user.id
@@ -35,28 +41,27 @@ func _createVariableForTemplate(
     let projectData: [String:Any] = [
         "id": projectId ?? "",
     ]
-    return [
+    return Variable(value: [
         "user": (userData.isEmpty ? nil : userData) as Any,
         "props": (propertiesData.isEmpty ? nil : propertiesData) as Any,
         "form": (formData?.isEmpty == true ? nil : formData) as Any,
         "args": arguments as Any,
         "data": data as Any,
         "project": projectData as Any,
-    ]
+    ])
 }
 
-func _mergeVariable(base: Any?, _ overlay: Any?) -> Any? {
-    guard let base = base as? [String:Any] else {
+func _mergeVariable(base: Variable?, _ overlay: Variable?) -> Variable? {
+    guard let base = base?.value else {
         return overlay
     }
-    let overlay = overlay as? [String:Any]
-    let data: [String:Any] = [
+    let overlay = overlay?.value
+    return Variable(value: [
         "user": overlay?["user"] ?? base["user"] as Any,
         "props": overlay?["props"] ?? base["props"] as Any,
         "form": overlay?["form"] ?? base["form"] as Any,
         "args": overlay?["args"] ?? base["args"] as Any,
         "data": overlay?["data"] ?? base["data"] as Any,
         "project": overlay?["project"] ?? base["project"] as Any,
-    ]
-    return data
+    ])
 }
