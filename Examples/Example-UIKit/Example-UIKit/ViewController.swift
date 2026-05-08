@@ -14,8 +14,6 @@ final class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        NubrickSDK.initialize(projectId: "cgv3p3223akg00fod19g")
-
         // add Nativebrik.overlay at first
         let overlay = NubrickSDK.overlayViewController()
         self.addChild(overlay)

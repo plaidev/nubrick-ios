@@ -6,13 +6,13 @@
 //
 
 import UIKit
+import Nubrick
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
-        
+        NubrickSDK.initialize(projectId: "cgv3p3223akg00fod19g")
         return true
     }
 
