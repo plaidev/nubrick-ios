@@ -51,6 +51,10 @@ class OverlayViewController: UIViewController {
         )
     }
 
+    func clearCallbacks() {
+        self.triggerViewController.clearCallbacks()
+    }
+
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:container:onDispatch:onTooltip:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")

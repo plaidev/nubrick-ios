@@ -211,6 +211,11 @@ final class NubrickCore {
         self.overlayVC.updateCallbacks(onDispatch: onDispatch, onTooltip: onTooltip)
     }
 
+    func clearBridgeCallbacks() {
+        self.bridgeCallbackStore.onEvent = nil
+        self.overlayVC.clearCallbacks()
+    }
+
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
         Task {
             await self.dependencies.trackRepository.sendFlutterCrash(crashEvent)
@@ -495,16 +500,6 @@ public enum NubrickSDK {
             trackCrashes: trackCrashes,
             onTooltip: onTooltip
         )
-    }
-
-    @MainActor
-    static func updateBridgeCallbacks(
-        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
-        onDispatch: ((_ event: NubrickEvent) -> Void)?,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
-    ) {
-        guard let runtime = requireRuntime() else { return }
-        runtime.updateBridgeCallbacks(onEvent: onEvent, onDispatch: onDispatch, onTooltip: onTooltip)
     }
 
     @MainActor

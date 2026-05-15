@@ -55,6 +55,11 @@ class TriggerViewController: UIViewController {
         }
     }
 
+    func clearCallbacks() {
+        self.onDispatch = nil
+        self.onTooltip = nil
+    }
+
     func initialLoad() {
         self.didLoaded = true
 
