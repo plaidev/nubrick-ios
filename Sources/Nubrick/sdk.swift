@@ -205,7 +205,9 @@ final class NubrickCore {
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
-        self.bridgeCallbackStore.onEvent = onEvent
+        if let onEvent {
+            self.bridgeCallbackStore.onEvent = onEvent
+        }
         self.overlayVC.updateCallbacks(onDispatch: onDispatch, onTooltip: onTooltip)
     }
 
@@ -480,13 +482,8 @@ public enum NubrickSDK {
         trackCrashes: Bool,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) -> Bool {
-        if let runtime {
-            runtime.updateBridgeCallbacks(
-                onEvent: onEvent,
-                onDispatch: onDispatch,
-                onTooltip: onTooltip
-            )
-            nubrickWarn("NubrickBridge.initialize(...) called more than once. Refreshed bridge callbacks on existing singleton.")
+        if runtime != nil {
+            nubrickWarn("NubrickBridge.initialize(...) called more than once. Subsequent calls are ignored.")
             return true
         }
 
@@ -498,6 +495,16 @@ public enum NubrickSDK {
             trackCrashes: trackCrashes,
             onTooltip: onTooltip
         )
+    }
+
+    @MainActor
+    static func updateBridgeCallbacks(
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
+        onDispatch: ((_ event: NubrickEvent) -> Void)?,
+        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+    ) {
+        guard let runtime = requireRuntime() else { return }
+        runtime.updateBridgeCallbacks(onEvent: onEvent, onDispatch: onDispatch, onTooltip: onTooltip)
     }
 
     @MainActor

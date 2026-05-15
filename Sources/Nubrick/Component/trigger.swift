@@ -47,8 +47,12 @@ class TriggerViewController: UIViewController {
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
     ) {
-        self.onDispatch = onDispatch
-        self.onTooltip = onTooltip
+        if let onDispatch {
+            self.onDispatch = onDispatch
+        }
+        if let onTooltip {
+            self.onTooltip = onTooltip
+        }
     }
 
     func initialLoad() {

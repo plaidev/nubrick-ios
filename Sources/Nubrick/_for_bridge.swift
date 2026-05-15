@@ -66,6 +66,14 @@ public enum NubrickBridge {
         )
     }
 
+    public static func updateCallbacks(
+        onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
+        onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
+        onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
+    ) {
+        NubrickSDK.updateBridgeCallbacks(onEvent: onEvent, onDispatch: onDispatch, onTooltip: onTooltip)
+    }
+
     public static func embeddingForFlutterBridge(
         _ id: String,
         arguments: NubrickArguments? = nil,
