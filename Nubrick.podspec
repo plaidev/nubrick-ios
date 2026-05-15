@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name         = "Nubrick"
-  spec.version      = "0.18.2"
+  spec.version      = "0.18.3"
   spec.summary      = "Nubrick SDK for iOS"
   spec.description  = <<-DESC
                    Nubrick SDK for iOS.
@@ -14,8 +14,8 @@ Pod::Spec.new do |spec|
   spec.platform     = :ios
   spec.ios.deployment_target = "15.0"
 
-  spec.source       = { :http => "https://github.com/plaidev/nubrick-ios/releases/download/v0.18.2/Nubrick.xcframework.zip",
-                        :sha256 => "2bd50bf24a912aa09addfabb83e367526ff3efbe071c660be98d8a1441734683" }
+  spec.source       = { :http => "https://github.com/plaidev/nubrick-ios/releases/download/v0.18.3/Nubrick.xcframework.zip",
+                        :sha256 => "4acb7cd60b8e5266cad97281b5883c8e12c794d83e7d36c59fb9b70d9805b1ee" }
 
   spec.vendored_frameworks = "Nubrick.xcframework"
 end
