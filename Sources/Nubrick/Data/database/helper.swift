@@ -68,10 +68,19 @@ final class UserEventEntity: NSManagedObject {
     }
 }
 
-func createNativebrikCoreDataHelper() -> NSPersistentContainer? {
+@MainActor
+private let nativebrikManagedObjectModel: NSManagedObjectModel = {
     let model = NSManagedObjectModel()
-    model.entities = [UserEventEntity.entityDescription(), ExperimentHistoryEntity.entityDescription()]
-    let container = NSPersistentContainer(name: "com.nativebrik.sdk", managedObjectModel: model)
+    model.entities = [
+        UserEventEntity.entityDescription(),
+        ExperimentHistoryEntity.entityDescription(),
+    ]
+    return model
+}()
+
+@MainActor
+func createNativebrikCoreDataHelper() -> NSPersistentContainer? {
+    let container = NSPersistentContainer(name: "com.nativebrik.sdk", managedObjectModel: nativebrikManagedObjectModel)
     container.persistentStoreDescriptions.first?.shouldAddStoreAsynchronously = false
 
     var loadError: Error?

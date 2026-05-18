@@ -70,4 +70,24 @@ final class UserTests: XCTestCase {
         XCTAssertEqual(customUserId, userIdProp?.value)
         XCTAssertEqual("world", customProp?.value)
     }
+
+    func testLocalMinuteIsMinuteOfDay() {
+        let user = NubrickUser()
+
+        for _ in 0..<3 {
+            let before = getLocalDateComponent(getCurrentDate())
+            let props = user.toEventProperties(seed: 0)
+            let after = getLocalDateComponent(getCurrentDate())
+
+            guard before.hour == after.hour, before.minute == after.minute else {
+                continue
+            }
+
+            let localMinute = props.first { $0.name == BuiltinUserProperty.localMinute.rawValue }?.value
+            XCTAssertEqual(String(before.hour * 60 + before.minute), localMinute)
+            return
+        }
+
+        XCTFail("Could not read localMinute without crossing a minute boundary")
+    }
 }

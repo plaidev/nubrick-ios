@@ -239,6 +239,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         return self.block?.data?.kind == CollectionKind.CAROUSEL
             && self.block?.data?.fullItemWidth == true
             && self.block?.data?.autoScroll == true
+            && self.childrenCount > 1
     }
 
     private func startAutoScrollTimerIfNeeded() {
@@ -355,6 +356,9 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     }
     
     func automaticScroll() {
+        guard self.childrenCount > 0 else {
+            return
+        }
         if self.counter >= self.childrenCount - 1 {
             self.counter = 0
         } else {
