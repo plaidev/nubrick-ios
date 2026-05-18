@@ -198,34 +198,30 @@ class EmbeddingSwiftViewModel: ObservableObject {
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ event: ComponentEvent) -> Void)?,
         onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
-    ) {
-        Task {
-            let result = await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
-            await MainActor.run { [weak self] in
-                switch result {
-                case .success(let view):
-                    switch view {
-                    case .EUIRootBlock(let root):
-                        self?.phase = .completed(AnyView(
-                            ComponentView(
-                                root: root,
-                                container: container,
-                                modalViewController: modalViewController,
-                                onEvent: onEvent,
-                                onSizeChange: onSizeChange
-                            )
-                        ))
-                    default:
-                        self?.phase = .notFound
-                    }
-                case .failure(let err):
-                    switch err {
-                    case .notFound:
-                        self?.phase = .notFound
-                    default:
-                        self?.phase = .failed(err)
-                    }
-                }
+    ) async {
+        let result = await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
+        switch result {
+        case .success(let view):
+            switch view {
+            case .EUIRootBlock(let root):
+                self.phase = .completed(AnyView(
+                    ComponentView(
+                        root: root,
+                        container: container,
+                        modalViewController: modalViewController,
+                        onEvent: onEvent,
+                        onSizeChange: onSizeChange
+                    )
+                ))
+            default:
+                self.phase = .notFound
+            }
+        case .failure(let err):
+            switch err {
+            case .notFound:
+                self.phase = .notFound
+            default:
+                self.phase = .failed(err)
             }
         }
     }
@@ -233,8 +229,22 @@ class EmbeddingSwiftViewModel: ObservableObject {
 }
 
 struct EmbeddingSwiftView: View {
+    private struct FetchKey: Equatable {
+        let experimentId: String
+        let componentId: String?
+    }
+
     @ViewBuilder private let _content: ((_ phase: SwiftUIEmbeddingPhase) -> AnyView)
-    @ObservedObject private var data: EmbeddingSwiftViewModel
+    @StateObject private var data = EmbeddingSwiftViewModel()
+    private let experimentId: String
+    private let componentId: String?
+    private let container: Container
+    private let modalViewController: ModalComponentViewController?
+    private let onEvent: ((_ event: ComponentEvent) -> Void)?
+    private let onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)?
+    private var fetchKey: FetchKey {
+        FetchKey(experimentId: experimentId, componentId: componentId)
+    }
     
     init(
         experimentId: String,
@@ -244,6 +254,12 @@ struct EmbeddingSwiftView: View {
         onEvent: ((_ event: ComponentEvent) -> Void)?,
         onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
+        self.experimentId = experimentId
+        self.componentId = componentId
+        self.container = container
+        self.modalViewController = modalViewController
+        self.onEvent = onEvent
+        self.onSizeChange = onSizeChange
         self._content = { phase in
             switch phase {
             case .completed(let component):
@@ -254,14 +270,6 @@ struct EmbeddingSwiftView: View {
                 return AnyView(EmptyView())
             }
         }
-        self.data = EmbeddingSwiftViewModel()
-        self.data.fetchEmbeddingAndUpdatePhase(
-            experimentId: experimentId,
-            container: container,
-            modalViewController: modalViewController,
-            onEvent: onEvent,
-            onSizeChange: onSizeChange
-        )
     }
 
     init<V: View>(
@@ -273,20 +281,31 @@ struct EmbeddingSwiftView: View {
         content: @escaping ((_ phase: SwiftUIEmbeddingPhase) -> V),
         onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
+        self.experimentId = experimentId
+        self.componentId = componentId
+        self.container = container
+        self.modalViewController = modalViewController
+        self.onEvent = onEvent
+        self.onSizeChange = onSizeChange
         self._content = { phase in
             AnyView(content(phase))
         }
-        self.data = EmbeddingSwiftViewModel()
-        self.data.fetchEmbeddingAndUpdatePhase(
-            experimentId: experimentId,
-            container: container,
-            modalViewController: modalViewController,
-            onEvent: onEvent,
-            onSizeChange: onSizeChange
-        )
     }
 
     var body: some View {
-        self._content(data.phase)
+        // ZStack provides a concrete mounted host even when phase content is EmptyView to make sure .task runs
+        ZStack {
+            self._content(data.phase)
+        }
+            .task(id: fetchKey) {
+                await data.fetchEmbeddingAndUpdatePhase(
+                    experimentId: experimentId,
+                    componentId: componentId,
+                    container: container,
+                    modalViewController: modalViewController,
+                    onEvent: onEvent,
+                    onSizeChange: onSizeChange
+                )
+            }
     }
 }

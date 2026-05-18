@@ -232,7 +232,10 @@ class RemoteConfigSwiftViewModel: ObservableObject {
 
 struct RemoteConfigAsView: View {
     @ViewBuilder private let content: ((_ phase: RemoteConfigPhase) -> AnyView)
-    @ObservedObject private var data: RemoteConfigSwiftViewModel
+    @StateObject private var data = RemoteConfigSwiftViewModel()
+    private let experimentId: String
+    private let container: Container
+    private let modalViewController: ModalComponentViewController
     
     init<V: View>(
         experimentId: String,
@@ -240,18 +243,25 @@ struct RemoteConfigAsView: View {
         modalViewController: ModalComponentViewController,
         content: @escaping (_: RemoteConfigPhase) -> V
     ) {
+        self.experimentId = experimentId
+        self.container = container
+        self.modalViewController = modalViewController
         self.content = { phase in
             AnyView(content(phase))
         }
-        self.data = RemoteConfigSwiftViewModel()
-        self.data.fetchAndUpdate(
-            experimentId: experimentId,
-            container: container,
-            modalViewController: modalViewController
-        )
     }
 
     var body: some View {
-        self.content(data.phase)
+        // ZStack provides a concrete mounted host even when phase content is EmptyView to make sure .task runs
+        ZStack {
+            self.content(data.phase)
+        }
+            .task(id: experimentId) {
+                data.fetchAndUpdate(
+                    experimentId: experimentId,
+                    container: container,
+                    modalViewController: modalViewController
+                )
+            }
     }
 }

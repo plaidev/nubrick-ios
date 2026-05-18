@@ -56,4 +56,8 @@ jobs:
         run: pod spec lint
       - name: Verify version consistency
         run: |
-          test $(cat ./Nubrick.podspec | grep -E 's\.version\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]') = $(cat ./Sources/Nubrick/sdk.swift | grep -E 'nubrickSdkVersion\W+=' | grep -o -e '[0-9]\.[0-9]\.[0-9]')
+          PODSPEC_VERSION="$(ruby -e 'text = File.read("Nubrick.podspec"); abort "missing podspec version" unless text =~ /spec\.version\s*=\s*"([^"]+)"/; puts $1')"
+          MARKETING_VERSION="$(ruby -e 'text = File.read("Nubrick/Nubrick.xcodeproj/project.pbxproj"); versions = text.scan(/MARKETING_VERSION = ([^;]+);/).flatten.uniq; abort "expected one MARKETING_VERSION, got #{versions.inspect}" unless versions.length == 1; puts versions.first')"
+          PACKAGE_VERSION="$(ruby -e 'text = File.read("Package.swift"); abort "missing Package.swift release URL version" unless text =~ %r{/download/v([0-9]+\.[0-9]+\.[0-9]+)/Nubrick\.xcframework\.zip}; puts $1')"
+          test "$PODSPEC_VERSION" = "$MARKETING_VERSION"
+          test "$PODSPEC_VERSION" = "$PACKAGE_VERSION"

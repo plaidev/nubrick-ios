@@ -255,7 +255,7 @@ class NubrickUser {
             ),
             UserProperty(
                 name: BuiltinUserProperty.localMinute.rawValue,
-                value: String(localDates.hour * 60 * localDates.minute),
+                value: String(localDates.hour * 60 + localDates.minute),
                 type: .INTEGER
             ),
             UserProperty(
