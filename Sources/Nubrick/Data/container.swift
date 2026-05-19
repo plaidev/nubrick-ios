@@ -175,7 +175,7 @@ final class ContainerImpl: Container {
         await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
         ))
-        self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
+        await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
 
         guard let componentId = extractComponentId(variant: extracted.variant) else {
             return Result.failure(NubrickError.notFound)
@@ -214,7 +214,7 @@ final class ContainerImpl: Container {
         // Tooltip is a Flutter-only flow. Persist tooltip history only after
         // Flutter confirms the tooltip actually started rendering.
         if extracted.kind != .TOOLTIP {
-            self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
+            await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
         }
 
         guard let componentId = extractComponentId(variant: extracted.variant) else {
@@ -253,7 +253,7 @@ final class ContainerImpl: Container {
         await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
         ))
-        self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
+        await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
 
         return Result.success((extracted.experimentId, extracted.variant))
     }

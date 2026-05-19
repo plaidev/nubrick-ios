@@ -10,7 +10,7 @@ import CoreData
 
 protocol DatabaseRepository : Sendable {
     func appendUserEvent(name: String) async
-    func appendExperimentHistory(experimentId: String)
+    func appendExperimentHistory(experimentId: String) async
     func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) async -> Boolean
     func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) async -> Boolean
 }
@@ -32,24 +32,22 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
             do {
                 try context.save()
             } catch {
-                print("Cound'nt save UserEventEntity \(error)")
+                print("Couldn't save UserEventEntity \(error)")
             }
         }
     }
 
-    func appendExperimentHistory(experimentId: String) {
+    func appendExperimentHistory(experimentId: String) async {
         let persistentContainer = self.persistentContainer
-        Task {
-            await MainActor.run {
-                let context = persistentContainer.viewContext
-                let history = ExperimentHistoryEntity(context: context)
-                history.experimentId = experimentId
-                history.timestamp = getCurrentDate()
-                do {
-                    try context.save()
-                } catch {
-                    print("Cound'nt save ExperimentHistoryEntity \(error)")
-                }
+        await MainActor.run {
+            let context = persistentContainer.viewContext
+            let history = ExperimentHistoryEntity(context: context)
+            history.experimentId = experimentId
+            history.timestamp = getCurrentDate()
+            do {
+                try context.save()
+            } catch {
+                print("Couldn't save ExperimentHistoryEntity \(error)")
             }
         }
     }

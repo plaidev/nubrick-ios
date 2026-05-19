@@ -246,9 +246,9 @@ final class NubrickCore {
         self.dependencies.user.getProperties()
     }
 
-    func appendTooltipExperimentHistory(experimentId: String) {
+    func appendTooltipExperimentHistory(experimentId: String) async {
         guard !experimentId.isEmpty else { return }
-        self.dependencies.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+        await self.dependencies.databaseRepository.appendExperimentHistory(experimentId: experimentId)
     }
 
     func processMetricKitCrash(
@@ -635,11 +635,11 @@ public enum NubrickSDK {
 
     @_spi(FlutterBridge)
     @MainActor
-    public static func appendTooltipExperimentHistory(experimentId: String) {
+    public static func appendTooltipExperimentHistory(experimentId: String) async {
         guard let runtime = requireRuntime() else {
             return
         }
-        runtime.appendTooltipExperimentHistory(experimentId: experimentId)
+        await runtime.appendTooltipExperimentHistory(experimentId: experimentId)
     }
 
     @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
