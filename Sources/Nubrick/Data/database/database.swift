@@ -104,7 +104,7 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
             since: condition.since
         )
 
-        let total = counts.values.count
+        let total = counts.values.reduce(0, +)
         return compareInteger(a: total, b: [threshold], op: condition.comparison ?? .Equal)
     }
 
