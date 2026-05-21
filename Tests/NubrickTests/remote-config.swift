@@ -18,21 +18,21 @@ let UNKNOWN_EXPERIMENT_ID = "UNKNOWN_ID_XXXXXX"
 final class RemoteConfigTests: XCTestCase {
     @MainActor
     func testRemoteConfigShouldFetch() {
-        let expectation = expectation(description: "Fetch remote config for test")
+        let completedExpectation = expectation(description: "Fetch remote config for test")
+        let loadingExpectation = expectation(description: "Remote config loading phase")
 
-        var didLoadingPhaseCome = false
         NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
         NubrickSDK.remoteConfig(REMOTE_CONFIG_ID_1_FOR_TEST) { phase in
             switch phase {
             case .completed(let variant):
                 let message = variant.getAsString("message")
                 XCTAssertEqual(message, REMOTE_CONFIG_1_FOR_TEST_MESSAGE)
-                expectation.fulfill()
+                completedExpectation.fulfill()
             case .loading:
-                didLoadingPhaseCome = true
+                loadingExpectation.fulfill()
             default:
                 XCTFail("should found the remote config \(phase)")
-                expectation.fulfill()
+                completedExpectation.fulfill()
             }
         }
 
@@ -40,24 +40,23 @@ final class RemoteConfigTests: XCTestCase {
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
             }
-            XCTAssertTrue(didLoadingPhaseCome)
         }
     }
 
     @MainActor
     func testRemoteConfigShouldNotFetch() {
-        let expectation = expectation(description: "Fetch non-exist remote config for test")
+        let completedExpectation = expectation(description: "Fetch non-exist remote config for test")
+        let loadingExpectation = expectation(description: "Remote config loading phase")
 
-        var didLoadingPhaseCome = false
         NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
         NubrickSDK.remoteConfig(UNKNOWN_EXPERIMENT_ID) { phase in
             switch phase {
             case .completed:
                 XCTFail("should found the remote config")
             case .loading:
-                didLoadingPhaseCome = true
+                loadingExpectation.fulfill()
             default:
-                expectation.fulfill()
+                completedExpectation.fulfill()
             }
         }
 
@@ -65,7 +64,6 @@ final class RemoteConfigTests: XCTestCase {
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
             }
-            XCTAssertTrue(didLoadingPhaseCome)
         }
     }
 }
