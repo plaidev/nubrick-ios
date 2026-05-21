@@ -44,4 +44,18 @@ final class DecodeJsonTests: XCTestCase {
         let result = try decoder.decode(UIBlockAction.self, from: Data(json.utf8))
         XCTAssertEqual("legacy_click", result.name)
     }
+
+    func testShouldDecodeUnknownUIBlockTypename() throws {
+        let decoder = JSONDecoder()
+        let json = """
+{"__typename":"UIButtonBlock","id":"unknown-block"}
+"""
+        let result = try decoder.decode(UIBlock.self, from: Data(json.utf8))
+        switch result {
+        case .unknown:
+            break
+        default:
+            XCTFail("Expected unknown UIBlock but got \(result)")
+        }
+    }
 }

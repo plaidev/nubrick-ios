@@ -391,7 +391,7 @@ struct TriggerSetting: Decodable, Encodable {
   var onTrigger: UIBlockAction?
   var trigger: TriggerEventDef?
 }
-indirect enum UIBlock: Decodable, Encodable, Sendable {
+indirect enum UIBlock: Decodable, Encodable {
   case EUIRootBlock(UIRootBlock)
   case EUIPageBlock(UIPageBlock)
   case EUIFlexContainerBlock(UIFlexContainerBlock)
@@ -421,6 +421,10 @@ indirect enum UIBlock: Decodable, Encodable, Sendable {
     case __UIMultiSelectInputBlock = "UIMultiSelectInputBlock"
     case __UISwitchInputBlock = "UISwitchInputBlock"
     case unknown
+
+    init(from decoder: Decoder) throws {
+      self = try Typename(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+    }
   }
   init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)

@@ -29,10 +29,13 @@ func getData(url: URL, syncDateTime: Bool = false) async -> Result<Data, Nubrick
         if syncDateTime {
             syncDateFromHTTPURLResponse(t0: t0, res: res)
         }
+        if 200 <= res.statusCode && res.statusCode <= 299 {
+            return Result.success(data)
+        }
         if res.statusCode == 404 {
             return Result.failure(NubrickError.notFound)
         }
-        return Result.success(data)
+        return Result.failure(NubrickError.unexpected)
     } catch {
         return Result.failure(NubrickError.other(error))
     }
