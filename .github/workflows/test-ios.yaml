@@ -46,6 +46,9 @@ jobs:
           -destination '${{ matrix.destination }}' \
           -skipMacroValidation \
           -skipPackagePluginValidation \
+          SWIFT_VERSION=6.0 \
+          SWIFT_STRICT_CONCURRENCY=complete \
+          SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
           | xcbeautify
           exit ${PIPESTATUS[0]}
         env:

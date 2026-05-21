@@ -77,17 +77,17 @@ final class EmbeddingUIViewTests: XCTestCase {
 
     @MainActor
     func testEmbeddingShouldFetch() {
-        let expectation = expectation(description: "Fetch an embedding for test")
+        let completedExpectation = expectation(description: "Fetch an embedding for test")
+        let loadingExpectation = expectation(description: "Embedding loading phase")
 
-        var didLoadingPhaseCome = false
         NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
         let view = NubrickSDK.embeddingUIView(EMBEDDING_ID_1_FOR_TEST, onEvent: nil) { phase in
             switch phase {
             case .completed:
-                expectation.fulfill()
+                completedExpectation.fulfill()
                 return UIView()
             case .loading:
-                didLoadingPhaseCome = true
+                loadingExpectation.fulfill()
                 return UIView()
             default:
                 XCTFail("should found the remote config")
@@ -100,7 +100,6 @@ final class EmbeddingUIViewTests: XCTestCase {
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
             }
-            XCTAssertTrue(didLoadingPhaseCome)
         }
     }
 
@@ -242,9 +241,9 @@ final class EmbeddingUIViewTests: XCTestCase {
 
     @MainActor
     func testEmbeddingShouldNotFetch() {
-        let expectation = expectation(description: "Fetch an embedding for test")
+        let completedExpectation = expectation(description: "Fetch an embedding for test")
+        let loadingExpectation = expectation(description: "Embedding loading phase")
 
-        var didLoadingPhaseCome = false
         NubrickSDK.initialize(projectId: PROJECT_ID_FOR_TEST)
         let view = NubrickSDK.embeddingUIView(UNKNOWN_EXPERIMENT_ID, onEvent: nil) { phase in
             switch phase {
@@ -252,10 +251,10 @@ final class EmbeddingUIViewTests: XCTestCase {
                 XCTFail("should found the remote config")
                 return UIView()
             case .loading:
-                didLoadingPhaseCome = true
+                loadingExpectation.fulfill()
                 return UIView()
             default:
-                expectation.fulfill()
+                completedExpectation.fulfill()
                 return UIView()
             }
         }
@@ -265,7 +264,6 @@ final class EmbeddingUIViewTests: XCTestCase {
             if let error = error {
                 XCTFail("waitForExpectationsWithTimeout errored: \(error)")
             }
-            XCTAssertTrue(didLoadingPhaseCome)
         }
     }
 }
