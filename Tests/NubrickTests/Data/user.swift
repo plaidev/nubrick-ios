@@ -71,6 +71,16 @@ final class UserTests: XCTestCase {
         XCTAssertEqual("world", customProp?.value)
     }
 
+    func testSetPropertyStoresDateAsISOInstant() {
+        let user = NubrickUser()
+        let key = "dateForIsoSerializationTest"
+
+        user.setProperty(key, value: Date(timeIntervalSince1970: 1_317_826_080))
+
+        XCTAssertEqual("2011-10-05T14:48:00Z", user.getProperty(key))
+        XCTAssertEqual(.STRING, user.toEventProperties(seed: 0).first { $0.name == key }?.type)
+    }
+
     func testLocalMinuteIsMinuteOfDay() {
         let user = NubrickUser()
 

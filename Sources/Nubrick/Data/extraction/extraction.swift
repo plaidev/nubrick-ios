@@ -154,19 +154,29 @@ func isInDistribution(distribution: [ExperimentCondition], properties: [UserProp
 }
 
 func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?, value: String, op: ConditionOperator) -> Bool {
-    let values = value.split(separator: ",")
+    let values = value.split(separator: ",", omittingEmptySubsequences: false)
     let propType = asType ?? prop.type
     switch propType {
     case .INTEGER:
-        let propValue = Int(prop.value) ?? 0
-        let conditionValues = values.map { value in
-            return Int(value) ?? 0
+        guard let propValue = Int(prop.value.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            return false
+        }
+        let conditionValues = values.compactMap { value in
+            return Int(String(value).trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        if conditionValues.count != values.count {
+            return false
         }
         return compareInteger(a: propValue, b: conditionValues, op: op)
     case .DOUBLE:
-        let propValue = Double(prop.value) ?? 0
-        let conditionValues = values.map { value in
-            return Double(value) ?? 0
+        guard let propValue = Double(prop.value.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            return false
+        }
+        let conditionValues = values.compactMap { value in
+            return Double(String(value).trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        if conditionValues.count != values.count {
+            return false
         }
         return compareDouble(a: propValue, b: conditionValues, op: op)
     case .STRING:
@@ -176,25 +186,76 @@ func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?
         return compareString(a: prop.value, b: strings, op: op)
     case .SEMVER:
         let strings: [String] = values.map { value in
-            return String(value)
+            return String(value).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if strings.contains(where: { $0.isEmpty }) {
+            return false
         }
         return compareSemver(a: prop.value, b: strings, op: op)
     case .TIMESTAMPZ:
-        let dateFormatter = DateFormatter()
-        let propValue = dateFormatter.date(from: prop.value)?.timeIntervalSince1970 ?? 0
-        let conditionValues = values.map { value in
-            return dateFormatter.date(from: String(value))?.timeIntervalSince1970 ?? 0
+        guard let propValue = parseTimestampZAsUnixSeconds(prop.value) else {
+            return false
+        }
+        let conditionValues = values.compactMap { value in
+            return parseTimestampZAsUnixSeconds(String(value))
+        }
+        if conditionValues.count != values.count {
+            return false
         }
         return compareDouble(a: propValue, b: conditionValues, op: op)
     case .BOOLEAN:
         let propValue = parseStringToBoolean(prop.value)
-        let conditionValues = values.map { value in
-            return parseStringToBoolean(String(value))
+        let strings: [String] = values.map { value in
+            return String(value).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if strings.contains(where: { $0.isEmpty }) {
+            return false
+        }
+        let conditionValues = strings.map { value in
+            return parseStringToBoolean(value)
         }
         return compareBoolean(a: propValue, b: conditionValues, op: op)
     default:
         return false
     }
+}
+
+private let iso8601ParseStrategies: [Date.ISO8601FormatStyle] = [
+    .iso8601.year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .colon),
+    .iso8601.year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .colon),
+    .iso8601.year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .omitted),
+    .iso8601.year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .omitted),
+    .iso8601.year().month().day().time(includingFractionalSeconds: false),
+    .iso8601.year().month().day(),
+]
+
+private let fallbackParseStrategy = Date.ParseStrategy(
+    format: "\(year: .defaultDigits)-\(month: .twoDigits)-\(day: .twoDigits) \(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits):\(second: .twoDigits) \(timeZone: .iso8601(.short))",
+    locale: Locale(identifier: "en_US_POSIX"),
+    timeZone: .current
+)
+
+func parseTimestampZAsUnixSeconds(_ value: String) -> Double? {
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty {
+        return nil
+    }
+
+    if let timestamp = Int64(trimmed) {
+        return Double(timestamp)
+    }
+
+    for strategy in iso8601ParseStrategies {
+        if let date = try? Date(trimmed, strategy: strategy) {
+            return Double(Int64(date.timeIntervalSince1970))
+        }
+    }
+
+    if let date = try? Date(trimmed, strategy: fallbackParseStrategy) {
+        return Double(Int64(date.timeIntervalSince1970))
+    }
+
+    return nil
 }
 
 func compareInteger(a: Int, b: [Int], op: ConditionOperator) -> Bool {
