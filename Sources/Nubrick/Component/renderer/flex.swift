@@ -74,7 +74,7 @@ class FlexView: AnimatedUIControl {
         // so we adjust padding virtually with the margin of the last child.
         let enableAdjustingXAxisPadding = direction == .row && (block.data?.frame?.width == 0)
         let enableAdjustingYAxisPadding = direction == .column && (block.data?.frame?.height == 0)
-        let lastChildIndex = children.endIndex
+        let lastChildIndex = children.endIndex - 1
         for (index, child) in children.enumerated() {
             child.configureLayout { (layout) in
                 if index != 0 {
