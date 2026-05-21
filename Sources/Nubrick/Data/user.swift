@@ -55,6 +55,13 @@ private let USER_CUSTOM_PROPERTY_KEY_PREFIX = "NATIVEBRIK_CUSTOM_"
 private let USER_SEED_KEY: String = "NATIVEBRIK_USER_SEED"
 private let USER_SEED_MAX: Int = 100000000
 
+private func formatUserPropertyValue(_ value: Any) -> String {
+    if let date = value as? Date {
+        return date.ISO8601Format()
+    }
+    return String(describing: value)
+}
+
 @MainActor
 class NubrickUser {
     private var properties: [String: String]
@@ -142,7 +149,7 @@ class NubrickUser {
             return
         }
 
-        let strValue = String(describing: value)
+        let strValue = formatUserPropertyValue(value)
         self.customProperties[key] = strValue
         self.userDB.set(strValue, forKey: USER_CUSTOM_PROPERTY_KEY_PREFIX + key)
     }
