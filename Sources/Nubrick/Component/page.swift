@@ -100,7 +100,9 @@ final class PageView: UIView {
     fileprivate let page: UIPageBlock?
     private let props: [Property]?
     private let container: Container
-    private var data: Variable? = nil
+    private var arguments: NubrickArguments?
+    private let variableStore: VariableStore
+    private var responseData: Any? = nil
     private var actionHandler: UIBlockActionHandler? = nil
     private var fullScreenInitialNavItemVisibility = false
     private var loading: Bool = false
@@ -108,7 +110,7 @@ final class PageView: UIView {
 
     private var modalViewController: ModalComponentViewController? = nil
 
-    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(page:props:container:actionHandler:modalViewController:).")
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(page:props:container:arguments:actionHandler:modalViewController:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -117,35 +119,36 @@ final class PageView: UIView {
         page: UIPageBlock?,
         props: [Property]?,
         container: Container,
+        arguments: NubrickArguments?,
         actionHandler: UIBlockActionHandler?,
         modalViewController: ModalComponentViewController?
     ) {
         self.page = page
         self.container = container
+        self.arguments = arguments
         self.modalViewController = modalViewController
 
         // build placeholder input. init.props is passed from other pages, and page.data.props are the page.props.
         // so merge them and create self.props.
         self.props = Self.mergeProps(pageProps: page?.data?.props, actionProps: props)
-
-        self.data = container.createVariableForTemplate(data: nil, properties: self.props)
+        self.variableStore = VariableStore(container.createVariableForTemplate(
+            data: nil,
+            properties: self.props,
+            arguments: arguments
+        ))
         super.init(frame: .zero)
 
-        let parentActionHandler = actionHandler
         self.actionHandler = { [weak self] action, onHttpSettled in
             guard let self else {
                 return
             }
 
-            let variable = _mergeVariable(
-                base: self.data,
-                self.container.createVariableForTemplate(data: nil, properties: self.props)
-            )
+            let variable = self.currentVariable()
 
             let assertion = action.httpResponseAssertion
             let forwardAction = { () -> Void in
                 Task { @MainActor in
-                    parentActionHandler?(action, nil)
+                    actionHandler?(action, nil)
                 }
             }
 
@@ -195,6 +198,15 @@ final class PageView: UIView {
         self.actionHandler?(action, nil)
     }
 
+    func currentVariable() -> Variable? {
+        self.variableStore.variable
+    }
+
+    func update(arguments: NubrickArguments?) {
+        self.arguments = arguments
+        self.variableStore.update(self.createVariable())
+    }
+
     @available(*, deprecated, renamed: "dispatchAction(_:)")
     func dispatch(action: UIBlockAction) {
         self.dispatchAction(action)
@@ -213,22 +225,28 @@ final class PageView: UIView {
 
         Task {
             let variable = self.container.createVariableForTemplate(
-                data: nil, properties: self.props)
+                data: nil,
+                properties: self.props,
+                arguments: self.arguments
+            )
             let result = await self.container.sendHttpRequest(
                 req: httpRequest,
                 assertion: nil,
                 variable: variable
             )
             await MainActor.run { [weak self] in
+                guard let self else {
+                    return
+                }
                 switch result {
                 case .success(let response):
-                    self?.data = self?.container.createVariableForTemplate(
-                        data: response.data?.value, properties: self?.props)
+                    self.responseData = response.data?.value
+                    self.variableStore.update(self.createVariable())
                 default:
                     break
                 }
-                self?.loading = false
-                self?.renderView()
+                self.loading = false
+                self.renderView()
             }
         }
     }
@@ -241,8 +259,9 @@ final class PageView: UIView {
                 context: UIBlockContext(
                     UIBlockContextInit(
                         container: self.container,
-                        variable: self.data,
+                        variableStore: self.variableStore,
                         actionHandler: self.actionHandler,
+                        layoutInvalidationRoot: self,
                         loading: self.loading
                     )
                 ),
@@ -306,5 +325,13 @@ final class PageView: UIView {
                 ptype: property.ptype ?? PropertyType.STRING
             )
         }
+    }
+
+    private func createVariable() -> Variable? {
+        self.container.createVariableForTemplate(
+            data: self.responseData,
+            properties: self.props,
+            arguments: self.arguments
+        )
     }
 }

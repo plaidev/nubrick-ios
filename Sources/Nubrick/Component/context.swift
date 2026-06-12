@@ -5,72 +5,90 @@
 //  Created by Ryosuke Suzuki on 2023/03/28.
 //
 
+import Combine
 import Foundation
+import UIKit
 
 typealias UIBlockActionHandler = @MainActor (_ action: UIBlockAction, _ onHttpSettled: (() -> Void)?) -> Void
 
 struct UIBlockContextInit {
     var container: Container? = nil
-    var variable: Variable? = nil
-    var childData: Any? = nil
+    var variableStore: VariableStore? = nil
     var properties: [Property]? = nil
     var actionHandler: UIBlockActionHandler? = nil
     var parentClickListener: ClickListener? = nil
     var parentDirection: FlexDirection? = nil
+    var layoutInvalidationRoot: UIView? = nil
     var loading: Bool? = false
 }
 
 struct UIBlockContextChildInit {
-    var childData: Any? = nil
+    var variable: Variable? = nil
+    var variableMapper: ((_ variable: Variable?) -> Variable?)? = nil
     var properties: [Property]? = nil
     var actionHandler: UIBlockActionHandler? = nil
     var parentClickListener: ClickListener? = nil
     var parentDirection: FlexDirection? = nil
+    var layoutInvalidationRoot: UIView? = nil
     var loading: Bool? = false
 }
 
 @MainActor
 class UIBlockContext {
-    private let variable: Variable?
     // page properties
     private let properties: [Property]?
     private let container: Container?
     private let actionHandler: UIBlockActionHandler?
+    private let variableStore: VariableStore
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
+    private weak var layoutInvalidationRoot: UIView?
     private var loading: Bool = false
 
     init(_ args: UIBlockContextInit) {
-        self.variable = args.variable
+        self.variableStore = args.variableStore ?? VariableStore()
         self.properties = args.properties
         self.actionHandler = args.actionHandler
         self.parentClickListener = args.parentClickListener
         self.parentDirection = args.parentDirection
+        self.layoutInvalidationRoot = args.layoutInvalidationRoot
         self.loading = args.loading ?? false
         self.container = args.container
     }
 
     func instanciateFrom(_ args: UIBlockContextChildInit) -> UIBlockContext {
-        var v = self.variable
-        if let childData = args.childData {
-            v = _mergeVariable(
-                base: v, self.container?.createVariableForTemplate(data: childData, properties: nil)
-            )
+        let variableStore: VariableStore
+        if let variableMapper = args.variableMapper {
+            variableStore = self.variableStore.derived(variableMapper)
+        } else if let variable = args.variable {
+            variableStore = VariableStore(variable)
+        } else {
+            variableStore = self.variableStore
         }
+
         return UIBlockContext(
             UIBlockContextInit(
                 container: self.container,
-                variable: v,
+                variableStore: variableStore,
                 properties: args.properties ?? self.properties,
                 actionHandler: args.actionHandler ?? self.actionHandler,
                 parentClickListener: args.parentClickListener ?? self.parentClickListener,
                 parentDirection: args.parentDirection ?? self.parentDirection,
+                layoutInvalidationRoot: args.layoutInvalidationRoot ?? self.layoutInvalidationRoot,
                 loading: args.loading ?? self.loading
             ))
     }
 
     func getVariable() -> Variable? {
-        return self.variable
+        return self.variableStore.variable
+    }
+
+    func variablePublisher() -> AnyPublisher<Variable?, Never> {
+        return self.variableStore.publisher()
+    }
+
+    func getLayoutInvalidationRoot() -> UIView? {
+        return self.layoutInvalidationRoot
     }
 
     func isLoading() -> Bool {
@@ -124,43 +142,4 @@ class UIBlockContext {
         return self.parentClickListener
     }
 
-    func getByReferenceKey(key: String?) -> Any? {
-        return variableByPath(path: key ?? "", variable: self.variable?.value)
-    }
-
-    func getArrayByReferenceKey(key: String?) -> [Any]? {
-        if let value = self.getByReferenceKey(key: key) as? [Any] {
-            return value
-        }
-        return nil
-    }
-
-    func getStringByReferenceKey(key: String?) -> String? {
-        if let value = self.getByReferenceKey(key: key) as? String {
-            return value
-        }
-        return nil
-    }
-
-    func getFloatByReferenceKey(key: String?) -> Float? {
-        let value = self.getByReferenceKey(key: key)
-        if let value = value as? Double {
-            return Float(value)
-        }
-        if let value = value as? Int {
-            return Float(value)
-        }
-        return nil
-    }
-
-    func getIntByReferenceKey(key: String?) -> Int? {
-        let value = self.getByReferenceKey(key: key)
-        if let value = value as? Int {
-            return value
-        }
-        if let value = value as? Double {
-            return Int(value)
-        }
-        return nil
-    }
 }

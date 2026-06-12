@@ -5,11 +5,12 @@
 //  Created by Ryosuke Suzuki on 2023/03/28.
 //
 
+import Combine
 import Foundation
 import UIKit
 internal import YogaKit
 
-class FlexView: AnimatedUIControl {
+class FlexView: AnimatedUIControl, BackgroundImageObserver {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     private var context: UIBlockContext?
     private var isOverflowView = false
@@ -19,6 +20,8 @@ class FlexView: AnimatedUIControl {
     private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
+    var cancellables = Set<AnyCancellable>()
+    var backgroundImageLoadTask: Task<Void, Never>?
 
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -112,11 +115,10 @@ class FlexView: AnimatedUIControl {
             self.addSubview(child)
         }
 
-        if childFlexShrink == nil {
-            if let bgSrc = block.data?.frame?.backgroundSrc {
-                let bgSrc = compile(bgSrc, context.getVariable())
-                loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
-            }
+        if childFlexShrink == nil,
+           let context = self.context,
+           let template = self.block.data?.frame?.backgroundSrc {
+            observeBackgroundImage(context: context, urlTemplate: template)
         }
         
         let handleDisabled = makeDisabledStateListener(
@@ -152,6 +154,10 @@ class FlexView: AnimatedUIControl {
         self.hasRegisteredFormValueListener = false
     }
 
+    deinit {
+        self.backgroundImageLoadTask?.cancel()
+    }
+
     override func didMoveToWindow() {
         super.didMoveToWindow()
         if self.window == nil {
@@ -183,10 +189,11 @@ class FlexView: AnimatedUIControl {
         if !self.respectSafeArea { return }
         if newSuperview == nil { hasActivatedConstraints = false }
     }
+
 }
 
 // FlexOverflowView creates a scrollable view and contains FlexView inside as a child.
-class FlexOverflowView: UIScrollView {
+class FlexOverflowView: UIScrollView, BackgroundImageObserver {
     private var flexView: UIView = UIView()
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     private var context: UIBlockContext?
@@ -194,7 +201,9 @@ class FlexOverflowView: UIScrollView {
     private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
-    
+    var cancellables = Set<AnyCancellable>()
+    var backgroundImageLoadTask: Task<Void, Never>?
+
     required init?(coder aDecoder: NSCoder) {
         self.context = nil
         super.init(coder: aDecoder)
@@ -258,9 +267,9 @@ class FlexOverflowView: UIScrollView {
         self.flexView = flexView
         self.addSubview(flexView)
 
-        if let bgSrc = block.data?.frame?.backgroundSrc {
-            let bgSrc = compile(bgSrc, context.getVariable())
-            loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
+        if let context = self.context,
+           let template = self.block.data?.frame?.backgroundSrc {
+            observeBackgroundImage(context: context, urlTemplate: template)
         }
         
         let handleDisabled = makeDisabledStateListener(
@@ -294,6 +303,10 @@ class FlexOverflowView: UIScrollView {
 
         self.context?.removeFormValueListener(id)
         self.hasRegisteredFormValueListener = false
+    }
+
+    deinit {
+        self.backgroundImageLoadTask?.cancel()
     }
 
     override func didMoveToWindow() {
@@ -331,4 +344,5 @@ class FlexOverflowView: UIScrollView {
         self.contentSize = self.flexView.bounds.size
         configureBorder(view: self, frame: self.block.data?.frame)
     }
+
 }

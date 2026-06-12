@@ -171,7 +171,11 @@ func makeDisabledStateListener(target: UIView, context: UIBlockContext, required
 func compileAction(action: UIBlockAction, context: UIBlockContext?) -> UIBlockAction {
     guard let context = context else { return action }
 
-    let variable = context.getVariable()
+    return compileAction(action: action, variable: context.getVariable())
+}
+
+@MainActor
+func compileAction(action: UIBlockAction, variable: Variable?) -> UIBlockAction {
     let deepLink = action.deepLink
     let eventName = action.eventName ?? action.name
     let legacyName = action.name ?? action.eventName

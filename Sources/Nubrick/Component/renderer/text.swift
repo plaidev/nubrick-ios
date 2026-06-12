@@ -1,7 +1,8 @@
+import Combine
 import Foundation
 import UIKit
 
-class TextView: AnimatedUIControl {
+class TextView: AnimatedUIControl, BackgroundImageObserver {
     var label: UILabel = UILabel()
     var block: UITextBlock = UITextBlock()
     var context: UIBlockContext?
@@ -9,6 +10,8 @@ class TextView: AnimatedUIControl {
     private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
+    var cancellables = Set<AnyCancellable>()
+    var backgroundImageLoadTask: Task<Void, Never>?
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
@@ -36,8 +39,6 @@ class TextView: AnimatedUIControl {
             label.textColor = .label
         }
         label.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
-        let text = compile(block.data?.value ?? "", context.getVariable())
-        label.text = text
         if let maxLines = block.data?.maxLines {
             label.numberOfLines = maxLines
         } else {
@@ -47,6 +48,7 @@ class TextView: AnimatedUIControl {
         
         self.label = label
         self.addSubview(label)
+        self.bindVariable()
         
         _ = configureOnClickGesture(
             target: self,
@@ -54,11 +56,6 @@ class TextView: AnimatedUIControl {
             context: context,
             uiBlockAction: block.data?.onClick
         )
-        
-        if let bgSrc = block.data?.frame?.backgroundSrc {
-            let bgSrc = compile(bgSrc, context.getVariable())
-            loadAsyncImageToBackgroundSrc(url: bgSrc, view: self)
-        }
         
         let handleDisabled = makeDisabledStateListener(
             target: self,
@@ -93,6 +90,10 @@ class TextView: AnimatedUIControl {
         self.hasRegisteredFormValueListener = false
     }
 
+    deinit {
+        self.backgroundImageLoadTask?.cancel()
+    }
+
     override func didMoveToWindow() {
         super.didMoveToWindow()
 
@@ -106,5 +107,30 @@ class TextView: AnimatedUIControl {
     override func layoutSubviews() {
         super.layoutSubviews()
         configureBorder(view: self, frame: self.block.data?.frame)
+    }
+
+    private func bindVariable() {
+        guard let context = self.context else {
+            return
+        }
+
+        let textTemplate = self.block.data?.value ?? ""
+        var shouldInvalidateLayout = false
+        context.variablePublisher()
+            .map { compile(textTemplate, $0) }
+            .removeDuplicates()
+            .sink { [weak self] text in
+                guard let self else { return }
+                self.label.text = text
+                if shouldInvalidateLayout {
+                    invalidateYogaLayout(from: self.label, layoutRoot: context.getLayoutInvalidationRoot())
+                }
+                shouldInvalidateLayout = true
+            }
+            .store(in: &self.cancellables)
+
+        if let template = self.block.data?.frame?.backgroundSrc {
+            observeBackgroundImage(context: context, urlTemplate: template)
+        }
     }
 }

@@ -34,7 +34,7 @@ struct NubrickDependencyContainer : Sendable {
     }
 
     @MainActor
-    func makeContainer(arguments: NubrickArguments? = nil) -> Container {
+    func makeContainer() -> Container {
         ContainerImpl(
             config: config,
             user: user,
@@ -43,8 +43,7 @@ struct NubrickDependencyContainer : Sendable {
             componentRepository: componentRepository,
             trackRepository: trackRepository,
             databaseRepository: databaseRepository,
-            httpRequestRepository: httpRequestRepository,
-            arguments: arguments
+            httpRequestRepository: httpRequestRepository
         )
     }
 }

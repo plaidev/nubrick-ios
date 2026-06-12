@@ -26,7 +26,7 @@ class ModalRootViewController: UIViewController {
         }
         self.modalViewController = modalViewController
         self.modalViewController?.dismissModal()
-        self.container = container
+        self.container = container.makeContainer()
         super.init(nibName: nil, bundle: nil)
 
         self.actionHandler = { [weak self] action, _ in
@@ -40,7 +40,7 @@ class ModalRootViewController: UIViewController {
         }
 
         if let onTrigger = trigger?.data?.triggerSetting?.onTrigger {
-            self.actionHandler?(onTrigger, nil)
+            self.actionHandler?(compileAction(action: onTrigger, variable: self.rootVariable()), nil)
         }
     }
 
@@ -75,8 +75,11 @@ class ModalRootViewController: UIViewController {
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
             let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
+            let variableProvider: @MainActor () -> Variable? = { [weak self] in
+                self?.rootVariable()
+            }
             self.modalViewController?.presentWebview(
-                url: page?.data?.webviewUrl,
+                url: page?.data?.webviewUrl.map { compile($0, variableProvider()) },
                 backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
                     event: onBackButtonClick,
                     context: UIBlockContext(
@@ -84,7 +87,8 @@ class ModalRootViewController: UIViewController {
                             container: self.container,
                             actionHandler: self.actionHandler
                         )
-                    )
+                    ),
+                    variableProvider: variableProvider
                 ) : nil
             )
             return
@@ -94,6 +98,7 @@ class ModalRootViewController: UIViewController {
             page: page,
             props: props,
             container: self.container,
+            arguments: nil,
             actionHandler: self.actionHandler,
             modalViewController: self.modalViewController
         )
@@ -112,7 +117,8 @@ class ModalRootViewController: UIViewController {
                             container: self.container,
                             actionHandler: self.actionHandler
                         )
-                    )
+                    ),
+                    variableProvider: { [weak pageView] in pageView?.currentVariable() }
                 ) : nil
             )
             break
@@ -121,12 +127,17 @@ class ModalRootViewController: UIViewController {
             break
         }
     }
+
+    private func rootVariable() -> Variable? {
+        self.container.createVariableForTemplate(data: nil, properties: nil, arguments: nil)
+    }
 }
 
 struct RootViewRepresentable: UIViewRepresentable {
     typealias UIViewType = RootView
     let root: UIRootBlock?
     let container: Container
+    let arguments: NubrickArguments?
     let modalViewController: ModalComponentViewController?
     let onEvent: ((_ action: UIBlockAction) -> Void)?
     let onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)?
@@ -168,18 +179,24 @@ struct RootViewRepresentable: UIViewRepresentable {
 
 
     func makeUIView(context: Self.Context) -> Self.UIViewType {
-        let onSizeChange: (NubrickSize, NubrickSize) -> Void = { [weak coordinator = context.coordinator] w, h in
+        let reportSizeChange: (NubrickSize, NubrickSize) -> Void = { [weak coordinator = context.coordinator] w, h in
             Task { @MainActor in
                 coordinator?.report(width: w, height: h)
             }
         }
         return RootView(
-            root: root, container: container, modalViewController: modalViewController,
-            onEvent: onEvent, onSizeChange: onSizeChange)
+            root: root,
+            container: container,
+            arguments: arguments,
+            modalViewController: modalViewController,
+            onEvent: onEvent,
+            onSizeChange: reportSizeChange
+        )
     }
 
     // Update the wrapped UIView when SwiftUI state changes.
     func updateUIView(_ uiView: Self.UIViewType, context: Self.Context) {
+        uiView.update(arguments: arguments, onEvent: onEvent)
         context.coordinator.onSizeChange = onSizeChange
     }
 
@@ -201,11 +218,13 @@ class RootView: UIView {
     private var view: UIView? = nil
     private var currentPageView: PageView? = nil
     private var modalViewController: ModalComponentViewController? = nil
-    private let container: Container
+    private var container: Container
+    private var arguments: NubrickArguments?
+    private var onEvent: ((_ action: UIBlockAction) -> Void)?
     // callback to transmit size to SwiftUI
     var onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)?
 
-    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(root:container:modalViewController:onEvent:onNextTooltip:onDismiss:onSizeChange:).")
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(root:container:arguments:modalViewController:onEvent:onNextTooltip:onDismiss:onSizeChange:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -213,6 +232,7 @@ class RootView: UIView {
     init(
         root: UIRootBlock?,
         container: Container,
+        arguments: NubrickArguments? = nil,
         modalViewController: ModalComponentViewController?,
         onEvent: ((_ action: UIBlockAction) -> Void)?,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
@@ -220,12 +240,14 @@ class RootView: UIView {
         onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
         self.id = root?.id ?? ""
-        self.container = container
+        self.container = container.makeContainer()
+        self.arguments = arguments
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
             return page.data?.kind == PageKind.TRIGGER
         }
         self.modalViewController = modalViewController
+        self.onEvent = onEvent
         self.onNextTooltip = onNextTooltip ?? { _ in }
         self.onDismiss = onDismiss ?? {}
         self.onSizeChange = onSizeChange
@@ -243,11 +265,11 @@ class RootView: UIView {
                 self.presentPage(pageId: destinationPageId, props: action.payload)
             }
             self.container.handleEvent(action)
-            onEvent?(action)
+            self.onEvent?(action)
         }
 
         if let onTrigger = trigger?.data?.triggerSetting?.onTrigger {
-            self.actionHandler?(onTrigger, nil)
+            self.actionHandler?(compileAction(action: onTrigger, variable: self.rootVariable()), nil)
         }
     }
 
@@ -258,6 +280,15 @@ class RootView: UIView {
         } else {
             self.actionHandler?(action, nil)
         }
+    }
+
+    func update(
+        arguments: NubrickArguments?,
+        onEvent: ((_ action: UIBlockAction) -> Void)?
+    ) {
+        self.arguments = arguments
+        self.onEvent = onEvent
+        self.currentPageView?.update(arguments: arguments)
     }
 
     @available(*, deprecated, renamed: "dispatchAction(_:)")
@@ -297,8 +328,11 @@ class RootView: UIView {
         // when it's webview modal
         if page?.data?.kind == PageKind.WEBVIEW_MODAL {
             let onBackButtonClick = page?.data?.triggerSetting?.onTrigger
+            let variableProvider: @MainActor () -> Variable? = { [weak self] in
+                self?.rootVariable()
+            }
             self.modalViewController?.presentWebview(
-                url: page?.data?.webviewUrl,
+                url: page?.data?.webviewUrl.map { compile($0, variableProvider()) },
                 backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
                     event: onBackButtonClick,
                     context: UIBlockContext(
@@ -306,7 +340,8 @@ class RootView: UIView {
                             container: self.container,
                             actionHandler: self.actionHandler
                         )
-                    )
+                    ),
+                    variableProvider: variableProvider
                 ) : nil
             )
             return
@@ -319,10 +354,19 @@ class RootView: UIView {
             self.currentTooltipAnchorId = anchorId
         }
 
+        if page?.data?.kind != .MODAL {
+            self.modalViewController?.dismissModal()
+            if self.currentEmbeddedPageId == currentPageId {
+                self.currentPageView?.update(arguments: self.arguments)
+                return
+            }
+        }
+
         let pageView = PageView(
             page: page,
             props: props,
             container: self.container,
+            arguments: self.arguments,
             actionHandler: self.actionHandler,
             modalViewController: self.modalViewController
         )
@@ -342,7 +386,8 @@ class RootView: UIView {
                             container: self.container,
                             actionHandler: self.actionHandler
                         )
-                    )
+                    ),
+                    variableProvider: { [weak pageView] in pageView?.currentVariable() }
                 ) : nil
             )
         case .COMPONENT:
@@ -354,10 +399,6 @@ class RootView: UIView {
             self.onSizeChange?(width, height)
             fallthrough
         default:
-            self.modalViewController?.dismissModal()
-            if self.currentEmbeddedPageId == currentPageId {
-                return
-            }
             self.view?.removeFromSuperview()
             self.view = pageView
             self.addSubview(pageView)
@@ -366,6 +407,14 @@ class RootView: UIView {
             self.superview?.invalidateIntrinsicContentSize() // we need to invalidate intrinsic for the EmbeddingUIView for relayout
             break
         }
+    }
+
+    private func rootVariable() -> Variable? {
+        self.container.createVariableForTemplate(
+            data: nil,
+            properties: nil,
+            arguments: self.arguments
+        )
     }
 
     override func layoutSubviews() {

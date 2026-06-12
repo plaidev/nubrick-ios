@@ -98,15 +98,21 @@ class ModalComponentViewController: UIViewController {
 class ModalBackButtonBehaviorDelegate: NSObject, SFSafariViewControllerDelegate {
     private let actionEvent: UIBlockAction?
     private let context: UIBlockContext
+    private let variableProvider: @MainActor () -> Variable?
 
-    init(event: UIBlockAction?, context: UIBlockContext) {
+    init(
+        event: UIBlockAction?,
+        context: UIBlockContext,
+        variableProvider: @escaping @MainActor () -> Variable? = { nil }
+    ) {
         self.actionEvent = event
         self.context = context
+        self.variableProvider = variableProvider
     }
 
     func onBackButtonClick() {
         guard let actionEvent else { return }
-        let compiledAction = compileAction(action: actionEvent, context: context)
+        let compiledAction = compileAction(action: actionEvent, variable: variableProvider())
         context.dispatch(action: compiledAction)
     }
 

@@ -91,7 +91,8 @@ public final class RemoteConfigVariant : Sendable {
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: self.container.makeContainer(arguments: arguments),
+            container: self.container,
+            arguments: arguments,
             modalViewController: self.modalViewController,
             onEvent: onEvent
         )
@@ -108,7 +109,8 @@ public final class RemoteConfigVariant : Sendable {
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: self.container.makeContainer(arguments: arguments),
+            container: self.container,
+            arguments: arguments,
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             content: content
@@ -127,7 +129,8 @@ public final class RemoteConfigVariant : Sendable {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: self.container.makeContainer(arguments: arguments),
+            container: self.container,
+            arguments: arguments,
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: nil
@@ -148,7 +151,8 @@ public final class RemoteConfigVariant : Sendable {
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
             componentId: componentId,
-            container: self.container.makeContainer(arguments: arguments),
+            container: self.container,
+            arguments: arguments,
             modalViewController: self.modalViewController,
             onEvent: onEvent,
             fallback: content
