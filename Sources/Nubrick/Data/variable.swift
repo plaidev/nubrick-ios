@@ -33,6 +33,12 @@ final class VariableStore {
         self.variable = Variable(value: value)
     }
 
+    func updateUser(_ userData: [String: Any]) {
+        guard var value = self.variable?.value else { return }
+        value["user"] = userData.isEmpty ? nil : userData as Any
+        self.variable = Variable(value: value)
+    }
+
     func publisher() -> AnyPublisher<Variable?, Never> {
         self.$variable.eraseToAnyPublisher()
     }

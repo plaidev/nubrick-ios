@@ -147,6 +147,13 @@ final class PageView: UIView {
             }
             .store(in: &self.cancellables)
 
+        container.userDataPublisher()
+            .dropFirst()
+            .sink { [weak self] userData in
+                self?.variableStore.updateUser(userData)
+            }
+            .store(in: &self.cancellables)
+
         self.actionHandler = { [weak self] action, onHttpSettled in
             guard let self else {
                 return

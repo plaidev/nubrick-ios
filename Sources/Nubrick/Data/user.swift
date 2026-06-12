@@ -5,6 +5,7 @@
 //  Created by Ryosuke Suzuki on 2023/08/28.
 //
 
+import Combine
 import Foundation
 import UIKit
 
@@ -64,8 +65,8 @@ private func formatUserPropertyValue(_ value: Any) -> String {
 
 @MainActor
 class NubrickUser {
-    private var properties: [String: String]
-    private var customProperties: [String: String]
+    @Published private var properties: [String: String]
+    @Published private var customProperties: [String: String]
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
     internal var userDB: UserDefaults
 
@@ -116,6 +117,17 @@ class NubrickUser {
         }
 
         self.comeBack()
+    }
+
+    var userDataPublisher: AnyPublisher<[String: Any], Never> {
+        Publishers.CombineLatest($properties, $customProperties)
+            .map { props, custom -> [String: Any] in
+                let userId = props[BuiltinUserProperty.userId.rawValue] ?? ""
+                var userData: [String: Any] = ["id": userId, BuiltinUserProperty.userId.rawValue: userId]
+                custom.forEach { userData[$0.key] = $0.value }
+                return userData
+            }
+            .eraseToAnyPublisher()
     }
 
     var id: String {
