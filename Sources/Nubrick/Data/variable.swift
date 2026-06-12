@@ -15,7 +15,7 @@ struct Variable: @unchecked Sendable {
 }
 
 @MainActor
-final class VariableStore: ObservableObject {
+final class VariableStore {
     @Published private(set) var variable: Variable?
     private var cancellables = Set<AnyCancellable>()
 
@@ -25,6 +25,12 @@ final class VariableStore: ObservableObject {
 
     func update(_ variable: Variable?) {
         self.variable = variable
+    }
+
+    func updateForm(_ form: [String: Any]) {
+        guard var value = self.variable?.value else { return }
+        value["form"] = form.isEmpty ? nil : form as Any
+        self.variable = Variable(value: value)
     }
 
     func publisher() -> AnyPublisher<Variable?, Never> {

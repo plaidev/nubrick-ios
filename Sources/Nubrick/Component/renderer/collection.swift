@@ -114,10 +114,6 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     // for auto scroll
     private var timer: Timer? = nil
     private var counter: Int = 0
-    private var formValueListenerId: String?
-    private let formValueListenerInstanceId = UUID().uuidString
-    private var formValueListener: FormValueListener?
-    private var hasRegisteredFormValueListener = false
     var cancellables = Set<AnyCancellable>()
     var backgroundImageLoadTask: Task<Void, Never>?
     
@@ -199,16 +195,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             self.addSubview(pageControl)
         }
 
-        let handleDisabled = makeDisabledStateListener(
-            target: self,
-            context: context,
-            requiredFields: block.data?.onClick?.requiredFields
-        )
-
-        if let id = block.id, let handleDisabled = handleDisabled {
-            self.formValueListenerId = "\(id)::\(self.formValueListenerInstanceId)"
-            self.formValueListener = handleDisabled
-        }
+        makeDisabledStateListener(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)?.store(in: &cancellables)
 
         self.bindVariable()
     }
@@ -240,26 +227,6 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
 
     private static func referencedItems(reference: String, variable: Variable?) -> [Any] {
         return variableByPath(path: reference, variable: variable?.value) as? [Any] ?? []
-    }
-
-    private func registerFormValueListenerIfNeeded() {
-        guard !self.hasRegisteredFormValueListener else { return }
-        guard
-            let id = self.formValueListenerId,
-            let listener = self.formValueListener
-        else { return }
-
-        self.context.addFormValueListener(id, listener)
-        listener(self.context.getFormValues())
-        self.hasRegisteredFormValueListener = true
-    }
-
-    private func unregisterFormValueListenerIfNeeded() {
-        guard self.hasRegisteredFormValueListener else { return }
-        guard let id = self.formValueListenerId else { return }
-
-        self.context.removeFormValueListener(id)
-        self.hasRegisteredFormValueListener = false
     }
 
     deinit {
@@ -307,10 +274,8 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
         super.didMoveToWindow()
 
         if self.window == nil {
-            self.unregisterFormValueListenerIfNeeded()
             self.stopAutoScrollTimer()
         } else {
-            self.registerFormValueListenerIfNeeded()
             self.startAutoScrollTimerIfNeeded()
         }
     }

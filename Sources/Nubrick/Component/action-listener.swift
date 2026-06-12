@@ -5,6 +5,7 @@
 //  Created by Ryosuke Suzuki on 2023/03/28.
 //
 
+import Combine
 import Foundation
 import UIKit
 
@@ -130,41 +131,26 @@ func configureOnClickGesture(
     return gesture
 }
 
-func getIsDisabled(requiredFields: [String]) -> (([String: Any]) -> Boolean) {
-    return { values in
-        return requiredFields.contains {
-            if let value = values[$0] as? String {
-                return value.isEmpty
-            }
-            return false
+func isDisabled(requiredFields: [String], values: [String: Any]) -> Bool {
+    return requiredFields.contains {
+        if let value = values[$0] as? String {
+            return value.isEmpty
         }
+        return false
     }
 }
 
 @MainActor
-func makeDisabledStateListener(target: UIView, context: UIBlockContext, requiredFields: [String]?) -> FormValueListener? {
-    guard let requiredFields = requiredFields, !requiredFields.isEmpty else { return nil }
-    let isDisabled = getIsDisabled(requiredFields: requiredFields)
-
-    let handleFormValueChange: FormValueListener = { [weak target] values in
-        guard let target = target else {
-            return
+func makeDisabledStateListener(target: UIView, context: UIBlockContext, requiredFields: [String]?) -> AnyCancellable? {
+    guard let requiredFields, !requiredFields.isEmpty else { return nil }
+    return context.formPublisher()
+        .map { isDisabled(requiredFields: requiredFields, values: $0) }
+        .removeDuplicates()
+        .sink { [weak target] disabled in
+            guard let target else { return }
+            target.isUserInteractionEnabled = !disabled
+            target.alpha = disabled ? 0.5 : 1.0
         }
-
-        if isDisabled(values) {
-            target.isUserInteractionEnabled = false
-            target.alpha = 0.5
-        } else {
-            target.isUserInteractionEnabled = true
-            target.alpha = 1.0
-        }
-    }
-
-    // apply the initial state
-    let values = context.getFormValues()
-    handleFormValueChange(values)
-
-    return handleFormValueChange
 }
 
 @MainActor

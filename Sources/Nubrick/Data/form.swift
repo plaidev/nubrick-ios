@@ -5,44 +5,34 @@
 //  Created by Ryosuke Suzuki on 2024/03/07.
 //
 
+import Combine
 import Foundation
 
-typealias FormValueListener = ([String: Any]) -> Void
-
 @MainActor
-protocol FormRepository : Sendable {
-    func getFormData() -> [String:Any]
+protocol FormRepository: Sendable {
+    var formDataPublisher: AnyPublisher<[String: Any], Never> { get }
+    func getFormData() -> [String: Any]
     func setValue(key: String, value: Any)
     func getValue(key: String) -> Any?
-    func addFormValueListener(id: String, listener: @escaping FormValueListener)
-    func removeFormValueListener(id: String)
 }
 
 @MainActor
 final class FormRepositoryImpl: FormRepository {
-    private var map: [String: Any] = [:]
-    private var listeners: [String: FormValueListener] = [:]
-    
-    func getFormData() -> [String : Any] {
-        return self.map
+    @Published private var formData: [String: Any] = [:]
+
+    var formDataPublisher: AnyPublisher<[String: Any], Never> {
+        $formData.eraseToAnyPublisher()
     }
-    
+
+    func getFormData() -> [String: Any] {
+        return formData
+    }
+
     func getValue(key: String) -> Any? {
-        return self.map[key]
+        return formData[key]
     }
-    
+
     func setValue(key: String, value: Any) {
-        self.map[key] = value
-        for callback in self.listeners.values {
-            callback(map)
-        }
-    }
-    
-    func addFormValueListener(id: String, listener: @escaping FormValueListener) {
-        self.listeners.updateValue(listener, forKey: id)
-    }
-    
-    func removeFormValueListener(id: String) {
-        self.listeners.removeValue(forKey: id)
+        formData[key] = value
     }
 }
