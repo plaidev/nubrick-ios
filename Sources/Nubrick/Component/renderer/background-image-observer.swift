@@ -9,6 +9,12 @@ protocol BackgroundImageObserver: UIView {
 
 extension BackgroundImageObserver {
     func observeBackgroundImage(context: UIBlockContext, urlTemplate: String) {
+        guard hasPlaceholderPath(template: urlTemplate) else {
+            self.backgroundImageLoadTask?.cancel()
+            self.backgroundImageLoadTask = loadAsyncImageToBackgroundSrc(url: urlTemplate, view: self)
+            return
+        }
+
         context.variablePublisher()
             .map { compile(urlTemplate, $0) }
             .removeDuplicates()

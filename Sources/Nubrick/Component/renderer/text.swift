@@ -115,19 +115,23 @@ class TextView: AnimatedUIControl, BackgroundImageObserver {
         }
 
         let textTemplate = self.block.data?.value ?? ""
-        var shouldInvalidateLayout = false
-        context.variablePublisher()
-            .map { compile(textTemplate, $0) }
-            .removeDuplicates()
-            .sink { [weak self] text in
-                guard let self else { return }
-                self.label.text = text
-                if shouldInvalidateLayout {
-                    invalidateYogaLayout(from: self.label, layoutRoot: context.getLayoutInvalidationRoot())
+        if hasPlaceholderPath(template: textTemplate) {
+            var shouldInvalidateLayout = false
+            context.variablePublisher()
+                .map { compile(textTemplate, $0) }
+                .removeDuplicates()
+                .sink { [weak self] text in
+                    guard let self else { return }
+                    self.label.text = text
+                    if shouldInvalidateLayout {
+                        invalidateYogaLayout(from: self.label, layoutRoot: context.getLayoutInvalidationRoot())
+                    }
+                    shouldInvalidateLayout = true
                 }
-                shouldInvalidateLayout = true
-            }
-            .store(in: &self.cancellables)
+                .store(in: &self.cancellables)
+        } else {
+            self.label.text = textTemplate
+        }
 
         if let template = self.block.data?.frame?.backgroundSrc {
             observeBackgroundImage(context: context, urlTemplate: template)

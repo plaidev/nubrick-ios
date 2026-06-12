@@ -203,6 +203,9 @@ final class PageView: UIView {
     }
 
     func update(arguments: NubrickArguments?) {
+        guard self.arguments != nil || arguments != nil else {
+            return
+        }
         self.arguments = arguments
         self.variableStore.update(self.createVariable())
     }

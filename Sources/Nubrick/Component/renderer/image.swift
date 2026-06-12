@@ -125,6 +125,11 @@ class ImageView: AnimatedUIControl {
         }
 
         let srcTemplate = self.block.data?.src ?? ""
+        guard hasPlaceholderPath(template: srcTemplate) else {
+            self.applyImageSource(srcTemplate)
+            return
+        }
+
         context.variablePublisher()
             .map { compile(srcTemplate, $0) }
             .removeDuplicates()
