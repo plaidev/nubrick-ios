@@ -156,20 +156,18 @@ class ImageView: AnimatedUIControl {
 
 @MainActor
 func loadAsyncImageToBackgroundSrc(url: String, view: UIView) -> Task<Void, Never>? {
-    guard let requestUrl = URL(string: url) else {
-        return nil
-    }
-    
     let fallbackSetting = parseImageFallbackToBlurhash(url)
     let fallback = fallbackSetting.blurhash == "" ? UIImage() : UIImage(
         blurHash: fallbackSetting.blurhash,
         size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))
     )
-    
-    if let fallback = fallback {
-        view.layer.contents = fallback.cgImage
-        view.contentMode = UIView.ContentMode.scaleAspectFill
-        view.clipsToBounds = true
+
+    view.layer.contents = fallback?.cgImage
+    view.contentMode = UIView.ContentMode.scaleAspectFill
+    view.clipsToBounds = true
+
+    guard let requestUrl = URL(string: url) else {
+        return nil
     }
     
     return Task {

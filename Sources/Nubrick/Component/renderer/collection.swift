@@ -228,6 +228,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                     self.pageControl?.numberOfPages = self.childrenCount
                     self.setCurrentPage(min(self.getCurrentPage(), max(0, self.childrenCount - 1)))
                     self.collectionView?.reloadData()
+                    self.reconcileAutoScrollTimer()
                 }
                 .store(in: &self.cancellables)
         }
@@ -287,6 +288,19 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     private func stopAutoScrollTimer() {
         self.timer?.invalidate()
         self.timer = nil
+    }
+
+    private func reconcileAutoScrollTimer() {
+        guard self.window != nil else {
+            self.stopAutoScrollTimer()
+            return
+        }
+
+        if self.shouldAutoScroll() {
+            self.startAutoScrollTimerIfNeeded()
+        } else {
+            self.stopAutoScrollTimer()
+        }
     }
 
     override func didMoveToWindow() {
