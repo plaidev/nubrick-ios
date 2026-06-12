@@ -55,7 +55,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
 
 @MainActor
 final class ContainerTests: XCTestCase {
-    private func makeContainer(arguments: NubrickArguments? = nil) throws -> Container {
+    private func makeContainer() throws -> Container {
         let db = try XCTUnwrap(createNativebrikCoreDataHelper(), "Could not init DB")
         let user = NubrickUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
@@ -66,7 +66,7 @@ final class ContainerTests: XCTestCase {
             persistentContainer: db,
             httpRequestInterceptor: nil
         )
-        return dependencies.makeContainer(arguments: arguments)
+        return dependencies.makeContainer()
     }
 
     func testShouldCallApiHttpRequest() async throws {
@@ -82,22 +82,21 @@ final class ContainerTests: XCTestCase {
     }
 
     func testMakeContainerShouldApplyArgumentsPerContext() throws {
-        let root = try makeContainer()
+        let container = try makeContainer()
         let arguments: NubrickArguments = ["bannerId": "banner_123"]
-        let child = root.makeContainer(arguments: arguments)
 
-        let rootVariable = root.createVariableForTemplate(data: nil, properties: nil)
-        let childVariable = child.createVariableForTemplate(data: nil, properties: nil)
+        let noArgsVariable = container.createVariableForTemplate(data: nil, properties: nil, arguments: nil)
+        let withArgsVariable = container.createVariableForTemplate(data: nil, properties: nil, arguments: arguments)
 
-        XCTAssertEqual("", compile("{{ args.bannerId }}", rootVariable))
-        XCTAssertEqual("banner_123", compile("{{ args.bannerId }}", childVariable))
+        XCTAssertEqual("", compile("{{ args.bannerId }}", noArgsVariable))
+        XCTAssertEqual("banner_123", compile("{{ args.bannerId }}", withArgsVariable))
     }
 
     func testMakeContainerShouldIsolateFormState() throws {
         let root = try makeContainer()
         root.setFormValue(key: "email", value: "root@example.com")
 
-        let child = root.makeContainer(arguments: nil)
+        let child = root.makeContainer()
         let rootEmailBefore = root.getFormValue(key: "email") as? String
         let childEmailBefore = child.getFormValue(key: "email") as? String
         XCTAssertEqual("root@example.com", rootEmailBefore)

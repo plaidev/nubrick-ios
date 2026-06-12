@@ -5,6 +5,7 @@
 //  Created by Ryosuke Suzuki on 2023/03/31.
 //
 
+import Combine
 import Foundation
 import UIKit
 internal import YogaKit
@@ -101,12 +102,11 @@ fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollection
     }
 }
 
-class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, BackgroundImageObserver {
     private let block: UICollectionBlock?
     private let context: UIBlockContext
     private var childrenCount: Int = 0
     private var isReferenced: Bool = false
-    private var data: [Any]? = nil
     private var gesture: ClickListener? = nil
     private var pageControl: UIPageControl? = nil
     private var collectionView: UICollectionView? = nil
@@ -118,28 +118,24 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
+    var cancellables = Set<AnyCancellable>()
+    var backgroundImageLoadTask: Task<Void, Never>?
     
     required init?(coder aDecoder: NSCoder) {
         self.block = nil
         self.context = UIBlockContext(UIBlockContextInit())
         self.childrenCount = 0
         self.isReferenced = false
-        self.data = nil
         super.init(coder: aDecoder)
     }
     
     init(block: UICollectionBlock, context: UIBlockContext) {
         self.block = block
         self.context = context
+        self.isReferenced = block.data?.reference != nil
         if let reference = block.data?.reference {
-            if let data = context.getArrayByReferenceKey(key: reference) {
-                self.childrenCount = data.count
-                self.isReferenced = true
-                self.data = data
-            }
-        }
-
-        if !self.isReferenced {
+            self.childrenCount = Self.referencedItems(reference: reference, variable: context.getVariable()).count
+        } else {
             self.childrenCount = block.data?.children?.count ?? 0
         }
 
@@ -213,6 +209,37 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             self.formValueListenerId = "\(id)::\(self.formValueListenerInstanceId)"
             self.formValueListener = handleDisabled
         }
+
+        self.bindVariable()
+    }
+
+    private func bindVariable() {
+        if let reference = self.block?.data?.reference {
+            self.context.variablePublisher()
+                .map { variable in
+                    Self.referencedItems(reference: reference, variable: variable).count
+                }
+                .removeDuplicates()
+                .dropFirst()
+                .sink { [weak self] childrenCount in
+                    guard let self else { return }
+                    self.childrenCount = childrenCount
+
+                    self.pageControl?.numberOfPages = self.childrenCount
+                    self.setCurrentPage(min(self.getCurrentPage(), max(0, self.childrenCount - 1)))
+                    self.collectionView?.reloadData()
+                    self.reconcileAutoScrollTimer()
+                }
+                .store(in: &self.cancellables)
+        }
+
+        if let template = self.block?.data?.frame?.backgroundSrc {
+            observeBackgroundImage(context: self.context, urlTemplate: template)
+        }
+    }
+
+    private static func referencedItems(reference: String, variable: Variable?) -> [Any] {
+        return variableByPath(path: reference, variable: variable?.value) as? [Any] ?? []
     }
 
     private func registerFormValueListenerIfNeeded() {
@@ -233,6 +260,10 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
 
         self.context.removeFormValueListener(id)
         self.hasRegisteredFormValueListener = false
+    }
+
+    deinit {
+        self.backgroundImageLoadTask?.cancel()
     }
 
     private func shouldAutoScroll() -> Bool {
@@ -257,6 +288,19 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     private func stopAutoScrollTimer() {
         self.timer?.invalidate()
         self.timer = nil
+    }
+
+    private func reconcileAutoScrollTimer() {
+        guard self.window != nil else {
+            self.stopAutoScrollTimer()
+            return
+        }
+
+        if self.shouldAutoScroll() {
+            self.startAutoScrollTimerIfNeeded()
+        } else {
+            self.stopAutoScrollTimer()
+        }
     }
 
     override func didMoveToWindow() {
@@ -286,16 +330,22 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                 guard let child = self.block?.data?.children?[0] else {
                     return cell
                 }
-                guard let childData = self.data?[indexPath.item] else {
+                guard let reference = self.block?.data?.reference else {
                     return cell
                 }
+                let item = indexPath.item
                 let childView = UIViewBlock(
                     data: child,
                     context: self.context.instanciateFrom(
                         UIBlockContextChildInit(
-                            childData: childData,
+                            variableMapper: { variable in
+                                let data = Self.referencedItems(reference: reference, variable: variable)
+                                let childData: Any = data.indices.contains(item) ? data[item] : ([:] as [String: Any])
+                                return _replaceVariableData(base: variable, data: childData)
+                            },
                             parentClickListener: self.gesture,
-                            parentDirection: self.block?.data?.direction
+                            parentDirection: self.block?.data?.direction,
+                            layoutInvalidationRoot: cell
                         )
                     )
                 )
@@ -309,7 +359,8 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                     context: self.context.instanciateFrom(
                         UIBlockContextChildInit(
                             parentClickListener: self.gesture,
-                            parentDirection: self.block?.data?.direction
+                            parentDirection: self.block?.data?.direction,
+                            layoutInvalidationRoot: cell
                         )
                     )
                 )
@@ -329,15 +380,15 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
     }
     
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        self.pageControl?.currentPage = getCurrentPage()
+        self.setCurrentPage(self.getCurrentPage())
     }
         
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-        self.pageControl?.currentPage = getCurrentPage()
+        self.setCurrentPage(self.getCurrentPage())
     }
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        self.pageControl?.currentPage = getCurrentPage()
+        self.setCurrentPage(self.getCurrentPage())
     }
     
     func getCurrentPage() -> Int {
@@ -353,6 +404,11 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             return visibleIndexPath.row
         }
         return pageControl.currentPage
+    }
+
+    private func setCurrentPage(_ page: Int) {
+        self.counter = page
+        self.pageControl?.currentPage = page
     }
     
     func automaticScroll() {

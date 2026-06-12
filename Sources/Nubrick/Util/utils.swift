@@ -21,6 +21,17 @@ func presentOnTop(window: UIWindow?, modal: UIViewController) {
     presented.present(modal, animated: true)
 }
 
+@MainActor
+func invalidateYogaLayout(from view: UIView, layoutRoot: UIView?) {
+    if view.yoga.isEnabled && view.yoga.isLeaf {
+        view.yoga.markDirty()
+    }
+
+    let target = layoutRoot ?? view
+    target.setNeedsLayout()
+    target.invalidateIntrinsicContentSize()
+}
+
 func parseInt(_ data: Int?) -> YGValue {
     if let integer = data {
         return YGValue(value: Float(integer), unit: .point)

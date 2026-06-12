@@ -154,7 +154,7 @@ class TriggerViewController: UIViewController {
                         } else {
                             let root = ModalRootViewController(
                                 root: root,
-                                container: self.container.makeContainer(arguments: nil),
+                                container: self.container,
                                 modalViewController: self.modalViewController
                             )
                             if let currentVC = self.currentVC {

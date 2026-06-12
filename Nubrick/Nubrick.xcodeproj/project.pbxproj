@@ -53,6 +53,7 @@
 		25C9F6AD2EB0597E00BD8267 /* experiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F65E2EB0597E00BD8267 /* experiment.swift */; };
 		25C9F6AE2EB0597E00BD8267 /* forms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6472EB0597E00BD8267 /* forms.swift */; };
 		25C9F6B42EB0597E00BD8267 /* constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6B52EB0597E00BD8267 /* constants.swift */; };
+		25C9F6B62EB0597E00BD8267 /* background-image-observer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6B72EB0597E00BD8267 /* background-image-observer.swift */; };
 		A1F000001111222233334451 /* dependency-container.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F000001111222233334441 /* dependency-container.swift */; };
 		25C9F6AF2EB0597E00BD8267 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 25C9F6742EB0597E00BD8267 /* PrivacyInfo.xcprivacy */; };
 		25C9F6B02EB0597E00BD8267 /* UIView+Yoga.h in Headers */ = {isa = PBXBuildFile; fileRef = 25C9F67A2EB0597E00BD8267 /* UIView+Yoga.h */; };
@@ -108,6 +109,7 @@
 		25C9F6762EB0597E00BD8267 /* scalars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = scalars.swift; sourceTree = "<group>"; };
 		25C9F6772EB0597E00BD8267 /* sdk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sdk.swift; sourceTree = "<group>"; };
 		25C9F6B52EB0597E00BD8267 /* constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = constants.swift; sourceTree = "<group>"; };
+		25C9F6B72EB0597E00BD8267 /* background-image-observer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "background-image-observer.swift"; sourceTree = "<group>"; };
 		25C9F6792EB0597E00BD8267 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		25C9F67A2EB0597E00BD8267 /* UIView+Yoga.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "UIView+Yoga.h"; sourceTree = "<group>"; };
 		25C9F67B2EB0597E00BD8267 /* YGLayout.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = YGLayout.h; sourceTree = "<group>"; };
@@ -148,6 +150,7 @@
 		25C9F64E2EB0597E00BD8267 /* renderer */ = {
 			isa = PBXGroup;
 			children = (
+				25C9F6B72EB0597E00BD8267 /* background-image-observer.swift */,
 				25C9F6432EB0597E00BD8267 /* block.swift */,
 				25C9F6442EB0597E00BD8267 /* carousel.swift */,
 				25C9F6452EB0597E00BD8267 /* collection.swift */,
@@ -435,6 +438,7 @@
 				25C9F6A32EB0597E00BD8267 /* UIView+Yoga.mm in Sources */,
 				25C9F6A42EB0597E00BD8267 /* sdk.swift in Sources */,
 				25C9F6A52EB0597E00BD8267 /* flex.swift in Sources */,
+				25C9F6B62EB0597E00BD8267 /* background-image-observer.swift in Sources */,
 				25C9F6A62EB0597E00BD8267 /* extraction.swift in Sources */,
 				25C9F6A72EB0597E00BD8267 /* block.swift in Sources */,
 				25C9F6A82EB0597E00BD8267 /* gif.swift in Sources */,

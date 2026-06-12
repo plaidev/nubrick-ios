@@ -6,7 +6,7 @@ let EMBEDDING_ID_1_FOR_TEST = "EMBEDDING_1"
 
 final class EmbeddingUIViewTests: XCTestCase {
     @MainActor
-    private func makeContainer(arguments: NubrickArguments? = nil) throws -> Container {
+    private func makeContainer() throws -> Container {
         let db = try XCTUnwrap(createNativebrikCoreDataHelper(), "Could not init DB")
         let user = NubrickUser()
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
@@ -17,7 +17,7 @@ final class EmbeddingUIViewTests: XCTestCase {
             persistentContainer: db,
             httpRequestInterceptor: nil
         )
-        return dependencies.makeContainer(arguments: arguments)
+        return dependencies.makeContainer()
     }
 
     private func makeComponentRoot(

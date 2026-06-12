@@ -5,6 +5,7 @@
 //  Created by Ryosuke Suzuki on 2023/03/28.
 //
 
+import Combine
 import Foundation
 import UIKit
 internal import YogaKit
@@ -17,6 +18,8 @@ class ImageView: AnimatedUIControl {
     private let formValueListenerInstanceId = UUID().uuidString
     private var formValueListener: FormValueListener?
     private var hasRegisteredFormValueListener = false
+    private var cancellables = Set<AnyCancellable>()
+    private var imageLoadTask: Task<Void, Never>?
 
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -38,15 +41,6 @@ class ImageView: AnimatedUIControl {
             configureSkelton(view: self, showSkelton: showSkelton)
         }
 
-        let compiledSrc = compile(block.data?.src ?? "", context.getVariable())
-
-        let fallbackSetting = parseImageFallbackToBlurhash(compiledSrc)
-        let fallback = fallbackSetting.blurhash == "" ? UIImage() : UIImage(
-            blurHash: fallbackSetting.blurhash,
-            size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))
-        )
-        self.image.image = fallback
-
         self.image.configureLayout { layout in
             layout.isEnabled = true
 
@@ -64,6 +58,7 @@ class ImageView: AnimatedUIControl {
         self.layer.masksToBounds = true
 
         self.addSubview(self.image)
+        self.bindVariable()
 
         _ = configureOnClickGesture(
             target: self,
@@ -72,8 +67,6 @@ class ImageView: AnimatedUIControl {
             uiBlockAction: block.data?.onClick
         )
 
-        loadAsyncImage(url: compiledSrc, view: self, image: self.image)
-        
         let handleDisabled = makeDisabledStateListener(
             target: self,
             context: context,
@@ -107,6 +100,10 @@ class ImageView: AnimatedUIControl {
         self.hasRegisteredFormValueListener = false
     }
 
+    deinit {
+        self.imageLoadTask?.cancel()
+    }
+
     override func didMoveToWindow() {
         super.didMoveToWindow()
 
@@ -121,31 +118,67 @@ class ImageView: AnimatedUIControl {
         super.layoutSubviews()
         configureBorder(view: self, frame: self.block.data?.frame)
     }
+
+    private func bindVariable() {
+        guard let context = self.context else {
+            return
+        }
+
+        let srcTemplate = self.block.data?.src ?? ""
+        guard hasPlaceholderPath(template: srcTemplate) else {
+            self.applyImageSource(srcTemplate)
+            return
+        }
+
+        context.variablePublisher()
+            .map { compile(srcTemplate, $0) }
+            .removeDuplicates()
+            .sink { [weak self] src in
+                self?.applyImageSource(src)
+            }
+            .store(in: &self.cancellables)
+    }
+
+    private func applyImageSource(_ src: String) {
+        let fallbackSetting = parseImageFallbackToBlurhash(src)
+        self.image.image = fallbackSetting.blurhash == "" ? UIImage() : UIImage(
+            blurHash: fallbackSetting.blurhash,
+            size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))
+        )
+        self.imageLoadTask?.cancel()
+        self.imageLoadTask = loadAsyncImage(
+            url: src,
+            image: self.image,
+            layoutRoot: self.context?.getLayoutInvalidationRoot()
+        )
+    }
 }
 
 @MainActor
-func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
-    guard let requestUrl = URL(string: url) else {
-        return
-    }
-    
+func loadAsyncImageToBackgroundSrc(url: String, view: UIView) -> Task<Void, Never>? {
     let fallbackSetting = parseImageFallbackToBlurhash(url)
     let fallback = fallbackSetting.blurhash == "" ? UIImage() : UIImage(
         blurHash: fallbackSetting.blurhash,
         size: CGSize(width: CGFloat(fallbackSetting.width), height: CGFloat(fallbackSetting.height))
     )
-    
-    if let fallback = fallback {
-        view.layer.contents = fallback.cgImage
-        view.contentMode = UIView.ContentMode.scaleAspectFill
-        view.clipsToBounds = true
+
+    view.layer.contents = fallback?.cgImage
+    view.contentMode = UIView.ContentMode.scaleAspectFill
+    view.clipsToBounds = true
+
+    guard let requestUrl = URL(string: url) else {
+        return nil
     }
     
-    Task {
+    return Task {
         do {
             let (data, response) = try await nativebrikSession.data(from: requestUrl)
+            try Task.checkCancellation()
             
             await MainActor.run {
+                guard !Task.isCancelled else {
+                    return
+                }
                 if isGif(response) {
                     guard let image = UIImage.gifImageWithData(data) else {
                         return
@@ -173,8 +206,8 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
                         },
                         completion: nil)
                 }
-                view.layoutSubviews()
             }
+        } catch is CancellationError {
         } catch {
             // Error handling - silently fail as before
             print("Failed to load image from \(url): \(error)")
@@ -183,16 +216,20 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) {
 }
 
 @MainActor
-func loadAsyncImage(url: String, view: UIView, image: UIImageView) {
+func loadAsyncImage(url: String, image: UIImageView, layoutRoot: UIView?) -> Task<Void, Never>? {
     guard let requestUrl = URL(string: url) else {
-        return
+        return nil
     }
     
-    Task {
+    return Task {
         do {
             let (data, response) = try await nativebrikSession.data(from: requestUrl)
+            try Task.checkCancellation()
             
             await MainActor.run {
+                guard !Task.isCancelled else {
+                    return
+                }
                 if isGif(response) {
                     UIView.transition(
                         with: image,
@@ -212,8 +249,11 @@ func loadAsyncImage(url: String, view: UIView, image: UIImageView) {
                         },
                         completion: nil)
                 }
-                view.layoutSubviews()
+                if let layoutRoot {
+                    invalidateYogaLayout(from: image, layoutRoot: layoutRoot)
+                }
             }
+        } catch is CancellationError {
         } catch {
             // Error handling - silently fail as before
             print("Failed to load image from \(url): \(error)")

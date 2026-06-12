@@ -263,8 +263,8 @@ final class NubrickCore {
         }
     }
 
-    private func makeContainer(arguments: NubrickArguments? = nil) -> Container {
-        self.dependencies.makeContainer(arguments: arguments)
+    func makeContainer() -> Container {
+        self.dependencies.makeContainer()
     }
 
     func overlayViewController() -> UIViewController {
@@ -283,7 +283,8 @@ final class NubrickCore {
     ) -> some View {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
-            container: self.makeContainer(arguments: arguments),
+            container: self.makeContainer(),
+            arguments: arguments,
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             onSizeChange: onSizeChange
@@ -300,7 +301,8 @@ final class NubrickCore {
         AnyView(EmbeddingSwiftView(
             experimentId: id,
             componentId: nil,
-            container: self.makeContainer(arguments: arguments),
+            container: self.makeContainer(),
+            arguments: arguments,
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             content: content,
@@ -316,7 +318,8 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: self.makeContainer(arguments: arguments),
+            container: self.makeContainer(),
+            arguments: arguments,
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: nil,
@@ -333,7 +336,8 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: self.makeContainer(arguments: arguments),
+            container: self.makeContainer(),
+            arguments: arguments,
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content,
@@ -374,7 +378,8 @@ final class NubrickCore {
     ) -> UIView {
         EmbeddingUIView(
             experimentId: id,
-            container: self.makeContainer(arguments: arguments),
+            container: self.makeContainer(),
+            arguments: arguments,
             modalViewController: self.overlayVC.modalViewController,
             onEvent: onEvent,
             fallback: content,
@@ -395,6 +400,7 @@ final class NubrickCore {
             return NubrickBridgedViewAccessor(rootView: RootView(
                 root: decoded,
                 container: self.makeContainer(),
+                arguments: nil,
                 modalViewController: self.overlayVC.modalViewController,
                 onEvent: { event in
                     onEvent?(convertEvent(event))

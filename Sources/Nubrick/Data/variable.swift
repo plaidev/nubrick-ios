@@ -5,12 +5,43 @@
 //  Created by Ryosuke Suzuki on 2024/03/07.
 //
 
+import Combine
 import Foundation
 
 // All leaf values are JSON-primitive types (String, Int, Double, Bool, [Any], [String: Any])
 // which are inherently Sendable, but Swift can't prove that through [String: Any].
 struct Variable: @unchecked Sendable {
     let value: [String: Any]
+}
+
+@MainActor
+final class VariableStore: ObservableObject {
+    @Published private(set) var variable: Variable?
+    private var cancellables = Set<AnyCancellable>()
+
+    init(_ variable: Variable? = nil) {
+        self.variable = variable
+    }
+
+    func update(_ variable: Variable?) {
+        self.variable = variable
+    }
+
+    func publisher() -> AnyPublisher<Variable?, Never> {
+        self.$variable.eraseToAnyPublisher()
+    }
+
+    func derived(_ map: @escaping (Variable?) -> Variable?) -> VariableStore {
+        let store = VariableStore(map(self.variable))
+        self.$variable
+            .dropFirst()
+            .map(map)
+            .sink { [weak store] variable in
+                store?.update(variable)
+            }
+            .store(in: &store.cancellables)
+        return store
+    }
 }
 
 @MainActor
@@ -51,17 +82,8 @@ func _createVariableForTemplate(
     ])
 }
 
-func _mergeVariable(base: Variable?, _ overlay: Variable?) -> Variable? {
-    guard let base = base?.value else {
-        return overlay
-    }
-    let overlay = overlay?.value
-    return Variable(value: [
-        "user": overlay?["user"] ?? base["user"] as Any,
-        "props": overlay?["props"] ?? base["props"] as Any,
-        "form": overlay?["form"] ?? base["form"] as Any,
-        "args": overlay?["args"] ?? base["args"] as Any,
-        "data": overlay?["data"] ?? base["data"] as Any,
-        "project": overlay?["project"] ?? base["project"] as Any,
-    ])
+func _replaceVariableData(base: Variable?, data: Any) -> Variable {
+    var value = base?.value ?? [:]
+    value["data"] = data
+    return Variable(value: value)
 }

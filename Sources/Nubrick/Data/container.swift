@@ -17,9 +17,9 @@ protocol Container : Sendable {
     @MainActor
     func handleEvent(_ it: UIBlockAction)
     @MainActor
-    func makeContainer(arguments: NubrickArguments?) -> Container
+    func makeContainer() -> Container
     @MainActor
-    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Variable?
+    func createVariableForTemplate(data: Any?, properties: [Property]?, arguments: NubrickArguments?) -> Variable?
     @MainActor
     func getFormValue(key: String) -> Any?
     @MainActor
@@ -47,7 +47,6 @@ final class ContainerImpl: Container {
     private let databaseRepository: DatabaseRepository
     private let httpRequestRepository: HttpRequestRepository
     private let formRepository: FormRepository
-    private let arguments: NubrickArguments?
 
     @MainActor
     init(
@@ -58,8 +57,7 @@ final class ContainerImpl: Container {
         componentRepository: ComponentRepository2,
         trackRepository: TrackRepository2,
         databaseRepository: DatabaseRepository,
-        httpRequestRepository: HttpRequestRepository,
-        arguments: NubrickArguments? = nil
+        httpRequestRepository: HttpRequestRepository
     ) {
         self.config = config
         self.user = user
@@ -70,7 +68,6 @@ final class ContainerImpl: Container {
         self.databaseRepository = databaseRepository
         self.httpRequestRepository = httpRequestRepository
         self.formRepository = FormRepositoryImpl()
-        self.arguments = arguments
     }
 
     @MainActor
@@ -79,7 +76,7 @@ final class ContainerImpl: Container {
     }
 
     @MainActor
-    func makeContainer(arguments: NubrickArguments?) -> Container {
+    func makeContainer() -> Container {
         return ContainerImpl(
             config: self.config,
             user: self.user,
@@ -88,19 +85,18 @@ final class ContainerImpl: Container {
             componentRepository: self.componentRepository,
             trackRepository: self.trackRepository,
             databaseRepository: self.databaseRepository,
-            httpRequestRepository: self.httpRequestRepository,
-            arguments: arguments
+            httpRequestRepository: self.httpRequestRepository
         )
     }
 
     @MainActor
-    func createVariableForTemplate(data: Any?, properties: [Property]?) -> Variable? {
+    func createVariableForTemplate(data: Any?, properties: [Property]?, arguments: NubrickArguments?) -> Variable? {
         return _createVariableForTemplate(
             user: self.user,
             data: data,
             properties: properties,
             form: self.formRepository.getFormData(),
-            arguments: self.arguments,
+            arguments: arguments,
             projectId: self.config.projectId
         )
     }

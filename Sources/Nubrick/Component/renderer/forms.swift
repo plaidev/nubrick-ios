@@ -151,13 +151,6 @@ class TextInputView: UIView, UITextFieldDelegate {
             }
         }
 
-        // wrap layout
-        self.configureLayout { layout in
-            layout.isEnabled = true
-            layout.width = .init(value: 100.0, unit: .percent)
-            layout.flexShrink = 1
-        }
-
         // toolbar for input
         let toolbar = UIToolbar()
         let space = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
@@ -173,9 +166,26 @@ class TextInputView: UIView, UITextFieldDelegate {
         textInput.textAlignment = parseTextAlign(block.data?.textAlign)
         textInput.inputAccessoryView = toolbar
         textInput.delegate = self
+        let font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
+        textInput.font = font
+        let intrinsicHeight = ceil(textInput.intrinsicContentSize.height)
+        let verticalPadding = CGFloat((block.data?.frame?.paddingTop ?? 0) + (block.data?.frame?.paddingBottom ?? 0))
+
+        // wrap layout
+        self.configureLayout { layout in
+            layout.isEnabled = true
+            layout.width = .init(value: 100.0, unit: .percent)
+            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
+            if block.data?.frame?.height == nil {
+                layout.height = .init(value: Float(intrinsicHeight + verticalPadding), unit: .point)
+            }
+            layout.flexShrink = 1
+        }
+
         textInput.configureLayout { layout in
             layout.isEnabled = true
             layout.width = .init(value: 100.0, unit: .percent)
+            layout.height = .init(value: 100.0, unit: .percent)
             configurePadding(layout: layout, frame: block.data?.frame)
         }
         if let paddingLeft = block.data?.frame?.paddingLeft {
@@ -192,7 +202,6 @@ class TextInputView: UIView, UITextFieldDelegate {
         } else {
             textInput.textColor = .label
         }
-        textInput.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
         self.fontSize = block.data?.size
         if let placeholder = block.data?.placeholder {
             textInput.placeholder = placeholder
