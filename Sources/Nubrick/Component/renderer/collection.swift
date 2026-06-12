@@ -334,15 +334,15 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                     return cell
                 }
                 let item = indexPath.item
-                let variable = self.context.getVariable()
-                let data = Self.referencedItems(reference: reference, variable: variable)
-                let childData: Any = data.indices.contains(item) ? data[item] : ([:] as [String: Any])
-                let childVariable = _mergeVariable(base: variable, Variable(value: ["data": childData]))
                 let childView = UIViewBlock(
                     data: child,
                     context: self.context.instanciateFrom(
                         UIBlockContextChildInit(
-                            variable: childVariable,
+                            variableMapper: { variable in
+                                let data = Self.referencedItems(reference: reference, variable: variable)
+                                let childData: Any = data.indices.contains(item) ? data[item] : ([:] as [String: Any])
+                                return _replaceVariableData(base: variable, data: childData)
+                            },
                             parentClickListener: self.gesture,
                             parentDirection: self.block?.data?.direction,
                             layoutInvalidationRoot: cell

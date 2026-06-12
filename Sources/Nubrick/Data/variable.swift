@@ -33,7 +33,7 @@ final class VariableStore: ObservableObject {
 
     func derived(_ map: @escaping (Variable?) -> Variable?) -> VariableStore {
         let store = VariableStore(map(self.variable))
-        self.publisher()
+        self.$variable
             .dropFirst()
             .map(map)
             .sink { [weak store] variable in
@@ -82,12 +82,8 @@ func _createVariableForTemplate(
     ])
 }
 
-func _mergeVariable(base: Variable?, _ overlay: Variable?) -> Variable? {
-    guard let baseValue = base?.value else {
-        return overlay
-    }
-    guard let overlayValue = overlay?.value else {
-        return base
-    }
-    return Variable(value: baseValue.merging(overlayValue) { _, new in new })
+func _replaceVariableData(base: Variable?, data: Any) -> Variable {
+    var value = base?.value ?? [:]
+    value["data"] = data
+    return Variable(value: value)
 }
