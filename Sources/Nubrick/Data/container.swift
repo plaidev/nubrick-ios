@@ -5,6 +5,7 @@
 //  Created by Ryosuke Suzuki on 2024/03/06.
 //
 
+import Combine
 import Foundation
 
 private struct ExtractedVariant {
@@ -27,9 +28,7 @@ protocol Container : Sendable {
     @MainActor
     func setFormValue(key: String, value: Any)
     @MainActor
-    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener)
-    @MainActor
-    func removeFormValueListener(_ id: String)
+    func formDataPublisher() -> AnyPublisher<[String: Any], Never>
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
@@ -117,13 +116,8 @@ final class ContainerImpl: Container {
     }
 
     @MainActor
-    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
-        self.formRepository.addFormValueListener(id: id, listener: listener)
-    }
-
-    @MainActor
-    func removeFormValueListener(_ id: String) {
-        self.formRepository.removeFormValueListener(id: id)
+    func formDataPublisher() -> AnyPublisher<[String: Any], Never> {
+        self.formRepository.formDataPublisher
     }
 
     // MARK: - HTTP Request

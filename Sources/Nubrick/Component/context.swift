@@ -121,12 +121,8 @@ class UIBlockContext {
     }
 
 
-    func addFormValueListener(_ id: String, _ listener: @escaping FormValueListener) {
-        self.container?.addFormValueListener(id, listener)
-    }
-
-    func removeFormValueListener(_ id: String) {
-        self.container?.removeFormValueListener(id)
+    func formPublisher() -> AnyPublisher<[String: Any], Never> {
+        self.container?.formDataPublisher() ?? Just([:]).eraseToAnyPublisher()
     }
 
     /**

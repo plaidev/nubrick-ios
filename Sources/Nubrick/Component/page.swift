@@ -5,6 +5,7 @@
 //  Created by Ryosuke Suzuki on 2023/05/01.
 //
 
+import Combine
 import Foundation
 import UIKit
 internal import YogaKit
@@ -109,6 +110,7 @@ final class PageView: UIView {
     private var view: UIView = UIView()
 
     private var modalViewController: ModalComponentViewController? = nil
+    private var cancellables = Set<AnyCancellable>()
 
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(page:props:container:arguments:actionHandler:modalViewController:).")
     required init?(coder: NSCoder) {
@@ -137,6 +139,13 @@ final class PageView: UIView {
             arguments: arguments
         ))
         super.init(frame: .zero)
+
+        container.formDataPublisher()
+            .dropFirst()
+            .sink { [weak self] formData in
+                self?.variableStore.updateForm(formData)
+            }
+            .store(in: &self.cancellables)
 
         self.actionHandler = { [weak self] action, onHttpSettled in
             guard let self else {

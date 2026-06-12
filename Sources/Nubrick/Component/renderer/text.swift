@@ -6,10 +6,6 @@ class TextView: AnimatedUIControl, BackgroundImageObserver {
     var label: UILabel = UILabel()
     var block: UITextBlock = UITextBlock()
     var context: UIBlockContext?
-    private var formValueListenerId: String?
-    private let formValueListenerInstanceId = UUID().uuidString
-    private var formValueListener: FormValueListener?
-    private var hasRegisteredFormValueListener = false
     var cancellables = Set<AnyCancellable>()
     var backgroundImageLoadTask: Task<Void, Never>?
 
@@ -57,51 +53,11 @@ class TextView: AnimatedUIControl, BackgroundImageObserver {
             uiBlockAction: block.data?.onClick
         )
         
-        let handleDisabled = makeDisabledStateListener(
-            target: self,
-            context: context,
-            requiredFields: block.data?.onClick?.requiredFields
-        )
-
-        if let id = block.id, let handleDisabled = handleDisabled {
-            self.formValueListenerId = "\(id)::\(self.formValueListenerInstanceId)"
-            self.formValueListener = handleDisabled
-        }
-    }
-
-    private func registerFormValueListenerIfNeeded() {
-        guard !self.hasRegisteredFormValueListener else { return }
-        guard
-            let id = self.formValueListenerId,
-            let listener = self.formValueListener,
-            let context = self.context
-        else { return }
-
-        context.addFormValueListener(id, listener)
-        listener(context.getFormValues())
-        self.hasRegisteredFormValueListener = true
-    }
-
-    private func unregisterFormValueListenerIfNeeded() {
-        guard self.hasRegisteredFormValueListener else { return }
-        guard let id = self.formValueListenerId else { return }
-
-        self.context?.removeFormValueListener(id)
-        self.hasRegisteredFormValueListener = false
+        makeDisabledStateListener(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)?.store(in: &cancellables)
     }
 
     deinit {
         self.backgroundImageLoadTask?.cancel()
-    }
-
-    override func didMoveToWindow() {
-        super.didMoveToWindow()
-
-        if self.window == nil {
-            self.unregisterFormValueListenerIfNeeded()
-        } else {
-            self.registerFormValueListenerIfNeeded()
-        }
     }
     
     override func layoutSubviews() {
