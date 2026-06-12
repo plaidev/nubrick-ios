@@ -29,6 +29,8 @@ protocol Container : Sendable {
     func setFormValue(key: String, value: Any)
     @MainActor
     func formDataPublisher() -> AnyPublisher<[String: Any], Never>
+    @MainActor
+    func userDataPublisher() -> AnyPublisher<[String: Any], Never>
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
@@ -118,6 +120,11 @@ final class ContainerImpl: Container {
     @MainActor
     func formDataPublisher() -> AnyPublisher<[String: Any], Never> {
         self.formRepository.formDataPublisher
+    }
+
+    @MainActor
+    func userDataPublisher() -> AnyPublisher<[String: Any], Never> {
+        self.user.userDataPublisher
     }
 
     // MARK: - HTTP Request
