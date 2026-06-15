@@ -24,6 +24,12 @@ struct ExampleApp: App {
         NubrickSDK.initialize(
             projectId: projectId
         )
+        NubrickSDK.setUserId("user-42")
+        NubrickSDK.setUserProperties([
+            "name": "Victor",
+            "plan": "pro",
+            "locale": "en",
+        ])
     }
 
     var body: some Scene {

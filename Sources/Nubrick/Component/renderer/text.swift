@@ -15,18 +15,14 @@ class TextView: AnimatedUIControl, BackgroundImageObserver {
     
     init(block: UITextBlock, context: UIBlockContext) {
         super.init(frame: .zero)
-        let showSkelton = context.isLoading() && hasPlaceholderPath(template: block.data?.value ?? "")
-
         self.block = block
         self.context = context
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.display = .flex
             layout.direction = .LTR
-            
-            configureSkelton(view: self, showSkelton: showSkelton)
         }
-        
+
         let label = UILabel()
         label.yoga.isEnabled = true
         if let color = block.data?.color {
@@ -40,7 +36,6 @@ class TextView: AnimatedUIControl, BackgroundImageObserver {
         } else {
             label.numberOfLines = 0
         }
-        configureSkeltonText(view: label, showSkelton: showSkelton)
         
         self.label = label
         self.addSubview(label)
@@ -71,17 +66,40 @@ class TextView: AnimatedUIControl, BackgroundImageObserver {
         }
 
         let textTemplate = self.block.data?.value ?? ""
+        let showSkeltonOnLoading = hasDataPlaceholderPath(template: textTemplate)
+
         if hasPlaceholderPath(template: textTemplate) {
             var shouldInvalidateLayout = false
-            context.variablePublisher()
+            var previousText: String?
+            let textPublisher = context.variablePublisher()
                 .map { compile(textTemplate, $0) }
                 .removeDuplicates()
-                .sink { [weak self] text in
+
+            context.loadingPublisher()
+                .combineLatest(textPublisher)
+                .removeDuplicates { previous, current in
+                    previous.0 == current.0 && previous.1 == current.1
+                }
+                .sink { [weak self] loading, text in
                     guard let self else { return }
+                    if loading && showSkeltonOnLoading {
+                        configureSkelton(view: self)
+                        configureSkeltonText(view: self.label)
+                        shouldInvalidateLayout = true
+                        return
+                    }
+
+                    removeSkelton(view: self, frame: self.block.data?.frame)
                     self.label.text = text
-                    if shouldInvalidateLayout {
+                    if let color = self.block.data?.color {
+                        self.label.textColor = parseColor(color)
+                    } else {
+                        self.label.textColor = .label
+                    }
+                    if shouldInvalidateLayout && previousText != text {
                         invalidateYogaLayout(from: self.label, layoutRoot: context.getLayoutInvalidationRoot())
                     }
+                    previousText = text
                     shouldInvalidateLayout = true
                 }
                 .store(in: &self.cancellables)

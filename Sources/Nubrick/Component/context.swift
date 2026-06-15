@@ -19,7 +19,6 @@ struct UIBlockContextInit {
     var parentClickListener: ClickListener? = nil
     var parentDirection: FlexDirection? = nil
     var layoutInvalidationRoot: UIView? = nil
-    var loading: Bool? = false
 }
 
 struct UIBlockContextChildInit {
@@ -30,7 +29,6 @@ struct UIBlockContextChildInit {
     var parentClickListener: ClickListener? = nil
     var parentDirection: FlexDirection? = nil
     var layoutInvalidationRoot: UIView? = nil
-    var loading: Bool? = false
 }
 
 @MainActor
@@ -43,7 +41,6 @@ class UIBlockContext {
     private var parentClickListener: ClickListener?
     private var parentDirection: FlexDirection?
     private weak var layoutInvalidationRoot: UIView?
-    private var loading: Bool = false
 
     init(_ args: UIBlockContextInit) {
         self.variableStore = args.variableStore ?? VariableStore()
@@ -52,7 +49,6 @@ class UIBlockContext {
         self.parentClickListener = args.parentClickListener
         self.parentDirection = args.parentDirection
         self.layoutInvalidationRoot = args.layoutInvalidationRoot
-        self.loading = args.loading ?? false
         self.container = args.container
     }
 
@@ -74,8 +70,7 @@ class UIBlockContext {
                 actionHandler: args.actionHandler ?? self.actionHandler,
                 parentClickListener: args.parentClickListener ?? self.parentClickListener,
                 parentDirection: args.parentDirection ?? self.parentDirection,
-                layoutInvalidationRoot: args.layoutInvalidationRoot ?? self.layoutInvalidationRoot,
-                loading: args.loading ?? self.loading
+                layoutInvalidationRoot: args.layoutInvalidationRoot ?? self.layoutInvalidationRoot
             ))
     }
 
@@ -91,8 +86,8 @@ class UIBlockContext {
         return self.layoutInvalidationRoot
     }
 
-    func isLoading() -> Bool {
-        return self.loading
+    func loadingPublisher() -> AnyPublisher<Bool, Never> {
+        return self.variableStore.loadingPublisher()
     }
 
     func hasParent() -> Bool {

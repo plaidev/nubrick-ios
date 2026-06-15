@@ -10,6 +10,18 @@ import Foundation
 import UIKit
 internal import YogaKit
 
+private struct CompiledPageRequest: Equatable {
+    struct Header: Equatable { let name: String; let value: String }
+    let url: String
+    let body: String
+    let headers: [Header]
+}
+
+private struct PageHttpRequestSnapshot {
+    let compiledRequest: CompiledPageRequest
+    let variable: Variable?
+}
+
 // child of modal
 class ModalPageViewController: UIViewController {
     private var isFirstModal = false
@@ -106,11 +118,12 @@ final class PageView: UIView {
     private var responseData: Any? = nil
     private var actionHandler: UIBlockActionHandler? = nil
     private var fullScreenInitialNavItemVisibility = false
-    private var loading: Bool = false
     private var view: UIView = UIView()
 
     private var modalViewController: ModalComponentViewController? = nil
     private var cancellables = Set<AnyCancellable>()
+    private var pageHttpRequestTask: Task<Void, Never>?
+    private var pageHttpRequestSequence = 0
 
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(page:props:container:arguments:actionHandler:modalViewController:).")
     required init?(coder: NSCoder) {
@@ -137,7 +150,7 @@ final class PageView: UIView {
             data: nil,
             properties: self.props,
             arguments: arguments
-        ))
+        ), loading: page?.data?.httpRequest != nil)
         super.init(frame: .zero)
 
         container.formDataPublisher()
@@ -210,6 +223,10 @@ final class PageView: UIView {
         self.loadDataAndTransition()
     }
 
+    deinit {
+        self.pageHttpRequestTask?.cancel()
+    }
+
     func dispatchAction(_ action: UIBlockAction) {
         self.actionHandler?(action, nil)
     }
@@ -233,41 +250,63 @@ final class PageView: UIView {
 
     func loadDataAndTransition() {
         guard let httpRequest = self.page?.data?.httpRequest else {
-            self.loading = false
             self.renderView()
             return
         }
 
-        // when it has http request, render loading view, and then
-        self.loading = true
         self.renderView()
 
-        Task {
-            let variable = self.container.createVariableForTemplate(
-                data: nil,
-                properties: self.props,
-                arguments: self.arguments
-            )
-            let result = await self.container.sendHttpRequest(
-                req: httpRequest,
-                assertion: nil,
-                variable: variable
-            )
-            await MainActor.run { [weak self] in
-                guard let self else {
-                    return
-                }
-                switch result {
-                case .success(let response):
-                    self.responseData = response.data?.value
-                    self.variableStore.update(self.createVariable())
-                default:
-                    break
-                }
-                self.loading = false
-                self.renderView()
+        variableStore.publisher()
+            .map { variable -> PageHttpRequestSnapshot in
+                let compiledRequest = CompiledPageRequest(
+                    url: compile(httpRequest.url ?? "", variable),
+                    body: compile(httpRequest.body ?? "", variable),
+                    headers: (httpRequest.headers ?? []).map {
+                        .init(name: compile($0.name ?? "", variable),
+                              value: compile($0.value ?? "", variable))
+                    }
+                )
+                return PageHttpRequestSnapshot(compiledRequest: compiledRequest, variable: variable)
             }
-        }
+            .removeDuplicates { previous, current in
+                previous.compiledRequest == current.compiledRequest
+            }
+            .sink { [weak self] snapshot in
+                guard let self else { return }
+                let variable = snapshot.variable
+                self.pageHttpRequestSequence += 1
+                let requestSequence = self.pageHttpRequestSequence
+                self.pageHttpRequestTask?.cancel()
+                self.variableStore.updateLoading(true)
+                let container = self.container
+                self.pageHttpRequestTask = Task { [weak self, container] in
+                    let result = await container.sendHttpRequest(
+                        req: httpRequest,
+                        assertion: nil,
+                        variable: variable
+                    )
+                    await MainActor.run { [weak self] in
+                        guard let self else { return }
+                        guard self.pageHttpRequestSequence == requestSequence else {
+                            return
+                        }
+                        defer {
+                            if self.pageHttpRequestSequence == requestSequence {
+                                self.variableStore.updateLoading(false)
+                                self.pageHttpRequestTask = nil
+                            }
+                        }
+                        guard !Task.isCancelled else {
+                            return
+                        }
+                        if case .success(let response) = result {
+                            self.responseData = response.data?.value
+                            self.variableStore.updateData(response.data?.value)
+                        }
+                    }
+                }
+            }
+            .store(in: &cancellables)
     }
 
     func renderView() {
@@ -280,8 +319,7 @@ final class PageView: UIView {
                         container: self.container,
                         variableStore: self.variableStore,
                         actionHandler: self.actionHandler,
-                        layoutInvalidationRoot: self,
-                        loading: self.loading
+                        layoutInvalidationRoot: self
                     )
                 ),
                 respectSafeArea: self.page?.data?.modalRespectSafeArea
