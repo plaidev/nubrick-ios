@@ -50,6 +50,21 @@ func hasPlaceholderPath(template: String) -> Bool {
     return regex.numberOfMatches(in: template, range: NSRange(location: 0, length: templateAsNsstring.length)) > 0
 }
 
+func hasDataPlaceholderPath(template: String) -> Bool {
+    guard let regex = placeholderRegex else {
+        return false
+    }
+    let templateAsNsstring = template as NSString
+    let matches = regex.matches(in: template, range: NSRange(location: 0, length: templateAsNsstring.length))
+    return matches.contains { match in
+        let rawPlaceholder = templateAsNsstring.substring(with: match.range)
+        guard let placeholder = getPlaceholder(placeholder: rawPlaceholder) else {
+            return false
+        }
+        return placeholder.path == "data" || placeholder.path.hasPrefix("data.")
+    }
+}
+
 func compile(_ template: String, _ variable: Variable?) -> String {
     guard let regex = placeholderRegex else {
         return template

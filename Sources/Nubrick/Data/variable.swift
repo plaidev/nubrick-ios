@@ -17,14 +17,26 @@ struct Variable: @unchecked Sendable {
 @MainActor
 final class VariableStore {
     @Published private(set) var variable: Variable?
+    @Published private(set) var loading: Bool = false
     private var cancellables = Set<AnyCancellable>()
 
-    init(_ variable: Variable? = nil) {
+    init(_ variable: Variable? = nil, loading: Bool = false) {
         self.variable = variable
+        self.loading = loading
     }
 
     func update(_ variable: Variable?) {
         self.variable = variable
+    }
+
+    func updateLoading(_ loading: Bool) {
+        self.loading = loading
+    }
+
+    func updateData(_ data: Any?) {
+        guard var value = self.variable?.value else { return }
+        value["data"] = data as Any
+        self.variable = Variable(value: value)
     }
 
     func updateForm(_ form: [String: Any]) {
@@ -43,13 +55,23 @@ final class VariableStore {
         self.$variable.eraseToAnyPublisher()
     }
 
+    func loadingPublisher() -> AnyPublisher<Bool, Never> {
+        self.$loading.eraseToAnyPublisher()
+    }
+
     func derived(_ map: @escaping (Variable?) -> Variable?) -> VariableStore {
-        let store = VariableStore(map(self.variable))
+        let store = VariableStore(map(self.variable), loading: self.loading)
         self.$variable
             .dropFirst()
             .map(map)
             .sink { [weak store] variable in
                 store?.update(variable)
+            }
+            .store(in: &store.cancellables)
+        self.$loading
+            .dropFirst()
+            .sink { [weak store] loading in
+                store?.updateLoading(loading)
             }
             .store(in: &store.cancellables)
         return store

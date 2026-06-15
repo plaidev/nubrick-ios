@@ -513,10 +513,7 @@ func configureShadow(view: UIView, shadow: BoxShadow?) {
 }
 
 @MainActor
-func configureSkelton(view: UIView, showSkelton: Bool) {
-    if showSkelton == false {
-        return
-    }
+func configureSkelton(view: UIView) {
     let gray = 0.5
     let alpha = 0.3
     view.layer.backgroundColor = .init(gray: gray, alpha: alpha)
@@ -537,16 +534,23 @@ func configureSkelton(view: UIView, showSkelton: Bool) {
 }
 
 @MainActor
-func configureSkeltonText(view: UILabel, showSkelton: Bool) {
-    if showSkelton == false {
-        return
-    }
+func configureSkeltonText(view: UILabel) {
     let text = view.text ?? ""
     if text.lengthOfBytes(using: .utf8) < 2 {
         view.text = "TRANSPARENT"
     }
 
     view.textColor = .init(white: 0, alpha: 0)
+}
+
+@MainActor
+func removeSkelton(view: UIView, frame: FrameData?) {
+    view.layer.removeAllAnimations()
+    if let background = frame?.background {
+        view.layer.backgroundColor = parseColorToCGColor(background)
+    } else {
+        view.layer.backgroundColor = nil
+    }
 }
 
 func clamp<V: Comparable>(_ value: V, min minValue: V, max maxValue: V) -> V {

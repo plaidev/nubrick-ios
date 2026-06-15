@@ -26,15 +26,11 @@ class ImageView: AnimatedUIControl {
         self.block = block
         self.context = context
 
-        let showSkelton = context.isLoading() && hasPlaceholderPath(template: block.data?.src ?? "")
-
         self.configureLayout { layout in
             layout.isEnabled = true
 
             configurePadding(layout: layout, frame: block.data?.frame)
             configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
-
-            configureSkelton(view: self, showSkelton: showSkelton)
         }
 
         self.image.configureLayout { layout in
@@ -81,6 +77,19 @@ class ImageView: AnimatedUIControl {
         }
 
         let srcTemplate = self.block.data?.src ?? ""
+        let showSkeltonOnLoading = hasDataPlaceholderPath(template: srcTemplate)
+
+        context.loadingPublisher()
+            .sink { [weak self] loading in
+                guard let self else { return }
+                if loading && showSkeltonOnLoading {
+                    configureSkelton(view: self)
+                } else {
+                    removeSkelton(view: self, frame: self.block.data?.frame)
+                }
+            }
+            .store(in: &self.cancellables)
+
         guard hasPlaceholderPath(template: srcTemplate) else {
             self.applyImageSource(srcTemplate)
             return
