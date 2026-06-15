@@ -257,7 +257,7 @@ final class PageView: UIView {
         self.renderView()
 
         variableStore.publisher()
-            .map { [weak self] variable -> PageHttpRequestSnapshot in
+            .map { variable -> PageHttpRequestSnapshot in
                 let compiledRequest = CompiledPageRequest(
                     url: compile(httpRequest.url ?? "", variable),
                     body: compile(httpRequest.body ?? "", variable),
