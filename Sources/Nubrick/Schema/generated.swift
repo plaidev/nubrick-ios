@@ -391,7 +391,7 @@ struct TriggerSetting: Decodable, Encodable {
   var onTrigger: UIBlockAction?
   var trigger: TriggerEventDef?
 }
-indirect enum UIBlock: Decodable, Encodable {
+indirect enum UIBlock: Decodable, Encodable, Sendable {
   case EUIRootBlock(UIRootBlock)
   case EUIPageBlock(UIPageBlock)
   case EUIFlexContainerBlock(UIFlexContainerBlock)
