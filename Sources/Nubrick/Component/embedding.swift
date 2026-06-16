@@ -44,9 +44,15 @@ func convertEvent(_ event: UIBlockAction) -> ComponentEvent {
     )
 }
 
-class EmbeddingUIView: UIView {
+@MainActor
+public protocol NubrickEmbeddingUpdatable {
+    func update(arguments: NubrickArguments?)
+}
+
+class EmbeddingUIView: UIView, NubrickEmbeddingUpdatable {
     private let fallback: ((_ phase: UIKitEmbeddingPhase) -> UIView)
     private var fallbackView: UIView = UIView()
+    private var rootView: RootView?
     
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(experimentId:componentId:container:arguments:modalViewController:onEvent:fallback:onSizeChange:).")
     required init?(coder: NSCoder) {
@@ -103,6 +109,7 @@ class EmbeddingUIView: UIView {
                             },
                             onSizeChange: onSizeChange
                         )
+                        self?.rootView = rootView
                         self?.renderFallback(phase: .completed(rootView))
                     default:
                         self?.renderFallback(phase: .notFound)
@@ -134,6 +141,10 @@ class EmbeddingUIView: UIView {
 
     override var intrinsicContentSize: CGSize {
         fallbackView.intrinsicContentSize
+    }
+
+    public func update(arguments: NubrickArguments?) {
+        rootView?.update(arguments: arguments)
     }
 }
 
