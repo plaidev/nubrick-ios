@@ -291,6 +291,10 @@ class RootView: UIView {
         self.currentPageView?.update(arguments: arguments)
     }
 
+    func update(arguments: NubrickArguments?) {
+        update(arguments: arguments, onEvent: self.onEvent)
+    }
+
     @available(*, deprecated, renamed: "dispatchAction(_:)")
     func dispatch(action: UIBlockAction) {
         self.dispatchAction(action)
