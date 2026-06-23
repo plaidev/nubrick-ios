@@ -52,7 +52,6 @@ class AnimatedUIView: UIView {
 
         if uiBlockAction != nil {
             let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
-            tap.cancelsTouchesInView = false
             addGestureRecognizer(tap)
         }
 
