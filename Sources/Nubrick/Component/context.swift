@@ -120,9 +120,6 @@ class UIBlockContext {
         self.container?.formDataPublisher() ?? Just([:]).eraseToAnyPublisher()
     }
 
-    /**
-            propaget onClick gesture to parent
-     */
     func getParentView() -> AnimatedUIView? {
         return self.parentView
     }
