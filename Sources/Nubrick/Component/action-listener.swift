@@ -9,126 +9,80 @@ import Combine
 import Foundation
 import UIKit
 
-class AnimatedUIControl: UIControl {
-    fileprivate var defaultOpacity: Float? = nil
-    fileprivate var clickListener: ClickListener? = nil
-    func setClickListener(clickListener: ClickListener) {
-        self.clickListener = clickListener
-    }
+class AnimatedUIView: UIView {
+    private var onClick: (() -> Void)?
+    private var onTouchBegan: (() -> Void)?
+    private var onTouchEnded: (() -> Void)?
+    private var onTouchCanceled: (() -> Void)?
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
-        if let process = self.clickListener?.onTouchBegan {
-            process()
-        }
+        onTouchBegan?()
     }
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesEnded(touches, with: event)
-        if let process = self.clickListener?.onTouchEnded {
-            process()
-        }
+        onTouchEnded?()
     }
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesCancelled(touches, with: event)
-        if let process = self.clickListener?.onTouchCanceled {
-            process()
-        }
+        onTouchCanceled?()
     }
-    @objc func onClicked(sender: ClickListener) {
-        if sender.state == .ended {
-            if let onClick = sender.onClick {
-                onClick()
+
+    @objc private func handleTap() {
+        onClick?()
+    }
+
+    @MainActor
+    func configureOnClickGesture(context: UIBlockContext, uiBlockAction: UIBlockAction?) {
+        onClick = { [weak self] in
+            guard let uiBlockAction = uiBlockAction else { return }
+            let compiledAction = compileAction(action: uiBlockAction, context: context)
+            if uiBlockAction.httpRequest != nil {
+                self?.isUserInteractionEnabled = false
+                self?.alpha = 0.8
+            }
+            context.dispatch(
+                action: compiledAction,
+                onHttpSettled: { [weak self] in
+                    self?.isUserInteractionEnabled = true
+                    self?.alpha = 1
+                }
+            )
+        }
+
+        if uiBlockAction != nil {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+            addGestureRecognizer(tap)
+        }
+
+        onTouchBegan = { [weak self] in
+            if uiBlockAction != nil && context.hasParent() {
+                UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
+                    self?.transform = CGAffineTransform(scaleX: 0.984, y: 0.984)
+                }
+            } else {
+                context.getParentView()?.onTouchBegan?()
+            }
+        }
+        onTouchEnded = { [weak self] in
+            if uiBlockAction != nil && context.hasParent() {
+                UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
+                    self?.transform = CGAffineTransform(scaleX: 1, y: 1)
+                }
+            } else {
+                context.getParentView()?.onTouchEnded?()
+            }
+        }
+        onTouchCanceled = { [weak self] in
+            if uiBlockAction != nil && context.hasParent() {
+                UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
+                    self?.transform = CGAffineTransform(scaleX: 1, y: 1)
+                }
+            } else {
+                context.getParentView()?.onTouchCanceled?()
             }
         }
     }
-}
-
-class ClickListener: UITapGestureRecognizer {
-    var onClick: (() -> Void)? = nil
-    var onTouchBegan: (() -> Void)? = nil
-    var onTouchEnded: (() -> Void)? = nil
-    var onTouchCanceled: (() -> Void)? = nil
-}
-
-// configureOnClickGesture sets up a click listener for the target view.
-@MainActor
-func configureOnClickGesture(
-    target: UIView, selector: Selector, context: UIBlockContext, uiBlockAction: UIBlockAction?
-) -> ClickListener {
-    let gesture = ClickListener(target: target, action: selector)
-    gesture.onClick = { [weak target] in
-        guard let uiBlockAction = uiBlockAction else { return }
-        let compiledAction = compileAction(action: uiBlockAction, context: context)
-        if uiBlockAction.httpRequest != nil {
-            // set loading UI
-            target?.isUserInteractionEnabled = false
-            target?.alpha = 0.8
-        }
-        context.dispatch(
-            action: compiledAction,
-            onHttpSettled: { [weak target] in
-                // reset loading UI
-                target?.isUserInteractionEnabled = true
-                target?.alpha = 1
-            }
-        )
-    }
-    if uiBlockAction != nil {
-        target.addGestureRecognizer(gesture)
-    }
-
-    gesture.onTouchBegan = {
-        if uiBlockAction != nil && context.hasParent() {
-            UIView.animate(
-                withDuration: 0.1,
-                delay: 0,
-                options: .curveEaseInOut,
-                animations: { [weak target] in
-                    target?.transform = CGAffineTransform(scaleX: 0.984, y: 0.984)
-                })
-        } else {
-            if let onTouchBegan = context.getParentClickListener()?.onTouchBegan {
-                onTouchBegan()
-            }
-        }
-    }
-    gesture.onTouchEnded = {
-        if uiBlockAction != nil && context.hasParent() {
-            UIView.animate(
-                withDuration: 0.1,
-                delay: 0,
-                options: .curveEaseInOut,
-                animations: { [weak target] in
-                    target?.transform = CGAffineTransform(scaleX: 1, y: 1)
-                })
-        } else {
-            if let onTouchBegan = context.getParentClickListener()?.onTouchEnded {
-                onTouchBegan()
-            }
-        }
-
-    }
-    gesture.onTouchCanceled = {
-        if uiBlockAction != nil && context.hasParent() {
-            UIView.animate(
-                withDuration: 0.1,
-                delay: 0,
-                options: .curveEaseInOut,
-                animations: { [weak target] in
-                    target?.transform = CGAffineTransform(scaleX: 1, y: 1)
-                })
-        } else {
-            if let onTouchBegan = context.getParentClickListener()?.onTouchCanceled {
-                onTouchBegan()
-            }
-        }
-    }
-
-    if target is AnimatedUIControl {
-        let animatedTarget = target as! AnimatedUIControl
-        animatedTarget.setClickListener(clickListener: gesture)
-    }
-
-    return gesture
 }
 
 func isDisabled(requiredFields: [String], values: [String: Any]) -> Bool {

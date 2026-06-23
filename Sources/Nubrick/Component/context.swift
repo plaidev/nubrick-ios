@@ -16,7 +16,7 @@ struct UIBlockContextInit {
     var variableStore: VariableStore? = nil
     var properties: [Property]? = nil
     var actionHandler: UIBlockActionHandler? = nil
-    var parentClickListener: ClickListener? = nil
+    var parentView: AnimatedUIView? = nil
     var parentDirection: FlexDirection? = nil
     var layoutInvalidationRoot: UIView? = nil
 }
@@ -26,7 +26,7 @@ struct UIBlockContextChildInit {
     var variableMapper: ((_ variable: Variable?) -> Variable?)? = nil
     var properties: [Property]? = nil
     var actionHandler: UIBlockActionHandler? = nil
-    var parentClickListener: ClickListener? = nil
+    var parentView: AnimatedUIView? = nil
     var parentDirection: FlexDirection? = nil
     var layoutInvalidationRoot: UIView? = nil
 }
@@ -38,7 +38,7 @@ class UIBlockContext {
     private let container: Container?
     private let actionHandler: UIBlockActionHandler?
     private let variableStore: VariableStore
-    private var parentClickListener: ClickListener?
+    private weak var parentView: AnimatedUIView?
     private var parentDirection: FlexDirection?
     private weak var layoutInvalidationRoot: UIView?
 
@@ -46,7 +46,7 @@ class UIBlockContext {
         self.variableStore = args.variableStore ?? VariableStore()
         self.properties = args.properties
         self.actionHandler = args.actionHandler
-        self.parentClickListener = args.parentClickListener
+        self.parentView = args.parentView
         self.parentDirection = args.parentDirection
         self.layoutInvalidationRoot = args.layoutInvalidationRoot
         self.container = args.container
@@ -68,7 +68,7 @@ class UIBlockContext {
                 variableStore: variableStore,
                 properties: args.properties ?? self.properties,
                 actionHandler: args.actionHandler ?? self.actionHandler,
-                parentClickListener: args.parentClickListener ?? self.parentClickListener,
+                parentView: args.parentView ?? self.parentView,
                 parentDirection: args.parentDirection ?? self.parentDirection,
                 layoutInvalidationRoot: args.layoutInvalidationRoot ?? self.layoutInvalidationRoot
             ))
@@ -91,7 +91,7 @@ class UIBlockContext {
     }
 
     func hasParent() -> Bool {
-        return self.parentClickListener != nil
+        return self.parentView != nil
     }
 
     func getParentDireciton() -> FlexDirection? {
@@ -120,17 +120,8 @@ class UIBlockContext {
         self.container?.formDataPublisher() ?? Just([:]).eraseToAnyPublisher()
     }
 
-    /**
-            propaget onClick gesture to parent
-     */
-    func propagate() {
-        if let onClick = self.parentClickListener?.onClick {
-            onClick()
-        }
-    }
-
-    func getParentClickListener() -> ClickListener? {
-        return self.parentClickListener
+    func getParentView() -> AnimatedUIView? {
+        return self.parentView
     }
 
 }
