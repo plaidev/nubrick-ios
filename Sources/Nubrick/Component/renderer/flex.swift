@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 internal import YogaKit
 
-class FlexView: AnimatedUIControl, BackgroundImageObserver {
+class FlexView: AnimatedUIView, BackgroundImageObserver {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     private var context: UIBlockContext?
     private var isOverflowView = false
@@ -55,16 +55,14 @@ class FlexView: AnimatedUIControl, BackgroundImageObserver {
                 parentDirection: context.getParentDireciton())
         }
 
-        let gesture = configureOnClickGesture(
-            target: self, selector: #selector(onClicked(sender:)), context: context,
-            uiBlockAction: block.data?.onClick)
+        configureOnClickGesture(context: context, uiBlockAction: block.data?.onClick)
         let children =
             block.data?.children?.map {
                 uiblockToUIView(
                     data: $0,
                     context: context.instanciateFrom(
                         UIBlockContextChildInit(
-                            parentClickListener: gesture,
+                            parentView: self,
                             parentDirection: block.data?.direction
                         )
                     ))
@@ -192,9 +190,6 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
         self.showsHorizontalScrollIndicator = false
         self.isScrollEnabled = (block.data?.overflow == Overflow.SCROLL) ? true : false
         
-        let _ = configureOnClickGesture(
-            target: self, selector: #selector(onClicked(sender:)), context: context,
-            uiBlockAction: block.data?.onClick)
         // Create child context with FlexOverflowView's direction as the parent direction
         let childContext = context.instanciateFrom(
             UIBlockContextChildInit(parentDirection: block.data?.direction)
@@ -230,14 +225,6 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
 
     deinit {
         self.backgroundImageLoadTask?.cancel()
-    }
-
-    @objc func onClicked(sender: ClickListener) {
-        if sender.state == .ended {
-            if let onClick = sender.onClick {
-                onClick()
-            }
-        }
     }
 
     override func layoutSubviews() {

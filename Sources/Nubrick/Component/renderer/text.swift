@@ -2,7 +2,7 @@ import Combine
 import Foundation
 import UIKit
 
-class TextView: AnimatedUIControl, BackgroundImageObserver {
+class TextView: AnimatedUIView, BackgroundImageObserver {
     var label: UILabel = UILabel()
     var block: UITextBlock = UITextBlock()
     var context: UIBlockContext?
@@ -41,12 +41,7 @@ class TextView: AnimatedUIControl, BackgroundImageObserver {
         self.addSubview(label)
         self.bindVariable()
         
-        _ = configureOnClickGesture(
-            target: self,
-            selector: #selector(onClicked(sender:)),
-            context: context,
-            uiBlockAction: block.data?.onClick
-        )
+        configureOnClickGesture(context: context, uiBlockAction: block.data?.onClick)
         
         makeDisabledStateListener(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)?.store(in: &cancellables)
     }

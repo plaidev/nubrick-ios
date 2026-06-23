@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 internal import YogaKit
 
-class ImageView: AnimatedUIControl {
+class ImageView: AnimatedUIView {
     private let image: UIImageView = UIImageView()
     private var block: UIImageBlock = UIImageBlock()
     private var context: UIBlockContext?
@@ -52,12 +52,7 @@ class ImageView: AnimatedUIControl {
         self.addSubview(self.image)
         self.bindVariable()
 
-        _ = configureOnClickGesture(
-            target: self,
-            selector: #selector(onClicked(sender:)),
-            context: context,
-            uiBlockAction: block.data?.onClick
-        )
+        configureOnClickGesture(context: context, uiBlockAction: block.data?.onClick)
 
         makeDisabledStateListener(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)?.store(in: &cancellables)
     }

@@ -102,12 +102,11 @@ fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollection
     }
 }
 
-class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, BackgroundImageObserver {
+class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, BackgroundImageObserver {
     private let block: UICollectionBlock?
     private let context: UIBlockContext
     private var childrenCount: Int = 0
     private var isReferenced: Bool = false
-    private var gesture: ClickListener? = nil
     private var pageControl: UIPageControl? = nil
     private var collectionView: UICollectionView? = nil
     
@@ -163,13 +162,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
             layout.height = .init(value: 100, unit: .percent)
         }
 
-        let gesture = configureOnClickGesture(
-            target: self,
-            selector: #selector(onClicked(sender:)),
-            context: context,
-            uiBlockAction: block.data?.onClick
-        )
-        self.gesture = gesture
+        configureOnClickGesture(context: context, uiBlockAction: block.data?.onClick)
 
         self.configureLayout { layout in
             layout.isEnabled = true
@@ -308,7 +301,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                                 let childData: Any = data.indices.contains(item) ? data[item] : ([:] as [String: Any])
                                 return _replaceVariableData(base: variable, data: childData)
                             },
-                            parentClickListener: self.gesture,
+                            parentView: self,
                             parentDirection: self.block?.data?.direction,
                             layoutInvalidationRoot: cell
                         )
@@ -323,7 +316,7 @@ class CollectionView: AnimatedUIControl, UICollectionViewDataSource, UICollectio
                     data: child,
                     context: self.context.instanciateFrom(
                         UIBlockContextChildInit(
-                            parentClickListener: self.gesture,
+                            parentView: self,
                             parentDirection: self.block?.data?.direction,
                             layoutInvalidationRoot: cell
                         )
