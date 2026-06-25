@@ -67,11 +67,6 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
                         )
                     ))
             } ?? []
-        // somehow, a container.padding won't work when the container size is 100%.
-        // so we adjust padding virtually with the margin of the last child.
-        let enableAdjustingXAxisPadding = direction == .row && (block.data?.frame?.width == 0)
-        let enableAdjustingYAxisPadding = direction == .column && (block.data?.frame?.height == 0)
-        let lastChildIndex = children.endIndex - 1
         for (index, child) in children.enumerated() {
             child.configureLayout { (layout) in
                 if index != 0 {
@@ -81,19 +76,6 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
                         layout.marginLeft = parseInt(block.data?.gap)
                     } else {
                         layout.marginTop = parseInt(block.data?.gap)
-                    }
-                }
-                if index == lastChildIndex {
-                    if enableAdjustingXAxisPadding {
-                        layout.marginRight = parseInt(
-                            (block.data?.frame?.paddingRight ?? 0)
-                                + (block.data?.frame?.paddingLeft ?? 0))
-
-                    }
-                    if enableAdjustingYAxisPadding {
-                        layout.marginBottom = parseInt(
-                            (block.data?.frame?.paddingTop ?? 0)
-                                + (block.data?.frame?.paddingBottom ?? 0))
                     }
                 }
 
