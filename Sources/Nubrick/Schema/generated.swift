@@ -46,7 +46,7 @@ struct ApiHttpResponseAssertion: Decodable, Encodable {
   var statusCodes: [Int]?
 }
 struct BoxShadow: Decodable, Encodable {
-  var color: Color?
+  var color: ColorValue?
   var offsetX: Int?
   var offsetY: Int?
   var radius: Int?
@@ -59,8 +59,8 @@ enum BuiltinUserProperty: String, Decodable, Encodable {
   case currentTime = "currentTime"
   case firstBootTime = "firstBootTime"
   case lastBootTime = "lastBootTime"
-  case retentionPeriod = "retentionPeriod"
   case bootingTime = "bootingTime"
+  case retentionPeriod = "retentionPeriod"
   case sdkVersion = "sdkVersion"
   case osVersion = "osVersion"
   case osName = "osName"
@@ -101,6 +101,52 @@ struct Color: Decodable, Encodable {
   var green: Float?
   var blue: Float?
   var alpha: Float?
+}
+indirect enum ColorValue: Decodable, Encodable, Sendable {
+  case EColor(Color)
+  case ELinearGradient(LinearGradient)
+  case unknown
+
+  enum CodingKeys: String, CodingKey {
+    case __typename
+  }
+  enum Typename: String, Decodable {
+    case __Color = "Color"
+    case __LinearGradient = "LinearGradient"
+    case unknown
+    init(from decoder: Decoder) throws {
+      self = try Typename(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+    }
+  }
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let typename = try container.decode(Typename.self, forKey: .__typename)
+    let associateContainer = try decoder.singleValueContainer()
+    switch typename {
+    case .__Color:
+      let data = try associateContainer.decode(Color.self)
+      self = .EColor(data)
+    case .__LinearGradient:
+      let data = try associateContainer.decode(LinearGradient.self)
+      self = .ELinearGradient(data)
+    default:
+      self = .unknown
+    }
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+
+    switch self {
+    case .EColor(let data):
+      try container.encode(Typename.__Color.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .ELinearGradient(let data):
+      try container.encode(Typename.__LinearGradient.rawValue, forKey: .__typename)
+      try data.encode(to: encoder)
+    case .unknown:
+      try container.encode(Typename.unknown.rawValue, forKey: .__typename)
+    }
+  }
 }
 enum ConditionOperator: String, Decodable, Encodable {
   case Regex = "Regex"
@@ -225,8 +271,8 @@ struct FrameData: Decodable, Encodable {
   var borderBottomRightRadius: Int?
   var borderBottomLeftRadius: Int?
   var borderWidth: Int?
-  var borderColor: Color?
-  var background: Color?
+  var borderColor: ColorValue?
+  var background: ColorValue?
   var backgroundSrc: String?
   var shadow: BoxShadow?
 }
@@ -244,6 +290,10 @@ enum FrequencyUnit: String, Decodable, Encodable {
     var container = encoder.singleValueContainer()
     try container.encode(rawValue)
   }
+}
+struct GradientStop: Decodable, Encodable {
+  var color: Color?
+  var position: Float?
 }
 enum ImageContentMode: String, Decodable, Encodable {
   case FIT = "FIT"
@@ -270,6 +320,14 @@ enum JustifyContent: String, Decodable, Encodable {
     var container = encoder.singleValueContainer()
     try container.encode(rawValue)
   }
+}
+struct LinearGradient: Decodable, Encodable {
+  var red: Float?
+  var green: Float?
+  var blue: Float?
+  var alpha: Float?
+  var angle: Float?
+  var stops: [GradientStop]?
 }
 enum ModalPresentationStyle: String, Decodable, Encodable {
   case DEPENDS_ON_CONTEXT_OR_FULL_SCREEN = "DEPENDS_ON_CONTEXT_OR_FULL_SCREEN"
@@ -298,7 +356,7 @@ enum ModalScreenSize: String, Decodable, Encodable {
 }
 struct NavigationBackButton: Decodable, Encodable {
   var title: String?
-  var color: Color?
+  var color: ColorValue?
   var visible: Boolean?
 }
 enum Overflow: String, Decodable, Encodable {
@@ -421,7 +479,6 @@ indirect enum UIBlock: Decodable, Encodable, Sendable {
     case __UIMultiSelectInputBlock = "UIMultiSelectInputBlock"
     case __UISwitchInputBlock = "UISwitchInputBlock"
     case unknown
-
     init(from decoder: Decoder) throws {
       self = try Typename(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
     }
@@ -584,7 +641,7 @@ struct UIMultiSelectInputBlockData: Decodable, Encodable {
   var value: [String]?
   var placeholder: String?
   var size: Int?
-  var color: Color?
+  var color: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?
   var textAlign: TextAlign?
@@ -637,7 +694,7 @@ struct UISelectInputBlockData: Decodable, Encodable {
   var value: String?
   var placeholder: String?
   var size: Int?
-  var color: Color?
+  var color: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?
   var textAlign: TextAlign?
@@ -654,7 +711,7 @@ struct UISwitchInputBlock: Decodable, Encodable {
 struct UISwitchInputBlockData: Decodable, Encodable {
   var key: String?
   var value: Boolean?
-  var checkedColor: Color?
+  var checkedColor: ColorValue?
 }
 struct UITextBlock: Decodable, Encodable {
   var id: ID?
@@ -663,7 +720,7 @@ struct UITextBlock: Decodable, Encodable {
 struct UITextBlockData: Decodable, Encodable {
   var value: String?
   var size: Int?
-  var color: Color?
+  var color: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?
   var maxLines: Int?
@@ -684,7 +741,7 @@ struct UITextInputBlockData: Decodable, Encodable {
   var secure: Boolean?
   var autocorrect: Boolean?
   var size: Int?
-  var color: Color?
+  var color: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?
   var textAlign: TextAlign?
