@@ -98,27 +98,35 @@ func parseJustifyContent(_ data: JustifyContent?) -> YGJustify {
     }
 }
 
-func parseColor(_ data: Color?) -> UIColor {
-    if let color = data {
-        return UIColor.init(
-            red: CGFloat(color.red ?? 0), green: CGFloat(color.green ?? 0),
-            blue: CGFloat(color.blue ?? 0), alpha: CGFloat(color.alpha ?? 0))
-    } else {
-        return UIColor.black
+private func rgba(from value: ColorValue) -> (red: Float, green: Float, blue: Float, alpha: Float) {
+    switch value {
+    case .EColor(let c):
+        return (c.red ?? 0, c.green ?? 0, c.blue ?? 0, c.alpha ?? 0)
+    case .ELinearGradient(let g):
+        return (g.red ?? 0, g.green ?? 0, g.blue ?? 0, g.alpha ?? 0)
+    case .unknown:
+        return (0, 0, 0, 0)
     }
 }
 
-func parseColorToCGColor(_ data: Color?) -> CGColor {
+func parseColor(_ data: ColorValue?) -> UIColor {
+    guard let value = data else { return UIColor.black }
+    let (r, g, b, a) = rgba(from: value)
+    return UIColor(red: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: CGFloat(a))
+}
+
+func parseColorToCGColor(_ data: ColorValue?) -> CGColor {
     guard
-        let color = data,
+        let value = data,
         let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)
     else { return CGColor(gray: 0, alpha: 0) }
 
+    let (r, g, b, a) = rgba(from: value)
     let components: [CGFloat] = [
-        CGFloat(clamp(color.red ?? 0.0, min: 0.0, max: 1.0)),
-        CGFloat(clamp(color.green ?? 0.0, min: 0.0, max: 1.0)),
-        CGFloat(clamp(color.blue ?? 0.0, min: 0.0, max: 1.0)),
-        CGFloat(clamp(color.alpha ?? 0.0, min: 0.0, max: 1.0)),
+        CGFloat(clamp(r, min: 0.0, max: 1.0)),
+        CGFloat(clamp(g, min: 0.0, max: 1.0)),
+        CGFloat(clamp(b, min: 0.0, max: 1.0)),
+        CGFloat(clamp(a, min: 0.0, max: 1.0)),
     ]
 
     return CGColor(colorSpace: colorSpace, components: components)
