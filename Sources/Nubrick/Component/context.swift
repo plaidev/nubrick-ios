@@ -115,6 +115,9 @@ class UIBlockContext {
         return self.container?.getFormValues() ?? [:]
     }
 
+    func sendSurveyResponse() {
+        self.container?.sendSurveyResponse()
+    }
 
     func formPublisher() -> AnyPublisher<[String: Any], Never> {
         self.container?.formDataPublisher() ?? Just([:]).eraseToAnyPublisher()

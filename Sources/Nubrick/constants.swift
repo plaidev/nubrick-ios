@@ -3,7 +3,11 @@ import Foundation
 private final class NubrickBundleToken {}
 
 enum NubrickConstants {
-    static let trackUrl = "https://track.nativebrik.com/track/v1"
+    static let trackBaseUrl = "https://track.nativebrik.com"
+    static let trackEndpoint = "/track/v1"
+    static let surveyResponsesEndpoint = "/track/v1/survey-responses"
+    static let trackUrl = "\(trackBaseUrl)\(trackEndpoint)"
+    static let surveyResponsesUrl = "\(trackBaseUrl)\(surveyResponsesEndpoint)"
     static let cdnUrl = "https://cdn.nativebrik.com"
 
     // Prefer the framework bundle version so release metadata comes from build settings.

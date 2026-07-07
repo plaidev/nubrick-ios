@@ -41,6 +41,9 @@ class AnimatedUIView: UIView {
                 self?.isUserInteractionEnabled = false
                 self?.alpha = 0.8
             }
+            if uiBlockAction.submitSurveyResponse == true {
+                context.sendSurveyResponse()
+            }
             context.dispatch(
                 action: compiledAction,
                 onHttpSettled: { [weak self] in
@@ -133,6 +136,7 @@ func compileAction(action: UIBlockAction, variable: Variable?) -> UIBlockAction 
         }),
         requiredFields: action.requiredFields,
         httpRequest: action.httpRequest,
-        httpResponseAssertion: action.httpResponseAssertion
+        httpResponseAssertion: action.httpResponseAssertion,
+        submitSurveyResponse: action.submitSurveyResponse
     )
 }

@@ -156,6 +156,17 @@ protocol TrackRepository2 : Actor {
     )
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
+    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async
+}
+
+struct SurveyResponseRequest: Encodable {
+    var timestamp: DateTime
+    var projectId: String
+    var experimentId: String
+    var variantId: String
+    var userId: String
+    var response_data: String
+    var meta: TrackEventMeta
 }
 
 struct TrackRequest: Encodable {
@@ -198,6 +209,18 @@ struct TrackEventMeta: Encodable {
     var osVersion: String?
     var sdkVersion: String?
     var platform: String? = "ios"
+
+    @MainActor
+    static func current() -> TrackEventMeta {
+        TrackEventMeta(
+            appId: Bundle.main.bundleIdentifier ?? "",
+            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "",
+            cfBundleVersion: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "",
+            osName: UIDevice.current.systemName,
+            osVersion: UIDevice.current.systemVersion,
+            sdkVersion: NubrickConstants.sdkVersion
+        )
+    }
 }
 
 struct TrackUserEvent {
@@ -212,6 +235,11 @@ struct TrackExperimentEvent {
 // Convert UInt64 to hex string
 private func hex(_ v: UInt64) -> String {
     String(format: "0x%016llx", v)
+}
+
+func makeJsonString(_ value: Any) throws -> String {
+    let data = try JSONEncoder().encode(JSON(value: value))
+    return String(data: data, encoding: .utf8) ?? "null"
 }
 
 /// Compute image_addr (load address) from a MetricKit frame.
@@ -238,7 +266,18 @@ actor TrackRespositoryImpl: TrackRepository2 {
         self.buffer = []
         self.flushTask = nil
     }
-    
+
+    private func makeJsonRequest<Body: Encodable>(
+        url: URL,
+        body: Body
+    ) throws -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpBody = try JSONEncoder().encode(body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return request
+    }
+
     func trackExperimentEvent(_ event: TrackExperimentEvent) {
         self.pushToQueue(TrackEvent(
             typename: .Experiment,
@@ -296,17 +335,6 @@ actor TrackRespositoryImpl: TrackRepository2 {
         let events = self.buffer
         self.buffer = []
 
-        let appId = Bundle.main.bundleIdentifier ?? ""
-        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        let cfBundleVersion = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
-        let trackMeta = await TrackEventMeta(
-            appId: appId,
-            appVersion: appVersion,
-            cfBundleVersion: cfBundleVersion,
-            osName: UIDevice.current.systemName,
-            osVersion: UIDevice.current.systemVersion,
-            sdkVersion: NubrickConstants.sdkVersion
-        )
         let userID = await MainActor.run {
             self.user.id
         }
@@ -315,16 +343,12 @@ actor TrackRespositoryImpl: TrackRepository2 {
             userId: userID,
             timestamp: getCurrentDate().ISO8601Format(),
             events: events,
-            meta: trackMeta
+            meta: await TrackEventMeta.current()
         )
 
         do {
             let url = URL(string: config.trackUrl)!
-            let jsonData = try JSONEncoder().encode(trackRequest)
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.httpBody = jsonData
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let request = try makeJsonRequest(url: url, body: trackRequest)
             let _ = try await nativebrikSession.data(for: request)
         } catch {
             self.buffer.append(contentsOf: events)
@@ -457,5 +481,32 @@ actor TrackRespositoryImpl: TrackRepository2 {
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
         sendCrashToBackend(crashEvent)
+    }
+
+    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {
+        guard !experimentId.isEmpty, !variantId.isEmpty else {
+            return
+        }
+        let userID = await MainActor.run {
+            self.user.id
+        }
+
+        do {
+            let requestBody = SurveyResponseRequest(
+                timestamp: getCurrentDate().ISO8601Format(),
+                projectId: self.config.projectId,
+                experimentId: experimentId,
+                variantId: variantId,
+                userId: userID,
+                response_data: response_data,
+                meta: await TrackEventMeta.current()
+            )
+            let url = URL(string: config.surveyResponsesUrl)!
+            let request = try makeJsonRequest(url: url, body: requestBody)
+            let _ = try await nativebrikSession.data(for: request)
+        } catch {
+            // Form submissions are one-shot; keep the event pipeline unaffected on failure.
+            return
+        }
     }
 }
