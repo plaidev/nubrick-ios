@@ -148,6 +148,7 @@ public enum CrashSeverity: String, Sendable {
 protocol TrackRepository2 : Actor {
     func trackExperimentEvent(_ event: TrackExperimentEvent)
     func trackEvent(_ event: TrackUserEvent)
+    func trackDiscoveredEmbeddingIds(_ ids: [String])
 
     func processMetricKitCrash(
         callStackTreeJSON: Data,
@@ -171,6 +172,7 @@ struct TrackEvent: Encodable {
         case Event = "event"
         case Experiment = "experiment"
         case Crash = "crash"
+        case EmbeddingDiscovery = "embedding_discovery"
     }
     var typename: Typename
     var experimentId: String?
@@ -182,6 +184,7 @@ struct TrackEvent: Encodable {
     var platform: String?
     var flutterSdkVersion: String?
     var severity: String?
+    var embeddingIds: [String]?
 }
 
 @_spi(FlutterBridge)
@@ -253,6 +256,15 @@ actor TrackRespositoryImpl: TrackRepository2 {
             typename: .Event,
             name: event.name,
             timestamp: getCurrentDate().ISO8601Format()
+        ))
+    }
+
+    func trackDiscoveredEmbeddingIds(_ ids: [String]) {
+        guard !ids.isEmpty else { return }
+        self.pushToQueue(TrackEvent(
+            typename: .EmbeddingDiscovery,
+            timestamp: getCurrentDate().ISO8601Format(),
+            embeddingIds: ids
         ))
     }
     
