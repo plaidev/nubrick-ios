@@ -576,6 +576,7 @@ struct UIBlockAction: Decodable, Encodable {
   var requiredFields: [String]?
   var httpRequest: ApiHttpRequest?
   var httpResponseAssertion: ApiHttpResponseAssertion?
+  var submitSurveyResponse: Boolean?
 }
 struct UICarouselBlock: Decodable, Encodable {
   var id: ID?

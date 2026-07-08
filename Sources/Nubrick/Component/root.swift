@@ -18,7 +18,11 @@ class ModalRootViewController: UIViewController {
     private let container: Container
 
     init(
-        root: UIRootBlock?, container: Container, modalViewController: ModalComponentViewController?
+        root: UIRootBlock?,
+        experimentId: String? = nil,
+        variantId: String? = nil,
+        container: Container,
+        modalViewController: ModalComponentViewController?
     ) {
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
@@ -26,7 +30,10 @@ class ModalRootViewController: UIViewController {
         }
         self.modalViewController = modalViewController
         self.modalViewController?.dismissModal()
-        self.container = container.makeContainer()
+        self.container = container.makeContainer(
+            experimentId: experimentId ?? container.experimentId,
+            variantId: variantId ?? container.variantId
+        )
         super.init(nibName: nil, bundle: nil)
 
         self.actionHandler = { [weak self] action, _ in
@@ -136,6 +143,8 @@ class ModalRootViewController: UIViewController {
 struct RootViewRepresentable: UIViewRepresentable {
     typealias UIViewType = RootView
     let root: UIRootBlock?
+    let experimentId: String?
+    let variantId: String?
     let container: Container
     let arguments: NubrickArguments?
     let modalViewController: ModalComponentViewController?
@@ -186,6 +195,8 @@ struct RootViewRepresentable: UIViewRepresentable {
         }
         return RootView(
             root: root,
+            experimentId: experimentId,
+            variantId: variantId,
             container: container,
             arguments: arguments,
             modalViewController: modalViewController,
@@ -231,6 +242,8 @@ class RootView: UIView {
 
     init(
         root: UIRootBlock?,
+        experimentId: String? = nil,
+        variantId: String? = nil,
         container: Container,
         arguments: NubrickArguments? = nil,
         modalViewController: ModalComponentViewController?,
@@ -240,7 +253,10 @@ class RootView: UIView {
         onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
         self.id = root?.id ?? ""
-        self.container = container.makeContainer()
+        self.container = container.makeContainer(
+            experimentId: experimentId ?? container.experimentId,
+            variantId: variantId ?? container.variantId
+        )
         self.arguments = arguments
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in

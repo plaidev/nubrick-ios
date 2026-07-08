@@ -117,15 +117,18 @@ class TriggerViewController: UIViewController {
             let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
             let triggerResult = await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
             let experimentId: String?
+            let variantId: String?
             let kind: ExperimentKind?
             let result: Result<UIBlock, NubrickError>
             switch triggerResult {
-            case .success(let (id, k, block)):
-                experimentId = id
-                kind = k
-                result = .success(block)
+            case .success(let content):
+                experimentId = content.experimentId
+                variantId = content.variantId
+                kind = content.kind
+                result = .success(content.block)
             case .failure(let error):
                 experimentId = nil
+                variantId = nil
                 kind = nil
                 result = .failure(error)
             }
@@ -154,6 +157,8 @@ class TriggerViewController: UIViewController {
                         } else {
                             let root = ModalRootViewController(
                                 root: root,
+                                experimentId: experimentId,
+                                variantId: variantId,
                                 container: self.container,
                                 modalViewController: self.modalViewController
                             )

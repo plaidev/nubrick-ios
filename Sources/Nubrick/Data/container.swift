@@ -14,11 +14,29 @@ private struct ExtractedVariant {
     let variant: ExperimentVariant
 }
 
+struct FetchedEmbedding {
+    let experimentId: String?
+    let variantId: String?
+    let block: UIBlock
+}
+
+struct FetchedTriggerContent {
+    let experimentId: String
+    let variantId: String
+    let kind: ExperimentKind?
+    let block: UIBlock
+}
+
 protocol Container : Sendable {
+    var experimentId: String? { get }
+    var variantId: String? { get }
+
     @MainActor
     func handleEvent(_ it: UIBlockAction)
     @MainActor
     func makeContainer() -> Container
+    @MainActor
+    func makeContainer(experimentId: String?, variantId: String?) -> Container
     @MainActor
     func createVariableForTemplate(data: Any?, properties: [Property]?, arguments: NubrickArguments?) -> Variable?
     @MainActor
@@ -28,17 +46,21 @@ protocol Container : Sendable {
     @MainActor
     func setFormValue(key: String, value: Any)
     @MainActor
+    func sendSurveyResponse()
+    @MainActor
     func formDataPublisher() -> AnyPublisher<[String: Any], Never>
     @MainActor
     func userDataPublisher() -> AnyPublisher<[String: Any], Never>
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
-    func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<UIBlock, NubrickError>
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError>
+    func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
+    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
 final class ContainerImpl: Container {
+    let experimentId: String?
+    let variantId: String?
     private let config: Config
     private let user: NubrickUser
     private let actionHandler: UIBlockActionHandler
@@ -58,8 +80,12 @@ final class ContainerImpl: Container {
         componentRepository: ComponentRepository2,
         trackRepository: TrackRepository2,
         databaseRepository: DatabaseRepository,
-        httpRequestRepository: HttpRequestRepository
+        httpRequestRepository: HttpRequestRepository,
+        experimentId: String? = nil,
+        variantId: String? = nil
     ) {
+        self.experimentId = experimentId
+        self.variantId = variantId
         self.config = config
         self.user = user
         self.actionHandler = actionHandler
@@ -78,6 +104,11 @@ final class ContainerImpl: Container {
 
     @MainActor
     func makeContainer() -> Container {
+        makeContainer(experimentId: experimentId, variantId: variantId)
+    }
+
+    @MainActor
+    func makeContainer(experimentId: String?, variantId: String?) -> Container {
         return ContainerImpl(
             config: self.config,
             user: self.user,
@@ -86,7 +117,9 @@ final class ContainerImpl: Container {
             componentRepository: self.componentRepository,
             trackRepository: self.trackRepository,
             databaseRepository: self.databaseRepository,
-            httpRequestRepository: self.httpRequestRepository
+            httpRequestRepository: self.httpRequestRepository,
+            experimentId: experimentId,
+            variantId: variantId
         )
     }
 
@@ -143,10 +176,18 @@ final class ContainerImpl: Container {
 
     // MARK: - Experiment Content
 
-    func fetchEmbedding(experimentId: String, componentId: String? = nil) async -> Result<UIBlock, NubrickError> {
+    func fetchEmbedding(experimentId: String, componentId: String? = nil) async -> Result<FetchedEmbedding, NubrickError> {
         if let componentId = componentId {
-            let component = await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId)
-            return component
+            switch await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId) {
+            case .success(let block):
+                return .success(FetchedEmbedding(
+                    experimentId: experimentId,
+                    variantId: self.variantId,
+                    block: block
+                ))
+            case .failure(let error):
+                return .failure(error)
+            }
         }
 
         var configs: ExperimentConfigs
@@ -178,10 +219,19 @@ final class ContainerImpl: Container {
             return Result.failure(NubrickError.notFound)
         }
 
-        return await self.componentRepository.fetchComponent(experimentId: extracted.experimentId, id: componentId)
+        switch await self.componentRepository.fetchComponent(experimentId: extracted.experimentId, id: componentId) {
+        case .success(let block):
+            return .success(FetchedEmbedding(
+                experimentId: extracted.experimentId,
+                variantId: variantId,
+                block: block
+            ))
+        case .failure(let error):
+            return .failure(error)
+        }
     }
 
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<(String, ExperimentKind?, UIBlock), NubrickError> {
+    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError> {
         await self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
         await self.databaseRepository.appendUserEvent(name: trigger)
 
@@ -220,7 +270,12 @@ final class ContainerImpl: Container {
 
         switch await self.componentRepository.fetchComponent(experimentId: extracted.experimentId, id: componentId) {
         case .success(let block):
-            return .success((extracted.experimentId, extracted.kind, block))
+            return .success(FetchedTriggerContent(
+                experimentId: extracted.experimentId,
+                variantId: variantId,
+                kind: extracted.kind,
+                block: block
+            ))
         case .failure(let error):
             return .failure(error)
         }
@@ -287,5 +342,23 @@ final class ContainerImpl: Container {
             return Result.failure(NubrickError.notFound)
         }
         return Result.success(ExtractedVariant(experimentId: experimentId, kind: config.kind, variant: variant))
+    }
+
+    @MainActor
+    func sendSurveyResponse() {
+        guard let experimentId, let variantId else {
+            return
+        }
+        guard let response_data = try? makeJsonString(self.formRepository.getFormData()) else {
+            return
+        }
+        let trackRepository = self.trackRepository
+        Task {
+            await trackRepository.sendSurveyResponse(
+                experimentId: experimentId,
+                variantId: variantId,
+                response_data: response_data
+            )
+        }
     }
 }

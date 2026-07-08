@@ -81,11 +81,13 @@ private func dispatchMainActor(_ event: NubrickEvent) {
 final class Config : Sendable{
     let projectId: String
     let trackUrl: String
+    let surveyResponsesUrl: String
     let cdnUrl: String
 
     init(projectId: String) {
         self.projectId = projectId
         self.trackUrl = NubrickConstants.trackUrl
+        self.surveyResponsesUrl = NubrickConstants.surveyResponsesUrl
         self.cdnUrl = NubrickConstants.cdnUrl
     }
 }

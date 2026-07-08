@@ -90,6 +90,7 @@ public final class RemoteConfigVariant : Sendable {
         let componentId = self.get(key)
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
+            variantId: self.variantId,
             componentId: componentId,
             container: self.container,
             arguments: arguments,
@@ -108,6 +109,7 @@ public final class RemoteConfigVariant : Sendable {
         let componentId = self.get(key)
         return EmbeddingSwiftView(
             experimentId: self.experimentId,
+            variantId: self.variantId,
             componentId: componentId,
             container: self.container,
             arguments: arguments,
@@ -128,6 +130,7 @@ public final class RemoteConfigVariant : Sendable {
         }
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
+            variantId: self.variantId,
             componentId: componentId,
             container: self.container,
             arguments: arguments,
@@ -150,6 +153,7 @@ public final class RemoteConfigVariant : Sendable {
         }
         let uiview = EmbeddingUIView(
             experimentId: self.experimentId,
+            variantId: self.variantId,
             componentId: componentId,
             container: self.container,
             arguments: arguments,

@@ -61,6 +61,7 @@ class EmbeddingUIView: UIView, NubrickEmbeddingUpdatable {
 
     init(
         experimentId: String,
+        variantId: String? = nil,
         componentId: String? = nil,
         container: Container,
         arguments: NubrickArguments? = nil,
@@ -96,11 +97,13 @@ class EmbeddingUIView: UIView, NubrickEmbeddingUpdatable {
             
             await MainActor.run { [weak self] in
                 switch result {
-                case .success(let view):
-                    switch view {
+                case .success(let fetched):
+                    switch fetched.block {
                     case .EUIRootBlock(let root):
                         let rootView = RootView(
                             root: root,
+                            experimentId: fetched.experimentId ?? experimentId,
+                            variantId: fetched.variantId ?? variantId,
                             container: container,
                             arguments: arguments,
                             modalViewController: modalViewController,
@@ -153,6 +156,8 @@ struct ComponentView: View {
     @State private var height: NubrickSize = .fill
 
     let root: UIRootBlock?
+    let experimentId: String?
+    let variantId: String?
     let container: Container
     let arguments: NubrickArguments?
     let modalViewController: ModalComponentViewController?
@@ -180,6 +185,8 @@ struct ComponentView: View {
     var body: some View {
         RootViewRepresentable(
             root: root,
+            experimentId: experimentId,
+            variantId: variantId,
             container: container,
             arguments: arguments,
             modalViewController: modalViewController,
@@ -204,7 +211,7 @@ public enum SwiftUIEmbeddingPhase {
 
 fileprivate enum FetchState {
     case loading
-    case completed(UIRootBlock)
+    case completed(root: UIRootBlock, experimentId: String?, variantId: String?)
     case notFound
     case failed(Error)
 }
@@ -215,15 +222,20 @@ class EmbeddingSwiftViewModel: ObservableObject {
 
     func fetchEmbeddingAndUpdatePhase(
         experimentId: String,
+        variantId: String? = nil,
         componentId: String? = nil,
         container: Container
     ) async {
         let result = await container.fetchEmbedding(experimentId: experimentId, componentId: componentId)
         switch result {
-        case .success(let view):
-            switch view {
+        case .success(let fetched):
+            switch fetched.block {
             case .EUIRootBlock(let root):
-                self.state = .completed(root)
+                self.state = .completed(
+                    root: root,
+                    experimentId: fetched.experimentId ?? experimentId,
+                    variantId: fetched.variantId ?? variantId
+                )
             default:
                 self.state = .notFound
             }
@@ -240,14 +252,16 @@ class EmbeddingSwiftViewModel: ObservableObject {
 }
 
 struct EmbeddingSwiftView: View {
-    private struct FetchKey: Equatable {
+    private struct FetchKey: Hashable {
         let experimentId: String
+        let variantId: String?
         let componentId: String?
     }
 
     @ViewBuilder private let _content: ((_ phase: SwiftUIEmbeddingPhase) -> AnyView)
     @StateObject private var data = EmbeddingSwiftViewModel()
     private let experimentId: String
+    private let variantId: String?
     private let componentId: String?
     private let container: Container
     private let arguments: NubrickArguments?
@@ -255,24 +269,26 @@ struct EmbeddingSwiftView: View {
     private let onEvent: ((_ event: ComponentEvent) -> Void)?
     private let onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)?
     private var fetchKey: FetchKey {
-        FetchKey(experimentId: experimentId, componentId: componentId)
+        FetchKey(experimentId: experimentId, variantId: variantId, componentId: componentId)
     }
 
     private var phase: SwiftUIEmbeddingPhase {
         switch data.state {
         case .loading:
             return .loading
-        case .completed(let root):
+        case .completed(let root, let resolvedExperimentId, let variantId):
             return .completed(AnyView(
                 ComponentView(
                     root: root,
+                    experimentId: resolvedExperimentId ?? experimentId,
+                    variantId: variantId,
                     container: container,
                     arguments: arguments,
                     modalViewController: modalViewController,
                     onEvent: onEvent,
                     onSizeChange: onSizeChange
                 )
-                .id(root.id)
+                .id(fetchKey)
             ))
         case .notFound:
             return .notFound
@@ -283,6 +299,7 @@ struct EmbeddingSwiftView: View {
     
     init(
         experimentId: String,
+        variantId: String? = nil,
         componentId: String? = nil,
         container: Container,
         arguments: NubrickArguments? = nil,
@@ -291,6 +308,7 @@ struct EmbeddingSwiftView: View {
         onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
         self.experimentId = experimentId
+        self.variantId = variantId
         self.componentId = componentId
         self.container = container
         self.arguments = arguments
@@ -311,6 +329,7 @@ struct EmbeddingSwiftView: View {
 
     init<V: View>(
         experimentId: String,
+        variantId: String? = nil,
         componentId: String? = nil,
         container: Container,
         arguments: NubrickArguments? = nil,
@@ -320,6 +339,7 @@ struct EmbeddingSwiftView: View {
         onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
     ) {
         self.experimentId = experimentId
+        self.variantId = variantId
         self.componentId = componentId
         self.container = container
         self.arguments = arguments
@@ -339,6 +359,7 @@ struct EmbeddingSwiftView: View {
             .task(id: fetchKey) {
                 await data.fetchEmbeddingAndUpdatePhase(
                     experimentId: experimentId,
+                    variantId: variantId,
                     componentId: componentId,
                     container: container
                 )
