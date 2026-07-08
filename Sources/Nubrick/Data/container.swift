@@ -181,7 +181,7 @@ final class ContainerImpl: Container {
             switch await self.componentRepository.fetchComponent(experimentId: experimentId, id: componentId) {
             case .success(let block):
                 return .success(FetchedEmbedding(
-                    experimentId: self.experimentId,
+                    experimentId: experimentId,
                     variantId: self.variantId,
                     block: block
                 ))

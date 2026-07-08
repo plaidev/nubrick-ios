@@ -200,7 +200,10 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
             return
         }
         let cellOption = self.options[indexPath.row]
-        if cell.accessoryType == .none {
+        let isSelected = self.selectedOptions.contains { option in
+            option.value == cellOption.value
+        }
+        if !isSelected {
             cell.accessoryType = .checkmark
 
             self.selectedOptions = self.selectedOptions.filter({ option in
@@ -241,9 +244,7 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
                return false
            }
         })
-        if selectedCellOption != nil {
-            cell.accessoryType = .checkmark
-        }
+        cell.accessoryType = selectedCellOption != nil ? .checkmark : .none
 
         return cell
     }
