@@ -135,7 +135,7 @@ final class PageView: UIView {
         props: [Property]?,
         container: Container,
         arguments: NubrickArguments?,
-        actionHandler: UIBlockActionHandler?,
+        actionHandler parentActionHandler: UIBlockActionHandler?,
         modalViewController: ModalComponentViewController?
     ) {
         self.page = page
@@ -174,36 +174,22 @@ final class PageView: UIView {
 
             let variable = self.currentVariable()
 
+            let httpRequest = action.httpRequest
             let assertion = action.httpResponseAssertion
-            let forwardAction = { () -> Void in
-                Task { @MainActor in
-                    actionHandler?(action, nil)
-                }
-            }
+            let container = self.container
 
-            if let httpRequest = action.httpRequest {
-                Task { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    let result = await self.container.sendHttpRequest(
+            if let httpRequest {
+                Task {
+                    _ = await container.sendHttpRequest(
                         req: httpRequest,
                         assertion: assertion,
                         variable: variable
                     )
-                    switch result {
-                    case .success:
-                        await MainActor.run { onHttpSettled?() }
-                        forwardAction()
-                    case .failure:
-                        await MainActor.run { onHttpSettled?() }
-                        // TODO: handle error
-                        forwardAction()
-                    }
+                    await MainActor.run { onHttpSettled?() }
                 }
-            } else {
-                forwardAction()
             }
+
+            parentActionHandler?(action, nil)
         }
 
         // setup layout

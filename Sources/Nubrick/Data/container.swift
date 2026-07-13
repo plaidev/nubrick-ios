@@ -46,8 +46,6 @@ protocol Container : Sendable {
     @MainActor
     func setFormValue(key: String, value: Any)
     @MainActor
-    func sendSurveyResponse()
-    @MainActor
     func formDataPublisher() -> AnyPublisher<[String: Any], Never>
     @MainActor
     func userDataPublisher() -> AnyPublisher<[String: Any], Never>
@@ -99,6 +97,9 @@ final class ContainerImpl: Container {
 
     @MainActor
     func handleEvent(_ it: UIBlockAction) {
+        if it.submitSurveyResponse == true {
+            self.sendSurveyResponse()
+        }
         self.actionHandler(it, nil)
     }
 
@@ -345,7 +346,7 @@ final class ContainerImpl: Container {
     }
 
     @MainActor
-    func sendSurveyResponse() {
+    private func sendSurveyResponse() {
         guard let experimentId, let variantId else {
             return
         }
