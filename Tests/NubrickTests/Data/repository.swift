@@ -8,9 +8,54 @@
 import Foundation
 
 import XCTest
-@testable import NubrickLocal
+@_spi(FlutterBridge) @testable import NubrickLocal
 
 let HEALTH_CHECK_URL = "https://track.nativebrik.com/health"
+
+private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
+    struct Response {
+        let experimentId: String
+        let variantId: String
+        let data: String
+    }
+
+    private var responses: [Response] = []
+    private var responseWaiters: [CheckedContinuation<Response, Never>] = []
+
+    func trackExperimentEvent(_ event: TrackExperimentEvent) {}
+
+    func trackEvent(_ event: TrackUserEvent) {}
+
+    func processMetricKitCrash(
+        callStackTreeJSON: Data,
+        terminationReason: String?,
+        exceptionType: UInt32?
+    ) {}
+
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {}
+
+    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {
+        let response = Response(
+            experimentId: experimentId,
+            variantId: variantId,
+            data: response_data
+        )
+        if responseWaiters.isEmpty {
+            responses.append(response)
+        } else {
+            responseWaiters.removeFirst().resume(returning: response)
+        }
+    }
+
+    func nextResponse() async -> Response {
+        if !responses.isEmpty {
+            return responses.removeFirst()
+        }
+        return await withCheckedContinuation { continuation in
+            responseWaiters.append(continuation)
+        }
+    }
+}
 
 final class HttpRequestReposotiryTests: XCTestCase {
     func testShouldCallApiHttpRequest() throws {
@@ -107,5 +152,49 @@ final class ContainerTests: XCTestCase {
         let childEmailAfter = child.getFormValue(key: "email") as? String
         XCTAssertEqual("root@example.com", rootEmailAfter)
         XCTAssertEqual("child@example.com", childEmailAfter)
+    }
+
+    func testHandleEventSubmitsSurveyResponseWhenRequested() async throws {
+        let db = try XCTUnwrap(createNativebrikCoreDataHelper(), "Could not init DB")
+        let user = NubrickUser()
+        let config = Config(projectId: PROJECT_ID_FOR_TEST)
+        let trackRepository = SurveyResponseTrackRepositorySpy()
+        var handledAction: UIBlockAction?
+        let container = ContainerImpl(
+            config: config,
+            user: user,
+            actionHandler: { action, _ in handledAction = action },
+            experimentRepository: ExperimentRepositoryImpl(config: config),
+            componentRepository: ComponentRepositoryImpl(config: config),
+            trackRepository: trackRepository,
+            databaseRepository: DatabaseRepositoryImpl(persistentContainer: db),
+            httpRequestRepository: HttpRequestRepositoryImpl(),
+            experimentId: "experiment-id",
+            variantId: "variant-id"
+        )
+        container.setFormValue(key: "answer", value: "yes")
+        let action = UIBlockAction(
+            eventName: "survey-submitted",
+            name: nil,
+            destinationPageId: nil,
+            deepLink: nil,
+            payload: nil,
+            requiredFields: nil,
+            httpRequest: nil,
+            httpResponseAssertion: nil,
+            submitSurveyResponse: true
+        )
+
+        container.handleEvent(action)
+
+        let response = await trackRepository.nextResponse()
+        XCTAssertEqual(response.experimentId, "experiment-id")
+        XCTAssertEqual(response.variantId, "variant-id")
+        let responseData = try XCTUnwrap(response.data.data(using: .utf8))
+        let responseJSON = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: responseData) as? [String: String]
+        )
+        XCTAssertEqual(responseJSON, ["answer": "yes"])
+        XCTAssertEqual(handledAction?.eventName, "survey-submitted")
     }
 }

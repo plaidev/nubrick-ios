@@ -201,8 +201,6 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
            let template = self.block.data?.frame?.backgroundSrc {
             observeBackgroundImage(context: context, urlTemplate: template)
         }
-        
-        makeDisabledStateListener(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)?.store(in: &cancellables)
     }
 
     deinit {

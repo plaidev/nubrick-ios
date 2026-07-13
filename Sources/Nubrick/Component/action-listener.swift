@@ -14,6 +14,32 @@ class AnimatedUIView: UIView {
     private var onTouchBegan: (() -> Void)?
     private var onTouchEnded: (() -> Void)?
     private var onTouchCanceled: (() -> Void)?
+    private var isRequestPending = false
+    private var hasInvalidRequiredFields = false
+
+    @MainActor
+    func setRequestPending(_ pending: Bool) {
+        isRequestPending = pending
+        updateActionState()
+    }
+
+    @MainActor
+    func setRequiredFieldsInvalid(_ invalid: Bool) {
+        hasInvalidRequiredFields = invalid
+        updateActionState()
+    }
+
+    @MainActor
+    private func updateActionState() {
+        isUserInteractionEnabled = !isRequestPending && !hasInvalidRequiredFields
+        if hasInvalidRequiredFields {
+            alpha = 0.5
+        } else if isRequestPending {
+            alpha = 0.8
+        } else {
+            alpha = 1
+        }
+    }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
@@ -38,17 +64,12 @@ class AnimatedUIView: UIView {
             guard let uiBlockAction = uiBlockAction else { return }
             let compiledAction = compileAction(action: uiBlockAction, context: context)
             if uiBlockAction.httpRequest != nil {
-                self?.isUserInteractionEnabled = false
-                self?.alpha = 0.8
-            }
-            if uiBlockAction.submitSurveyResponse == true {
-                context.sendSurveyResponse()
+                self?.setRequestPending(true)
             }
             context.dispatch(
                 action: compiledAction,
                 onHttpSettled: { [weak self] in
-                    self?.isUserInteractionEnabled = true
-                    self?.alpha = 1
+                    self?.setRequestPending(false)
                 }
             )
         }
@@ -89,11 +110,22 @@ class AnimatedUIView: UIView {
 }
 
 func isDisabled(requiredFields: [String], values: [String: Any]) -> Bool {
-    return requiredFields.contains {
-        if let value = values[$0] as? String {
-            return value.isEmpty
+    return requiredFields.contains { field in
+        guard let value = values[field] else {
+            return true
         }
-        return false
+        switch value {
+        case let value as String:
+            return value.isEmpty
+        case let value as [String]:
+            return value.isEmpty
+        case let value as [Any]:
+            return value.isEmpty
+        case is NSNull:
+            return true
+        default:
+            return false
+        }
     }
 }
 
@@ -105,8 +137,12 @@ func makeDisabledStateListener(target: UIView, context: UIBlockContext, required
         .removeDuplicates()
         .sink { [weak target] disabled in
             guard let target else { return }
-            target.isUserInteractionEnabled = !disabled
-            target.alpha = disabled ? 0.5 : 1.0
+            if let target = target as? AnimatedUIView {
+                target.setRequiredFieldsInvalid(disabled)
+            } else {
+                target.isUserInteractionEnabled = !disabled
+                target.alpha = disabled ? 0.5 : 1.0
+            }
         }
 }
 
