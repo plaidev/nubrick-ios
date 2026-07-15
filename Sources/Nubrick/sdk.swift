@@ -158,7 +158,7 @@ final class NubrickCore {
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
     ) {
         let user = NubrickUser()
         let bridgeCallbackStore = BridgeCallbackStore(onEvent: onEvent)
@@ -203,7 +203,7 @@ final class NubrickCore {
     func updateBridgeCallbacks(
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
     ) {
         if let onEvent {
             self.bridgeCallbackStore.onEvent = onEvent
@@ -391,6 +391,8 @@ final class NubrickCore {
 
     func renderUIView(
         json: String,
+        experimentId: String? = nil,
+        variantId: String? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
@@ -401,6 +403,8 @@ final class NubrickCore {
             let decoded = try decoder.decode(UIRootBlock.self, from: data)
             return NubrickBridgedViewAccessor(rootView: RootView(
                 root: decoded,
+                experimentId: experimentId,
+                variantId: variantId,
                 container: self.makeContainer(),
                 arguments: nil,
                 modalViewController: self.overlayVC.modalViewController,
@@ -456,7 +460,7 @@ public enum NubrickSDK {
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
     ) -> Bool {
         guard runtime == nil else {
             nubrickWarn("NubrickSDK.initialize(...) called more than once. Ignoring subsequent call.")
@@ -491,7 +495,7 @@ public enum NubrickSDK {
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
     ) -> Bool {
         if runtime != nil {
             nubrickWarn("NubrickBridge.initialize(...) called more than once. Subsequent calls are ignored.")

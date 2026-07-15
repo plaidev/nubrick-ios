@@ -197,4 +197,46 @@ final class ContainerTests: XCTestCase {
         XCTAssertEqual(responseJSON, ["answer": "yes"])
         XCTAssertEqual(handledAction?.eventName, "survey-submitted")
     }
+
+    func testRootViewAppliesExperimentContextToSurveyResponses() async throws {
+        let db = try XCTUnwrap(createNativebrikCoreDataHelper(), "Could not init DB")
+        let user = NubrickUser()
+        let config = Config(projectId: PROJECT_ID_FOR_TEST)
+        let trackRepository = SurveyResponseTrackRepositorySpy()
+        let container = ContainerImpl(
+            config: config,
+            user: user,
+            actionHandler: { _, _ in },
+            experimentRepository: ExperimentRepositoryImpl(config: config),
+            componentRepository: ComponentRepositoryImpl(config: config),
+            trackRepository: trackRepository,
+            databaseRepository: DatabaseRepositoryImpl(persistentContainer: db),
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+        let rootView = RootView(
+            root: nil,
+            experimentId: "tooltip-experiment-id",
+            variantId: "tooltip-variant-id",
+            container: container,
+            modalViewController: nil,
+            onEvent: nil
+        )
+        let action = UIBlockAction(
+            eventName: "survey-submitted",
+            name: nil,
+            destinationPageId: nil,
+            deepLink: nil,
+            payload: nil,
+            requiredFields: nil,
+            httpRequest: nil,
+            httpResponseAssertion: nil,
+            submitSurveyResponse: true
+        )
+
+        rootView.dispatchAction(action)
+
+        let response = await trackRepository.nextResponse()
+        XCTAssertEqual(response.experimentId, "tooltip-experiment-id")
+        XCTAssertEqual(response.variantId, "tooltip-variant-id")
+    }
 }

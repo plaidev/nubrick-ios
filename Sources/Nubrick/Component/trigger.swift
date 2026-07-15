@@ -19,7 +19,7 @@ class TriggerViewController: UIViewController {
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: ModalRootViewController? = nil
     private var onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
-    private var onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
+    private var onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)? = nil
     private var didLoaded = false
     private var ignoreFirstUserEventToForegroundEvent = true
 
@@ -33,7 +33,7 @@ class TriggerViewController: UIViewController {
         container: Container,
         modalViewController: ModalComponentViewController?,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)? = nil
     ) {
         self.user = user
         self.container = container
@@ -45,7 +45,7 @@ class TriggerViewController: UIViewController {
 
     func updateCallbacks(
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
     ) {
         if let onDispatch {
             self.onDispatch = onDispatch
@@ -152,7 +152,7 @@ class TriggerViewController: UIViewController {
                            let experimentId = experimentId {
                             if let jsonData = try? JSONEncoder().encode(block),
                                let jsonString = String(data: jsonData, encoding: .utf8) {
-                                onTooltip(jsonString, experimentId)
+                                onTooltip(jsonString, experimentId, variantId)
                             }
                         } else {
                             let root = ModalRootViewController(
