@@ -54,7 +54,7 @@ public enum NubrickBridge {
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
         trackCrashes: Bool = true,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)? = nil
     ) {
         NubrickSDK.initializeBridge(
             projectId: projectId,
@@ -69,7 +69,7 @@ public enum NubrickBridge {
     public static func updateCallbacks(
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)? = nil,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)? = nil
     ) {
         guard let runtime = NubrickSDK.requireRuntime() else { return }
         runtime.updateBridgeCallbacks(onEvent: onEvent, onDispatch: onDispatch, onTooltip: onTooltip)
@@ -101,6 +101,8 @@ public enum NubrickBridge {
 
     public static func renderUIView(
         json: String,
+        experimentId: String? = nil,
+        variantId: String? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
@@ -110,6 +112,8 @@ public enum NubrickBridge {
         }
         return runtime.renderUIView(
             json: json,
+            experimentId: experimentId,
+            variantId: variantId,
             onEvent: onEvent,
             onNextTooltip: onNextTooltip,
             onDismiss: onDismiss

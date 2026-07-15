@@ -17,7 +17,7 @@ class OverlayViewController: UIViewController {
         user: NubrickUser,
         container: Container,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)? = nil
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)? = nil
     ) {
         self.triggerViewController = TriggerViewController(
             user: user,
@@ -43,7 +43,7 @@ class OverlayViewController: UIViewController {
 
     func updateCallbacks(
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
-        onTooltip: ((_ data: String, _ experimentId: String) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
     ) {
         self.triggerViewController.updateCallbacks(
             onDispatch: onDispatch,
