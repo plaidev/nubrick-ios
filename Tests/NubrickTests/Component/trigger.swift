@@ -81,7 +81,6 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
 final class TriggerViewControllerTests: XCTestCase {
     @MainActor
     func testTooltipCallbackIncludesExperimentAndVariantContext() async {
-        let callbackSemaphore = DispatchSemaphore(value: 0)
         var receivedData: String?
         var receivedExperimentId: String?
         var receivedVariantId: String?
@@ -93,20 +92,12 @@ final class TriggerViewControllerTests: XCTestCase {
                 receivedData = data
                 receivedExperimentId = experimentId
                 receivedVariantId = variantId
-                callbackSemaphore.signal()
             }
         )
 
         controller.initialLoad()
-        controller.dispatch(event: NubrickEvent("tooltip-trigger"))
+        await controller.performDispatch(event: NubrickEvent("tooltip-trigger"))
 
-        let waitResult = await Task.detached {
-            callbackSemaphore.wait(timeout: .now() + 1)
-        }.value
-        guard waitResult == .success else {
-            XCTFail("Tooltip callback was not invoked")
-            return
-        }
         guard let receivedData,
               let jsonData = receivedData.data(using: .utf8),
               let block = try? JSONDecoder().decode(UIBlock.self, from: jsonData),

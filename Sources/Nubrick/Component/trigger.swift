@@ -112,70 +112,70 @@ class TriggerViewController: UIViewController {
     @MainActor
     func dispatch(event: NubrickEvent) {
         Task {
-            // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,
-            // so we fetch both popups and tooltips when running in Flutter, and popups only otherwise.
-            let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
-            let triggerResult = await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
-            let experimentId: String?
-            let variantId: String?
-            let kind: ExperimentKind?
-            let result: Result<UIBlock, NubrickError>
-            switch triggerResult {
-            case .success(let content):
-                experimentId = content.experimentId
-                variantId = content.variantId
-                kind = content.kind
-                result = .success(content.block)
-            case .failure(let error):
-                experimentId = nil
-                variantId = nil
-                kind = nil
-                result = .failure(error)
-            }
-
-            self.onDispatch?(event)
-
-            await MainActor.run { [weak self] in
-                guard let self else {
-                    return
-                }
-                if !self.didLoaded {
-                    print("nativebrik.dispatch should be called after nativebrik.overlay did load")
-                    return
-                }
-                switch result {
-                case .success(let block):
-                    switch block {
-                    case .EUIRootBlock(let root):
-                        if kind == .TOOLTIP,
-                           let onTooltip = self.onTooltip,
-                           let experimentId = experimentId {
-                            if let jsonData = try? JSONEncoder().encode(block),
-                               let jsonString = String(data: jsonData, encoding: .utf8) {
-                                onTooltip(jsonString, experimentId, variantId)
-                            }
-                        } else {
-                            let root = ModalRootViewController(
-                                root: root,
-                                experimentId: experimentId,
-                                variantId: variantId,
-                                container: self.container,
-                                modalViewController: self.modalViewController
-                            )
-                            if let currentVC = self.currentVC {
-                                currentVC.removeFromParent()
-                                self.currentVC = nil
-                            }
-                            self.addChild(root)
-                            self.currentVC = root
-                        }
-                    default:
-                        break
-                    }
-                default:
-                    break
-                }
-            }
+            await self.performDispatch(event: event)
         }
-    } // END dispatch
+    }
+
+    @MainActor
+    func performDispatch(event: NubrickEvent) async {
+        // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,
+        // so we fetch both popups and tooltips when running in Flutter, and popups only otherwise.
+        let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
+        let triggerResult = await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
+        let experimentId: String?
+        let variantId: String?
+        let kind: ExperimentKind?
+        let result: Result<UIBlock, NubrickError>
+        switch triggerResult {
+        case .success(let content):
+            experimentId = content.experimentId
+            variantId = content.variantId
+            kind = content.kind
+            result = .success(content.block)
+        case .failure(let error):
+            experimentId = nil
+            variantId = nil
+            kind = nil
+            result = .failure(error)
+        }
+
+        self.onDispatch?(event)
+
+        if !self.didLoaded {
+            print("nativebrik.dispatch should be called after nativebrik.overlay did load")
+            return
+        }
+        switch result {
+        case .success(let block):
+            switch block {
+            case .EUIRootBlock(let root):
+                if kind == .TOOLTIP,
+                   let onTooltip = self.onTooltip,
+                   let experimentId = experimentId {
+                    if let jsonData = try? JSONEncoder().encode(block),
+                       let jsonString = String(data: jsonData, encoding: .utf8) {
+                        onTooltip(jsonString, experimentId, variantId)
+                    }
+                } else {
+                    let root = ModalRootViewController(
+                        root: root,
+                        experimentId: experimentId,
+                        variantId: variantId,
+                        container: self.container,
+                        modalViewController: self.modalViewController
+                    )
+                    if let currentVC = self.currentVC {
+                        currentVC.removeFromParent()
+                        self.currentVC = nil
+                    }
+                    self.addChild(root)
+                    self.currentVC = root
+                }
+            default:
+                break
+            }
+        default:
+            break
+        }
+    }
 }
