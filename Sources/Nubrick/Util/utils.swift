@@ -428,9 +428,13 @@ func configureBorder(view: UIView, frame: FrameData?) {
         if let bc = frame?.borderColor {
             view.layer.borderColor = parseColorToCGColor(bc)
         }
+        // Prefer borderRadius; if omitted, use the shared per-corner value
+        // (all four corners are equal when isSingleRadius is true).
         view.layer.cornerRadius = CGFloat(
             normalizeSingleRadius(
-                radius: CGFloat(frame?.borderRadius ?? 0), width: width, height: height))
+                radius: CGFloat(frame?.borderRadius ?? frame?.borderTopLeftRadius ?? 0),
+                width: width,
+                height: height))
         return
     }
 
