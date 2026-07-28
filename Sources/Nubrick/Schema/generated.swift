@@ -210,6 +210,7 @@ enum ExperimentKind: String, Decodable, Encodable {
 }
 struct ExperimentVariant: Decodable, Encodable {
   var id: ID?
+  var label: String?
   var configs: [VariantConfig]?
   var weight: Int?
 }
@@ -436,6 +437,7 @@ enum TriggerEventNameDefs: String, Decodable, Encodable {
   case USER_ENTER_TO_FOREGROUND = "USER_ENTER_TO_FOREGROUND"
   case N_ERROR_RECORD = "N_ERROR_RECORD"
   case N_ERROR_IN_SDK_RECORD = "N_ERROR_IN_SDK_RECORD"
+  case NUBRICK_SURVEY_RESPONSE_SENT = "NUBRICK_SURVEY_RESPONSE_SENT"
   case unknown = "unknown"
   init(from decoder: Decoder) throws {
     self = try TriggerEventNameDefs(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
