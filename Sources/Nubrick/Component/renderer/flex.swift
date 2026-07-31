@@ -14,8 +14,6 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     private var context: UIBlockContext?
     private var isOverflowView = false
-    private var respectSafeArea = false
-    private var hasActivatedConstraints = false
     var cancellables = Set<AnyCancellable>()
     var backgroundImageLoadTask: Task<Void, Never>?
 
@@ -23,11 +21,10 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
         super.init(coder: aDecoder)
     }
 
-    init(block: UIFlexContainerBlock, context: UIBlockContext, respectSafeArea: Bool? = false) {
+    init(block: UIFlexContainerBlock, context: UIBlockContext) {
         super.init(frame: .zero)
         self.block = block
         self.context = context
-        self.respectSafeArea = respectSafeArea ?? false
         initialize(block: block, context: context, childFlexShrink: nil)
     }
 
@@ -104,27 +101,31 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
         self.backgroundImageLoadTask?.cancel()
     }
 
+    func setSafeAreaInsets(_ insets: UIEdgeInsets) {
+        let frame = self.block.data?.frame
+        self.yoga.paddingTop = YGValue(
+            value: Float(CGFloat(frame?.paddingTop ?? 0) + insets.top),
+            unit: .point
+        )
+        self.yoga.paddingLeft = YGValue(
+            value: Float(CGFloat(frame?.paddingLeft ?? 0) + insets.left),
+            unit: .point
+        )
+        self.yoga.paddingBottom = YGValue(
+            value: Float(CGFloat(frame?.paddingBottom ?? 0) + insets.bottom),
+            unit: .point
+        )
+        self.yoga.paddingRight = YGValue(
+            value: Float(CGFloat(frame?.paddingRight ?? 0) + insets.right),
+            unit: .point
+        )
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
         if !isOverflowView {
             configureBorder(view: self, frame: self.block.data?.frame)
         }
-    }
-    
-    override func didMoveToSuperview() {
-        super.didMoveToSuperview()
-        if !self.respectSafeArea { return }
-        guard let superview = superview, !hasActivatedConstraints else { return }
-
-        translatesAutoresizingMaskIntoConstraints = false
-        topAnchor.constraint(equalTo: superview.safeAreaLayoutGuide.topAnchor).isActive = true
-        hasActivatedConstraints = true
-    }
-
-    override func willMove(toSuperview newSuperview: UIView?) {
-        super.willMove(toSuperview: newSuperview)
-        if !self.respectSafeArea { return }
-        if newSuperview == nil { hasActivatedConstraints = false }
     }
 
 }
@@ -142,12 +143,12 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
         super.init(coder: aDecoder)
     }
 
-    init(block: UIFlexContainerBlock, context: UIBlockContext, respectSafeArea: Bool) {
+    init(block: UIFlexContainerBlock, context: UIBlockContext) {
         super.init(frame: .zero)
         self.block = block
         self.context = context
 
-        self.contentInsetAdjustmentBehavior = respectSafeArea ? .always : .never
+        self.contentInsetAdjustmentBehavior = .never
 
         let direction = parseDirection(block.data?.direction)
         let overflow = parseOverflow(block.data?.overflow)
@@ -207,6 +208,15 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
         self.backgroundImageLoadTask?.cancel()
     }
 
+    func setSafeAreaInsets(_ insets: UIEdgeInsets) {
+        guard self.contentInset != insets else {
+            return
+        }
+        self.contentInset = insets
+        self.verticalScrollIndicatorInsets = insets
+        self.horizontalScrollIndicatorInsets = insets
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
 
@@ -215,10 +225,18 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
         // Set min size so inner FlexView fills at least the visible area
         let direction = parseDirection(self.block.data?.direction)
         if direction == .column {
-            self.flexView.yoga.minHeight = YGValue(value: Float(self.bounds.height), unit: .point)
+            let visibleHeight = max(
+                0,
+                self.bounds.height - self.contentInset.top - self.contentInset.bottom
+            )
+            self.flexView.yoga.minHeight = YGValue(value: Float(visibleHeight), unit: .point)
             self.flexView.yoga.applyLayout(preservingOrigin: true, dimensionFlexibility: .flexibleHeight)
         } else {
-            self.flexView.yoga.minWidth = YGValue(value: Float(self.bounds.width), unit: .point)
+            let visibleWidth = max(
+                0,
+                self.bounds.width - self.contentInset.left - self.contentInset.right
+            )
+            self.flexView.yoga.minWidth = YGValue(value: Float(visibleWidth), unit: .point)
             self.flexView.yoga.applyLayout(preservingOrigin: true, dimensionFlexibility: .flexibleWidth)
         }
 

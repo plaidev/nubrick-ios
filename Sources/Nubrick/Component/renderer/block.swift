@@ -19,14 +19,14 @@ func childrenToUIViews(data: [UIBlock]?, context: UIBlockContext) -> [UIView] {
 }
 
 @MainActor
-func uiblockToUIView(data: UIBlock, context: UIBlockContext, respectSafeArea: Bool? = false) -> UIView {
+func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
     switch data {
     case .EUIFlexContainerBlock(let block):
         switch block.data?.overflow {
         case .SCROLL, .HIDDEN:
-            return FlexOverflowView(block: block, context: context, respectSafeArea: respectSafeArea ?? false)
+            return FlexOverflowView(block: block, context: context)
         default:
-            return FlexView(block: block, context: context, respectSafeArea: respectSafeArea)
+            return FlexView(block: block, context: context)
         }
     case .EUICollectionBlock(let block):
         return CollectionView(block: block, context: context)
@@ -50,11 +50,12 @@ func uiblockToUIView(data: UIBlock, context: UIBlockContext, respectSafeArea: Bo
 }
 
 class UIViewBlock: UIView {
-    private let root: UIView = UIView()
+    private let renderedView: UIView
 
-    init(data: UIBlock, context: UIBlockContext, respectSafeArea: Bool? = false) {
+    init(data: UIBlock, context: UIBlockContext) {
+        let view = uiblockToUIView(data: data, context: context)
+        self.renderedView = view
         super.init(frame: .zero)
-        let view = uiblockToUIView(data: data, context: context, respectSafeArea: respectSafeArea)
 
         self.configureLayout { (layout) in
             layout.isEnabled = true
@@ -70,7 +71,19 @@ class UIViewBlock: UIView {
         self.addSubview(view)
     }
 
+    func setSafeAreaInsets(_ insets: UIEdgeInsets) {
+        switch self.renderedView {
+        case let flexView as FlexView:
+            flexView.setSafeAreaInsets(insets)
+        case let overflowView as FlexOverflowView:
+            overflowView.setSafeAreaInsets(insets)
+        default:
+            break
+        }
+    }
+
     required init?(coder aDecoder: NSCoder) {
+        self.renderedView = UIView()
         super.init(coder: aDecoder)
     }
 

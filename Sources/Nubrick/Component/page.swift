@@ -307,8 +307,7 @@ final class PageView: UIView {
                         actionHandler: self.actionHandler,
                         layoutInvalidationRoot: self
                     )
-                ),
-                respectSafeArea: self.page?.data?.modalRespectSafeArea
+                )
             )
             self.addSubview(self.view)
 
@@ -323,7 +322,24 @@ final class PageView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         self.updateModalYogaHeight()
+        self.updateModalSafeAreaPadding()
         self.yoga.applyLayout(preservingOrigin: true)
+    }
+
+    override func safeAreaInsetsDidChange() {
+        super.safeAreaInsetsDidChange()
+        setNeedsLayout()
+    }
+
+    private func updateModalSafeAreaPadding() {
+        let shouldRespectSafeArea =
+            self.page?.data?.kind == .MODAL
+            && self.page?.data?.modalRespectSafeArea == true
+        let insets = shouldRespectSafeArea ? safeAreaInsets : .zero
+
+        // Keep the page background full-size while Yoga lays out its rendered
+        // content inside the modal's safe content box.
+        (self.view as? UIViewBlock)?.setSafeAreaInsets(insets)
     }
 
     private func updateModalYogaHeight() {
