@@ -72,6 +72,7 @@ class ModalComponentViewController: UIViewController {
             if let sheet = modal.sheetPresentationController {
                 sheet.detents = parseModalScreenSize(modalScreenSize)
             }
+            modal.updateSheetBackground(for: pageController)
             self.currentModal = modal
             self.presentToTop(modal)
         }

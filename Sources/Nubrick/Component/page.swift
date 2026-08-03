@@ -311,10 +311,11 @@ final class PageView: UIView {
             )
             self.addSubview(self.view)
 
-            // if it's transparent and it's modal, use systemBgColor as the background.
-            // i think this should be refactored someday.
-            if self.view.backgroundColor == nil && self.page?.data?.kind == .MODAL {
-                self.view.backgroundColor = .systemBackground
+            if self.page?.data?.kind == .MODAL {
+                // An explicit page color must cover the sheet while it stretches.
+                // Keep an uncoloured page clear so its modal retains UIKit's native
+                // Liquid Glass surface instead of receiving a white fallback.
+                self.backgroundColor = self.view.backgroundColor
             }
         }
     }
