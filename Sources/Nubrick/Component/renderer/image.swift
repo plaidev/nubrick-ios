@@ -29,8 +29,15 @@ class ImageView: AnimatedUIView {
         self.configureLayout { layout in
             layout.isEnabled = true
 
-            configurePadding(layout: layout, frame: block.data?.frame)
+            // Image padding is not supported by the editor so we dont apply padding
             configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
+
+            // image URLs include dimensions for their blurhash
+            // fallback. Use them until the full image provides exact dimensions.
+            if hasMissingImageDimension(block.data?.frame),
+               let aspectRatio = parseImageFallbackAspectRatio(block.data?.src ?? "") {
+                layout.aspectRatio = aspectRatio
+            }
         }
 
         self.image.configureLayout { layout in
@@ -100,6 +107,8 @@ class ImageView: AnimatedUIView {
     }
 
     private func applyImageSource(_ src: String) {
+        self.configureImageAspectRatio(src)
+
         let fallbackSetting = parseImageFallbackToBlurhash(src)
         self.image.image = fallbackSetting.blurhash == "" ? UIImage() : UIImage(
             blurHash: fallbackSetting.blurhash,
@@ -109,9 +118,36 @@ class ImageView: AnimatedUIView {
         self.imageLoadTask = loadAsyncImage(
             url: src,
             image: self.image,
-            layoutRoot: self.context?.getLayoutInvalidationRoot()
+            layoutRoot: self.context?.getLayoutInvalidationRoot(),
+            onImageLoaded: { [weak self] image in
+                self?.configureImageAspectRatio(imageAspectRatio(
+                    width: image.size.width,
+                    height: image.size.height
+                ))
+            }
         )
     }
+
+    private func configureImageAspectRatio(_ src: String) {
+        self.configureImageAspectRatio(parseImageFallbackAspectRatio(src))
+    }
+
+    private func configureImageAspectRatio(_ aspectRatio: CGFloat?) {
+        guard hasMissingImageDimension(self.block.data?.frame) else {
+            return
+        }
+
+        self.yoga.aspectRatio = aspectRatio ?? .nan
+        self.context?.getLayoutInvalidationRoot()?.setNeedsLayout()
+    }
+}
+
+private func hasMissingImageDimension(_ frame: FrameData?) -> Bool {
+    hasMissingImageDimension(width: frame?.width, height: frame?.height)
+}
+
+func hasMissingImageDimension(width: Int?, height: Int?) -> Bool {
+    width == nil || height == nil
 }
 
 @MainActor
@@ -176,7 +212,12 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) -> Task<Void, Neve
 }
 
 @MainActor
-func loadAsyncImage(url: String, image: UIImageView, layoutRoot: UIView?) -> Task<Void, Never>? {
+func loadAsyncImage(
+    url: String,
+    image: UIImageView,
+    layoutRoot: UIView?,
+    onImageLoaded: ((UIImage) -> Void)? = nil
+) -> Task<Void, Never>? {
     guard let requestUrl = URL(string: url) else {
         return nil
     }
@@ -190,25 +231,25 @@ func loadAsyncImage(url: String, image: UIImageView, layoutRoot: UIView?) -> Tas
                 guard !Task.isCancelled else {
                     return
                 }
+                let loadedImage: UIImage?
                 if isGif(response) {
-                    UIView.transition(
-                        with: image,
-                        duration: 0.2,
-                        options: .transitionCrossDissolve,
-                        animations: {
-                            image.image = UIImage.gifImageWithData(data)
-                        },
-                        completion: nil)
+                    loadedImage = UIImage.gifImageWithData(data)
                 } else {
-                    UIView.transition(
-                        with: image,
-                        duration: 0.2,
-                        options: .transitionCrossDissolve,
-                        animations: {
-                            image.image = UIImage(data: data)
-                        },
-                        completion: nil)
+                    loadedImage = UIImage(data: data)
                 }
+                guard let loadedImage else {
+                    return
+                }
+
+                UIView.transition(
+                    with: image,
+                    duration: 0.2,
+                    options: .transitionCrossDissolve,
+                    animations: {
+                        image.image = loadedImage
+                    },
+                    completion: nil)
+                onImageLoaded?(loadedImage)
                 if let layoutRoot {
                     invalidateYogaLayout(from: image, layoutRoot: layoutRoot)
                 }
