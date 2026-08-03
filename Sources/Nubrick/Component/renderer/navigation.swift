@@ -41,7 +41,6 @@ class NavigationViewControlller: UINavigationController {
             layout.alignItems = .center
             layout.justifyContent = .center
         }
-        self.view.backgroundColor = .systemBackground
         self.interactivePopGestureRecognizer?.delegate = self
         self.interactivePopGestureRecognizer?.isEnabled = true
     }
@@ -49,6 +48,10 @@ class NavigationViewControlller: UINavigationController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         self.parent?.viewDidLayoutSubviews()
+    }
+
+    func updateSheetBackground(for viewController: UIViewController) {
+        self.view.backgroundColor = viewController.view.backgroundColor
     }
 
     override func pushViewController(_ viewController: UIViewController, animated: Bool) {
@@ -81,10 +84,17 @@ class NavigationViewControlller: UINavigationController {
 
 extension NavigationViewControlller: UINavigationControllerDelegate {
 
+    func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
+        guard let swipeNavigationController = navigationController as? NavigationViewControlller else { return }
+
+        swipeNavigationController.updateSheetBackground(for: viewController)
+    }
+
     func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
         guard let swipeNavigationController = navigationController as? NavigationViewControlller else { return }
 
         swipeNavigationController.duringPushAnimation = false
+        swipeNavigationController.updateSheetBackground(for: viewController)
     }
 
 }

@@ -57,6 +57,11 @@ class UIViewBlock: UIView {
         self.renderedView = view
         super.init(frame: .zero)
 
+        if case let .EUIFlexContainerBlock(block) = data,
+           let background = block.data?.frame?.background {
+            self.backgroundColor = parseColor(background)
+        }
+
         self.configureLayout { (layout) in
             layout.isEnabled = true
             layout.display = .flex
