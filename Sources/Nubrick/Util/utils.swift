@@ -292,6 +292,19 @@ struct ImageFallback {
     let width: Int
     let height: Int
 }
+
+func imageAspectRatio(width: CGFloat, height: CGFloat) -> CGFloat? {
+    guard width > 0, height > 0 else {
+        return nil
+    }
+    return CGFloat(width) / CGFloat(height)
+}
+
+func parseImageFallbackAspectRatio(_ src: String) -> CGFloat? {
+    let fallback = parseImageFallbackToBlurhash(src)
+    return imageAspectRatio(width: CGFloat(fallback.width), height: CGFloat(fallback.height))
+}
+
 func parseImageFallbackToBlurhash(_ src: String) -> ImageFallback {
     guard let url = URL(string: src) else {
         return ImageFallback(blurhash: "", width: 0, height: 0)
