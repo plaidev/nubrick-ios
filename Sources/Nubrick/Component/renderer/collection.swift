@@ -302,7 +302,7 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
                                 return _replaceVariableData(base: variable, data: childData)
                             },
                             parentView: self,
-                            parentDirection: self.block?.data?.direction,
+                            parentDirection: resolvedFlexDirection(self.block?.data?.direction),
                             layoutInvalidationRoot: cell
                         )
                     )
@@ -317,7 +317,7 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
                     context: self.context.instanciateFrom(
                         UIBlockContextChildInit(
                             parentView: self,
-                            parentDirection: self.block?.data?.direction,
+                            parentDirection: resolvedFlexDirection(self.block?.data?.direction),
                             layoutInvalidationRoot: cell
                         )
                     )
