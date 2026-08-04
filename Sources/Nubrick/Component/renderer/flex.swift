@@ -10,6 +10,15 @@ import Foundation
 import UIKit
 internal import YogaKit
 
+private func minimumSizePreservingUnit(_ size: YGValue) -> YGValue {
+    switch size.unit {
+    case .point, .percent:
+        return size
+    default:
+        return YGValueUndefined
+    }
+}
+
 class FlexView: AnimatedUIView, BackgroundImageObserver {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     private var context: UIBlockContext?
@@ -36,7 +45,8 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
     }
 
     func initialize(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
-        let direction = parseDirection(block.data?.direction)
+        let resolvedDirection = resolvedFlexDirection(block.data?.direction)
+        let direction = parseDirection(resolvedDirection)
         self.isOverflowView =
             block.data?.overflow == Overflow.SCROLL || block.data?.overflow == Overflow.HIDDEN
         self.configureLayout { layout in
@@ -60,7 +70,7 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
                     context: context.instanciateFrom(
                         UIBlockContextChildInit(
                             parentView: self,
-                            parentDirection: block.data?.direction
+                            parentDirection: resolvedDirection
                         )
                     ))
             } ?? []
@@ -80,8 +90,8 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
                 if let childFlexShrink = childFlexShrink {
                     layout.isEnabled = true
                     layout.flexShrink = CGFloat(childFlexShrink)
-                    layout.minWidth = .init(value: layout.width.value, unit: .point)
-                    layout.minHeight = .init(value: layout.height.value, unit: .point)
+                    layout.minWidth = minimumSizePreservingUnit(layout.width)
+                    layout.minHeight = minimumSizePreservingUnit(layout.height)
                 }
             }
 
@@ -150,7 +160,8 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
 
         self.contentInsetAdjustmentBehavior = .never
 
-        let direction = parseDirection(block.data?.direction)
+        let resolvedDirection = resolvedFlexDirection(block.data?.direction)
+        let direction = parseDirection(resolvedDirection)
         let overflow = parseOverflow(block.data?.overflow)
         self.configureLayout { layout in
             layout.isEnabled = true
@@ -175,17 +186,15 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
         
         // Create child context with FlexOverflowView's direction as the parent direction
         let childContext = context.instanciateFrom(
-            UIBlockContextChildInit(parentDirection: block.data?.direction)
+            UIBlockContextChildInit(parentDirection: resolvedDirection)
         )
         let flexView = FlexView(block: block, context: childContext, childFlexShrink: 0)  // set child's size to shrink 0.
         flexView.configureLayout { layout in
             if direction == .column {
-                layout.width = .init(value: 100, unit: .percent)
                 layout.maxHeight = YGValueUndefined
                 layout.minHeight = YGValueUndefined
                 layout.height = YGValueAuto
             } else {
-                layout.height = .init(value: 100, unit: .percent)
                 layout.width = YGValueAuto
                 layout.maxWidth = YGValueUndefined
                 layout.minWidth = YGValueUndefined

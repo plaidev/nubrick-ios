@@ -48,8 +48,12 @@ func parseIntForFlex(_ data: Int?) -> YGValue? {
     }
 }
 
+func resolvedFlexDirection(_ data: FlexDirection?) -> FlexDirection {
+    data == .COLUMN ? .COLUMN : .ROW
+}
+
 func parseDirection(_ data: FlexDirection?) -> YGFlexDirection {
-    switch data {
+    switch resolvedFlexDirection(data) {
     case .COLUMN:
         return .column
     default:
