@@ -74,6 +74,36 @@ final class FlexOverflowViewTests: XCTestCase {
         XCTAssertEqual(child.yoga.minWidth.unit, .percent)
     }
 
+    @MainActor
+    func testHiddenFlexUsesNormalFlexLayoutAndClips() throws {
+        let block = try makeOverflowBlock(overflow: "HIDDEN")
+        let context = UIBlockContext(UIBlockContextInit())
+
+        let view = uiblockToUIView(data: .EUIFlexContainerBlock(block), context: context)
+
+        XCTAssertTrue(view is FlexView)
+        XCTAssertFalse(view is FlexOverflowView)
+        XCTAssertTrue(view.clipsToBounds)
+    }
+
+    @MainActor
+    func testVisibleAndHiddenFlexHaveTheSameYogaSizing() throws {
+        let context = UIBlockContext(UIBlockContextInit())
+        let visible = FlexView(
+            block: try makeOverflowBlock(overflow: "VISIBLE"), context: context
+        )
+        let hidden = FlexView(
+            block: try makeOverflowBlock(overflow: "HIDDEN"), context: context
+        )
+
+        XCTAssertEqual(visible.yoga.width.value, hidden.yoga.width.value)
+        XCTAssertEqual(visible.yoga.width.unit, hidden.yoga.width.unit)
+        XCTAssertEqual(visible.yoga.height.value, hidden.yoga.height.value)
+        XCTAssertEqual(visible.yoga.height.unit, hidden.yoga.height.unit)
+        XCTAssertFalse(visible.clipsToBounds)
+        XCTAssertTrue(hidden.clipsToBounds)
+    }
+
     private func makeScrollBlock(
         direction: String,
         width: Int?,
@@ -116,6 +146,21 @@ final class FlexOverflowViewTests: XCTestCase {
               "id": "child",
               "data": { "frame": { "width": 0 } }
             }]
+          }
+        }
+        """
+        return try JSONDecoder().decode(UIFlexContainerBlock.self, from: Data(json.utf8))
+    }
+
+    private func makeOverflowBlock(overflow: String) throws -> UIFlexContainerBlock {
+        let json = """
+        {
+          "id": "overflow-container",
+          "data": {
+            "direction": "COLUMN",
+            "overflow": "\(overflow)",
+            "frame": { "width": 0, "height": 0 },
+            "children": []
           }
         }
         """
