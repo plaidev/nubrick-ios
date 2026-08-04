@@ -313,9 +313,14 @@ final class PageView: UIView {
 
             if self.page?.data?.kind == .MODAL {
                 // An explicit page color must cover the sheet while it stretches.
-                // Keep an uncoloured page clear so its modal retains UIKit's native
-                // Liquid Glass surface instead of receiving a white fallback.
-                self.backgroundColor = self.view.backgroundColor
+                // On Liquid Glass, keep an uncoloured page clear so UIKit provides
+                // its native sheet surface. Earlier iOS versions need the system
+                // background; otherwise the default over-full-screen modal is clear.
+                if #available(iOS 26.0, *) {
+                    self.backgroundColor = self.view.backgroundColor
+                } else {
+                    self.backgroundColor = self.view.backgroundColor ?? .systemBackground
+                }
             }
         }
     }
