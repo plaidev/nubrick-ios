@@ -23,7 +23,7 @@ func uiblockToUIView(data: UIBlock, context: UIBlockContext) -> UIView {
     switch data {
     case .EUIFlexContainerBlock(let block):
         switch block.data?.overflow {
-        case .SCROLL, .HIDDEN:
+        case .SCROLL:
             return FlexOverflowView(block: block, context: context)
         default:
             return FlexView(block: block, context: context)

@@ -22,7 +22,7 @@ private func minimumSizePreservingUnit(_ size: YGValue) -> YGValue {
 class FlexView: AnimatedUIView, BackgroundImageObserver {
     private var block: UIFlexContainerBlock = UIFlexContainerBlock()
     private var context: UIBlockContext?
-    private var isOverflowView = false
+    private var isScrollContentView = false
     var cancellables = Set<AnyCancellable>()
     var backgroundImageLoadTask: Task<Void, Never>?
 
@@ -34,21 +34,36 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
         super.init(frame: .zero)
         self.block = block
         self.context = context
-        initialize(block: block, context: context, childFlexShrink: nil)
+        initialize(
+            block: block, context: context, childFlexShrink: nil,
+            isScrollContentView: false
+        )
     }
 
-    init(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
+    init(
+        block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?,
+        isScrollContentView: Bool
+    ) {
         super.init(frame: .zero)
         self.block = block
         self.context = context
-        initialize(block: block, context: context, childFlexShrink: childFlexShrink)
+        initialize(
+            block: block, context: context, childFlexShrink: childFlexShrink,
+            isScrollContentView: isScrollContentView
+        )
     }
 
-    func initialize(block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?) {
+    func initialize(
+        block: UIFlexContainerBlock, context: UIBlockContext, childFlexShrink: Int?,
+        isScrollContentView: Bool
+    ) {
         let resolvedDirection = resolvedFlexDirection(block.data?.direction)
         let direction = parseDirection(resolvedDirection)
-        self.isOverflowView =
-            block.data?.overflow == Overflow.SCROLL || block.data?.overflow == Overflow.HIDDEN
+        // Only the inner content view created by FlexOverflowView skips its
+        // own border configuration. HIDDEN uses normal flex measurement and
+        // differs from VISIBLE solely by UIKit clipping.
+        self.isScrollContentView = isScrollContentView
+        self.clipsToBounds = block.data?.overflow == Overflow.HIDDEN
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.display = .flex
@@ -133,7 +148,7 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        if !isOverflowView {
+        if !isScrollContentView {
             configureBorder(view: self, frame: self.block.data?.frame)
         }
     }
@@ -188,7 +203,10 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
         let childContext = context.instanciateFrom(
             UIBlockContextChildInit(parentDirection: resolvedDirection)
         )
-        let flexView = FlexView(block: block, context: childContext, childFlexShrink: 0)  // set child's size to shrink 0.
+        let flexView = FlexView(
+            block: block, context: childContext, childFlexShrink: 0,
+            isScrollContentView: true
+        )
         flexView.configureLayout { layout in
             if direction == .column {
                 layout.maxHeight = YGValueUndefined
