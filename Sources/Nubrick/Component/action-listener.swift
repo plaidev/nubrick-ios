@@ -80,7 +80,7 @@ class AnimatedUIView: UIView {
         }
 
         onTouchBegan = { [weak self] in
-            if hasTapFeedback(uiBlockAction) && context.hasParent() {
+            if uiBlockAction != nil && context.hasParent() {
                 UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
                     self?.transform = CGAffineTransform(scaleX: 0.984, y: 0.984)
                 }
@@ -89,7 +89,7 @@ class AnimatedUIView: UIView {
             }
         }
         onTouchEnded = { [weak self] in
-            if hasTapFeedback(uiBlockAction) && context.hasParent() {
+            if uiBlockAction != nil && context.hasParent() {
                 UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
                     self?.transform = CGAffineTransform(scaleX: 1, y: 1)
                 }
@@ -98,7 +98,7 @@ class AnimatedUIView: UIView {
             }
         }
         onTouchCanceled = { [weak self] in
-            if hasTapFeedback(uiBlockAction) && context.hasParent() {
+            if uiBlockAction != nil && context.hasParent() {
                 UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
                     self?.transform = CGAffineTransform(scaleX: 1, y: 1)
                 }
@@ -107,14 +107,6 @@ class AnimatedUIView: UIView {
             }
         }
     }
-}
-
-func hasTapFeedback(_ action: UIBlockAction?) -> Bool {
-    guard let action else { return false }
-    return action.destinationPageId != nil
-        || action.deepLink != nil
-        || action.httpRequest != nil
-        || action.submitSurveyResponse == true
 }
 
 func isDisabled(requiredFields: [String], values: [String: Any]) -> Bool {
