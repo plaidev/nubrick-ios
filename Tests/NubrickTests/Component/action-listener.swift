@@ -3,6 +3,27 @@ import XCTest
 @testable import NubrickLocal
 
 final class ActionListenerTests: XCTestCase {
+    func testHTTPActionHasTapFeedback() {
+        let action = UIBlockAction(
+            eventName: nil,
+            name: nil,
+            destinationPageId: nil,
+            deepLink: nil,
+            payload: nil,
+            requiredFields: nil,
+            httpRequest: ApiHttpRequest(
+                url: "https://example.com",
+                method: .POST,
+                headers: nil,
+                body: nil
+            ),
+            httpResponseAssertion: nil,
+            submitSurveyResponse: nil
+        )
+
+        XCTAssertTrue(hasTapFeedback(action))
+    }
+
     func testRequiredFieldsTreatMissingAndEmptyValuesAsDisabled() {
         XCTAssertTrue(isDisabled(requiredFields: ["answer"], values: [:]))
         XCTAssertTrue(isDisabled(requiredFields: ["answer"], values: ["answer": ""]))
