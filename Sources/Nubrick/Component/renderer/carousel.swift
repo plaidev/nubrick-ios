@@ -27,24 +27,31 @@ class CarouselLayout: GridLayout {
         }
         let isHorizontal = (self.scrollDirection == .horizontal)
         let pagingArea = (isHorizontal ? self.itemSize.width : self.itemSize.height) + self.gap
-        let currentPage = isHorizontal ? collectionView.contentOffset.x / pagingArea : collectionView.contentOffset.y / pagingArea
+        guard pagingArea > 0 else {
+            return proposedContentOffset
+        }
+        let currentOffset = isHorizontal ? collectionView.contentOffset.x : collectionView.contentOffset.y
+        let proposedOffset = isHorizontal ? proposedContentOffset.x : proposedContentOffset.y
+        let currentPage = currentOffset / pagingArea
         let velocity = isHorizontal ? velocity.x : velocity.y
         let absVelocity = abs(velocity)
-        let skip = absVelocity > 2.4 ? ceil(absVelocity / 1.5) : 0.0
-        let nextPage = velocity >= 0.0 ? ceil(currentPage) + skip : floor(currentPage) - skip
+        let extraPages = absVelocity > 2.4 ? ceil(absVelocity / 1.5) - 1 : 0.0
+        let nextPage = velocity > 0.0
+            ? floor(currentPage) + 1 + extraPages
+            : ceil(currentPage) - 1 - extraPages
 
-        if absVelocity < 0.2 {
-            if isHorizontal {
-                return CGPoint(x: round(currentPage) * pagingArea, y: proposedContentOffset.y)
-            } else {
-                return CGPoint(x: proposedContentOffset.x, y: round(currentPage) * pagingArea)
-            }
-        }
-
+        let page = absVelocity < 0.2 ? round(proposedOffset / pagingArea) : nextPage
+        let maximumOffset: CGFloat
         if isHorizontal {
-            return CGPoint(x: nextPage * pagingArea, y: proposedContentOffset.y)
+            maximumOffset = max(0, collectionView.contentSize.width - collectionView.bounds.width)
+            return CGPoint(
+                x: min(max(0, page * pagingArea), maximumOffset), y: proposedContentOffset.y
+            )
         } else {
-            return CGPoint(x: proposedContentOffset.x, y: nextPage * pagingArea)
+            maximumOffset = max(0, collectionView.contentSize.height - collectionView.bounds.height)
+            return CGPoint(
+                x: proposedContentOffset.x, y: min(max(0, page * pagingArea), maximumOffset)
+            )
         }
     }
 }
