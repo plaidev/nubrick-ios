@@ -605,6 +605,7 @@ struct UICollectionBlockData: Decodable, Encodable {
   var itemWidth: Int?
   var itemHeight: Int?
   var fullItemWidth: Boolean?
+  var fullItemHeight: Boolean?
   var pageControl: Boolean?
   var autoScroll: Boolean?
   var autoScrollInterval: Float?

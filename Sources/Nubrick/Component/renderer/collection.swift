@@ -66,12 +66,11 @@ fileprivate func calcCollectionHeight(_ data: UICollectionBlockData?) -> CGFloat
     let bottom = data?.frame?.paddingBottom ?? 0
     let itemHeight = data?.itemHeight ?? 1
     let gap = data?.gap ?? 0
-    var gridSize = 1
+    let gridSize = data?.kind == .GRID ? data?.gridSize ?? 1 : 1
 
-    if (data?.kind == CollectionKind.GRID) {
-        gridSize = data?.gridSize ?? 1
+    if resolvedFlexDirection(data?.direction) == .COLUMN {
+        return CGFloat(itemHeight + top + bottom)
     }
-
     return CGFloat(gridSize * itemHeight + (gridSize - 1) * gap + top + bottom)
 }
 
@@ -81,13 +80,12 @@ fileprivate func calcCollectionWidth(_ data: UICollectionBlockData?) -> CGFloat 
     let right = data?.frame?.paddingRight ?? 0
     let itemWidth = data?.itemWidth ?? 1
     let gap = data?.gap ?? 0
-    var gridSize = 1
+    let gridSize = data?.kind == .GRID ? data?.gridSize ?? 1 : 1
 
-    if (data?.kind == CollectionKind.GRID) {
-        gridSize = data?.gridSize ?? 1
+    if resolvedFlexDirection(data?.direction) == .COLUMN {
+        return CGFloat(gridSize * itemWidth + (gridSize - 1) * gap + left + right)
     }
-
-    return CGFloat(gridSize * itemWidth + (gridSize - 1) * gap + left + right)
+    return CGFloat(itemWidth + left + right)
 }
 
 @MainActor
@@ -99,6 +97,49 @@ fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollection
         return CarouselLayout(block)
     default:
         return GridLayout(block)
+    }
+}
+
+@MainActor
+fileprivate func configureCollectionSize(
+    layout: YGLayout, data: UICollectionBlockData?, parentDirection: FlexDirection?
+) {
+    // The editor serializes a fill value on the scrolling axis and an explicit
+    // cross-axis size. Fall back to the same calculation for older documents.
+    // On a matching parent flex axis, fill shares the remaining space with
+    // other fill children.
+    layout.maxWidth = .init(value: 100, unit: .percent)
+    layout.maxHeight = .init(value: 100, unit: .percent)
+    if resolvedFlexDirection(data?.direction) == .COLUMN {
+        let frameWidth = data?.frame?.width ?? 0
+        let width = frameWidth > 0 ? frameWidth : Int(calcCollectionWidth(data))
+        layout.width = .init(value: Float(width), unit: .point)
+        if parentDirection == .COLUMN {
+            layout.height = YGValueAuto
+            layout.minHeight = YGValueUndefined
+            layout.flexGrow = 1
+            layout.flexShrink = 1
+            layout.flexBasis = .init(value: 0, unit: .point)
+        } else {
+            layout.height = .init(value: 100, unit: .percent)
+            layout.minHeight = .init(value: 100, unit: .percent)
+            layout.flexShrink = 0
+        }
+    } else {
+        let frameHeight = data?.frame?.height ?? 0
+        let height = frameHeight > 0 ? frameHeight : Int(calcCollectionHeight(data))
+        layout.height = .init(value: Float(height), unit: .point)
+        if parentDirection == .ROW {
+            layout.width = YGValueAuto
+            layout.minWidth = YGValueUndefined
+            layout.flexGrow = 1
+            layout.flexShrink = 1
+            layout.flexBasis = .init(value: 0, unit: .point)
+        } else {
+            layout.width = .init(value: 100, unit: .percent)
+            layout.minWidth = .init(value: 100, unit: .percent)
+            layout.flexShrink = 0
+        }
     }
 }
 
@@ -138,12 +179,7 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
 
         let layout = getCollectionLayout(block)
         let root = UICollectionView(
-            frame: CGRect(
-                x: 0,
-                y: 0,
-                width: calcCollectionWidth(block.data),
-                height: calcCollectionHeight(block.data)
-            ),
+            frame: .zero,
             collectionViewLayout: layout
         )
         self.collectionView = root
@@ -152,37 +188,31 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
         root.backgroundView = nil
         root.showsVerticalScrollIndicator = false
         root.showsHorizontalScrollIndicator = false
+        root.contentInsetAdjustmentBehavior = .never
         root.register(CollectionViewCell.self, forCellWithReuseIdentifier: "CellView")
         root.dataSource = self
         root.delegate = self
-
-        root.configureLayout { layout in
-            layout.isEnabled = true
-            layout.width = .init(value: 100, unit: .percent)
-            layout.height = .init(value: 100, unit: .percent)
-        }
 
         configureOnClickGesture(context: context, uiBlockAction: block.data?.onClick)
 
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.position = .relative
-            configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
+            configureCollectionSize(
+                layout: layout, data: block.data, parentDirection: context.getParentDireciton()
+            )
         }
         self.addSubview(root)
         
-        if block.data?.kind == CollectionKind.CAROUSEL && block.data?.pageControl == true && block.data?.fullItemWidth == true {
+        if block.data?.kind == CollectionKind.CAROUSEL && block.data?.pageControl == true && self.fillsMainAxis {
             let pageControl = UIPageControl(frame: CGRect(x: 0, y: 0, width: 70, height: 30))
             pageControl.numberOfPages = self.childrenCount
             pageControl.currentPage = 0
             pageControl.currentPageIndicatorTintColor = .init(white: 1, alpha: 0.8)
             pageControl.pageIndicatorTintColor = .init(white: 0.4, alpha: 0.3)
             pageControl.isUserInteractionEnabled = false
-            pageControl.configureLayout { layout in
-                layout.isEnabled = true
-                layout.position = .absolute
-                layout.bottom = .init(value: 0, unit: .point)
-                layout.alignSelf = .center
+            if resolvedFlexDirection(block.data?.direction) == .COLUMN {
+                pageControl.transform = .init(rotationAngle: .pi / 2)
             }
             self.pageControl = pageControl
             self.addSubview(pageControl)
@@ -191,6 +221,16 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
         makeDisabledStateListener(target: self, context: context, requiredFields: block.data?.onClick?.requiredFields)?.store(in: &cancellables)
 
         self.bindVariable()
+    }
+
+    private var fillsMainAxis: Bool {
+        guard self.block?.data?.kind == .CAROUSEL else {
+            return false
+        }
+        if resolvedFlexDirection(self.block?.data?.direction) == .COLUMN {
+            return self.block?.data?.fullItemHeight == true
+        }
+        return self.block?.data?.fullItemWidth == true
     }
 
     private func bindVariable() {
@@ -228,7 +268,7 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
 
     private func shouldAutoScroll() -> Bool {
         return self.block?.data?.kind == CollectionKind.CAROUSEL
-            && self.block?.data?.fullItemWidth == true
+            && self.fillsMainAxis
             && self.block?.data?.autoScroll == true
             && self.childrenCount > 1
     }
@@ -278,7 +318,73 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
         guard let root = self.collectionView else {
             return
         }
+
+        // The outer view is owned by the parent flex layout. UICollectionView
+        // is deliberately not a Yoga child: UIKit owns its viewport and cell
+        // layout once the parent has resolved our bounds. This remains valid
+        // when the parent layout engine is replaced.
+        let boundsChanged = root.frame != self.bounds
+        if boundsChanged {
+            root.frame = self.bounds
+        }
+
+        let itemSize = self.resolvedItemSize(in: root)
+        let flowLayout = root.collectionViewLayout as? UICollectionViewFlowLayout
+        let itemSizeChanged = flowLayout?.itemSize != itemSize
+        if itemSizeChanged {
+            flowLayout?.itemSize = itemSize
+        }
+        if boundsChanged || itemSizeChanged {
+            root.collectionViewLayout.invalidateLayout()
+        }
+
+        if let pageControl = self.pageControl {
+            let pageControlSize = pageControl.bounds.size
+            if (root.collectionViewLayout as? UICollectionViewFlowLayout)?.scrollDirection == .vertical {
+                pageControl.center = CGPoint(
+                    x: max(pageControlSize.height / 2, self.bounds.width - pageControlSize.height / 2),
+                    y: self.bounds.midY
+                )
+            } else {
+                pageControl.frame = CGRect(
+                    x: (self.bounds.width - pageControlSize.width) / 2,
+                    y: max(0, self.bounds.height - pageControlSize.height),
+                    width: pageControlSize.width,
+                    height: pageControlSize.height
+                )
+            }
+        }
+
         configureBorder(view: root, frame: self.block?.data?.frame)
+    }
+
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        CGSize(
+            width: calcCollectionWidth(self.block?.data),
+            height: calcCollectionHeight(self.block?.data)
+        )
+    }
+
+    override var intrinsicContentSize: CGSize {
+        self.sizeThatFits(.zero)
+    }
+
+    private func resolvedItemSize(in collectionView: UICollectionView) -> CGSize {
+        let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout
+        let horizontalInsets = (layout?.sectionInset.left ?? 0) + (layout?.sectionInset.right ?? 0)
+        let verticalInsets = (layout?.sectionInset.top ?? 0) + (layout?.sectionInset.bottom ?? 0)
+        let isVertical = layout?.scrollDirection == .vertical
+        var width = CGFloat(self.block?.data?.itemWidth ?? 0)
+        var height = CGFloat(self.block?.data?.itemHeight ?? 0)
+
+        if self.fillsMainAxis {
+            if isVertical {
+                height = max(0, collectionView.bounds.height - verticalInsets)
+            } else {
+                width = max(0, collectionView.bounds.width - horizontalInsets)
+            }
+        }
+        return CGSize(width: width, height: height)
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -333,8 +439,7 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let width = (self.block?.data?.fullItemWidth == true) ? self.frame.width : CGFloat(self.block?.data?.itemWidth ?? 0)
-        return CGSize(width: width, height: CGFloat(self.block?.data?.itemHeight ?? 0))
+        self.resolvedItemSize(in: collectionView)
     }
     
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
@@ -378,6 +483,13 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
         } else {
             self.counter += 1
         }
-        self.collectionView?.scrollToItem(at: IndexPath(item: self.counter, section: 0), at: .centeredHorizontally, animated: true)
+        let scrollPosition: UICollectionView.ScrollPosition =
+            (self.collectionView?.collectionViewLayout as? UICollectionViewFlowLayout)?
+                .scrollDirection == .vertical
+                ? .centeredVertically
+                : .centeredHorizontally
+        self.collectionView?.scrollToItem(
+            at: IndexPath(item: self.counter, section: 0), at: scrollPosition, animated: true
+        )
     }
 }
