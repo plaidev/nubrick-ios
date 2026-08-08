@@ -222,6 +222,12 @@ final class NubrickCore {
         }
     }
 
+    func sendDiscoveredEmbeddingIds(_ ids: [String]) {
+        Task {
+            await self.dependencies.trackRepository.trackDiscoveredEmbeddingIds(ids)
+        }
+    }
+
     func setUserProperties(_ properties: [String: Any]) {
         self.dependencies.user.setProperties(properties)
     }
@@ -480,6 +486,13 @@ public enum NubrickSDK {
         }
 
         self.runtime = runtime
+
+        #if DEBUG
+        let discoveredIds = discoverBuildTimeEmbeddingIds()
+        if !discoveredIds.isEmpty {
+            runtime.sendDiscoveredEmbeddingIds(discoveredIds)
+        }
+        #endif
 
         if trackCrashes {
             AppMetrics.shared.register()
