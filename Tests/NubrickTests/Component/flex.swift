@@ -23,7 +23,7 @@ final class FlexOverflowViewTests: XCTestCase {
             context: UIBlockContext(UIBlockContextInit())
         )
 
-        let content = try XCTUnwrap(view.subviews.first)
+        let content = try scrollContent(of: view)
         XCTAssertTrue(content.yoga.height.value.isNaN)
     }
 
@@ -34,7 +34,7 @@ final class FlexOverflowViewTests: XCTestCase {
             context: UIBlockContext(UIBlockContextInit())
         )
 
-        let content = try XCTUnwrap(view.subviews.first)
+        let content = try scrollContent(of: view)
         XCTAssertEqual(content.yoga.height.value, 100)
     }
 
@@ -45,7 +45,7 @@ final class FlexOverflowViewTests: XCTestCase {
             context: UIBlockContext(UIBlockContextInit())
         )
 
-        let content = try XCTUnwrap(view.subviews.first)
+        let content = try scrollContent(of: view)
         XCTAssertTrue(content.yoga.width.value.isNaN)
     }
 
@@ -56,7 +56,7 @@ final class FlexOverflowViewTests: XCTestCase {
             context: UIBlockContext(UIBlockContextInit())
         )
 
-        let content = try XCTUnwrap(view.subviews.first)
+        let content = try scrollContent(of: view)
         XCTAssertEqual(content.yoga.width.value, 100)
     }
 
@@ -69,7 +69,7 @@ final class FlexOverflowViewTests: XCTestCase {
             context: UIBlockContext(UIBlockContextInit())
         )
 
-        let content = try XCTUnwrap(view.subviews.first)
+        let content = try scrollContent(of: view)
         let child = try XCTUnwrap(content.subviews.first)
         XCTAssertEqual(child.yoga.minWidth.unit, .percent)
     }
@@ -104,19 +104,111 @@ final class FlexOverflowViewTests: XCTestCase {
         XCTAssertTrue(hidden.clipsToBounds)
     }
 
+    @MainActor
+    func testBorderWidthIsIncludedInFlexYogaBoxModel() throws {
+        let root = FlexView(
+            block: try makeBorderedBlock(),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+
+        XCTAssertEqual(root.yoga.borderWidth, 2)
+    }
+
+    @MainActor
+    func testScrollContentDoesNotReserveTheContainerBorderTwice() throws {
+        let view = FlexOverflowView(
+            block: try makeScrollBlock(
+                direction: "COLUMN", width: 100, height: 100, borderWidth: 2
+            ),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+
+        XCTAssertEqual(view.yoga.borderWidth, 2)
+        XCTAssertTrue(try scrollContent(of: view).yoga.borderWidth.isNaN)
+    }
+
+    @MainActor
+    func testScrollLayoutWithoutBorderProducesFiniteGeometry() throws {
+        let view = FlexOverflowView(
+            block: try makeScrollBlock(direction: "COLUMN", width: 100, height: 100),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        view.frame.size = CGSize(width: 100, height: 100)
+        view.yoga.applyLayout(preservingOrigin: true)
+        view.layoutSubviews()
+
+        XCTAssertTrue(view.contentSize.width.isFinite)
+        XCTAssertTrue(view.contentSize.height.isFinite)
+    }
+
+    @MainActor
+    func testVerticalScrollContentFillsBorderAdjustedViewport() throws {
+        let view = FlexOverflowView(
+            block: try makeScrollBlock(
+                direction: "COLUMN", width: 100, height: 100, borderWidth: 2
+            ),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        view.frame.size = CGSize(width: 100, height: 100)
+        view.yoga.applyLayout(preservingOrigin: true)
+        view.layoutSubviews()
+
+        XCTAssertEqual(try scrollContent(of: view).frame, CGRect(x: 2, y: 2, width: 96, height: 96))
+        XCTAssertEqual(view.contentSize.height, 100)
+    }
+
+    @MainActor
+    func testHorizontalScrollContentFillsBorderAdjustedViewport() throws {
+        let view = FlexOverflowView(
+            block: try makeScrollBlock(
+                direction: "ROW", width: 100, height: 100, borderWidth: 2
+            ),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        view.frame.size = CGSize(width: 100, height: 100)
+        view.layoutSubviews()
+
+        XCTAssertEqual(view.contentSize.width, 100)
+    }
+
+    @MainActor
+    func testVerticalScrollContentSizeIncludesTrailingBorder() throws {
+        let view = FlexOverflowView(
+            block: try makeScrollBlock(
+                direction: "COLUMN", width: 100, height: 100, childHeight: 200, borderWidth: 2
+            ),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        view.frame.size = CGSize(width: 100, height: 100)
+        view.yoga.applyLayout(preservingOrigin: true)
+        view.layoutSubviews()
+
+        XCTAssertEqual(try scrollContent(of: view).frame, CGRect(x: 2, y: 2, width: 96, height: 200))
+        XCTAssertEqual(view.contentSize, CGSize(width: 100, height: 204))
+    }
+
     private func makeScrollBlock(
         direction: String,
         width: Int?,
         height: Int?,
-        childWidth: Int? = nil
+        childWidth: Int? = nil,
+        childHeight: Int? = nil,
+        borderWidth: Int? = nil
     ) throws -> UIFlexContainerBlock {
         let frame = [
             width.map { "\"width\": \($0)" },
-            height.map { "\"height\": \($0)" }
+            height.map { "\"height\": \($0)" },
+            borderWidth.map { "\"borderWidth\": \($0)" }
         ]
         .compactMap { $0 }
         .joined(separator: ",")
-        let childFrame = childWidth.map { "\"frame\": { \"width\": \($0) }" } ?? ""
+        let childFrameValues = [
+            childWidth.map { "\"width\": \($0)" },
+            childHeight.map { "\"height\": \($0)" }
+        ]
+        .compactMap { $0 }
+        .joined(separator: ",")
+        let childFrame = childFrameValues.isEmpty ? "" : "\"frame\": { \(childFrameValues) }"
 
         let json = """
         {
@@ -134,6 +226,10 @@ final class FlexOverflowViewTests: XCTestCase {
         }
         """
         return try JSONDecoder().decode(UIFlexContainerBlock.self, from: Data(json.utf8))
+    }
+
+    private func scrollContent(of view: FlexOverflowView) throws -> UIView {
+        try XCTUnwrap(view.subviews.first { $0 is FlexView })
     }
 
     private func makeDefaultRowBlock() throws -> UIFlexContainerBlock {
@@ -160,6 +256,19 @@ final class FlexOverflowViewTests: XCTestCase {
             "direction": "COLUMN",
             "overflow": "\(overflow)",
             "frame": { "width": 0, "height": 0 },
+            "children": []
+          }
+        }
+        """
+        return try JSONDecoder().decode(UIFlexContainerBlock.self, from: Data(json.utf8))
+    }
+
+    private func makeBorderedBlock() throws -> UIFlexContainerBlock {
+        let json = """
+        {
+          "id": "bordered-container",
+          "data": {
+            "frame": { "width": 100, "height": 100, "borderWidth": 2 },
             "children": []
           }
         }

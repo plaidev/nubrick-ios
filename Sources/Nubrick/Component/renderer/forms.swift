@@ -170,14 +170,16 @@ class TextInputView: UIView, UITextFieldDelegate {
         textInput.font = font
         let intrinsicHeight = ceil(textInput.intrinsicContentSize.height)
         let verticalPadding = CGFloat((block.data?.frame?.paddingTop ?? 0) + (block.data?.frame?.paddingBottom ?? 0))
+        let borderHeight = CGFloat(max(block.data?.frame?.borderWidth ?? 0, 0)) * 2
 
         // wrap layout
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.width = .init(value: 100.0, unit: .percent)
             configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
+            configureBorderWidth(layout: layout, frame: block.data?.frame)
             if block.data?.frame?.height == nil {
-                layout.height = .init(value: Float(intrinsicHeight + verticalPadding), unit: .point)
+                layout.height = .init(value: Float(intrinsicHeight + verticalPadding + borderHeight), unit: .point)
             }
             layout.flexShrink = 1
         }

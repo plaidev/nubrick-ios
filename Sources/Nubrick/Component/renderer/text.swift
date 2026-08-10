@@ -21,6 +21,7 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
             layout.isEnabled = true
             layout.display = .flex
             layout.direction = .LTR
+            configureBorderWidth(layout: layout, frame: block.data?.frame)
         }
 
         let label = UILabel()
