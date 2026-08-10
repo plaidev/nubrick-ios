@@ -34,13 +34,19 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
         return baseline
     }
 
-    let baselineWeight = baseline.weight ?? 1
+    // Null weight defaults to 1; negative weights are clamped to 0 so CDF stays well-defined.
+    let baselineWeight = max(0, baseline.weight ?? 1)
     var weights = [baselineWeight]
     var weightSum = baselineWeight
     for variant in variants {
-        let variantWeight = variant.weight ?? 1
+        let variantWeight = max(0, variant.weight ?? 1)
         weights.append(variantWeight)
         weightSum += variantWeight
+    }
+    // All-zero (or clamped-to-zero) weights would yield NaN probabilities and silently
+    // fall through to baseline; treat as no selectable variant instead.
+    if weightSum <= 0 {
+        return nil
     }
 
     // here is calculation of the picking from the probability.
