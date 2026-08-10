@@ -237,7 +237,7 @@ class MultiSelectTableViewController: UIViewController, UITableViewDelegate, UIT
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "MyCell", for: indexPath as IndexPath)
         let cellOption = self.options[indexPath.row]
-        cell.textLabel!.text = "\(cellOption.value ?? "")"
+        cell.textLabel?.text = "\(cellOption.value ?? "")"
         let selectedCellOption = self.selectedOptions.first(where: { option in
            if option.value == cellOption.value {
                return true

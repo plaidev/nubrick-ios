@@ -279,6 +279,9 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
         guard self.shouldAutoScroll() else { return }
 
         let timeInterval = self.block?.data?.autoScrollInterval ?? 3.0
+        guard timeInterval.isFinite, timeInterval > 0 else {
+            return
+        }
         self.timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(timeInterval), repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.automaticScroll()
