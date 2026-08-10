@@ -6,7 +6,16 @@ import UIKit
 
 extension UIImage {
     convenience init?(blurHash: String, size: CGSize, punch: Float = 1) {
-        guard blurHash.count >= 6 else { return nil }
+        guard
+            blurHash.count >= 6,
+            blurHash.allSatisfy({ decodeCharacters[String($0)] != nil }),
+            size.width.isFinite,
+            size.height.isFinite,
+            size.width > 0,
+            size.height > 0
+        else {
+            return nil
+        }
 
         let sizeFlag = String(blurHash[0]).decode83()
         let numY = (sizeFlag / 9) + 1
@@ -27,8 +36,13 @@ extension UIImage {
             }
         }
 
-        let width = Int(size.width)
-        let height = Int(size.height)
+        // The dimensions come from image URL metadata. A compact fallback does
+        // not need source-resolution pixels, and bounding it prevents malformed
+        // URLs from causing an excessive allocation.
+        let maximumDimension: CGFloat = 512
+        let scale = min(1, maximumDimension / max(size.width, size.height))
+        let width = max(1, Int((size.width * scale).rounded()))
+        let height = max(1, Int((size.height * scale).rounded()))
         let bytesPerRow = width * 3
         guard let data = CFDataCreateMutable(kCFAllocatorDefault, bytesPerRow * height) else { return nil }
         CFDataSetLength(data, bytesPerRow * height)
