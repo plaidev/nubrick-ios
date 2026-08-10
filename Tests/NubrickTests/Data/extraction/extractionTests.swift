@@ -69,6 +69,44 @@ final class ExtractionTests: XCTestCase {
         let baseline = extractExperimentVariant(config: config, normalizedUsrRnd: 1.0)
         XCTAssertEqual(baseline?.id, config.baseline?.id)
     }
+
+    func testExtractExperimentVariantShouldReturnNilWhenAllWeightsAreZero() throws {
+        let config = ExperimentConfig(
+            baseline: ExperimentVariant(id: "baseline", weight: 0),
+            variants: [
+                ExperimentVariant(id: "a", weight: 0),
+                ExperimentVariant(id: "b", weight: 0),
+            ]
+        )
+        XCTAssertNil(extractExperimentVariant(config: config, normalizedUsrRnd: 0.0))
+        XCTAssertNil(extractExperimentVariant(config: config, normalizedUsrRnd: 0.5))
+        XCTAssertNil(extractExperimentVariant(config: config, normalizedUsrRnd: 1.0))
+    }
+
+    func testExtractExperimentVariantShouldReturnNilWhenWeightsAreNegativeAndSumToNonPositive() throws {
+        let config = ExperimentConfig(
+            baseline: ExperimentVariant(id: "baseline", weight: -1),
+            variants: [
+                ExperimentVariant(id: "a", weight: -2),
+            ]
+        )
+        XCTAssertNil(extractExperimentVariant(config: config, normalizedUsrRnd: 0.5))
+    }
+
+    func testExtractExperimentVariantShouldClampNegativeWeightsAndSelectPositiveOnes() throws {
+        let config = ExperimentConfig(
+            baseline: ExperimentVariant(id: "baseline", weight: -5),
+            variants: [
+                ExperimentVariant(id: "a", weight: 1),
+                ExperimentVariant(id: "b", weight: 1),
+            ]
+        )
+        // After clamping, weights are [0, 1, 1] → equal chance for a and b.
+        XCTAssertEqual(extractExperimentVariant(config: config, normalizedUsrRnd: 0.01)?.id, "a")
+        XCTAssertEqual(extractExperimentVariant(config: config, normalizedUsrRnd: 0.49)?.id, "a")
+        XCTAssertEqual(extractExperimentVariant(config: config, normalizedUsrRnd: 0.51)?.id, "b")
+        XCTAssertEqual(extractExperimentVariant(config: config, normalizedUsrRnd: 0.99)?.id, "b")
+    }
     
     func testIsInDistributionShouldBeTrue() throws {
         let userId = "hello"
