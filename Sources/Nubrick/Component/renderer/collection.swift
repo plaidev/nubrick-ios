@@ -198,6 +198,7 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.position = .relative
+            // Collections do not support borders in the editor, so ignore any frame border values.
             configureCollectionSize(
                 layout: layout, data: block.data, parentDirection: context.getParentDireciton()
             )
@@ -355,7 +356,6 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
             }
         }
 
-        configureBorder(view: root, frame: self.block?.data?.frame)
     }
 
     override func sizeThatFits(_ size: CGSize) -> CGSize {

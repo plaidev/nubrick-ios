@@ -56,6 +56,7 @@ class SelectInputView: UIControl {
             layout.isEnabled = true
             layout.width = .init(value: 100.0, unit: .percent)
             layout.flexShrink = 1
+            configureBorderWidth(layout: layout, frame: self.block.data?.frame)
         }
     }
 
@@ -286,6 +287,7 @@ class MultiSelectInputView: UIControl {
             layout.flexDirection = .row
             layout.alignItems = .center
             configurePadding(layout: layout, frame: block.data?.frame)
+            configureBorderWidth(layout: layout, frame: block.data?.frame)
         }
 
         let label = UILabel(frame: .zero)

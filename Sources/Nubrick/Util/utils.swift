@@ -342,6 +342,13 @@ func configurePadding(layout: YGLayout, frame: FrameData?) {
     layout.paddingBottom = parseInt(frame?.paddingBottom)
 }
 
+// Yoga's border is part of its border-box calculation. Keep it in sync with
+// the visual border so child layout begins after the border, as it does in the
+// web editor's `box-sizing: border-box` implementation.
+func configureBorderWidth(layout: YGLayout, frame: FrameData?) {
+    layout.borderWidth = CGFloat(max(frame?.borderWidth ?? 0, 0))
+}
+
 func configureSize(layout: YGLayout, frame: FrameData?, parentDirection: FlexDirection?) {
     if let height = frame?.height {
         if height == 0 {  // fill
@@ -424,57 +431,15 @@ private func normalizeSingleRadius(radius: CGFloat, width: CGFloat, height: CGFl
     return radius * min(1, l / radius / 2)
 }
 
-// NOTE: should be called in viewDidLayoutSubviews to wait until view.bounds are set
-@MainActor
-func configureBorder(view: UIView, frame: FrameData?) {
-    if let bg = frame?.background {
-        view.layer.backgroundColor = parseColorToCGColor(bg)
-    }
-
-    let width = view.bounds.width
-    let height = view.bounds.height
-
-    let isSingleRadius =
-        (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
-        && (frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius)
-        && (frame?.borderTopLeftRadius == frame?.borderBottomRightRadius)
-
-    if isSingleRadius {
-        // if radius is not set or single value
-        view.layer.borderWidth = CGFloat(frame?.borderWidth ?? 0)
-        if let bc = frame?.borderColor {
-            view.layer.borderColor = parseColorToCGColor(bc)
-        }
-        // Prefer borderRadius; if omitted, use the shared per-corner value
-        // (all four corners are equal when isSingleRadius is true).
-        view.layer.cornerRadius = CGFloat(
-            normalizeSingleRadius(
-                radius: CGFloat(frame?.borderRadius ?? frame?.borderTopLeftRadius ?? 0),
-                width: width,
-                height: height))
-        return
-    }
-
-    let radius = normalizeRadius(
-        radius: BorderRadius(
-            topLeft: CGFloat(frame?.borderTopLeftRadius ?? 0),
-            topRight: CGFloat(frame?.borderTopRightRadius ?? 0),
-            bottomRight: CGFloat(frame?.borderBottomRightRadius ?? 0),
-            bottomLeft: CGFloat(frame?.borderBottomLeftRadius ?? 0)
-        ),
-        width: width,
-        height: height
-    )
+private func roundedRectPath(bounds: CGRect, radius: BorderRadius) -> UIBezierPath {
     let (topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius) = (
         radius.topLeft, radius.topRight, radius.bottomRight, radius.bottomLeft
     )
+    let topLeft = CGPoint(x: bounds.minX, y: bounds.minY)
+    let topRight = CGPoint(x: bounds.maxX, y: bounds.minY)
+    let bottomRight = CGPoint(x: bounds.maxX, y: bounds.maxY)
+    let bottomLeft = CGPoint(x: bounds.minX, y: bounds.maxY)
 
-    let topLeft = CGPoint(x: 0, y: 0)
-    let topRight = CGPoint(x: width, y: 0)
-    let bottomRight = CGPoint(x: width, y: height)
-    let bottomLeft = CGPoint(x: 0, y: height)
-
-    // draw rect path with corner radius
     let path = UIBezierPath()
     path.move(to: CGPoint(x: topLeft.x + topLeftRadius, y: topLeft.y))
     path.addLine(to: CGPoint(x: topRight.x - topRightRadius, y: topRight.y))
@@ -507,6 +472,57 @@ func configureBorder(view: UIView, frame: FrameData?) {
         endAngle: -.pi / 2,
         clockwise: true)
     path.close()
+    return path
+}
+
+// NOTE: should be called in viewDidLayoutSubviews to wait until view.bounds are set
+@MainActor
+func configureBorder(view: UIView, frame: FrameData?) {
+    if let bg = frame?.background {
+        view.layer.backgroundColor = parseColorToCGColor(bg)
+    }
+
+    let width = view.bounds.width
+    let height = view.bounds.height
+    let drawingBounds = CGRect(origin: .zero, size: view.bounds.size)
+    let borderWidth = CGFloat(max(frame?.borderWidth ?? 0, 0))
+    let borderColor = parseColorToCGColor(frame?.borderColor)
+
+    let isSingleRadius =
+        (frame?.borderTopLeftRadius == frame?.borderTopRightRadius)
+        && (frame?.borderTopLeftRadius == frame?.borderBottomLeftRadius)
+        && (frame?.borderTopLeftRadius == frame?.borderBottomRightRadius)
+
+    if isSingleRadius {
+        // if radius is not set or single value
+        view.layer.sublayers?.filter { $0.name == "border-layer" }.forEach { $0.removeFromSuperlayer() }
+        view.layer.mask = nil
+        view.layer.borderWidth = borderWidth
+        view.layer.borderColor = borderColor
+        // Prefer borderRadius; if omitted, use the shared per-corner value
+        // (all four corners are equal when isSingleRadius is true).
+        view.layer.cornerRadius = CGFloat(
+            normalizeSingleRadius(
+                radius: CGFloat(frame?.borderRadius ?? frame?.borderTopLeftRadius ?? 0),
+                width: width,
+                height: height))
+        return
+    }
+
+    let radius = normalizeRadius(
+        radius: BorderRadius(
+            topLeft: CGFloat(frame?.borderTopLeftRadius ?? 0),
+            topRight: CGFloat(frame?.borderTopRightRadius ?? 0),
+            bottomRight: CGFloat(frame?.borderBottomRightRadius ?? 0),
+            bottomLeft: CGFloat(frame?.borderBottomLeftRadius ?? 0)
+        ),
+        width: width,
+        height: height
+    )
+    // UIScrollView changes bounds.origin as it scrolls. Sublayers use the
+    // translated view bounds for their frame so they stay fixed on screen,
+    // but their paths must remain in the layer's local coordinate space.
+    let path = roundedRectPath(bounds: drawingBounds, radius: radius)
 
     // clip corner
     let maskLayer = CAShapeLayer()
@@ -515,16 +531,33 @@ func configureBorder(view: UIView, frame: FrameData?) {
     maskLayer.fillColor = UIColor.white.cgColor
     view.layer.mask = maskLayer
 
-    // set border
+    // A shape-layer stroke is centered on its path. Inset the stroke path by
+    // half its width so its outer edge aligns with the view bounds instead of
+    // being clipped by the corner mask.
+    let strokeInset = min(borderWidth / 2, max(0, min(width, height) / 2))
+    let strokeBounds = drawingBounds.insetBy(dx: strokeInset, dy: strokeInset)
+    let strokeRadius = normalizeRadius(
+        radius: BorderRadius(
+            topLeft: max(0, radius.topLeft - strokeInset),
+            topRight: max(0, radius.topRight - strokeInset),
+            bottomRight: max(0, radius.bottomRight - strokeInset),
+            bottomLeft: max(0, radius.bottomLeft - strokeInset)
+        ),
+        width: strokeBounds.width,
+        height: strokeBounds.height
+    )
+
+    view.layer.borderWidth = 0
+    view.layer.borderColor = CGColor(gray: 0, alpha: 0)
+    view.layer.cornerRadius = 0
+
     let shapeLayer = CAShapeLayer()
     shapeLayer.frame = view.bounds
-    shapeLayer.path = path.cgPath
-    shapeLayer.lineWidth = CGFloat(frame?.borderWidth ?? 0)
+    shapeLayer.path = roundedRectPath(bounds: strokeBounds, radius: strokeRadius).cgPath
+    shapeLayer.lineWidth = borderWidth
     shapeLayer.fillColor = UIColor.clear.cgColor
+    shapeLayer.strokeColor = borderColor
     shapeLayer.name = "border-layer"
-    if let bc = frame?.borderColor {
-        shapeLayer.strokeColor = parseColorToCGColor(bc)
-    }
     view.layer.sublayers?.filter { $0.name == "border-layer" }.forEach { $0.removeFromSuperlayer() }
     view.layer.addSublayer(shapeLayer)
 }

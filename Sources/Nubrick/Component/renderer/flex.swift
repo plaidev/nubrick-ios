@@ -72,6 +72,9 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
             layout.alignItems = parseAlignItems(block.data?.alignItems)
             layout.justifyContent = parseJustifyContent(block.data?.justifyContent)
             configurePadding(layout: layout, frame: block.data?.frame)
+            if !isScrollContentView {
+                configureBorderWidth(layout: layout, frame: block.data?.frame)
+            }
             configureSize(
                 layout: layout, frame: block.data?.frame,
                 parentDirection: context.getParentDireciton())
@@ -193,6 +196,7 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
             configureSize(
                 layout: layout, frame: block.data?.frame,
                 parentDirection: context.getParentDireciton())
+            configureBorderWidth(layout: layout, frame: block.data?.frame)
         }
         
         self.showsVerticalScrollIndicator = false
@@ -251,23 +255,31 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
         // This allows scroll content to grow beyond the scroll view's visible bounds
         // Set min size so inner FlexView fills at least the visible area
         let direction = parseDirection(self.block.data?.direction)
+        let borderWidth = CGFloat(max(self.block.data?.frame?.borderWidth ?? 0, 0))
         if direction == .column {
             let visibleHeight = max(
                 0,
-                self.bounds.height - self.contentInset.top - self.contentInset.bottom
+                self.bounds.height
+                    - self.contentInset.top - self.contentInset.bottom
+                    - borderWidth * 2
             )
             self.flexView.yoga.minHeight = YGValue(value: Float(visibleHeight), unit: .point)
             self.flexView.yoga.applyLayout(preservingOrigin: true, dimensionFlexibility: .flexibleHeight)
         } else {
             let visibleWidth = max(
                 0,
-                self.bounds.width - self.contentInset.left - self.contentInset.right
+                self.bounds.width
+                    - self.contentInset.left - self.contentInset.right
+                    - borderWidth * 2
             )
             self.flexView.yoga.minWidth = YGValue(value: Float(visibleWidth), unit: .point)
             self.flexView.yoga.applyLayout(preservingOrigin: true, dimensionFlexibility: .flexibleWidth)
         }
 
-        self.contentSize = self.flexView.bounds.size
+        self.contentSize = CGSize(
+            width: max(self.bounds.width, self.flexView.frame.maxX + borderWidth),
+            height: max(self.bounds.height, self.flexView.frame.maxY + borderWidth)
+        )
         configureBorder(view: self, frame: self.block.data?.frame)
     }
 

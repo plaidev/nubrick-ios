@@ -31,6 +31,7 @@ class ImageView: AnimatedUIView {
 
             // Image padding is not supported by the editor so we dont apply padding
             configureSize(layout: layout, frame: block.data?.frame, parentDirection: context.getParentDireciton())
+            configureBorderWidth(layout: layout, frame: block.data?.frame)
 
             // image URLs include dimensions for their blurhash
             // fallback. Use them until the full image provides exact dimensions.
