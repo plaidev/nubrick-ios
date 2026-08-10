@@ -297,6 +297,14 @@ final class PageView: UIView {
 
     func renderView() {
         if let renderAs = self.page?.data?.renderAs {
+            let rootBackground: UIColor?
+            if case let .EUIFlexContainerBlock(block) = renderAs,
+               let background = block.data?.frame?.background {
+                rootBackground = parseColor(background)
+            } else {
+                rootBackground = nil
+            }
+
             self.view.removeFromSuperview()
             self.view = UIViewBlock(
                 data: renderAs,
@@ -318,9 +326,9 @@ final class PageView: UIView {
                 // screen modal uses overFullScreen and must have an opaque fallback.
                 if #available(iOS 26.0, *),
                    self.page?.data?.modalPresentationStyle == .DEPENDS_ON_CONTEXT_OR_PAGE_SHEET {
-                    self.backgroundColor = self.view.backgroundColor
+                    self.backgroundColor = rootBackground
                 } else {
-                    self.backgroundColor = self.view.backgroundColor ?? .systemBackground
+                    self.backgroundColor = rootBackground ?? .systemBackground
                 }
             }
         }
