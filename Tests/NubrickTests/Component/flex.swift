@@ -228,8 +228,10 @@ final class FlexOverflowViewTests: XCTestCase {
         return try JSONDecoder().decode(UIFlexContainerBlock.self, from: Data(json.utf8))
     }
 
+    @MainActor
     private func scrollContent(of view: FlexOverflowView) throws -> UIView {
-        try XCTUnwrap(view.subviews.first { $0 is FlexView })
+        let content = view.subviews.first { $0 is FlexView }
+        return try XCTUnwrap(content)
     }
 
     private func makeDefaultRowBlock() throws -> UIFlexContainerBlock {
