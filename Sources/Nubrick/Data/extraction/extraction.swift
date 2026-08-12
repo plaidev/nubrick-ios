@@ -137,7 +137,13 @@ func extractExperimentConfigMatchedToProperties(
     }
 }
 
-func isInDistribution(distribution: [ExperimentCondition], properties: [UserProperty]) -> Bool {
+func isInDistribution(distribution: [ExperimentCondition], properties: [UserProperty]) async -> Bool {
+    await Task.detached(priority: .userInitiated) {
+        isInDistributionSync(distribution: distribution, properties: properties)
+    }.value
+}
+
+private func isInDistributionSync(distribution: [ExperimentCondition], properties: [UserProperty]) -> Bool {
     let props = Dictionary(uniqueKeysWithValues: properties.map({ property in
         return (property.name, property)
     }))
@@ -512,7 +518,17 @@ func compareSemver(a: String, b: [String], op: ConditionOperator) -> Bool {
     }
 }
 
+// Distribution-condition patterns are configured remotely, so reject excessively large values
+// before compiling or evaluating them.
+private let maximumRegexPatternLength = 1_000
+private let maximumRegexInputLength = 10_000
+
 func containsPattern(_ input: String, _ pattern: String) -> Bool {
+    guard input.utf16.count <= maximumRegexInputLength,
+          pattern.utf16.count <= maximumRegexPatternLength else {
+        return false
+    }
+
     if #available(iOS 16.0, *) {
         do {
             let regex = try Regex(pattern)

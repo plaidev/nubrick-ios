@@ -108,7 +108,7 @@ final class ExtractionTests: XCTestCase {
         XCTAssertEqual(extractExperimentVariant(config: config, normalizedUsrRnd: 0.99)?.id, "b")
     }
     
-    func testIsInDistributionShouldBeTrue() throws {
+    func testIsInDistributionShouldBeTrue() async throws {
         let userId = "hello"
         let userRnd = "50"
         let distribution: [ExperimentCondition] = [
@@ -121,22 +121,22 @@ final class ExtractionTests: XCTestCase {
             UserProperty(name: "else", value: "world", type: .STRING),
         ]
         
-        let actual = isInDistribution(distribution: distribution, properties: props)
+        let actual = await isInDistribution(distribution: distribution, properties: props)
         XCTAssertTrue(actual)
     }
     
-    func testIsInDistributionShouldBeTrueWhenZeroConditions() throws {
+    func testIsInDistributionShouldBeTrueWhenZeroConditions() async throws {
         let userId = "hello"
         let distribution: [ExperimentCondition] = []
         let props: [UserProperty] = [
             UserProperty(name: "userId", value: userId, type: .STRING),
         ]
         
-        let actual = isInDistribution(distribution: distribution, properties: props)
+        let actual = await isInDistribution(distribution: distribution, properties: props)
         XCTAssertTrue(actual)
     }
     
-    func testIsInDistributionShouldBeFalse() throws {
+    func testIsInDistributionShouldBeFalse() async throws {
         let userId = "hello"
         let userRnd = "50"
         let distribution: [ExperimentCondition] = [
@@ -149,10 +149,10 @@ final class ExtractionTests: XCTestCase {
             UserProperty(name: "else", value: "world", type: .STRING),
         ]
         
-        let actual = isInDistribution(distribution: distribution, properties: props)
+        let actual = await isInDistribution(distribution: distribution, properties: props)
         XCTAssertFalse(actual)
     }
-    
+
     func testExtractExperimentConfigMatchedToPropertiesShouldReturnNilWhenItsZeroConfig() async throws {
         let actual = await extractExperimentConfigMatchedToProperties(configs: ExperimentConfigs(configs: []), kinds: [.POPUP]) { seed in
             return []
@@ -630,7 +630,20 @@ final class CompareTests: XCTestCase {
     func testCompareStringWithRegexShouldBeFalseWhenThePatternIsWrong() throws {
         XCTAssertFalse(compareString(a: "+", b: ["+"], op: .Regex))
     }
-    
+
+    func testCompareStringWithRegexRejectsOversizedInput() throws {
+        XCTAssertFalse(compareString(
+            a: String(repeating: "a", count: 10_001),
+            b: ["^a+$"],
+            op: .Regex
+        ))
+    }
+
+    func testCompareStringWithRegexRejectsOversizedPattern() throws {
+        let longLiteral = String(repeating: "a", count: 1_001)
+        XCTAssertFalse(compareString(a: longLiteral, b: [longLiteral], op: .Regex))
+    }
+
     func testCompareDouble() throws {
         // equal
         XCTAssertTrue(compareDouble(a: 0, b: [0], op: .Equal))
