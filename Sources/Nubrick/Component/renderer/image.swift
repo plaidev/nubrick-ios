@@ -176,33 +176,20 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) -> Task<Void, Neve
                 guard !Task.isCancelled else {
                     return
                 }
-                if isGif(response) {
-                    guard let image = UIImage.gifImageWithData(data) else {
-                        return
-                    }
-                    UIView.transition(
-                        with: view,
-                        duration: 0.2,
-                        options: .transitionCrossDissolve) {
-                            view.layer.contents = image.cgImage
-                            view.contentMode = UIView.ContentMode.scaleAspectFill
-                            view.clipsToBounds = true
-                        }
-                } else {
-                    guard let image = UIImage(data: data) else {
-                        return
-                    }
-                    UIView.transition(
-                        with: view,
-                        duration: 0.2,
-                        options: .transitionCrossDissolve,
-                        animations: {
-                            view.layer.contents = image.cgImage
-                            view.contentMode = UIView.ContentMode.scaleAspectFill
-                            view.clipsToBounds = true
-                        },
-                        completion: nil)
+                // TODO: Add animated GIF playback with ImageIO's CGAnimateImageDataWithBlock.
+                guard let image = UIImage(data: data) else {
+                    return
                 }
+                UIView.transition(
+                    with: view,
+                    duration: 0.2,
+                    options: .transitionCrossDissolve,
+                    animations: {
+                        view.layer.contents = image.cgImage
+                        view.contentMode = UIView.ContentMode.scaleAspectFill
+                        view.clipsToBounds = true
+                    },
+                    completion: nil)
             }
         } catch is CancellationError {
         } catch {
@@ -232,13 +219,8 @@ func loadAsyncImage(
                 guard !Task.isCancelled else {
                     return
                 }
-                let loadedImage: UIImage?
-                if isGif(response) {
-                    loadedImage = UIImage.gifImageWithData(data)
-                } else {
-                    loadedImage = UIImage(data: data)
-                }
-                guard let loadedImage else {
+                // TODO: Add animated GIF playback with ImageIO's CGAnimateImageDataWithBlock.
+                guard let loadedImage = UIImage(data: data) else {
                     return
                 }
 
@@ -261,22 +243,4 @@ func loadAsyncImage(
             print("Failed to load image from \(url): \(error)")
         }
     }
-}
-
-func isGif(_ response: URLResponse?) -> Boolean {
-    guard let httpResponse = response as? HTTPURLResponse else {
-        return false
-    }
-
-    let contentType = httpResponse.allHeaderFields.first { key, _ in
-        guard let key = key as? String else {
-            return false
-        }
-        return key.caseInsensitiveCompare("Content-Type") == .orderedSame
-    }?.value as? String
-
-    guard let contentType = contentType else {
-        return false
-    }
-    return contentType.lowercased().hasSuffix("gif")
 }
