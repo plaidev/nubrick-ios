@@ -197,8 +197,31 @@ struct TrackEvent: Encodable {
 
 @_spi(FlutterBridge)
 public struct ThreadRecord: Encodable, Sendable {
+    /// For MetricKit crashes, this is the crash-attributed thread. The JSON
+    /// field name is retained for backend compatibility.
     public let isMain: Bool?
     public let stacktrace: [StackFrame]?
+}
+
+func isNubrickFrame(_ frame: StackFrame) -> Bool {
+    frame.binaryName?.contains("Nubrick") ?? false ||
+        frame.className?.contains("package:nubrick_flutter") ?? false ||
+        frame.className?.contains("app.nubrick.flutter.nubrick_flutter") ?? false ||
+        frame.className?.contains("io.nubrick.nubrick") ?? false
+}
+
+func isNubrickCausedCrash(_ crashEvent: TrackCrashEvent) -> Bool {
+    if let threads = crashEvent.threads {
+        // MetricKit captures stacks from multiple threads. A Nubrick frame on
+        // an unrelated thread is not evidence that Nubrick caused the crash.
+        return threads.contains { thread in
+            thread.isMain == true && thread.stacktrace?.contains(where: isNubrickFrame) == true
+        }
+    }
+
+    return crashEvent.exceptions.contains { exception in
+        exception.callStacks?.contains(where: isNubrickFrame) == true
+    }
 }
 
 struct TrackEventMeta: Encodable {
@@ -393,15 +416,17 @@ actor TrackRespositoryImpl: TrackRepository2 {
                         }
                     }
 
-                    // Create a ThreadRecord for each call stack
-                    let isMainThread = currentCallStack.threadAttributed ?? false
+                    // `threadAttributed` identifies the thread where MetricKit
+                    // observed the crash. Retain the `isMain` JSON key for
+                    // backend compatibility.
+                    let isCrashAttributedThread = currentCallStack.threadAttributed ?? false
                     threads.append(ThreadRecord(
-                        isMain: isMainThread,
+                        isMain: isCrashAttributedThread,
                         stacktrace: threadFrames
                     ))
 
-                    // Keep main thread frames for exception record
-                    if isMainThread {
+                    // Keep crash-attributed thread frames for the exception record.
+                    if isCrashAttributedThread {
                         mainThreadFrames = threadFrames
                     }
                 }
@@ -423,27 +448,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
     }
 
     private func sendCrashToBackend(_ crashEvent: TrackCrashEvent) {
-        // Check if crash is caused by Nubrick
-        let causedByNativebrik: Bool
-        if let threads = crashEvent.threads {
-            causedByNativebrik = threads.contains { thread in
-                thread.stacktrace?.contains { frame in
-                    frame.binaryName?.contains("Nubrick") ?? false ||
-                    frame.className?.contains("package:nubrick_flutter") ?? false ||
-                    frame.className?.contains("app.nubrick.flutter.nubrick_flutter") ?? false ||
-                    frame.className?.contains("io.nubrick.nubrick") ?? false
-                } ?? false
-            }
-        } else {
-            causedByNativebrik = crashEvent.exceptions.contains { exception in
-                exception.callStacks?.contains { frame in
-                    frame.binaryName?.contains("Nubrick") ?? false ||
-                    frame.className?.contains("package:nubrick_flutter") ?? false ||
-                    frame.className?.contains("app.nubrick.flutter.nubrick_flutter") ?? false ||
-                    frame.className?.contains("io.nubrick.nubrick") ?? false
-                } ?? false
-            }
-        }
+        let causedByNativebrik = isNubrickCausedCrash(crashEvent)
 
         // Only send error tracking events for error or fatal severity
         if crashEvent.severity.isErrorLevel {
