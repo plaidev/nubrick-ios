@@ -64,3 +64,12 @@ jobs:
           PACKAGE_VERSION="$(ruby -e 'text = File.read("Package.swift"); abort "missing Package.swift release URL version" unless text =~ %r{/download/v([0-9]+\.[0-9]+\.[0-9]+)/Nubrick\.xcframework\.zip}; puts $1')"
           test "$PODSPEC_VERSION" = "$MARKETING_VERSION"
           test "$PODSPEC_VERSION" = "$PACKAGE_VERSION"
+
+      - name: Verify license materials
+        run: |
+          grep -qx ' *Apache License' LICENSE
+          test "$(head -n 1 NOTICE)" = "Nubrick"
+          grep -qx 'Copyright 2023–2026 PLAID, Inc.' NOTICE
+          test -f THIRD-PARTY-NOTICES
+          grep -q '^Yoga$' THIRD-PARTY-NOTICES
+          grep -q '^BlurHash$' THIRD-PARTY-NOTICES
