@@ -484,6 +484,25 @@ final class CompareTests: XCTestCase {
         ))
     }
 
+    func testParseTimestampZNormalizesLocalISO8601DateTimeToUTC() throws {
+        let expected = parseTimestampZAsUnixSeconds("2024-06-01T09:30:00Z")
+
+        XCTAssertEqual(parseTimestampZAsUnixSeconds("2024-06-01T09:30:00"), expected)
+        XCTAssertEqual(parseTimestampZAsUnixSeconds("2024-06-01T09:30:00.500"), expected)
+    }
+
+    func testParseTimestampZLocalISO8601DateTimeIsIndependentOfDefaultTimeZone() throws {
+        let originalTimeZone = NSTimeZone.default
+        defer { NSTimeZone.default = originalTimeZone }
+
+        let expected = parseTimestampZAsUnixSeconds("2024-06-01T09:30:00Z")
+        for identifier in ["America/Los_Angeles", "Asia/Tokyo"] {
+            NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: identifier))
+            XCTAssertEqual(parseTimestampZAsUnixSeconds("2024-06-01T09:30:00"), expected)
+            XCTAssertEqual(parseTimestampZAsUnixSeconds("2024-06-01"), parseTimestampZAsUnixSeconds("2024-06-01T00:00:00Z"))
+        }
+    }
+
     func testCompareTimestampZWithLocalDateString() throws {
         let prop = UserProperty(
             name: BuiltinUserProperty.currentTime.rawValue,

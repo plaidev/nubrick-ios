@@ -232,20 +232,24 @@ func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?
     }
 }
 
+private let timestampZTimeZone = TimeZone(secondsFromGMT: 0)!
+
 private let iso8601ParseStrategies: [Date.ISO8601FormatStyle] = [
-    .iso8601.year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .colon),
-    .iso8601.year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .colon),
-    .iso8601.year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .omitted),
-    .iso8601.year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .omitted),
-    .iso8601.year().month().day().time(includingFractionalSeconds: false),
-    .iso8601.year().month().day(),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .colon),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .colon),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .omitted),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .omitted),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: false),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day(),
 ]
 
 private let fallbackParseStrategy = Date.ParseStrategy(
     format: "\(year: .defaultDigits)-\(month: .twoDigits)-\(day: .twoDigits) \(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits):\(second: .twoDigits) \(timeZone: .iso8601(.short))",
     locale: Locale(identifier: "en_US_POSIX"),
-    timeZone: .current
+    timeZone: timestampZTimeZone
 )
+
+private let localISO8601DateTimePattern = #"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$"#
 
 func parseTimestampZAsUnixSeconds(_ value: String) -> Double? {
     let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -260,6 +264,16 @@ func parseTimestampZAsUnixSeconds(_ value: String) -> Double? {
     for strategy in iso8601ParseStrategies {
         if let date = try? Date(trimmed, strategy: strategy) {
             return Double(Int64(date.timeIntervalSince1970))
+        }
+    }
+
+    // TIMESTAMPZ values without an offset are defined as UTC so conditions have
+    // identical results regardless of the device's configured time zone.
+    if trimmed.range(of: localISO8601DateTimePattern, options: .regularExpression) != nil {
+        for strategy in iso8601ParseStrategies {
+            if let date = try? Date("\(trimmed)Z", strategy: strategy) {
+                return Double(Int64(date.timeIntervalSince1970))
+            }
         }
     }
 
