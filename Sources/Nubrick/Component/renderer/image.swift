@@ -169,7 +169,7 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) -> Task<Void, Neve
     
     return Task {
         do {
-            let (data, response) = try await nativebrikSession.data(from: requestUrl)
+            let (data, _) = try await nativebrikSession.data(from: requestUrl)
             try Task.checkCancellation()
             
             await MainActor.run {
@@ -212,7 +212,7 @@ func loadAsyncImage(
     
     return Task {
         do {
-            let (data, response) = try await nativebrikSession.data(from: requestUrl)
+            let (data, _) = try await nativebrikSession.data(from: requestUrl)
             try Task.checkCancellation()
             
             await MainActor.run {
