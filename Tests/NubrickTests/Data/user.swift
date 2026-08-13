@@ -10,6 +10,68 @@ import XCTest
 
 @MainActor
 final class UserTests: XCTestCase {
+    func testComeBackInitializesRetentionTimestamp() throws {
+        let suiteName = "NubrickTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let user = NubrickUser()
+        user.userDB = userDefaults
+        user.comeBack()
+
+        XCTAssertNotNil(userDefaults.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue))
+        XCTAssertEqual(
+            userDefaults.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue) as? Int,
+            0
+        )
+    }
+
+    func testRetentionUsesLocalCalendarDaysRatherThanUTCDays() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "Asia/Tokyo"))
+
+        let sameLocalDayBeforeUTCMidnight = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026, month: 8, day: 13, hour: 8, minute: 55
+        )))
+        let sameLocalDayAfterUTCMidnight = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026, month: 8, day: 13, hour: 9, minute: 5
+        )))
+        let nextLocalDay = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026, month: 8, day: 14, hour: 0, minute: 30
+        )))
+
+        XCTAssertEqual(
+            retentionCalendarDayDifference(
+                from: sameLocalDayBeforeUTCMidnight,
+                to: sameLocalDayAfterUTCMidnight,
+                calendar: calendar
+            ),
+            0
+        )
+        XCTAssertEqual(
+            retentionCalendarDayDifference(
+                from: sameLocalDayAfterUTCMidnight,
+                to: nextLocalDay,
+                calendar: calendar
+            ),
+            1
+        )
+    }
+
+    func testRetentionCalendarDayDifferenceHandlesDSTTransition() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+
+        let beforeDST = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026, month: 3, day: 8, hour: 0, minute: 30
+        )))
+        let afterDST = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026, month: 3, day: 9, hour: 0, minute: 30
+        )))
+
+        XCTAssertEqual(retentionCalendarDayDifference(from: beforeDST, to: afterDST, calendar: calendar), 1)
+    }
+
     func testHasUserIdByDefaultAndAlwaysTheSame() {
         let user = NubrickUser()
         let userId = user.id

@@ -56,6 +56,12 @@ private let USER_CUSTOM_PROPERTY_KEY_PREFIX = "NATIVEBRIK_CUSTOM_"
 private let USER_SEED_KEY: String = "NATIVEBRIK_USER_SEED"
 private let USER_SEED_MAX: Int = 100000000
 
+func retentionCalendarDayDifference(from earlier: Date, to later: Date, calendar: Calendar = .current) -> Int? {
+    let earlierDay = calendar.startOfDay(for: earlier)
+    let laterDay = calendar.startOfDay(for: later)
+    return calendar.dateComponents([.day], from: earlierDay, to: laterDay).day
+}
+
 private func formatUserPropertyValue(_ value: Any) -> String {
     if let date = value as? Date {
         return date.ISO8601Format()
@@ -198,24 +204,23 @@ class NubrickUser {
         self.properties[BuiltinUserProperty.lastBootTime.rawValue] = lastBootTime.ISO8601Format()
         self.lastBootTime = lastBootTime.timeIntervalSince1970
 
-        let retentionTimestamp = self.userDB.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue) as? Int ?? Int(now.timeIntervalSince1970)
+        let storedRetentionTimestamp = self.userDB.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue) as? Int
+        let retentionTimestamp = storedRetentionTimestamp ?? Int(now.timeIntervalSince1970)
         let retentionCount = self.userDB.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue) as? Int ?? 0
         self.properties[BuiltinUserProperty.retentionPeriod.rawValue] = String(retentionCount)
 
-        // 1 day is equal to 86400 seconds
-        let lastDaysSince1970 = Int(retentionTimestamp / (86400))
-        let daysSince1970 = Int(now.timeIntervalSince1970 / (86400))
-        if lastDaysSince1970 == daysSince1970 - 1 {
+        let previousRetentionDate = Date(timeIntervalSince1970: TimeInterval(retentionTimestamp))
+        let dayDifference = retentionCalendarDayDifference(from: previousRetentionDate, to: now) ?? 0
+        if storedRetentionTimestamp == nil {
+            self.userDB.set(retentionTimestamp, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
+            self.userDB.set(retentionCount, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
+        } else if dayDifference == 1 {
             // count up retention. because user is returned in 1 day
             self.userDB.set(Int(now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
             let countedUp = retentionCount + 1
             self.userDB.set(countedUp, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
             self.properties[BuiltinUserProperty.retentionPeriod.rawValue] = String(countedUp)
-        } else if lastDaysSince1970 == daysSince1970 {
-            // save the initial count
-            self.userDB.set(retentionTimestamp, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
-            self.userDB.set(retentionCount, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
-        } else if lastDaysSince1970 < daysSince1970 - 1 {
+        } else if dayDifference > 1 {
             // reset retention. because user won't be returned in 1 day
             self.userDB.set(Int(now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
             let reseted = 0
