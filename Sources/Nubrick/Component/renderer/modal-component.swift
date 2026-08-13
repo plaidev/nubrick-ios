@@ -11,7 +11,10 @@ import SwiftUI
 import SafariServices
 
 /// How a WEBVIEW_MODAL URL should be handled.
-/// `SFSafariViewController` only accepts http/https; other schemes must not be passed to it.
+///
+/// Goal of this resolver: never pass a non-http(s) URL to `SFSafariViewController`
+/// (that crashes). WEBVIEW_MODAL is for web pages, so http/https → Safari VC is the
+/// supported path; other schemes are best-effort only.
 enum WebviewModalURLAction: Equatable {
     case presentInSafari(URL)
     case openExternally(URL)
@@ -41,7 +44,15 @@ class ModalComponentViewController: UIViewController {
         case .ignore:
             return
         case .openExternally(let urlObj):
-            // Deep-link style: open outside Safari VC (mailto/tel/custom schemes).
+            // Best-effort fallback so non-http(s) never reach SFSafariViewController.
+            // Matches `openLink` in sdk.swift: canOpenURL then open.
+            //
+            // Note: canOpenURL returns false for third-party schemes not listed in the
+            // host app's LSApplicationQueriesSchemes. As an SDK we cannot set that
+            // Info.plist key, so custom schemes (e.g. myapp://) may no-op here.
+            // That is acceptable for WEBVIEW_MODAL — the supported case is http(s).
+            // Do not switch to open-without-canOpenURL just to paper over QueriesSchemes;
+            // broader deep-link open policy would be a separate change.
             guard UIApplication.shared.canOpenURL(urlObj) else {
                 return
             }
