@@ -44,15 +44,10 @@ class ModalComponentViewController: UIViewController {
         case .ignore:
             return
         case .openExternally(let urlObj):
-            // Best-effort fallback so non-http(s) never reach SFSafariViewController.
-            // Matches `openLink` in sdk.swift: canOpenURL then open.
-            //
-            // Note: canOpenURL returns false for third-party schemes not listed in the
-            // host app's LSApplicationQueriesSchemes. As an SDK we cannot set that
-            // Info.plist key, so custom schemes (e.g. myapp://) may no-op here.
-            // That is acceptable for WEBVIEW_MODAL — the supported case is http(s).
-            // Do not switch to open-without-canOpenURL just to paper over QueriesSchemes;
-            // broader deep-link open policy would be a separate change.
+            // Non-http(s) URLs are opened externally as a best-effort fallback.
+            // Custom schemes may return false unless the host app declares them in
+            // LSApplicationQueriesSchemes. This is acceptable because WEBVIEW_MODAL
+            // officially supports web URLs only.
             guard UIApplication.shared.canOpenURL(urlObj) else {
                 return
             }
