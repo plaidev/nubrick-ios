@@ -13,6 +13,10 @@ let package = Package(
             name: "Nubrick",
             targets: ["Nubrick"]
         ),
+        .plugin(
+            name: "NubrickDevTool",
+            targets: ["NubrickDevTool"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/facebook/yoga.git", .upToNextMinor(from: "3.2.1")),
@@ -46,6 +50,17 @@ let package = Package(
         .testTarget(
             name: "NubrickTests",
             dependencies: ["NubrickLocal"]
+        ),
+
+        // Build tool plugin for extracting embedding IDs at compile time
+        .plugin(
+            name: "NubrickDevTool",
+            capability: .buildTool(),
+            dependencies: ["NubrickDevToolRunner"]
+        ),
+        .executableTarget(
+            name: "NubrickDevToolRunner",
+            path: "Plugins/NubrickDevToolRunner"
         ),
     ],
     cxxLanguageStandard: CXXLanguageStandard(rawValue: "c++20")
