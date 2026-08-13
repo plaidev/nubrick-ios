@@ -69,7 +69,7 @@ jobs:
         run: |
           grep -qx ' *Apache License' LICENSE
           test "$(head -n 1 NOTICE)" = "Nubrick"
-          grep -qx 'Copyright 2023–2026 PLAID, Inc.' NOTICE
+          grep -qx 'Copyright 2026 PLAID, Inc.' NOTICE
           test -f THIRD-PARTY-NOTICES
           grep -q '^Yoga$' THIRD-PARTY-NOTICES
           grep -q '^BlurHash$' THIRD-PARTY-NOTICES
