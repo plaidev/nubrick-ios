@@ -645,6 +645,36 @@ final class CompareTests: XCTestCase {
         XCTAssertTrue(compareString(a: "hello-world_11", b: ["[a-zA-Z0-9-_]+"], op: .Regex))
         XCTAssertFalse(compareString(a: "hello", b: ["[^a-zA-Z-_]"], op: .Regex))
     }
+
+    func testCompareStringConditionValuePreservesWhitespace() throws {
+        let prop = UserProperty(name: "color", value: " red ", type: .STRING)
+
+        XCTAssertTrue(comparePropWithConditionValue(
+            prop: prop, asType: nil, value: " red ", op: .Equal
+        ))
+        XCTAssertTrue(comparePropWithConditionValue(
+            prop: prop, asType: nil, value: "blue, red ", op: .In
+        ))
+        XCTAssertFalse(comparePropWithConditionValue(
+            prop: prop, asType: nil, value: "red", op: .Equal
+        ))
+    }
+
+    func testCompareStringRegexConditionPreservesCommas() throws {
+        let prop = UserProperty(name: "coordinate", value: "12,34", type: .STRING)
+
+        XCTAssertTrue(comparePropWithConditionValue(
+            prop: prop, asType: nil, value: "^\\d+,\\d+$", op: .Regex
+        ))
+    }
+
+    func testCompareStringRegexConditionPreservesWhitespace() throws {
+        let prop = UserProperty(name: "greeting", value: " hello", type: .STRING)
+
+        XCTAssertTrue(comparePropWithConditionValue(
+            prop: prop, asType: nil, value: " hello", op: .Regex
+        ))
+    }
     
     func testCompareStringWithRegexShouldBeFalseWhenThePatternIsWrong() throws {
         XCTAssertFalse(compareString(a: "+", b: ["+"], op: .Regex))

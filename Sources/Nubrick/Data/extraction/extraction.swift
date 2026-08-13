@@ -166,7 +166,11 @@ private func isInDistributionSync(distribution: [ExperimentCondition], propertie
 }
 
 func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?, value: String, op: ConditionOperator) -> Bool {
-    let values = value.split(separator: ",", omittingEmptySubsequences: false)
+    // Regex conditions are a single raw pattern, so commas are meaningful pattern
+    // characters rather than list delimiters.
+    let values: [Substring] = op == .Regex
+        ? [Substring(value)]
+        : value.split(separator: ",", omittingEmptySubsequences: false)
     let propType = asType ?? prop.type
     switch propType {
     case .INTEGER:
