@@ -50,29 +50,5 @@ final class GetDataTests: XCTestCase {
         XCTAssertNil(MemoryResponseCache.shared.get(url))
     }
 
-    func testComponentCachePrefixFromConfigURL() {
-        let config = URL(string: "https://cdn.nativebrik.com/projects/p1/experiments/id/e1")!
-        XCTAssertEqual(
-            componentCachePrefix(from: config),
-            "https://cdn.nativebrik.com/projects/p1/experiments/components/"
-        )
-        XCTAssertTrue(isExperimentConfigURL(config))
-        XCTAssertFalse(
-            isExperimentConfigURL(
-                URL(string: "https://cdn.nativebrik.com/projects/p1/experiments/components/e1/c1")!
-            )
-        )
-    }
 
-    func testChangedExperimentConfigDropsComponentCache() {
-        let config = URL(string: "https://cdn.example/projects/p1/experiments/id/e1")!
-        let component = URL(string: "https://cdn.example/projects/p1/experiments/components/e1/c1")!
-        MemoryResponseCache.shared.set(config, data: Data("v1".utf8))
-        MemoryResponseCache.shared.set(component, data: Data("component-v1".utf8))
-
-        MemoryResponseCache.shared.set(config, data: Data("v2".utf8))
-
-        XCTAssertNil(MemoryResponseCache.shared.get(component))
-        XCTAssertEqual(MemoryResponseCache.shared.get(config), Data("v2".utf8))
-    }
 }

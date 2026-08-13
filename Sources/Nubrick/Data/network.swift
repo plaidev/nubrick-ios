@@ -34,17 +34,8 @@ final class MemoryResponseCache: @unchecked Sendable {
 
     func set(_ url: URL, data: Data) {
         lock.lock()
-        let key = url.absoluteString
-        let previous = entries[key]?.data
-        entries[key] = Entry(data: data, storedAt: Date())
-        lock.unlock()
-
-        // When experiment config changes, drop component last-good so generations stay aligned.
-        if isExperimentConfigURL(url), previous != data {
-            if let prefix = componentCachePrefix(from: url) {
-                removeByPrefix(prefix)
-            }
-        }
+        defer { lock.unlock() }
+        entries[url.absoluteString] = Entry(data: data, storedAt: Date())
     }
 
     func remove(_ url: URL) {
@@ -53,35 +44,11 @@ final class MemoryResponseCache: @unchecked Sendable {
         entries.removeValue(forKey: url.absoluteString)
     }
 
-    func removeByPrefix(_ prefix: String) {
-        lock.lock()
-        defer { lock.unlock() }
-        for key in entries.keys where key.hasPrefix(prefix) {
-            entries.removeValue(forKey: key)
-        }
-    }
-
     func removeAll() {
         lock.lock()
         defer { lock.unlock() }
         entries.removeAll()
     }
-}
-
-func isExperimentConfigURL(_ url: URL) -> Bool {
-    let path = url.path
-    return path.contains("/experiments/id/") || path.contains("/experiments/trigger/")
-}
-
-func componentCachePrefix(from configURL: URL) -> String? {
-    let absolute = configURL.absoluteString
-    guard let projectsRange = absolute.range(of: "/projects/") else { return nil }
-    let afterProjects = absolute[projectsRange.upperBound...]
-    guard let slash = afterProjects.firstIndex(of: "/") else { return nil }
-    let projectId = String(afterProjects[..<slash])
-    guard !projectId.isEmpty else { return nil }
-    let origin = String(absolute[..<projectsRange.lowerBound])
-    return origin + "/projects/" + projectId + "/experiments/components/"
 }
 
 let nativebrikSession: URLSession = {
