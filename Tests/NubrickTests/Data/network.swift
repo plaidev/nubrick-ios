@@ -6,11 +6,15 @@
 //
 
 import Foundation
-
 import XCTest
 @testable import NubrickLocal
 
 final class GetDataTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        MemoryResponseCache.shared.removeAll()
+    }
+
     func testGetDataReturnsResponse() async {
         let url = URL(string: "https://example.com")!
         let result = await getData(url: url)
@@ -22,4 +26,29 @@ final class GetDataTests: XCTestCase {
             XCTFail("Expected a response, got \(error)")
         }
     }
+
+    func testMemoryCacheReturnsLastGoodWithinTTL() {
+        let url = URL(string: "https://cdn.example/projects/p/experiments/id/e")!
+        let body = Data("{\"ok\":true}".utf8)
+        MemoryResponseCache.shared.set(url, data: body)
+        XCTAssertEqual(MemoryResponseCache.shared.get(url), body)
+    }
+
+    func testMemoryCacheRemoveClearsEntry() {
+        let url = URL(string: "https://cdn.example/projects/p/experiments/id/e")!
+        MemoryResponseCache.shared.set(url, data: Data("x".utf8))
+        MemoryResponseCache.shared.remove(url)
+        XCTAssertNil(MemoryResponseCache.shared.get(url))
+    }
+
+    func testInvalidateCachedResponseClearsMemory() {
+        let url = URL(string: "https://cdn.example/projects/p/experiments/id/gone")!
+        MemoryResponseCache.shared.set(url, data: Data("stale".utf8))
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        invalidateCachedResponse(for: request)
+        XCTAssertNil(MemoryResponseCache.shared.get(url))
+    }
+
+
 }
