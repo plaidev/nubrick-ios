@@ -58,6 +58,33 @@ private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
 }
 
 final class HttpRequestReposotiryTests: XCTestCase {
+    func testNubrickCauseDetectionOnlyConsidersCrashAttributedMetricKitThread() {
+        let appFrame = StackFrame(binaryName: "Runner")
+        let nubrickFrame = StackFrame(binaryName: "Nubrick")
+        let crashEvent = TrackCrashEvent(
+            exceptions: [],
+            threads: [
+                ThreadRecord(isMain: true, stacktrace: [appFrame]),
+                ThreadRecord(isMain: false, stacktrace: [nubrickFrame]),
+            ],
+            platform: "ios"
+        )
+
+        XCTAssertFalse(isNubrickCausedCrash(crashEvent))
+    }
+
+    func testNubrickCauseDetectionAcceptsNubrickOnCrashAttributedMetricKitThread() {
+        let crashEvent = TrackCrashEvent(
+            exceptions: [],
+            threads: [
+                ThreadRecord(isMain: true, stacktrace: [StackFrame(binaryName: "Nubrick")]),
+            ],
+            platform: "ios"
+        )
+
+        XCTAssertTrue(isNubrickCausedCrash(crashEvent))
+    }
+
     func testShouldCallApiHttpRequest() throws {
         let expectation = expectation(description: "Request should be expected.")
         let repository = HttpRequestRepositoryImpl(intercepter: nil)

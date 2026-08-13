@@ -137,7 +137,13 @@ func extractExperimentConfigMatchedToProperties(
     }
 }
 
-func isInDistribution(distribution: [ExperimentCondition], properties: [UserProperty]) -> Bool {
+func isInDistribution(distribution: [ExperimentCondition], properties: [UserProperty]) async -> Bool {
+    await Task.detached(priority: .userInitiated) {
+        isInDistributionSync(distribution: distribution, properties: properties)
+    }.value
+}
+
+private func isInDistributionSync(distribution: [ExperimentCondition], properties: [UserProperty]) -> Bool {
     let props = Dictionary(uniqueKeysWithValues: properties.map({ property in
         return (property.name, property)
     }))
@@ -160,7 +166,11 @@ func isInDistribution(distribution: [ExperimentCondition], properties: [UserProp
 }
 
 func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?, value: String, op: ConditionOperator) -> Bool {
-    let values = value.split(separator: ",", omittingEmptySubsequences: false)
+    // Regex conditions are a single raw pattern, so commas are meaningful pattern
+    // characters rather than list delimiters.
+    let values: [Substring] = op == .Regex
+        ? [Substring(value)]
+        : value.split(separator: ",", omittingEmptySubsequences: false)
     let propType = asType ?? prop.type
     switch propType {
     case .INTEGER:
@@ -226,20 +236,24 @@ func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?
     }
 }
 
+private let timestampZTimeZone = TimeZone(secondsFromGMT: 0)!
+
 private let iso8601ParseStrategies: [Date.ISO8601FormatStyle] = [
-    .iso8601.year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .colon),
-    .iso8601.year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .colon),
-    .iso8601.year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .omitted),
-    .iso8601.year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .omitted),
-    .iso8601.year().month().day().time(includingFractionalSeconds: false),
-    .iso8601.year().month().day(),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .colon),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .colon),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .omitted),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .omitted),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: false),
+    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day(),
 ]
 
 private let fallbackParseStrategy = Date.ParseStrategy(
     format: "\(year: .defaultDigits)-\(month: .twoDigits)-\(day: .twoDigits) \(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits):\(second: .twoDigits) \(timeZone: .iso8601(.short))",
     locale: Locale(identifier: "en_US_POSIX"),
-    timeZone: .current
+    timeZone: timestampZTimeZone
 )
+
+private let localISO8601DateTimePattern = #"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$"#
 
 func parseTimestampZAsUnixSeconds(_ value: String) -> Double? {
     let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -254,6 +268,16 @@ func parseTimestampZAsUnixSeconds(_ value: String) -> Double? {
     for strategy in iso8601ParseStrategies {
         if let date = try? Date(trimmed, strategy: strategy) {
             return Double(Int64(date.timeIntervalSince1970))
+        }
+    }
+
+    // TIMESTAMPZ values without an offset are defined as UTC so conditions have
+    // identical results regardless of the device's configured time zone.
+    if trimmed.range(of: localISO8601DateTimePattern, options: .regularExpression) != nil {
+        for strategy in iso8601ParseStrategies {
+            if let date = try? Date("\(trimmed)Z", strategy: strategy) {
+                return Double(Int64(date.timeIntervalSince1970))
+            }
         }
     }
 
@@ -512,7 +536,17 @@ func compareSemver(a: String, b: [String], op: ConditionOperator) -> Bool {
     }
 }
 
+// Distribution-condition patterns are configured remotely, so reject excessively large values
+// before compiling or evaluating them.
+private let maximumRegexPatternLength = 1_000
+private let maximumRegexInputLength = 10_000
+
 func containsPattern(_ input: String, _ pattern: String) -> Bool {
+    guard input.utf16.count <= maximumRegexInputLength,
+          pattern.utf16.count <= maximumRegexPatternLength else {
+        return false
+    }
+
     if #available(iOS 16.0, *) {
         do {
             let regex = try Regex(pattern)

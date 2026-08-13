@@ -35,3 +35,9 @@ xcodebuild -create-xcframework \
   -framework "$SIM_ARCHIVE/Products/Library/Frameworks/Nubrick.framework" \
   -debug-symbols "$SIM_ARCHIVE/dSYMs/Nubrick.framework.dSYM" \
   -output "$OUT_DIR/Nubrick.xcframework"
+
+# Keep legal notices beside the XCFramework so local and release artifacts
+# contain the same materials.
+cp "$ROOT/../LICENSE" "$OUT_DIR/LICENSE"
+cp "$ROOT/../NOTICE" "$OUT_DIR/NOTICE"
+cp "$ROOT/../THIRD-PARTY-NOTICES" "$OUT_DIR/THIRD-PARTY-NOTICES"

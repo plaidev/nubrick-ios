@@ -10,35 +10,68 @@ import UIKit
 import SwiftUI
 import SafariServices
 
+/// How a WEBVIEW_MODAL URL should be handled.
+///
+/// Goal of this resolver: never pass a non-http(s) URL to `SFSafariViewController`
+/// (that crashes). WEBVIEW_MODAL is for web pages, so http/https → Safari VC is the
+/// supported path; other schemes are best-effort only.
+enum WebviewModalURLAction: Equatable {
+    case presentInSafari(URL)
+    case openExternally(URL)
+    case ignore
+}
+
+func resolveWebviewModalURLAction(_ urlString: String?) -> WebviewModalURLAction {
+    guard let urlString = urlString,
+          let url = URL(string: urlString),
+          let scheme = url.scheme?.lowercased(),
+          !scheme.isEmpty else {
+        return .ignore
+    }
+    if scheme == "http" || scheme == "https" {
+        return .presentInSafari(url)
+    }
+    return .openExternally(url)
+}
+
 // vc for navigation view
 class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
     private var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
 
     func presentWebview(url: String?, backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate?) {
-        guard let url = url else {
+        switch resolveWebviewModalURLAction(url) {
+        case .ignore:
             return
-        }
-        guard let urlObj = URL(string: url) else {
-            return
-        }
-        let safariVC = SFSafariViewController(url: urlObj)
-        if let backButtonBehaviorDelegate = backButtonBehaviorDelegate {
-            // keep the instance, because it will be deallocated after the function call.
-            self.backButtonBehaviorDelegate = backButtonBehaviorDelegate
-            safariVC.delegate = self.backButtonBehaviorDelegate
-        }
-        if let modal = self.currentModal {
-            if !isPresenting(presented: self.presentedViewController, vc: modal) {
-                self.currentModal?.dismiss(animated: false)
-                self.currentModal = nil
+        case .openExternally(let urlObj):
+            // Non-http(s) URLs are opened externally as a best-effort fallback.
+            // Custom schemes may return false unless the host app declares them in
+            // LSApplicationQueriesSchemes. This is acceptable because WEBVIEW_MODAL
+            // officially supports web URLs only.
+            guard UIApplication.shared.canOpenURL(urlObj) else {
+                return
             }
-        }
+            UIApplication.shared.open(urlObj)
+            return
+        case .presentInSafari(let urlObj):
+            let safariVC = SFSafariViewController(url: urlObj)
+            if let backButtonBehaviorDelegate = backButtonBehaviorDelegate {
+                // keep the instance, because it will be deallocated after the function call.
+                self.backButtonBehaviorDelegate = backButtonBehaviorDelegate
+                safariVC.delegate = self.backButtonBehaviorDelegate
+            }
+            if let modal = self.currentModal {
+                if !isPresenting(presented: self.presentedViewController, vc: modal) {
+                    self.currentModal?.dismiss(animated: false)
+                    self.currentModal = nil
+                }
+            }
 
-        if let modal = self.currentModal {
-            modal.present(safariVC, animated: true)
-        } else {
-            self.presentToTop(safariVC)
+            if let modal = self.currentModal {
+                modal.present(safariVC, animated: true)
+            } else {
+                self.presentToTop(safariVC)
+            }
         }
     }
 

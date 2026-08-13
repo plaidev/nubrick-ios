@@ -45,7 +45,6 @@
 		25C9F6A52EB0597E00BD8267 /* flex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6462EB0597E00BD8267 /* flex.swift */; };
 		25C9F6A62EB0597E00BD8267 /* extraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F65A2EB0597E00BD8267 /* extraction.swift */; };
 		25C9F6A72EB0597E00BD8267 /* block.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6432EB0597E00BD8267 /* block.swift */; };
-		25C9F6A82EB0597E00BD8267 /* gif.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6702EB0597E00BD8267 /* gif.swift */; };
 		25C9F6A92EB0597E00BD8267 /* database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6572EB0597E00BD8267 /* database.swift */; };
 		25C9F6AA2EB0597E00BD8267 /* formatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6672EB0597E00BD8267 /* formatter.swift */; };
 		25C9F6AB2EB0597E00BD8267 /* request.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C9F6612EB0597E00BD8267 /* request.swift */; };
@@ -101,7 +100,6 @@
 		25C9F66C2EB0597E00BD8267 /* ios-compat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ios-compat.swift"; sourceTree = "<group>"; };
 		25C9F66D2EB0597E00BD8267 /* utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = utils.swift; sourceTree = "<group>"; };
 		25C9F66F2EB0597E00BD8267 /* blurhash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = blurhash.swift; sourceTree = "<group>"; };
-		25C9F6702EB0597E00BD8267 /* gif.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = gif.swift; sourceTree = "<group>"; };
 		25C9F6722EB0597E00BD8267 /* _for_bridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _for_bridge.swift; sourceTree = "<group>"; };
 		25C9F6732EB0597E00BD8267 /* Nubrick.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Nubrick.h; sourceTree = "<group>"; };
 		25C9F6742EB0597E00BD8267 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -248,7 +246,6 @@
 			isa = PBXGroup;
 			children = (
 				25C9F66F2EB0597E00BD8267 /* blurhash.swift */,
-				25C9F6702EB0597E00BD8267 /* gif.swift */,
 			);
 			path = vendor;
 			sourceTree = "<group>";
@@ -441,7 +438,6 @@
 				25C9F6B62EB0597E00BD8267 /* background-image-observer.swift in Sources */,
 				25C9F6A62EB0597E00BD8267 /* extraction.swift in Sources */,
 				25C9F6A72EB0597E00BD8267 /* block.swift in Sources */,
-				25C9F6A82EB0597E00BD8267 /* gif.swift in Sources */,
 				25C9F6A92EB0597E00BD8267 /* database.swift in Sources */,
 				25C9F6AA2EB0597E00BD8267 /* formatter.swift in Sources */,
 				25C9F6AB2EB0597E00BD8267 /* request.swift in Sources */,
@@ -612,7 +608,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
-				MARKETING_VERSION = 0.19.7;
+				MARKETING_VERSION = 0.19.9;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				OTHER_SWIFT_FLAGS = "\"$(inherited)\" -gline-tables-only";
@@ -662,7 +658,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
-				MARKETING_VERSION = 0.19.7;
+				MARKETING_VERSION = 0.19.9;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				OTHER_SWIFT_FLAGS = "\"$(inherited)\" -gline-tables-only";

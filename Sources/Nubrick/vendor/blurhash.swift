@@ -1,5 +1,10 @@
-/**
-  copied from https://github.com/woltapp/blurhash/blob/master/Swift/BlurHashDecode.swift
+/*
+ * Portions copyright (c) 2018 Wolt Enterprises.
+ * Derived from https://github.com/woltapp/blurhash/blob/master/Swift/BlurHashDecode.swift
+ * and modified by Nubrick contributors.
+ *
+ * Licensed under the MIT License. The full license text is in
+ * THIRD-PARTY-NOTICES at the repository root.
  */
 
 import UIKit
