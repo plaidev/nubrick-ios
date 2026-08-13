@@ -93,11 +93,10 @@ func getData(url: URL, syncDateTime: Bool = false) async -> Result<Data, Nubrick
         }
         return Result.failure(NubrickError.unexpected)
     } catch {
-        // Offline / transport failure: keep last-good when available.
+        // Offline / transport failure: only the in-memory last-good (TTL-bounded).
+        // Do not read URLCache here — cachedResponse(for:) ignores HTTP freshness and
+        // could revive arbitrarily old / deleted UI after the memory window expires.
         if let cached = MemoryResponseCache.shared.get(url) {
-            return Result.success(cached)
-        }
-        if let cached = URLCache.shared.cachedResponse(for: request)?.data {
             return Result.success(cached)
         }
         return Result.failure(NubrickError.other(error))
