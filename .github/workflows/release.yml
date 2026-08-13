@@ -98,9 +98,11 @@ jobs:
 
       - name: Create zip file
         run: |
-          cp LICENSE "${OUTPUT_DIR}/"
           cd "${OUTPUT_DIR}"
-          zip -r -X "${ZIP_NAME}" "${XCFRAMEWORK_NAME}" LICENSE
+          zip -r -X "${ZIP_NAME}" "${XCFRAMEWORK_NAME}" LICENSE NOTICE THIRD-PARTY-NOTICES
+          unzip -Z1 "${ZIP_NAME}" | grep -qx 'LICENSE'
+          unzip -Z1 "${ZIP_NAME}" | grep -qx 'NOTICE'
+          unzip -Z1 "${ZIP_NAME}" | grep -qx 'THIRD-PARTY-NOTICES'
 
       - name: Compute checksum
         id: checksum
