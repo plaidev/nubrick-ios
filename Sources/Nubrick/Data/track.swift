@@ -8,8 +8,13 @@
 import Foundation
 import UIKit
 import Darwin.Mach
+import CoreData
 
 private let CRASH_RECORD_KEY: String = "NATIVEBRIK_CRASH_RECORD"
+
+private func trackWarn(_ message: String) {
+    print("[Nubrick] \(message)")
+}
 
 // Convert MetricKit exception type to string after copying the raw value out of the diagnostic.
 func exceptionTypeString(_ raw: UInt32?) -> String {
@@ -54,7 +59,7 @@ private struct RawFrame: Decodable {
 }
 
 @_spi(FlutterBridge)
-public struct StackFrame: Encodable, Sendable {
+public struct StackFrame: Codable, Sendable {
     // iOS fields
     public let imageAddr: String?
     public let instructionAddr: String?
@@ -89,7 +94,7 @@ public struct StackFrame: Encodable, Sendable {
 }
 
 @_spi(FlutterBridge)
-public struct ExceptionRecord: Encodable, Sendable {
+public struct ExceptionRecord: Codable, Sendable {
     public let type: String?
     public let message: String?
     public let callStacks: [StackFrame]?
@@ -148,6 +153,7 @@ public enum CrashSeverity: String, Sendable {
 protocol TrackRepository2 : Actor {
     func trackExperimentEvent(_ event: TrackExperimentEvent)
     func trackEvent(_ event: TrackUserEvent)
+    func flushNow() async
 
     func processMetricKitCrash(
         callStackTreeJSON: Data,
@@ -177,8 +183,8 @@ struct TrackRequest: Encodable {
     var meta: TrackEventMeta
 }
 
-struct TrackEvent: Encodable {
-    enum Typename: String, Encodable {
+struct TrackEvent: Codable {
+    enum Typename: String, Codable {
         case Event = "event"
         case Experiment = "experiment"
         case Crash = "crash"
@@ -193,10 +199,11 @@ struct TrackEvent: Encodable {
     var platform: String?
     var flutterSdkVersion: String?
     var severity: String?
+    var eventUuid: String
 }
 
 @_spi(FlutterBridge)
-public struct ThreadRecord: Encodable, Sendable {
+public struct ThreadRecord: Codable, Sendable {
     /// For MetricKit crashes, this is the crash-attributed thread. The JSON
     /// field name is retained for backend compatibility.
     public let isMain: Bool?
@@ -274,20 +281,240 @@ func imageAddrHex(addressDec: UInt64, offsetIntoTextDec: UInt64) -> String? {
 }
 
 
+/// Outbox retries only help for transient failures. 4xx other than 408/429 will
+/// not succeed on a later attempt, so those records should be dropped.
+func isRetryableTrackingStatusCode(_ statusCode: Int) -> Bool {
+    statusCode >= 500 || statusCode == 408 || statusCode == 429
+}
+
+struct PendingTrackEvent {
+    let eventID: String
+    let event: TrackEvent
+    let payloadSize: Int
+}
+
+struct TrackOutboxLimits: Sendable {
+    let maxQueueSize: Int
+    let maxQueueBytes: Int
+    let maxEventPayloadBytes: Int
+
+    init(
+        maxQueueSize: Int = 5_000,
+        maxQueueBytes: Int = 10 * 1024 * 1024,
+        maxEventPayloadBytes: Int = 500 * 1024
+    ) {
+        self.maxQueueSize = maxQueueSize
+        self.maxQueueBytes = maxQueueBytes
+        self.maxEventPayloadBytes = maxEventPayloadBytes
+    }
+}
+
+final class TrackOutbox {
+    private let persistentContainer: NSPersistentContainer
+    private let limits: TrackOutboxLimits
+
+    init(
+        persistentContainer: NSPersistentContainer,
+        limits: TrackOutboxLimits = TrackOutboxLimits()
+    ) {
+        self.persistentContainer = persistentContainer
+        self.limits = limits
+    }
+
+    func insert(_ event: TrackEvent, enqueuedAt: Date = getCurrentDate()) -> Int? {
+        guard let payload = try? JSONEncoder().encode(event) else {
+            trackWarn("Dropping tracking event because it could not be persisted.")
+            return nil
+        }
+        guard payload.count <= limits.maxEventPayloadBytes else {
+            trackWarn("Dropping oversized tracking event.")
+            return nil
+        }
+
+        let context = persistentContainer.newBackgroundContext()
+        let limits = limits
+        let eventID = event.eventUuid
+        let eventType = event.typename
+        return context.performAndWait {
+            do {
+                try Self.enforceLimits(in: context, limits: limits, incomingByteCount: payload.count)
+
+                let entity = PendingTrackEventEntity(context: context)
+                entity.eventID = eventID
+                entity.payload = payload
+                entity.eventType = eventType.rawValue
+                entity.byteCount = Int64(payload.count)
+                entity.createdAt = enqueuedAt
+                try context.save()
+
+                guard eventType != .Crash else {
+                    return 0
+                }
+                let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
+                request.predicate = NSPredicate(format: "eventType != %@", TrackEvent.Typename.Crash.rawValue)
+                return try context.count(for: request)
+            } catch {
+                context.rollback()
+                trackWarn("Dropping tracking event because the outbox could not be saved: \(error)")
+                return nil
+            }
+        }
+    }
+
+    func nextCrash() throws -> PendingTrackEvent? {
+        try fetch(eventType: TrackEvent.Typename.Crash.rawValue, limit: 1).first
+    }
+
+    func nextNormalBatch(maxEvents: Int, maxPayloadBytes: Int) throws -> [PendingTrackEvent] {
+        let entries = try fetch(excludingEventType: TrackEvent.Typename.Crash.rawValue, limit: maxEvents)
+        var batch = [PendingTrackEvent]()
+        var payloadBytes = 0
+        for entry in entries {
+            if !batch.isEmpty && payloadBytes + entry.payloadSize > maxPayloadBytes {
+                break
+            }
+            batch.append(entry)
+            payloadBytes += entry.payloadSize
+        }
+        return batch
+    }
+
+    func remove(eventIDs: [String]) -> Bool {
+        guard !eventIDs.isEmpty else { return true }
+        let context = persistentContainer.newBackgroundContext()
+        return context.performAndWait {
+            let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
+            request.predicate = NSPredicate(format: "eventID IN %@", eventIDs)
+            do {
+                for entity in try context.fetch(request) {
+                    context.delete(entity)
+                }
+                try context.save()
+                return true
+            } catch {
+                context.rollback()
+                trackWarn("Could not remove delivered tracking events from the outbox: \(error)")
+                return false
+            }
+        }
+    }
+
+    func hasPendingEvents() throws -> Bool {
+        let context = persistentContainer.newBackgroundContext()
+        return try context.performAndWait {
+            let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
+            request.fetchLimit = 1
+            return try context.count(for: request) > 0
+        }
+    }
+
+    private func fetch(eventType: String? = nil, excludingEventType: String? = nil, limit: Int) throws -> [PendingTrackEvent] {
+        let context = persistentContainer.newBackgroundContext()
+        return try context.performAndWait {
+            let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
+            if let eventType {
+                request.predicate = NSPredicate(format: "eventType == %@", eventType)
+            } else if let excludingEventType {
+                request.predicate = NSPredicate(format: "eventType != %@", excludingEventType)
+            }
+            request.fetchLimit = limit
+            request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: true)]
+            do {
+                var pending = [PendingTrackEvent]()
+                for entity in try context.fetch(request) {
+                    guard let event = try? JSONDecoder().decode(TrackEvent.self, from: entity.payload) else {
+                        context.delete(entity)
+                        trackWarn("Dropping corrupt tracking event from the outbox.")
+                        continue
+                    }
+                    pending.append(PendingTrackEvent(
+                        eventID: entity.eventID,
+                        event: event,
+                        payloadSize: Int(entity.byteCount)
+                    ))
+                }
+                if context.hasChanges {
+                    try context.save()
+                }
+                return pending
+            } catch {
+                context.rollback()
+                trackWarn("Could not read tracking events from the outbox: \(error)")
+                throw error
+            }
+        }
+    }
+
+    private static func enforceLimits(
+        in context: NSManagedObjectContext,
+        limits: TrackOutboxLimits,
+        incomingByteCount: Int
+    ) throws {
+        let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
+        var totalCount = try context.count(for: request)
+        var totalBytes = try totalPendingBytes(in: context)
+        var didEvict = false
+
+        let oldestRequest = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
+        oldestRequest.fetchLimit = 1
+        oldestRequest.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: true)]
+        while totalCount + 1 > limits.maxQueueSize || totalBytes + incomingByteCount > limits.maxQueueBytes {
+            guard let entry = try context.fetch(oldestRequest).first else {
+                break
+            }
+            totalCount -= 1
+            totalBytes -= Int(entry.byteCount)
+            context.delete(entry)
+            didEvict = true
+        }
+        if didEvict {
+            trackWarn("Discarded oldest pending tracking events because the outbox limit was reached.")
+        }
+    }
+
+    private static func totalPendingBytes(in context: NSManagedObjectContext) throws -> Int {
+        let totalByteCount = NSExpressionDescription()
+        totalByteCount.name = "totalByteCount"
+        totalByteCount.expression = NSExpression(
+            forFunction: "sum:",
+            arguments: [NSExpression(forKeyPath: "byteCount")]
+        )
+        totalByteCount.expressionResultType = .integer64AttributeType
+
+        let request = NSFetchRequest<NSDictionary>(entityName: "NativebrikPendingTrackEvent")
+        request.resultType = .dictionaryResultType
+        request.propertiesToFetch = [totalByteCount]
+        let result = try context.fetch(request)
+        let byteCount = result.first?[totalByteCount.name] as? NSNumber
+        return byteCount.map { Int($0.int64Value) } ?? 0
+    }
+}
+
 actor TrackRespositoryImpl: TrackRepository2 {
-    private let maxQueueSize: Int
-    private let maxBatchSize: Int
+    private let maxBatchSize = 50
+    private let maxBatchPayloadBytes = 512 * 1024
+    private let maxBatchEventPayloadBytes = 500 * 1024
+    private let flushInterval: TimeInterval = 10
     private let config: Config
     private let user: NubrickUser
+    private let outbox: TrackOutbox
+    private let trackingHTTPClient: any TrackingHTTPClient
     private var flushTask: Task<Void, Never>?
-    private var buffer: [TrackEvent]
-    init(config: Config, user: NubrickUser) {
-        self.maxQueueSize = 300
-        self.maxBatchSize = 50
+    private var scheduledFlushID: UUID?
+    private var isSending = false
+    private var drainWaiters: [CheckedContinuation<Void, Never>] = []
+    private var retryDelay: TimeInterval = 10
+
+    init(
+        config: Config,
+        user: NubrickUser,
+        persistentContainer: NSPersistentContainer,
+        trackingHTTPClient: any TrackingHTTPClient = trackingSession
+    ) {
         self.config = config
         self.user = user
-        self.buffer = []
-        self.flushTask = nil
+        self.outbox = TrackOutbox(persistentContainer: persistentContainer)
+        self.trackingHTTPClient = trackingHTTPClient
     }
 
     private func makeJsonRequest<Body: Encodable>(
@@ -302,79 +529,161 @@ actor TrackRespositoryImpl: TrackRepository2 {
     }
 
     func trackExperimentEvent(_ event: TrackExperimentEvent) {
-        self.pushToQueue(TrackEvent(
+        enqueue(TrackEvent(
             typename: .Experiment,
             experimentId: event.experimentId,
             variantId: event.variantId,
-            timestamp: getCurrentDate().ISO8601Format()
+            timestamp: getCurrentDate().ISO8601Format(),
+            eventUuid: UUID().uuidString
         ))
     }
     
     func trackEvent(_ event: TrackUserEvent) {
-        self.pushToQueue(TrackEvent(
+        enqueue(TrackEvent(
             typename: .Event,
             name: event.name,
-            timestamp: getCurrentDate().ISO8601Format()
+            timestamp: getCurrentDate().ISO8601Format(),
+            eventUuid: UUID().uuidString
         ))
     }
-    
-    private func scheduleFlushTaskIfNeeded() {
-        guard self.flushTask == nil else {return }
-        self.flushTask = Task {
-            defer {
-                self.flushTask = nil
-                if !self.buffer.isEmpty {
-                    self.scheduleFlushTaskIfNeeded()
+
+    func flushNow() async {
+        flushTask?.cancel()
+        flushTask = nil
+        scheduledFlushID = nil
+        await drainOutbox()
+    }
+
+    private func enqueue(_ event: TrackEvent) {
+        guard let pendingNormalEventCount = outbox.insert(event) else { return }
+        if event.typename == .Crash || pendingNormalEventCount >= maxBatchSize {
+            requestFlush(after: 0)
+        } else {
+            requestFlush(after: flushInterval)
+        }
+    }
+
+    private func requestFlush(after delay: TimeInterval) {
+        guard !isSending else { return }
+        if flushTask != nil {
+            guard delay == 0 else { return }
+            flushTask?.cancel()
+            flushTask = nil
+            scheduledFlushID = nil
+        }
+        let flushID = UUID()
+        scheduledFlushID = flushID
+        flushTask = Task { [weak self] in
+            guard let self else { return }
+            if delay > 0 {
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                } catch {
+                    return
                 }
             }
-            do {
-                try await Task.sleep(nanoseconds: 4 * 1_000_000_000)
-            } catch {
-                return
-            }
-            await self.sendAndFlush()
+            guard !Task.isCancelled else { return }
+            await self.runScheduledFlush(id: flushID)
         }
     }
-    
-    private func pushToQueue(_ event: TrackEvent) {
-        scheduleFlushTaskIfNeeded()
 
-        if self.buffer.count >= self.maxBatchSize {
-            Task(priority: .low) {
-                await self.sendAndFlush()
-            }
-        }
-        self.buffer.append(event)
-        if self.buffer.count > self.maxQueueSize {
-            let overflow = self.buffer.count - self.maxQueueSize
-            self.buffer.removeFirst(overflow)
-        }
-        
+    private func runScheduledFlush(id: UUID) async {
+        guard scheduledFlushID == id else { return }
+        flushTask = nil
+        scheduledFlushID = nil
+        await drainOutbox()
     }
-    
-    private func sendAndFlush() async {
-        guard self.buffer.count > 0 else { return }
 
-        let events = self.buffer
-        self.buffer = []
-
-        let userID = await MainActor.run {
-            self.user.id
+    private func drainOutbox() async {
+        if isSending {
+            await withCheckedContinuation { continuation in
+                drainWaiters.append(continuation)
+            }
+            return
         }
-        let trackRequest = TrackRequest(
-            projectId: self.config.projectId,
-            userId: userID,
-            timestamp: getCurrentDate().ISO8601Format(),
-            events: events,
-            meta: await TrackEventMeta.current()
-        )
+
+        isSending = true
+        var retryAfter: TimeInterval?
 
         do {
-            let url = URL(string: config.trackUrl)!
-            let request = try makeJsonRequest(url: url, body: trackRequest)
-            let _ = try await nativebrikSession.data(for: request)
+            while try outbox.hasPendingEvents() {
+                if try await sendNextBatch() {
+                    retryDelay = 10
+                    continue
+                }
+
+                let delay = retryDelay
+                retryDelay = min(retryDelay * 2, 5 * 60)
+                retryAfter = delay
+                break
+            }
         } catch {
-            self.buffer.append(contentsOf: events)
+            trackWarn("Could not drain the tracking outbox: \(error)")
+            let delay = retryDelay
+            retryDelay = min(retryDelay * 2, 5 * 60)
+            retryAfter = delay
+        }
+
+        isSending = false
+        let waiters = drainWaiters
+        drainWaiters.removeAll()
+        for waiter in waiters {
+            waiter.resume()
+        }
+
+        if let retryAfter {
+            requestFlush(after: retryAfter)
+        }
+    }
+
+    private func sendNextBatch() async throws -> Bool {
+        let pending: [PendingTrackEvent]
+        if let crash = try outbox.nextCrash() {
+            pending = [crash]
+        } else {
+            pending = try outbox.nextNormalBatch(maxEvents: maxBatchSize, maxPayloadBytes: maxBatchEventPayloadBytes)
+        }
+        guard !pending.isEmpty else { return true }
+
+        do {
+            let userID = await MainActor.run { self.user.id }
+            let meta = await TrackEventMeta.current()
+            var batch = pending
+
+            while !batch.isEmpty {
+                let trackRequest = TrackRequest(
+                    projectId: config.projectId,
+                    userId: userID,
+                    timestamp: getCurrentDate().ISO8601Format(),
+                    events: batch.map(\.event),
+                    meta: meta
+                )
+                let url = URL(string: config.trackUrl)!
+                let request = try makeJsonRequest(url: url, body: trackRequest)
+                if request.httpBody?.count ?? 0 <= maxBatchPayloadBytes {
+                    let (_, response) = try await trackingHTTPClient.fetchData(for: request)
+                    guard let response = response as? HTTPURLResponse else {
+                        return false
+                    }
+                    if (200...299).contains(response.statusCode) {
+                        return outbox.remove(eventIDs: batch.map(\.eventID))
+                    }
+                    if isRetryableTrackingStatusCode(response.statusCode) {
+                        return false
+                    }
+                    trackWarn("Dropping tracking batch after a non-retryable HTTP \(response.statusCode) response.")
+                    return outbox.remove(eventIDs: batch.map(\.eventID))
+                }
+
+                guard batch.count > 1 else {
+                    trackWarn("Dropping oversized tracking event.")
+                    return outbox.remove(eventIDs: batch.map(\.eventID))
+                }
+                batch.removeLast()
+            }
+            return true
+        } catch {
+            return false
         }
     }
     
@@ -452,35 +761,34 @@ actor TrackRespositoryImpl: TrackRepository2 {
 
         // Only send error tracking events for error or fatal severity
         if crashEvent.severity.isErrorLevel {
-            self.buffer.append(TrackEvent(
+            enqueue(TrackEvent(
                 typename: .Event,
                 name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
                 timestamp: getCurrentDate().ISO8601Format(),
-                platform: nil
+                platform: nil,
+                eventUuid: UUID().uuidString
             ))
         }
         if causedByNativebrik {
             if crashEvent.severity.isErrorLevel {
-                self.buffer.append(TrackEvent(
+                enqueue(TrackEvent(
                     typename: .Event,
                     name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
                     timestamp: getCurrentDate().ISO8601Format(),
-                    platform: nil
+                    platform: nil,
+                    eventUuid: UUID().uuidString
                 ))
             }
-            self.buffer.append(TrackEvent(
+            enqueue(TrackEvent(
                 typename: .Crash,
                 timestamp: getCurrentDate().ISO8601Format(),
                 exceptions: crashEvent.exceptions,
                 threads: crashEvent.threads,
                 platform: crashEvent.platform,
                 flutterSdkVersion: crashEvent.flutterSdkVersion,
-                severity: crashEvent.severity.rawValue
+                severity: crashEvent.severity.rawValue,
+                eventUuid: UUID().uuidString
             ))
-        }
-
-        Task(priority: .utility) {
-            await self.sendAndFlush()
         }
     }
 

@@ -68,20 +68,70 @@ final class UserEventEntity: NSManagedObject {
     }
 }
 
+final class PendingTrackEventEntity: NSManagedObject {
+    @NSManaged var eventID: String
+    @NSManaged var payload: Data
+    @NSManaged var eventType: String
+    @NSManaged var byteCount: Int64
+    @NSManaged var createdAt: Date
+
+    static func entityDescription() -> NSEntityDescription {
+        let entity = NSEntityDescription()
+        entity.name = "NativebrikPendingTrackEvent"
+        entity.managedObjectClassName = NSStringFromClass(PendingTrackEventEntity.self)
+
+        let eventID = NSAttributeDescription()
+        eventID.name = "eventID"
+        eventID.attributeType = .stringAttributeType
+        eventID.isOptional = false
+
+        let payload = NSAttributeDescription()
+        payload.name = "payload"
+        payload.attributeType = .binaryDataAttributeType
+        payload.isOptional = false
+
+        let eventType = NSAttributeDescription()
+        eventType.name = "eventType"
+        eventType.attributeType = .stringAttributeType
+        eventType.isOptional = false
+
+        let byteCount = NSAttributeDescription()
+        byteCount.name = "byteCount"
+        byteCount.attributeType = .integer64AttributeType
+        byteCount.isOptional = false
+
+        let createdAt = NSAttributeDescription()
+        createdAt.name = "createdAt"
+        createdAt.attributeType = .dateAttributeType
+        createdAt.isOptional = false
+
+        entity.properties = [eventID, payload, eventType, byteCount, createdAt]
+        return entity
+    }
+}
+
 @MainActor
 private let nativebrikManagedObjectModel: NSManagedObjectModel = {
     let model = NSManagedObjectModel()
     model.entities = [
         UserEventEntity.entityDescription(),
         ExperimentHistoryEntity.entityDescription(),
+        PendingTrackEventEntity.entityDescription(),
     ]
     return model
 }()
 
 @MainActor
-func createNativebrikCoreDataHelper() -> NSPersistentContainer? {
+func createNativebrikCoreDataHelper(storeURL: URL? = nil) -> NSPersistentContainer? {
     let container = NSPersistentContainer(name: "com.nativebrik.sdk", managedObjectModel: nativebrikManagedObjectModel)
-    container.persistentStoreDescriptions.first?.shouldAddStoreAsynchronously = false
+    if let description = container.persistentStoreDescriptions.first {
+        if let storeURL {
+            description.url = storeURL
+        }
+        description.shouldAddStoreAsynchronously = false
+        description.shouldMigrateStoreAutomatically = true
+        description.shouldInferMappingModelAutomatically = true
+    }
 
     var loadError: Error?
     container.loadPersistentStores { _, error in

@@ -27,7 +27,12 @@ struct NubrickDependencyContainer : Sendable {
         self.user = user
         self.experimentRepository = ExperimentRepositoryImpl(config: config)
         self.componentRepository = ComponentRepositoryImpl(config: config)
-        self.trackRepository = TrackRespositoryImpl(config: config, user: user)
+        let trackRepository = TrackRespositoryImpl(
+            config: config,
+            user: user,
+            persistentContainer: persistentContainer
+        )
+        self.trackRepository = trackRepository
         self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
         self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: httpRequestInterceptor)
         self.actionHandler = actionHandler

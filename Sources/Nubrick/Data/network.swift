@@ -62,6 +62,29 @@ let nativebrikSession: URLSession = {
     return URLSession(configuration: sessionConfig)
 }()
 
+/// Tracking has an independent, longer deadline so a slow acknowledgement does
+/// not cause analytics batches to be discarded with the SDK's other requests.
+let trackingSession: URLSession = {
+    let sessionConfig = URLSessionConfiguration.default
+    sessionConfig.waitsForConnectivity = true
+    sessionConfig.allowsCellularAccess = true
+    sessionConfig.allowsExpensiveNetworkAccess = true
+    sessionConfig.allowsConstrainedNetworkAccess = true
+    sessionConfig.timeoutIntervalForRequest = 30.0
+    sessionConfig.timeoutIntervalForResource = 30.0
+    return URLSession(configuration: sessionConfig)
+}()
+
+protocol TrackingHTTPClient: Sendable {
+    func fetchData(for request: URLRequest) async throws -> (Data, URLResponse)
+}
+
+extension URLSession: TrackingHTTPClient {
+    func fetchData(for request: URLRequest) async throws -> (Data, URLResponse) {
+        try await data(for: request)
+    }
+}
+
 func invalidateCachedResponse(for request: URLRequest) {
     if let url = request.url {
         MemoryResponseCache.shared.remove(url)
