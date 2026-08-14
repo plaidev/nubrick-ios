@@ -23,9 +23,9 @@ private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
     private var responses: [Response] = []
     private var responseWaiters: [CheckedContinuation<Response, Never>] = []
 
-    func trackExperimentEvent(_ event: TrackExperimentEvent) {}
+    func trackExperimentEvent(_ event: TrackExperimentEvent) async {}
 
-    func trackEvent(_ event: TrackUserEvent) {}
+    func trackEvent(_ event: TrackUserEvent) async {}
 
     func flushNow() async {}
 
@@ -33,9 +33,9 @@ private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
         callStackTreeJSON: Data,
         terminationReason: String?,
         exceptionType: UInt32?
-    ) {}
+    ) async {}
 
-    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {}
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async {}
 
     func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {
         let response = Response(
@@ -169,9 +169,9 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let second = makePendingTrackEvent(name: "second")
         let third = makePendingTrackEvent(name: "third")
 
-        XCTAssertNotNil(outbox.insert(first, enqueuedAt: Date(timeIntervalSince1970: 1)))
-        XCTAssertNotNil(outbox.insert(second, enqueuedAt: Date(timeIntervalSince1970: 2)))
-        XCTAssertNotNil(outbox.insert(third, enqueuedAt: Date(timeIntervalSince1970: 3)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, first, enqueuedAt: Date(timeIntervalSince1970: 1)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, second, enqueuedAt: Date(timeIntervalSince1970: 2)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, third, enqueuedAt: Date(timeIntervalSince1970: 3)))
 
         XCTAssertEqual(
             try pendingTrackEventIDs(in: persistentContainer),
@@ -195,8 +195,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
             limits: TrackOutboxLimits(maxQueueSize: 10, maxQueueBytes: byteLimit)
         )
 
-        XCTAssertNotNil(outbox.insert(first, enqueuedAt: Date(timeIntervalSince1970: 1)))
-        XCTAssertNotNil(outbox.insert(second, enqueuedAt: Date(timeIntervalSince1970: 2)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, first, enqueuedAt: Date(timeIntervalSince1970: 1)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, second, enqueuedAt: Date(timeIntervalSince1970: 2)))
 
         XCTAssertEqual(try pendingTrackEventIDs(in: persistentContainer), [second.eventUuid])
     }
@@ -330,8 +330,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let first = makePendingTrackEvent(name: "poison-event")
         let second = makePendingTrackEvent(name: "same-batch-event")
 
-        XCTAssertNotNil(outbox.insert(first, enqueuedAt: Date(timeIntervalSince1970: 1)))
-        XCTAssertNotNil(outbox.insert(second, enqueuedAt: Date(timeIntervalSince1970: 2)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, first, enqueuedAt: Date(timeIntervalSince1970: 1)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, second, enqueuedAt: Date(timeIntervalSince1970: 2)))
 
         await repository.flushNow()
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 0)
@@ -406,8 +406,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let first = makePendingTrackEvent(name: String(repeating: "a", count: 245_000))
         let second = makePendingTrackEvent(name: String(repeating: "b", count: 245_000))
 
-        XCTAssertNotNil(outbox.insert(first, enqueuedAt: Date(timeIntervalSince1970: 1)))
-        XCTAssertNotNil(outbox.insert(second, enqueuedAt: Date(timeIntervalSince1970: 2)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, first, enqueuedAt: Date(timeIntervalSince1970: 1)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, second, enqueuedAt: Date(timeIntervalSince1970: 2)))
 
         await repository.flushNow()
 
@@ -420,6 +420,186 @@ final class HttpRequestReposotiryTests: XCTestCase {
             let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: body) as? [String: Any])
             XCTAssertEqual((json["events"] as? [[String: Any]])?.count, 1)
         }
+    }
+
+    @MainActor
+    func testTrackingFlushUsesUserIdAndMetaCapturedAtTrackTime() async throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let user = NubrickUser()
+        user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-before")
+        let repository = TrackRespositoryImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST),
+            user: user,
+            persistentContainer: persistentContainer,
+            trackingHTTPClient: client
+        )
+
+        await repository.trackEvent(TrackUserEvent(name: "before-switch"))
+        user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-after")
+        await repository.flushNow()
+
+        let requests = await client.recordedRequests()
+        let body = try requestJSON(in: try XCTUnwrap(requests.first))
+        XCTAssertEqual(body["userId"] as? String, "user-before")
+        let meta = try XCTUnwrap(body["meta"] as? [String: Any])
+        XCTAssertEqual(meta["sdkVersion"] as? String, NubrickConstants.sdkVersion)
+        XCTAssertEqual(meta["platform"] as? String, "ios")
+    }
+
+    @MainActor
+    func testTrackingFlushSendsSeparateRequestsWhenCapturedUserIdChanges() async throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let user = NubrickUser()
+        user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-a")
+        let repository = TrackRespositoryImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST),
+            user: user,
+            persistentContainer: persistentContainer,
+            trackingHTTPClient: client
+        )
+
+        await repository.trackEvent(TrackUserEvent(name: "event-a"))
+        user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-b")
+        await repository.trackEvent(TrackUserEvent(name: "event-b"))
+        await repository.flushNow()
+
+        let requests = await client.recordedRequests()
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertEqual(try requestJSON(in: requests[0])["userId"] as? String, "user-a")
+        XCTAssertEqual(try eventNames(in: requests[0]), ["event-a"])
+        XCTAssertEqual(try requestJSON(in: requests[1])["userId"] as? String, "user-b")
+        XCTAssertEqual(try eventNames(in: requests[1]), ["event-b"])
+    }
+
+    @MainActor
+    func testTrackingFlushSendsSeparateRequestsWhenCapturedMetaChanges() async throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let outbox = TrackOutbox(persistentContainer: persistentContainer)
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let repository = TrackRespositoryImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST),
+            user: NubrickUser(),
+            persistentContainer: persistentContainer,
+            trackingHTTPClient: client
+        )
+        let firstMeta = TrackEventMeta(
+            appId: "app.one",
+            appVersion: "1.0.0",
+            cfBundleVersion: "1",
+            osName: "iOS",
+            osVersion: "18.0",
+            sdkVersion: "1.0.0"
+        )
+        let secondMeta = TrackEventMeta(
+            appId: "app.one",
+            appVersion: "2.0.0",
+            cfBundleVersion: "2",
+            osName: "iOS",
+            osVersion: "18.1",
+            sdkVersion: "1.1.0"
+        )
+
+        XCTAssertNotNil(insertOutboxEvent(
+            outbox,
+            makePendingTrackEvent(name: "old-app"),
+            userId: "same-user",
+            meta: firstMeta,
+            enqueuedAt: Date(timeIntervalSince1970: 1)
+        ))
+        XCTAssertNotNil(insertOutboxEvent(
+            outbox,
+            makePendingTrackEvent(name: "new-app"),
+            userId: "same-user",
+            meta: secondMeta,
+            enqueuedAt: Date(timeIntervalSince1970: 2)
+        ))
+
+        await repository.flushNow()
+
+        let requests = await client.recordedRequests()
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertEqual(try requestJSON(in: requests[0])["meta"] as? [String: String], [
+            "appId": "app.one",
+            "appVersion": "1.0.0",
+            "cfBundleVersion": "1",
+            "osName": "iOS",
+            "osVersion": "18.0",
+            "sdkVersion": "1.0.0",
+            "platform": "ios",
+        ])
+        XCTAssertEqual(try requestJSON(in: requests[1])["meta"] as? [String: String], [
+            "appId": "app.one",
+            "appVersion": "2.0.0",
+            "cfBundleVersion": "2",
+            "osName": "iOS",
+            "osVersion": "18.1",
+            "sdkVersion": "1.1.0",
+            "platform": "ios",
+        ])
+    }
+
+    @MainActor
+    func testCoreDataMigratesOutboxStoreWithoutCapturedRequestContext() throws {
+        let storeURL = makeTemporaryStoreURL()
+        defer { removeSQLiteStore(at: storeURL) }
+
+        let previousModel = NSManagedObjectModel()
+        previousModel.entities = [
+            UserEventEntity.entityDescription(),
+            ExperimentHistoryEntity.entityDescription(),
+            previousOutboxEntityDescription(),
+        ]
+        let previousContainer = NSPersistentContainer(
+            name: "com.nativebrik.sdk",
+            managedObjectModel: previousModel
+        )
+        let previousDescription = NSPersistentStoreDescription(url: storeURL)
+        previousDescription.shouldAddStoreAsynchronously = false
+        previousContainer.persistentStoreDescriptions = [previousDescription]
+
+        var previousLoadError: Error?
+        previousContainer.loadPersistentStores { _, error in
+            previousLoadError = error
+        }
+        XCTAssertNil(previousLoadError)
+
+        let previousOutboxEntity = try XCTUnwrap(
+            previousModel.entitiesByName["NativebrikPendingTrackEvent"]
+        )
+        let previousEvent = PendingTrackEventEntity(
+            entity: previousOutboxEntity,
+            insertInto: previousContainer.viewContext
+        )
+        previousEvent.eventID = "legacy-event"
+        previousEvent.payload = Data("{}".utf8)
+        previousEvent.eventType = "event"
+        previousEvent.byteCount = Int64(previousEvent.payload.count)
+        previousEvent.createdAt = Date(timeIntervalSince1970: 1)
+        try previousContainer.viewContext.save()
+        previousContainer.viewContext.reset()
+        let previousStore = try XCTUnwrap(previousContainer.persistentStoreCoordinator.persistentStores.first)
+        try previousContainer.persistentStoreCoordinator.remove(previousStore)
+
+        let migratedContainer = try XCTUnwrap(
+            createNativebrikCoreDataHelper(storeURL: storeURL),
+            "Expected the current SDK to migrate the previous outbox store"
+        )
+        let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
+        let migratedEvents = try migratedContainer.viewContext.fetch(request)
+        XCTAssertEqual(migratedEvents.map(\.eventID), ["legacy-event"])
+        XCTAssertNil(migratedEvents.first?.userId)
+        XCTAssertNil(migratedEvents.first?.metaPayload)
+        migratedContainer.viewContext.reset()
+        let migratedStore = try XCTUnwrap(migratedContainer.persistentStoreCoordinator.persistentStores.first)
+        try migratedContainer.persistentStoreCoordinator.remove(migratedStore)
     }
 
     @MainActor
@@ -446,7 +626,13 @@ final class HttpRequestReposotiryTests: XCTestCase {
         }
         XCTAssertNil(legacyLoadError)
 
-        let legacyEvent = UserEventEntity(context: legacyContainer.viewContext)
+        let legacyUserEventEntity = try XCTUnwrap(
+            legacyModel.entitiesByName["NativebrikUserEvent"]
+        )
+        let legacyEvent = UserEventEntity(
+            entity: legacyUserEventEntity,
+            insertInto: legacyContainer.viewContext
+        )
         legacyEvent.name = "event-created-by-old-sdk"
         legacyEvent.timestamp = Date(timeIntervalSince1970: 0)
         try legacyContainer.viewContext.save()
@@ -464,7 +650,13 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let migratedEvents = try migratedContext.fetch(legacyRequest)
         XCTAssertEqual(migratedEvents.map(\.name), ["event-created-by-old-sdk"])
 
-        let outboxEvent = PendingTrackEventEntity(context: migratedContext)
+        let migratedOutboxEntity = try XCTUnwrap(
+            migratedContainer.managedObjectModel.entitiesByName["NativebrikPendingTrackEvent"]
+        )
+        let outboxEvent = PendingTrackEventEntity(
+            entity: migratedOutboxEntity,
+            insertInto: migratedContext
+        )
         outboxEvent.eventID = UUID().uuidString
         outboxEvent.payload = Data("{}".utf8)
         outboxEvent.eventType = "event"
@@ -493,10 +685,64 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     private func eventNames(in request: URLRequest) throws -> [String] {
-        let payload = try XCTUnwrap(request.httpBody)
-        let body = try XCTUnwrap(try JSONSerialization.jsonObject(with: payload) as? [String: Any])
-        let events = try XCTUnwrap(body["events"] as? [[String: Any]])
+        let events = try XCTUnwrap(requestJSON(in: request)["events"] as? [[String: Any]])
         return events.map { $0["name"] as? String ?? "" }
+    }
+
+    private func requestJSON(in request: URLRequest) throws -> [String: Any] {
+        let payload = try XCTUnwrap(request.httpBody)
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: payload) as? [String: Any])
+    }
+
+    private func insertOutboxEvent(
+        _ outbox: TrackOutbox,
+        _ event: TrackEvent,
+        userId: String = "test-user",
+        meta: TrackEventMeta = TrackEventMeta(
+            appId: "test.app",
+            appVersion: "1.0.0",
+            cfBundleVersion: "1",
+            osName: "iOS",
+            osVersion: "18.0",
+            sdkVersion: "0.0.0"
+        ),
+        enqueuedAt: Date
+    ) -> Int? {
+        outbox.insert(event, userId: userId, meta: meta, enqueuedAt: enqueuedAt)
+    }
+
+    private func previousOutboxEntityDescription() -> NSEntityDescription {
+        let entity = NSEntityDescription()
+        entity.name = "NativebrikPendingTrackEvent"
+        entity.managedObjectClassName = NSStringFromClass(PendingTrackEventEntity.self)
+
+        let eventID = NSAttributeDescription()
+        eventID.name = "eventID"
+        eventID.attributeType = .stringAttributeType
+        eventID.isOptional = false
+
+        let payload = NSAttributeDescription()
+        payload.name = "payload"
+        payload.attributeType = .binaryDataAttributeType
+        payload.isOptional = false
+
+        let eventType = NSAttributeDescription()
+        eventType.name = "eventType"
+        eventType.attributeType = .stringAttributeType
+        eventType.isOptional = false
+
+        let byteCount = NSAttributeDescription()
+        byteCount.name = "byteCount"
+        byteCount.attributeType = .integer64AttributeType
+        byteCount.isOptional = false
+
+        let createdAt = NSAttributeDescription()
+        createdAt.name = "createdAt"
+        createdAt.attributeType = .dateAttributeType
+        createdAt.isOptional = false
+
+        entity.properties = [eventID, payload, eventType, byteCount, createdAt]
+        return entity
     }
 
     private func makePendingTrackEvent(name: String) -> TrackEvent {

@@ -151,17 +151,17 @@ public enum CrashSeverity: String, Sendable {
 }
 
 protocol TrackRepository2 : Actor {
-    func trackExperimentEvent(_ event: TrackExperimentEvent)
-    func trackEvent(_ event: TrackUserEvent)
+    func trackExperimentEvent(_ event: TrackExperimentEvent) async
+    func trackEvent(_ event: TrackUserEvent) async
     func flushNow() async
 
     func processMetricKitCrash(
         callStackTreeJSON: Data,
         terminationReason: String?,
         exceptionType: UInt32?
-    )
+    ) async
 
-    func sendFlutterCrash(_ crashEvent: TrackCrashEvent)
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async
     func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async
 }
 
@@ -231,7 +231,7 @@ func isNubrickCausedCrash(_ crashEvent: TrackCrashEvent) -> Bool {
     }
 }
 
-struct TrackEventMeta: Encodable {
+struct TrackEventMeta: Codable, Equatable {
     var appId: String?
     var appVersion: String?
     var cfBundleVersion: String?
@@ -291,6 +291,8 @@ struct PendingTrackEvent {
     let eventID: String
     let event: TrackEvent
     let payloadSize: Int
+    let userId: String?
+    let meta: TrackEventMeta?
 }
 
 struct TrackOutboxLimits: Sendable {
@@ -321,7 +323,12 @@ final class TrackOutbox {
         self.limits = limits
     }
 
-    func insert(_ event: TrackEvent, enqueuedAt: Date = getCurrentDate()) -> Int? {
+    func insert(
+        _ event: TrackEvent,
+        userId: String,
+        meta: TrackEventMeta,
+        enqueuedAt: Date = getCurrentDate()
+    ) -> Int? {
         guard let payload = try? JSONEncoder().encode(event) else {
             trackWarn("Dropping tracking event because it could not be persisted.")
             return nil
@@ -335,6 +342,7 @@ final class TrackOutbox {
         let limits = limits
         let eventID = event.eventUuid
         let eventType = event.typename
+        let metaPayload = try? JSONEncoder().encode(meta)
         return context.performAndWait {
             do {
                 try Self.enforceLimits(in: context, limits: limits, incomingByteCount: payload.count)
@@ -345,6 +353,8 @@ final class TrackOutbox {
                 entity.eventType = eventType.rawValue
                 entity.byteCount = Int64(payload.count)
                 entity.createdAt = enqueuedAt
+                entity.userId = userId
+                entity.metaPayload = metaPayload
                 try context.save()
 
                 guard eventType != .Crash else {
@@ -367,9 +377,13 @@ final class TrackOutbox {
 
     func nextNormalBatch(maxEvents: Int, maxPayloadBytes: Int) throws -> [PendingTrackEvent] {
         let entries = try fetch(excludingEventType: TrackEvent.Typename.Crash.rawValue, limit: maxEvents)
+        guard let first = entries.first else { return [] }
         var batch = [PendingTrackEvent]()
         var payloadBytes = 0
         for entry in entries {
+            if entry.userId != first.userId || entry.meta != first.meta {
+                break
+            }
             if !batch.isEmpty && payloadBytes + entry.payloadSize > maxPayloadBytes {
                 break
             }
@@ -427,10 +441,18 @@ final class TrackOutbox {
                         trackWarn("Dropping corrupt tracking event from the outbox.")
                         continue
                     }
+                    let meta: TrackEventMeta?
+                    if let metaPayload = entity.metaPayload {
+                        meta = try? JSONDecoder().decode(TrackEventMeta.self, from: metaPayload)
+                    } else {
+                        meta = nil
+                    }
                     pending.append(PendingTrackEvent(
                         eventID: entity.eventID,
                         event: event,
-                        payloadSize: Int(entity.byteCount)
+                        payloadSize: Int(entity.byteCount),
+                        userId: entity.userId,
+                        meta: meta
                     ))
                 }
                 if context.hasChanges {
@@ -528,8 +550,8 @@ actor TrackRespositoryImpl: TrackRepository2 {
         return request
     }
 
-    func trackExperimentEvent(_ event: TrackExperimentEvent) {
-        enqueue(TrackEvent(
+    func trackExperimentEvent(_ event: TrackExperimentEvent) async {
+        await enqueue(TrackEvent(
             typename: .Experiment,
             experimentId: event.experimentId,
             variantId: event.variantId,
@@ -538,8 +560,8 @@ actor TrackRespositoryImpl: TrackRepository2 {
         ))
     }
     
-    func trackEvent(_ event: TrackUserEvent) {
-        enqueue(TrackEvent(
+    func trackEvent(_ event: TrackUserEvent) async {
+        await enqueue(TrackEvent(
             typename: .Event,
             name: event.name,
             timestamp: getCurrentDate().ISO8601Format(),
@@ -554,8 +576,15 @@ actor TrackRespositoryImpl: TrackRepository2 {
         await drainOutbox()
     }
 
-    private func enqueue(_ event: TrackEvent) {
-        guard let pendingNormalEventCount = outbox.insert(event) else { return }
+    private func enqueue(_ event: TrackEvent) async {
+        let (userId, meta) = await MainActor.run {
+            (self.user.id, TrackEventMeta.current())
+        }
+        enqueue(event, userId: userId, meta: meta)
+    }
+
+    private func enqueue(_ event: TrackEvent, userId: String, meta: TrackEventMeta) {
+        guard let pendingNormalEventCount = outbox.insert(event, userId: userId, meta: meta) else { return }
         if event.typename == .Crash || pendingNormalEventCount >= maxBatchSize {
             requestFlush(after: 0)
         } else {
@@ -646,8 +675,11 @@ actor TrackRespositoryImpl: TrackRepository2 {
         guard !pending.isEmpty else { return true }
 
         do {
-            let userID = await MainActor.run { self.user.id }
-            let meta = await TrackEventMeta.current()
+            let (liveUserId, liveMeta) = await MainActor.run {
+                (self.user.id, TrackEventMeta.current())
+            }
+            let userID = pending[0].userId ?? liveUserId
+            let meta = pending[0].meta ?? liveMeta
             var batch = pending
 
             while !batch.isEmpty {
@@ -691,7 +723,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
         callStackTreeJSON: Data,
         terminationReason: String?,
         exceptionType: UInt32?
-    ) {
+    ) async {
         if let callStackTree = try? JSONDecoder().decode(
             CallStackTree.self,
             from: callStackTreeJSON
@@ -752,11 +784,14 @@ actor TrackRespositoryImpl: TrackRepository2 {
                 threads: threads,
                 platform: "ios"
             )
-            sendCrashToBackend(crashEvent)
+            await sendCrashToBackend(crashEvent)
         }
     }
 
-    private func sendCrashToBackend(_ crashEvent: TrackCrashEvent) {
+    private func sendCrashToBackend(_ crashEvent: TrackCrashEvent) async {
+        let (userId, meta) = await MainActor.run {
+            (self.user.id, TrackEventMeta.current())
+        }
         let causedByNativebrik = isNubrickCausedCrash(crashEvent)
 
         // Only send error tracking events for error or fatal severity
@@ -767,7 +802,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
                 timestamp: getCurrentDate().ISO8601Format(),
                 platform: nil,
                 eventUuid: UUID().uuidString
-            ))
+            ), userId: userId, meta: meta)
         }
         if causedByNativebrik {
             if crashEvent.severity.isErrorLevel {
@@ -777,7 +812,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
                     timestamp: getCurrentDate().ISO8601Format(),
                     platform: nil,
                     eventUuid: UUID().uuidString
-                ))
+                ), userId: userId, meta: meta)
             }
             enqueue(TrackEvent(
                 typename: .Crash,
@@ -788,12 +823,12 @@ actor TrackRespositoryImpl: TrackRepository2 {
                 flutterSdkVersion: crashEvent.flutterSdkVersion,
                 severity: crashEvent.severity.rawValue,
                 eventUuid: UUID().uuidString
-            ))
+            ), userId: userId, meta: meta)
         }
     }
 
-    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) {
-        sendCrashToBackend(crashEvent)
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async {
+        await sendCrashToBackend(crashEvent)
     }
 
     func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {
