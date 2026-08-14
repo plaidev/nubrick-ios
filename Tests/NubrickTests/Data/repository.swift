@@ -571,7 +571,13 @@ final class HttpRequestReposotiryTests: XCTestCase {
         }
         XCTAssertNil(previousLoadError)
 
-        let previousEvent = PendingTrackEventEntity(context: previousContainer.viewContext)
+        let previousOutboxEntity = try XCTUnwrap(
+            previousModel.entitiesByName["NativebrikPendingTrackEvent"]
+        )
+        let previousEvent = PendingTrackEventEntity(
+            entity: previousOutboxEntity,
+            insertInto: previousContainer.viewContext
+        )
         previousEvent.eventID = "legacy-event"
         previousEvent.payload = Data("{}".utf8)
         previousEvent.eventType = "event"
@@ -620,7 +626,13 @@ final class HttpRequestReposotiryTests: XCTestCase {
         }
         XCTAssertNil(legacyLoadError)
 
-        let legacyEvent = UserEventEntity(context: legacyContainer.viewContext)
+        let legacyUserEventEntity = try XCTUnwrap(
+            legacyModel.entitiesByName["NativebrikUserEvent"]
+        )
+        let legacyEvent = UserEventEntity(
+            entity: legacyUserEventEntity,
+            insertInto: legacyContainer.viewContext
+        )
         legacyEvent.name = "event-created-by-old-sdk"
         legacyEvent.timestamp = Date(timeIntervalSince1970: 0)
         try legacyContainer.viewContext.save()
@@ -638,7 +650,13 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let migratedEvents = try migratedContext.fetch(legacyRequest)
         XCTAssertEqual(migratedEvents.map(\.name), ["event-created-by-old-sdk"])
 
-        let outboxEvent = PendingTrackEventEntity(context: migratedContext)
+        let migratedOutboxEntity = try XCTUnwrap(
+            migratedContainer.managedObjectModel.entitiesByName["NativebrikPendingTrackEvent"]
+        )
+        let outboxEvent = PendingTrackEventEntity(
+            entity: migratedOutboxEntity,
+            insertInto: migratedContext
+        )
         outboxEvent.eventID = UUID().uuidString
         outboxEvent.payload = Data("{}".utf8)
         outboxEvent.eventType = "event"
