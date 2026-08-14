@@ -56,6 +56,51 @@ private final class AppMetrics: NSObject, MXMetricManagerSubscriber {
 }
 
 @MainActor
+private final class TrackingLifecycleObserver {
+    private var observers = [NSObjectProtocol]()
+
+    init(trackRepository: TrackRepository2) {
+        let trackRepository = trackRepository
+        let center = NotificationCenter.default
+        observers.append(center.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task {
+                await trackRepository.flushNow()
+            }
+        })
+        observers.append(center.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            // queue: .main delivers this on the main thread. Register the
+            // background task before returning so iOS does not suspend first.
+            MainActor.assumeIsolated {
+                Self.flushInBackground(trackRepository: trackRepository)
+            }
+        })
+    }
+
+    private static func flushInBackground(trackRepository: TrackRepository2) {
+        var taskID = UIBackgroundTaskIdentifier.invalid
+        taskID = UIApplication.shared.beginBackgroundTask(withName: "Nubrick tracking flush") {
+            guard taskID != .invalid else { return }
+            UIApplication.shared.endBackgroundTask(taskID)
+            taskID = .invalid
+        }
+        Task {
+            await trackRepository.flushNow()
+            guard taskID != .invalid else { return }
+            UIApplication.shared.endBackgroundTask(taskID)
+            taskID = .invalid
+        }
+    }
+}
+
+@MainActor
 private func openLink(_ event: ComponentEvent) {
     guard let link = event.deepLink,
           let url = URL(string: link),
@@ -152,6 +197,7 @@ final class NubrickCore {
     private let dependencies: NubrickDependencyContainer
     private let overlayVC: OverlayViewController
     private let bridgeCallbackStore: BridgeCallbackStore
+    private let trackingLifecycleObserver: TrackingLifecycleObserver
 
     init?(
         projectId: String,
@@ -188,12 +234,16 @@ final class NubrickCore {
 
         self.bridgeCallbackStore = bridgeCallbackStore
         self.dependencies = dependencies
+        self.trackingLifecycleObserver = TrackingLifecycleObserver(trackRepository: dependencies.trackRepository)
         self.overlayVC = OverlayViewController(
             user: user,
             container: dependencies.makeContainer(),
             onDispatch: onDispatch,
             onTooltip: onTooltip
         )
+        Task {
+            await dependencies.trackRepository.flushNow()
+        }
     }
 
     func dispatch(_ event: NubrickEvent) {
