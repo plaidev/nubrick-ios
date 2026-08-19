@@ -104,6 +104,19 @@ final class EmbeddingUIViewTests: XCTestCase {
     }
 
     @MainActor
+    func testEmbeddingClipsItsContentsToItsBounds() throws {
+        let view = EmbeddingUIView(
+            experimentId: "EMBEDDING_1",
+            container: try makeContainer(),
+            modalViewController: nil,
+            onEvent: nil,
+            fallback: { _ in UIView() }
+        )
+
+        XCTAssertTrue(view.clipsToBounds)
+    }
+
+    @MainActor
     func testEmbeddingOnSizeChange() {
         let expectation = expectation(description: "onSizeChange should be called")
 
