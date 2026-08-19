@@ -81,6 +81,10 @@ class EmbeddingUIView: UIView, NubrickEmbeddingUpdatable {
             }
         }
         super.init(frame: .zero)
+        // Embeddings are hosted inside an application's view hierarchy. Keep
+        // remotely rendered content (and loading/fallback views) from drawing
+        // beyond the bounds the host application assigns to this view.
+        self.clipsToBounds = true
 
         self.configureLayout { layout in
             layout.isEnabled = true
@@ -198,6 +202,7 @@ struct ComponentView: View {
             height: $height
         )
         .frame(width: frameWidth, height: frameHeight)
+        .clipped()
     }
 }
 
@@ -356,6 +361,7 @@ struct EmbeddingSwiftView: View {
         ZStack {
             self._content(self.phase)
         }
+            .clipped()
             .task(id: fetchKey) {
                 await data.fetchEmbeddingAndUpdatePhase(
                     experimentId: experimentId,
