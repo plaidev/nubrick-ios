@@ -724,6 +724,7 @@ struct UITextBlock: Decodable, Encodable {
 struct UITextBlockData: Decodable, Encodable {
   var value: String?
   var size: Int?
+  var lineHeight: Float?
   var color: ColorValue?
   var design: FontDesign?
   var weight: FontWeight?

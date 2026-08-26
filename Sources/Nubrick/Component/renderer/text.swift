@@ -2,6 +2,8 @@ import Combine
 import Foundation
 import UIKit
 
+private let defaultTextLineHeightRatio: Float = 1.2
+
 class TextView: AnimatedUIView, BackgroundImageObserver {
     var label: UILabel = UILabel()
     var block: UITextBlock = UITextBlock()
@@ -20,10 +22,15 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.display = .flex
+            layout.flexDirection = .row
             layout.direction = .LTR
+            layout.alignItems = .center
+            configurePadding(layout: layout, frame: block.data?.frame)
             configureBorderWidth(layout: layout, frame: block.data?.frame)
+            configureSize(
+                layout: layout, frame: block.data?.frame,
+                parentDirection: context.getParentDireciton())
         }
-
         let label = UILabel()
         label.yoga.isEnabled = true
         if let color = block.data?.color {
@@ -31,7 +38,7 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
         } else {
             label.textColor = .label
         }
-        label.font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
+        label.adjustsFontForContentSizeCategory = true
         if let maxLines = block.data?.maxLines {
             label.numberOfLines = maxLines
         } else {
@@ -54,6 +61,39 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
     override func layoutSubviews() {
         super.layoutSubviews()
         configureBorder(view: self, frame: self.block.data?.frame)
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard previousTraitCollection?.preferredContentSizeCategory
+            != traitCollection.preferredContentSizeCategory else { return }
+
+        setText(label.attributedText?.string ?? label.text ?? "")
+        invalidateYogaLayout(from: label, layoutRoot: context?.getLayoutInvalidationRoot())
+    }
+
+    private func setText(_ text: String) {
+        let baseFont = parseTextBlockDataToUIFont(
+            block.data?.size, block.data?.weight, block.data?.design)
+        let metrics = UIFontMetrics.default
+        let font = metrics.scaledFont(for: baseFont, compatibleWith: traitCollection)
+        let baseLineHeight = CGFloat(
+            block.data?.lineHeight
+                ?? Float(block.data?.size ?? 16) * defaultTextLineHeightRatio)
+        let lineHeight = metrics.scaledValue(
+            for: baseLineHeight,
+            compatibleWith: traitCollection)
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.minimumLineHeight = lineHeight
+        paragraphStyle.maximumLineHeight = lineHeight
+
+        label.font = font
+        label.attributedText = NSAttributedString(
+            string: text,
+            attributes: [
+                .font: font,
+                .paragraphStyle: paragraphStyle,
+            ])
     }
 
     private func bindVariable() {
@@ -86,7 +126,7 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
                     }
 
                     removeSkelton(view: self, frame: self.block.data?.frame)
-                    self.label.text = text
+                    self.setText(text)
                     if let color = self.block.data?.color {
                         self.label.textColor = parseColor(color)
                     } else {
@@ -100,7 +140,7 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
                 }
                 .store(in: &self.cancellables)
         } else {
-            self.label.text = textTemplate
+            self.setText(textTemplate)
         }
 
         if let template = self.block.data?.frame?.backgroundSrc {
