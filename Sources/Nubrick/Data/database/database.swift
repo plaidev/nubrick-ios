@@ -56,13 +56,39 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         guard let frequency = frequency else {
             return true
         }
-        let calendar = Calendar(identifier: .gregorian)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2 // Monday, matching Android's calendar-week boundary.
+        calendar.minimumDaysInFirstWeek = 4
         let value = frequency.period ?? (365 * 50)
+        guard value > 0 else {
+            return true
+        }
         let unit = frequency.unit ?? .DAY
 
-        // Use helper to compute the date boundary.
-        let baseDate: Date = (unit == .MINUTE || unit == .HOUR) ? getCurrentDate() : getToday()
-        let after = unit.subtract(value, from: baseDate, calendar: calendar)
+        // Minute/hour frequencies are rolling windows. Longer units are calendar periods.
+        let baseDate: Date
+        switch unit {
+        case .MINUTE, .HOUR:
+            baseDate = getCurrentDate()
+        case .DAY, .unknown:
+            baseDate = calendar.startOfDay(for: getCurrentDate())
+        case .WEEK:
+            baseDate = calendar.dateInterval(of: .weekOfYear, for: getCurrentDate())?.start
+                ?? calendar.startOfDay(for: getCurrentDate())
+        case .MONTH:
+            baseDate = calendar.dateInterval(of: .month, for: getCurrentDate())?.start
+                ?? calendar.startOfDay(for: getCurrentDate())
+        }
+
+        // The current calendar unit is included in the frequency interval.
+        let unitsToSubtract: Int
+        switch unit {
+        case .DAY, .WEEK, .MONTH, .unknown:
+            unitsToSubtract = max(value - 1, 0)
+        case .MINUTE, .HOUR:
+            unitsToSubtract = value
+        }
+        let after = unit.subtract(unitsToSubtract, from: baseDate, calendar: calendar)
         let count = await self.experimentHisotryCountAfter(experimentId: experimentId, after: after)
         return count == 0
     }
