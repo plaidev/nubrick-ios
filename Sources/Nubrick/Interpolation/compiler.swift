@@ -18,17 +18,7 @@ fileprivate let placeholderRegex: NSRegularExpression? = {
     try? NSRegularExpression(pattern: placeholderPattern, options: [])
 }()
 
-fileprivate func getPlaceholder(placeholder: String) -> TemplatePlaceholder? {
-    guard let regex = placeholderRegex else {
-        return nil
-    }
-    let ns = placeholder as NSString
-    let range = NSRange(location: 0, length: ns.length)
-    guard let match = regex.firstMatch(in: placeholder, range: range),
-          match.range.location == 0,
-          match.range.length == ns.length else {
-        return nil
-    }
+fileprivate func templatePlaceholder(from match: NSTextCheckingResult, in ns: NSString) -> TemplatePlaceholder {
     let path = ns.substring(with: match.range(at: 1))
     var formatter = ""
     if match.numberOfRanges > 2 {
@@ -55,11 +45,8 @@ func hasDataPlaceholderPath(template: String) -> Bool {
     let templateAsNsstring = template as NSString
     let matches = regex.matches(in: template, range: NSRange(location: 0, length: templateAsNsstring.length))
     return matches.contains { match in
-        let rawPlaceholder = templateAsNsstring.substring(with: match.range)
-        guard let placeholder = getPlaceholder(placeholder: rawPlaceholder) else {
-            return false
-        }
-        return placeholder.path == "data" || placeholder.path.hasPrefix("data.")
+        let path = templatePlaceholder(from: match, in: templateAsNsstring).path
+        return path == "data" || path.hasPrefix("data.")
     }
 }
 
@@ -68,29 +55,23 @@ func compile(_ template: String, _ variable: Variable?) -> String {
         return template
     }
     let raw = variable?.value
-    var result = template as NSString
-    for _ in 1...20 { // not to loop infinitly, limit to the 20 loops at maximum.
-        // search the first matched {{palceholder}}, and replace it by a value.
-        let range = NSRange(location: 0, length: result.length)
-        guard let match = regex.firstMatch(in: result as String, range: range) else {
-            break
-        }
-        let rawPlaceholder = result.substring(with: match.range)
-        guard let placeholder = getPlaceholder(placeholder: rawPlaceholder) else {
-            break
-        }
-        if placeholder.path == "" {
-            break
-        }
-        let value = variableByPath(path: placeholder.path, variable: raw)
+    let ns = template as NSString
+    let matches = regex.matches(in: template, range: NSRange(location: 0, length: ns.length))
+    guard !matches.isEmpty else {
+        return template
+    }
 
-        // format value when the placeholer is like {{ path | formatter }}
-        let valueStr = formatValue(formatter: placeholder.formatter, value: value)
-        result = result.replacingOccurrences(of: rawPlaceholder, with: valueStr) as NSString
+    let result = NSMutableString(string: template)
+    for match in matches.reversed() {
+        let placeholder = templatePlaceholder(from: match, in: ns)
+        let valueStr = formatValue(
+            formatter: placeholder.formatter,
+            value: variableByPath(path: placeholder.path, variable: raw)
+        )
+        result.replaceCharacters(in: match.range, with: valueStr)
     }
     return result as String
 }
-
 
 func variableByPath(path: String, variable: Any?) -> Any? {
     let keys = path.split(separator: ".")

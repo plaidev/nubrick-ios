@@ -143,5 +143,24 @@ final class CompileTemplateTests: XCTestCase {
         XCTAssertNil(variableByPath(path: "$.user.id", variable: variable))
         XCTAssertNil(variableByPath(path: "$", variable: variable))
     }
+
+    func testCompileReplacesMoreThanTwentyPlaceholders() throws {
+        let count = 25
+        let template = (1...count).map { "{{ v\($0) }}" }.joined(separator: " ")
+        var values: [String: Any] = [:]
+        for i in 1...count {
+            values["v\(i)"] = String(i)
+        }
+        let expected = (1...count).map { String($0) }.joined(separator: " ")
+        XCTAssertEqual(expected, compile(template, Variable(value: values)))
+    }
+
+    func testCompileDoesNotRescanReplacementValues() throws {
+        let variable = Variable(value: [
+            "name": "{{ user.id }}",
+            "user": ["id": "userid"],
+        ])
+        XCTAssertEqual("{{ user.id }}", compile("{{ name }}", variable))
+    }
 }
 
