@@ -108,4 +108,40 @@ final class CompileTemplateTests: XCTestCase {
         let result = compile(template, variable)
         XCTAssertEqual("null", result)
     }
+
+    func testHasPlaceholderPathGolden() throws {
+        XCTAssertTrue(hasPlaceholderPath(template: "{{user.name}}"))
+        XCTAssertTrue(hasPlaceholderPath(template: "Hello {{ user.name }}"))
+        XCTAssertTrue(hasPlaceholderPath(template: "{{user.name | upper}}"))
+        XCTAssertTrue(hasPlaceholderPath(template: "{{ user.name | json }}"))
+        XCTAssertFalse(hasPlaceholderPath(template: "{{}}"))
+        XCTAssertFalse(hasPlaceholderPath(template: "{user.name}"))
+        XCTAssertFalse(hasPlaceholderPath(template: "{{user.name"))
+        XCTAssertFalse(hasPlaceholderPath(template: "{{$.user.id}}"))
+        XCTAssertFalse(hasPlaceholderPath(template: "{{user:name}}"))
+        XCTAssertFalse(hasPlaceholderPath(template: "{{foo/bar}}"))
+    }
+
+    func testCompileLeavesNonMatchingTokensLiteral() throws {
+        let variable = Variable(value: ["name": "John"])
+        XCTAssertEqual("{{$.name}}", compile("{{$.name}}", variable))
+        XCTAssertEqual("{{user:name}} {{foo/bar}} {{}}", compile("{{user:name}} {{foo/bar}} {{}}", variable))
+    }
+
+    func testHasDataPlaceholderPath() throws {
+        XCTAssertTrue(hasDataPlaceholderPath(template: "hello {{data.id}}"))
+        XCTAssertTrue(hasDataPlaceholderPath(template: "hello {{ data.id | json }}"))
+        XCTAssertFalse(hasDataPlaceholderPath(template: "hello {{user.data.id}}"))
+        XCTAssertFalse(hasDataPlaceholderPath(template: "hello {{metadata.id}}"))
+    }
+
+    func testVariableByPathDoesNotTreatDollarAsRoot() throws {
+        let variable: [String: Any] = [
+            "user": ["id": "userid"]
+        ]
+        XCTAssertEqual("userid", variableByPath(path: "user.id", variable: variable) as? String)
+        XCTAssertNil(variableByPath(path: "$.user.id", variable: variable))
+        XCTAssertNil(variableByPath(path: "$", variable: variable))
+    }
 }
+
