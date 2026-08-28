@@ -12,32 +12,30 @@ fileprivate struct TemplatePlaceholder {
     let formatter: String
 }
 
+fileprivate let placeholderPattern = "\\{\\{\\s*([a-zA-Z0-9_.-]{1,300})\\s*(?:\\|\\s*([a-zA-Z0-9_-]*)\\s*)?\\}\\}"
+
 fileprivate let placeholderRegex: NSRegularExpression? = {
-    try? NSRegularExpression(
-        pattern: "\\{\\{[a-zA-Z0-9_\\.-| ]{1,300}\\}\\}",
-        options: .dotMatchesLineSeparators
-    )
+    try? NSRegularExpression(pattern: placeholderPattern, options: [])
 }()
 
-fileprivate func isPlaceholder(value: String) -> Bool {
-    return placeholderRegex?.firstMatch(in: value, options: [], range: NSRange(location: 0, length: value.utf16.count)) != nil
-}
-
 fileprivate func getPlaceholder(placeholder: String) -> TemplatePlaceholder? {
-    guard isPlaceholder(value: placeholder) else {
+    guard let regex = placeholderRegex else {
         return nil
     }
-    let rawIdentifiers = placeholder.dropFirst(2).dropLast(2)
-    let identifiers = rawIdentifiers.split(separator: "|")
-    
-    var path = ""
-    if identifiers.count >= 1 {
-        path = String(identifiers[0]).trimmingCharacters(in: CharacterSet([" "]))
+    let ns = placeholder as NSString
+    let range = NSRange(location: 0, length: ns.length)
+    guard let match = regex.firstMatch(in: placeholder, range: range),
+          match.range.location == 0,
+          match.range.length == ns.length else {
+        return nil
     }
-    
-    var formatter: String = ""
-    if identifiers.count >= 2 {
-        formatter = String(identifiers[1]).trimmingCharacters(in: CharacterSet([" "]))
+    let path = ns.substring(with: match.range(at: 1))
+    var formatter = ""
+    if match.numberOfRanges > 2 {
+        let formatterRange = match.range(at: 2)
+        if formatterRange.location != NSNotFound {
+            formatter = ns.substring(with: formatterRange)
+        }
     }
     return TemplatePlaceholder(path: path, formatter: formatter)
 }
@@ -101,16 +99,13 @@ func variableByPath(path: String, variable: Any?) -> Any? {
     }
     var current = variable
     for key in keys {
-        if (key == "$") {
-            current = variable
+        if let dict = current as? [String: Any] {
+            let child = dict.first(where: { $0.key == key })
+            current = child?.value
         } else {
-            if let dict = current as? [String: Any] {
-                let child = dict.first(where: { $0.key == key })
-                current = child?.value
-            } else {
-                return nil
-            }
+            return nil
         }
     }
     return current
 }
+
