@@ -323,7 +323,7 @@ final class TrackOutbox {
         self.limits = limits
     }
 
-    func insert(
+    func insertAndGetPendingCount(
         _ event: TrackEvent,
         userId: String,
         meta: TrackEventMeta,
@@ -357,11 +357,7 @@ final class TrackOutbox {
                 entity.metaPayload = metaPayload
                 try context.save()
 
-                guard eventType != .Crash else {
-                    return 0
-                }
                 let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
-                request.predicate = NSPredicate(format: "eventType != %@", TrackEvent.Typename.Crash.rawValue)
                 return try context.count(for: request)
             } catch {
                 context.rollback()
@@ -371,16 +367,21 @@ final class TrackOutbox {
         }
     }
 
-    func nextCrash() throws -> PendingTrackEvent? {
-        try fetch(eventType: TrackEvent.Typename.Crash.rawValue, limit: 1).first
-    }
-
-    func nextNormalBatch(maxEvents: Int, maxPayloadBytes: Int) throws -> [PendingTrackEvent] {
-        let entries = try fetch(excludingEventType: TrackEvent.Typename.Crash.rawValue, limit: maxEvents)
+    /// Returns the oldest events in FIFO order. Crash payloads remain isolated,
+    /// but do not overtake events that were queued earlier.
+    func nextBatch(maxEvents: Int, maxPayloadBytes: Int) throws -> [PendingTrackEvent] {
+        let entries = try fetch(limit: maxEvents)
         guard let first = entries.first else { return [] }
+        if first.event.typename == .Crash {
+            return [first]
+        }
+
         var batch = [PendingTrackEvent]()
         var payloadBytes = 0
         for entry in entries {
+            if entry.event.typename == .Crash {
+                break
+            }
             if entry.userId != first.userId || entry.meta != first.meta {
                 break
             }
@@ -422,15 +423,10 @@ final class TrackOutbox {
         }
     }
 
-    private func fetch(eventType: String? = nil, excludingEventType: String? = nil, limit: Int) throws -> [PendingTrackEvent] {
+    private func fetch(limit: Int) throws -> [PendingTrackEvent] {
         let context = persistentContainer.newBackgroundContext()
         return try context.performAndWait {
             let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
-            if let eventType {
-                request.predicate = NSPredicate(format: "eventType == %@", eventType)
-            } else if let excludingEventType {
-                request.predicate = NSPredicate(format: "eventType != %@", excludingEventType)
-            }
             request.fetchLimit = limit
             request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: true)]
             do {
@@ -584,8 +580,8 @@ actor TrackRespositoryImpl: TrackRepository2 {
     }
 
     private func enqueue(_ event: TrackEvent, userId: String, meta: TrackEventMeta) {
-        guard let pendingNormalEventCount = outbox.insert(event, userId: userId, meta: meta) else { return }
-        if event.typename == .Crash || pendingNormalEventCount >= maxBatchSize {
+        guard let pendingEventCount = outbox.insertAndGetPendingCount(event, userId: userId, meta: meta) else { return }
+        if pendingEventCount >= maxBatchSize {
             requestFlush(after: 0)
         } else {
             requestFlush(after: flushInterval)
@@ -667,11 +663,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
 
     private func sendNextBatch() async throws -> Bool {
         let pending: [PendingTrackEvent]
-        if let crash = try outbox.nextCrash() {
-            pending = [crash]
-        } else {
-            pending = try outbox.nextNormalBatch(maxEvents: maxBatchSize, maxPayloadBytes: maxBatchEventPayloadBytes)
-        }
+        pending = try outbox.nextBatch(maxEvents: maxBatchSize, maxPayloadBytes: maxBatchEventPayloadBytes)
         guard !pending.isEmpty else { return true }
 
         do {
