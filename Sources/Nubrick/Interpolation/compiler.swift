@@ -12,7 +12,6 @@ fileprivate struct TemplatePlaceholder {
     let formatter: String
 }
 
-// Same grammar as nativebrik front / Go: {{ path }} and {{ path | formatter }}.
 fileprivate let placeholderPattern = "\\{\\{\\s*([a-zA-Z0-9_.-]{1,300})\\s*(?:\\|\\s*([a-zA-Z0-9_-]*)\\s*)?\\}\\}"
 
 fileprivate let placeholderRegex: NSRegularExpression? = {
