@@ -202,6 +202,29 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
+    func testTrackingOutboxDoesNotLetCrashesOvertakeEarlierEvents() throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let outbox = TrackOutbox(persistentContainer: persistentContainer)
+        let before = makePendingTrackEvent(name: "event-before")
+        var crash = makePendingTrackEvent(name: "crash")
+        crash.typename = .Crash
+        crash.name = nil
+        let after = makePendingTrackEvent(name: "event-after")
+
+        XCTAssertNotNil(insertOutboxEvent(outbox, before, enqueuedAt: Date(timeIntervalSince1970: 1)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, crash, enqueuedAt: Date(timeIntervalSince1970: 2)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, after, enqueuedAt: Date(timeIntervalSince1970: 3)))
+
+        XCTAssertEqual(try outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).map(\.eventID), [before.eventUuid])
+        XCTAssertTrue(outbox.remove(eventIDs: [before.eventUuid]))
+        XCTAssertEqual(try outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).map(\.eventID), [crash.eventUuid])
+        XCTAssertTrue(outbox.remove(eventIDs: [crash.eventUuid]))
+        XCTAssertEqual(try outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).map(\.eventID), [after.eventUuid])
+    }
+
+    @MainActor
     func testTrackingEventPersistsThenFlushesAfterSuccessfulResponse() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
@@ -708,7 +731,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         ),
         enqueuedAt: Date
     ) -> Int? {
-        outbox.insert(event, userId: userId, meta: meta, enqueuedAt: enqueuedAt)
+        outbox.insertAndGetPendingCount(event, userId: userId, meta: meta, enqueuedAt: enqueuedAt)
     }
 
     private func previousOutboxEntityDescription() -> NSEntityDescription {
