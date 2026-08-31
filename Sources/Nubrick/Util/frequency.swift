@@ -24,6 +24,11 @@ extension FrequencyUnit {
 
     /// Returns a new date by subtracting `value` * `unit` from `date`.
     func subtract(_ value: Int, from date: Date, calendar: Calendar = Calendar(identifier: .gregorian)) -> Date {
+        // `-Int.min` traps. Treat an unrepresentable remote period as invalid
+        // and preserve the reference date instead of crashing frequency checks.
+        guard value != Int.min else {
+            return date
+        }
         return calendar.date(byAdding: self.calendarComponent(), value: -value, to: date) ?? date
     }
 

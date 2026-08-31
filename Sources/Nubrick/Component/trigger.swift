@@ -68,7 +68,10 @@ class TriggerViewController: UIViewController {
 
         // dispatch user enter the app firtly
         let count = UserDefaults.standard.object(forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue) as? Int ?? 0
-        UserDefaults.standard.set(count + 1, forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue)
+        UserDefaults.standard.set(
+            count == Int.max ? Int.max : count + 1,
+            forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue
+        )
         if count == 0 {
             self.dispatch(event: NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
         }

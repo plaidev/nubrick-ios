@@ -56,6 +56,10 @@ private let USER_CUSTOM_PROPERTY_KEY_PREFIX = "NATIVEBRIK_CUSTOM_"
 private let USER_SEED_KEY: String = "NATIVEBRIK_USER_SEED"
 private let USER_SEED_MAX: Int = 100000000
 
+private func saturatingIncrement(_ value: Int) -> Int {
+    value == Int.max ? Int.max : value + 1
+}
+
 func retentionCalendarDayDifference(from earlier: Date, to later: Date, calendar: Calendar = .current) -> Int? {
     let earlierDay = calendar.startOfDay(for: earlier)
     let laterDay = calendar.startOfDay(for: later)
@@ -76,9 +80,9 @@ class NubrickUser {
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
     internal var userDB: UserDefaults
 
-    init() {
+    init(userDefaults: UserDefaults? = nil) {
         let suiteName = "\(Bundle.main.bundleIdentifier ?? "app").nativebrik.com"
-        self.userDB = UserDefaults(suiteName: suiteName) ?? UserDefaults.standard
+        self.userDB = userDefaults ?? UserDefaults(suiteName: suiteName) ?? UserDefaults.standard
         self.properties = [:]
         self.customProperties = [:]
 
@@ -217,7 +221,7 @@ class NubrickUser {
         } else if dayDifference == 1 {
             // count up retention. because user is returned in 1 day
             self.userDB.set(Int(now.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
-            let countedUp = retentionCount + 1
+            let countedUp = saturatingIncrement(retentionCount)
             self.userDB.set(countedUp, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
             self.properties[BuiltinUserProperty.retentionPeriod.rawValue] = String(countedUp)
         } else if dayDifference > 1 {
@@ -233,7 +237,10 @@ class NubrickUser {
     func getSeededNormalizedUserRnd(seed: Int) -> Double {
         let userSeedStr = self.properties[USER_SEED_KEY] ?? "0"
         let userSeed = Int(userSeedStr) ?? 0
-        srand48(seed + userSeed)
+        // Both values can originate outside this process (the experiment seed
+        // is remote and the user seed is persisted), so use a deterministic
+        // wrapping mix rather than trapping on their sum.
+        srand48(seed &+ userSeed)
         return drand48()
     }
 

@@ -72,6 +72,25 @@ final class UserTests: XCTestCase {
         XCTAssertEqual(retentionCalendarDayDifference(from: beforeDST, to: afterDST, calendar: calendar), 1)
     }
 
+    func testComeBackSaturatesCorruptedRetentionCount() throws {
+        let suiteName = "NubrickTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let user = NubrickUser()
+        user.userDB = userDefaults
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: getCurrentDate())!
+        userDefaults.set(Int(yesterday.timeIntervalSince1970), forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_T.rawValue)
+        userDefaults.set(Int.max, forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue)
+
+        user.comeBack()
+
+        XCTAssertEqual(
+            userDefaults.object(forKey: NativebrikUserDefaultsKeys.RETENTION_PERIOD_COUNT.rawValue) as? Int,
+            Int.max
+        )
+    }
+
     func testHasUserIdByDefaultAndAlwaysTheSame() {
         let user = NubrickUser()
         let userId = user.id
@@ -89,6 +108,19 @@ final class UserTests: XCTestCase {
         let seeded10 = user.getSeededNormalizedUserRnd(seed: 10)
         XCTAssertEqual(seeded0, seeded0Again)
         XCTAssertNotEqual(seeded10, seeded0)
+    }
+
+    func testGetUserSeededNormalizedRndHandlesOverflowingRemoteSeed() throws {
+        let suiteName = "NubrickTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+        userDefaults.set(Int.max, forKey: "NATIVEBRIK_USER_SEED")
+
+        let user = NubrickUser(userDefaults: userDefaults)
+        let seeded = user.getSeededNormalizedUserRnd(seed: Int.max)
+
+        XCTAssertGreaterThanOrEqual(seeded, 0)
+        XCTAssertLessThan(seeded, 1)
     }
     
     func testGetUserSeededNormalizedShouldBeIn0to1() {

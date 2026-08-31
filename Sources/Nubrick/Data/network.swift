@@ -13,8 +13,11 @@ final class MemoryResponseCache: @unchecked Sendable {
 
     private let lock = NSLock()
     private var entries: [String: Entry] = [:]
+    private var totalBytes = 0
     /// Align with Android memory CACHE_TIME (10 minutes).
     private let ttl: TimeInterval = 10 * 60
+    private let maximumEntryCount = 128
+    private let maximumByteCount = 4 * 1024 * 1024
 
     private struct Entry {
         let data: Data
@@ -24,30 +27,62 @@ final class MemoryResponseCache: @unchecked Sendable {
     func get(_ url: URL) -> Data? {
         lock.lock()
         defer { lock.unlock() }
+        removeExpiredEntries(now: Date())
         guard let entry = entries[url.absoluteString] else { return nil }
-        if Date().timeIntervalSince(entry.storedAt) > ttl {
-            entries.removeValue(forKey: url.absoluteString)
-            return nil
-        }
         return entry.data
     }
 
     func set(_ url: URL, data: Data) {
         lock.lock()
         defer { lock.unlock() }
-        entries[url.absoluteString] = Entry(data: data, storedAt: Date())
+        let now = Date()
+        removeExpiredEntries(now: now)
+
+        let key = url.absoluteString
+        if let existing = entries.removeValue(forKey: key) {
+            totalBytes -= existing.data.count
+        }
+
+        // A single response should not be allowed to consume the entire
+        // process cache budget (or cause arithmetic in cache bookkeeping).
+        guard data.count <= maximumByteCount else { return }
+
+        while entries.count >= maximumEntryCount || totalBytes > maximumByteCount - data.count {
+            guard let oldest = entries.min(by: { $0.value.storedAt < $1.value.storedAt }) else {
+                break
+            }
+            if let removed = entries.removeValue(forKey: oldest.key) {
+                totalBytes -= removed.data.count
+            }
+        }
+        entries[key] = Entry(data: data, storedAt: now)
+        totalBytes += data.count
     }
 
     func remove(_ url: URL) {
         lock.lock()
         defer { lock.unlock() }
-        entries.removeValue(forKey: url.absoluteString)
+        if let removed = entries.removeValue(forKey: url.absoluteString) {
+            totalBytes -= removed.data.count
+        }
     }
 
     func removeAll() {
         lock.lock()
         defer { lock.unlock() }
         entries.removeAll()
+        totalBytes = 0
+    }
+
+    private func removeExpiredEntries(now: Date) {
+        let expiredKeys = entries.compactMap { key, entry in
+            now.timeIntervalSince(entry.storedAt) > ttl ? key : nil
+        }
+        for key in expiredKeys {
+            if let removed = entries.removeValue(forKey: key) {
+                totalBytes -= removed.data.count
+            }
+        }
     }
 }
 

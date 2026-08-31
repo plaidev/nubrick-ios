@@ -69,9 +69,10 @@ fileprivate func calcCollectionHeight(_ data: UICollectionBlockData?) -> CGFloat
     let gridSize = data?.kind == .GRID ? data?.gridSize ?? 1 : 1
 
     if resolvedFlexDirection(data?.direction) == .COLUMN {
-        return CGFloat(itemHeight + top + bottom)
+        return CGFloat(itemHeight) + CGFloat(top) + CGFloat(bottom)
     }
-    return CGFloat(gridSize * itemHeight + (gridSize - 1) * gap + top + bottom)
+    let gaps = gridSize > 1 ? CGFloat(gridSize - 1) : 0
+    return CGFloat(gridSize) * CGFloat(itemHeight) + gaps * CGFloat(gap) + CGFloat(top) + CGFloat(bottom)
 }
 
 @MainActor
@@ -83,9 +84,10 @@ fileprivate func calcCollectionWidth(_ data: UICollectionBlockData?) -> CGFloat 
     let gridSize = data?.kind == .GRID ? data?.gridSize ?? 1 : 1
 
     if resolvedFlexDirection(data?.direction) == .COLUMN {
-        return CGFloat(gridSize * itemWidth + (gridSize - 1) * gap + left + right)
+        let gaps = gridSize > 1 ? CGFloat(gridSize - 1) : 0
+        return CGFloat(gridSize) * CGFloat(itemWidth) + gaps * CGFloat(gap) + CGFloat(left) + CGFloat(right)
     }
-    return CGFloat(itemWidth + left + right)
+    return CGFloat(itemWidth) + CGFloat(left) + CGFloat(right)
 }
 
 @MainActor
@@ -112,7 +114,7 @@ fileprivate func configureCollectionSize(
     layout.maxHeight = .init(value: 100, unit: .percent)
     if resolvedFlexDirection(data?.direction) == .COLUMN {
         let frameWidth = data?.frame?.width ?? 0
-        let width = frameWidth > 0 ? frameWidth : Int(calcCollectionWidth(data))
+        let width = frameWidth > 0 ? CGFloat(frameWidth) : calcCollectionWidth(data)
         layout.width = .init(value: Float(width), unit: .point)
         if parentDirection == .COLUMN {
             layout.height = YGValueAuto
@@ -127,7 +129,7 @@ fileprivate func configureCollectionSize(
         }
     } else {
         let frameHeight = data?.frame?.height ?? 0
-        let height = frameHeight > 0 ? frameHeight : Int(calcCollectionHeight(data))
+        let height = frameHeight > 0 ? CGFloat(frameHeight) : calcCollectionHeight(data)
         layout.height = .init(value: Float(height), unit: .point)
         if parentDirection == .ROW {
             layout.width = YGValueAuto

@@ -16,6 +16,11 @@ final class FrequencyUnitUtilTests: XCTestCase {
         XCTAssertEqual(cal.dateComponents([.weekOfYear], from: weekBefore, to: now).weekOfYear, 1)
     }
 
+    func testSubtractIntMinDoesNotTrap() {
+        let now = Date()
+        XCTAssertEqual(FrequencyUnit.DAY.subtract(Int.min, from: now), now)
+    }
+
     func testBucketStartHour() {
         let cal = Calendar(identifier: .gregorian)
         let ts = ISO8601DateFormatter().date(from: "2025-07-24T10:23:45Z")!

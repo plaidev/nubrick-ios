@@ -162,7 +162,10 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         }()
 
         // Determine the period length. If not provided, default to 50 years.
-        let periodCount = lookbackPeriod ?? (365 * 50)
+        // Negative periods are invalid remote configuration. Clamp them to an
+        // empty lookback rather than passing a potentially hostile value into
+        // date arithmetic.
+        let periodCount = max(lookbackPeriod ?? (365 * 50), 0)
 
         // Lower-bound date.
         let today = getCurrentDate()
@@ -172,7 +175,7 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         let counts: [Date: Int] = await bgContext.perform {
             do {
                 // Fetch events after latest of (startDate, sinceDate).
-                let request = UserEventEntity.fetchRequest()
+                let request = NSFetchRequest<UserEventEntity>(entityName: "NativebrikUserEvent")
                 request.predicate = NSPredicate(
                     format: "name = %@ AND timestamp >= %@ AND timestamp >= %@",
                     name,
@@ -180,7 +183,7 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
                     sinceDate as NSDate
                 )
 
-                let events = try bgContext.fetch(request) as! [UserEventEntity]
+                let events = try bgContext.fetch(request)
                 var counts: [Date: Int] = [:]
                 for event in events {
                     let bucket = unit.bucketStart(for: event.timestamp, calendar: calendar)

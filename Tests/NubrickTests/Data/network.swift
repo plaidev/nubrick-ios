@@ -41,6 +41,16 @@ final class GetDataTests: XCTestCase {
         XCTAssertNil(MemoryResponseCache.shared.get(url))
     }
 
+    func testMemoryCacheEvictsOldEntriesToHonorByteBudget() {
+        let first = URL(string: "https://cdn.example/first")!
+        let second = URL(string: "https://cdn.example/second")!
+        MemoryResponseCache.shared.set(first, data: Data(repeating: 1, count: 4 * 1024 * 1024))
+        MemoryResponseCache.shared.set(second, data: Data([2]))
+
+        XCTAssertNil(MemoryResponseCache.shared.get(first))
+        XCTAssertEqual(MemoryResponseCache.shared.get(second), Data([2]))
+    }
+
     func testInvalidateCachedResponseClearsMemory() {
         let url = URL(string: "https://cdn.example/projects/p/experiments/id/gone")!
         MemoryResponseCache.shared.set(url, data: Data("stale".utf8))
