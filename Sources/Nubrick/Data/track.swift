@@ -530,13 +530,43 @@ final class TrackOutbox {
     }
 
     private static func totalPendingBytes(in context: NSManagedObjectContext) throws -> Int {
-        let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
+        let totalByteCount = NSExpressionDescription()
+        totalByteCount.name = "totalByteCount"
+        totalByteCount.expression = NSExpression(
+            forFunction: "sum:",
+            arguments: [NSExpression(forKeyPath: "byteCount")]
+        )
+        totalByteCount.expressionResultType = .integer64AttributeType
+
+        let request = NSFetchRequest<NSDictionary>(entityName: "NativebrikPendingTrackEvent")
+        request.resultType = .dictionaryResultType
+        request.propertiesToFetch = [totalByteCount]
+        let result = try context.fetch(request)
+        let byteCount = result.first?[totalByteCount.name] as? NSNumber
+        let totalBytes = byteCount.map { Int($0.int64Value) } ?? 0
+        guard totalBytes >= 0 else {
+            throw TrackOutboxError.invalidByteCount
+        }
+        // Core Data can saturate an overflowing integer aggregate at Int.max.
+        if totalBytes == .max {
+            return try exactTotalPendingBytes(in: context)
+        }
+        return totalBytes
+    }
+
+    private static func exactTotalPendingBytes(in context: NSManagedObjectContext) throws -> Int {
+        let request = NSFetchRequest<NSDictionary>(entityName: "NativebrikPendingTrackEvent")
+        request.resultType = .dictionaryResultType
+        request.propertiesToFetch = ["byteCount"]
+
         var totalBytes = 0
-        for entry in try context.fetch(request) {
-            guard let byteCount = Int(exactly: entry.byteCount), byteCount >= 0 else {
+        for result in try context.fetch(request) {
+            guard let byteCount = result["byteCount"] as? NSNumber,
+                  let byteCountValue = Int(exactly: byteCount.int64Value),
+                  byteCountValue >= 0 else {
                 throw TrackOutboxError.invalidByteCount
             }
-            let (updatedTotal, overflow) = totalBytes.addingReportingOverflow(byteCount)
+            let (updatedTotal, overflow) = totalBytes.addingReportingOverflow(byteCountValue)
             guard !overflow else {
                 throw TrackOutboxError.invalidByteCount
             }
