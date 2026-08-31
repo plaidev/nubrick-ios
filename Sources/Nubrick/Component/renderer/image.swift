@@ -7,8 +7,33 @@
 
 import Combine
 import Foundation
+import ImageIO
 import UIKit
 internal import YogaKit
+
+// Keep decoded image memory within a practical mobile-device budget.
+private let maximumImagePixels = 4_096 * 4_096
+
+@MainActor
+private func boundedImage(from data: Data) -> UIImage? {
+    guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+          let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+          let width = properties[kCGImagePropertyPixelWidth] as? NSNumber,
+          let height = properties[kCGImagePropertyPixelHeight] as? NSNumber else {
+        return nil
+    }
+
+    let pixelWidth = width.doubleValue
+    let pixelHeight = height.doubleValue
+    guard pixelWidth > 0,
+          pixelHeight > 0,
+          pixelWidth.isFinite,
+          pixelHeight.isFinite,
+          pixelWidth <= Double(maximumImagePixels) / pixelHeight else {
+        return nil
+    }
+    return UIImage(data: data)
+}
 
 class ImageView: AnimatedUIView {
     private let image: UIImageView = UIImageView()
@@ -177,7 +202,7 @@ func loadAsyncImageToBackgroundSrc(url: String, view: UIView) -> Task<Void, Neve
                     return
                 }
                 // TODO: Add animated GIF playback with ImageIO's CGAnimateImageDataWithBlock.
-                guard let image = UIImage(data: data) else {
+                guard let image = boundedImage(from: data) else {
                     return
                 }
                 UIView.transition(
@@ -220,7 +245,7 @@ func loadAsyncImage(
                     return
                 }
                 // TODO: Add animated GIF playback with ImageIO's CGAnimateImageDataWithBlock.
-                guard let loadedImage = UIImage(data: data) else {
+                guard let loadedImage = boundedImage(from: data) else {
                     return
                 }
 

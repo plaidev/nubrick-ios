@@ -35,11 +35,11 @@ func extractExperimentVariant(config: ExperimentConfig, normalizedUsrRnd: Double
     }
 
     // Null weight defaults to 1; negative weights are clamped to 0 so CDF stays well-defined.
-    let baselineWeight = max(0, baseline.weight ?? 1)
+    let baselineWeight = Double(max(0, baseline.weight ?? 1))
     var weights = [baselineWeight]
     var weightSum = baselineWeight
     for variant in variants {
-        let variantWeight = max(0, variant.weight ?? 1)
+        let variantWeight = Double(max(0, variant.weight ?? 1))
         weights.append(variantWeight)
         weightSum += variantWeight
     }
@@ -144,9 +144,15 @@ func isInDistribution(distribution: [ExperimentCondition], properties: [UserProp
 }
 
 private func isInDistributionSync(distribution: [ExperimentCondition], properties: [UserProperty]) -> Bool {
-    let props = Dictionary(uniqueKeysWithValues: properties.map({ property in
-        return (property.name, property)
-    }))
+    // Event properties are assembled from generated, built-in, and custom sources.
+    // A custom property is allowed to reuse a built-in name, so keep the first
+    // value (generated properties are emitted first) instead of trapping on a
+    // duplicate key. This also prevents custom values from spoofing generated
+    // distribution properties such as currentTime and userRnd.
+    var props: [String: UserProperty] = [:]
+    for property in properties where props[property.name] == nil {
+        props[property.name] = property
+    }
     let foundNotMatched = distribution.first { condition in
         guard let propKey = condition.property else {
             return true

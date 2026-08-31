@@ -107,6 +107,19 @@ final class ExtractionTests: XCTestCase {
         XCTAssertEqual(extractExperimentVariant(config: config, normalizedUsrRnd: 0.51)?.id, "b")
         XCTAssertEqual(extractExperimentVariant(config: config, normalizedUsrRnd: 0.99)?.id, "b")
     }
+
+    func testExtractExperimentVariantHandlesWeightsWhoseIntegerSumWouldOverflow() throws {
+        let config = ExperimentConfig(
+            baseline: ExperimentVariant(id: "baseline", weight: Int.max),
+            variants: [
+                ExperimentVariant(id: "a", weight: Int.max),
+                ExperimentVariant(id: "b", weight: Int.max),
+            ]
+        )
+
+        XCTAssertEqual(extractExperimentVariant(config: config, normalizedUsrRnd: 0.5)?.id, "a")
+        XCTAssertEqual(extractExperimentVariant(config: config, normalizedUsrRnd: 0.9)?.id, "b")
+    }
     
     func testIsInDistributionShouldBeTrue() async throws {
         let userId = "hello"
@@ -134,6 +147,19 @@ final class ExtractionTests: XCTestCase {
         
         let actual = await isInDistribution(distribution: distribution, properties: props)
         XCTAssertTrue(actual)
+    }
+
+    func testIsInDistributionPrefersGeneratedPropertiesWhenNamesAreDuplicated() async throws {
+        let distribution = [
+            ExperimentCondition(property: BuiltinUserProperty.currentTime.rawValue, operator: ConditionOperator.Equal.rawValue, value: "generated")
+        ]
+        let props = [
+            UserProperty(name: BuiltinUserProperty.currentTime.rawValue, value: "generated", type: .STRING),
+            UserProperty(name: BuiltinUserProperty.currentTime.rawValue, value: "custom", type: .STRING),
+        ]
+
+        let matched = await isInDistribution(distribution: distribution, properties: props)
+        XCTAssertTrue(matched)
     }
     
     func testIsInDistributionShouldBeFalse() async throws {

@@ -57,9 +57,9 @@ class InputIconView: UIControl {
     }
     init(systemName: String, message: String?, color: UIColor?, size: Int?, padding: Int?) {
         super.init(frame: .zero)
-        let size = size ?? 16
-        let paddingRight = padding ?? 0
-        let paddingLeft = padding ?? 4
+        let size = CGFloat(size ?? 16)
+        let paddingRight = CGFloat(padding ?? 0)
+        let paddingLeft = CGFloat(padding ?? 4)
 
         self.configureLayout { layout in
             layout.isEnabled = true
@@ -169,7 +169,8 @@ class TextInputView: UIView, UITextFieldDelegate {
         let font = parseTextBlockDataToUIFont(block.data?.size, block.data?.weight, block.data?.design)
         textInput.font = font
         let intrinsicHeight = ceil(textInput.intrinsicContentSize.height)
-        let verticalPadding = CGFloat((block.data?.frame?.paddingTop ?? 0) + (block.data?.frame?.paddingBottom ?? 0))
+        let verticalPadding = CGFloat(block.data?.frame?.paddingTop ?? 0)
+            + CGFloat(block.data?.frame?.paddingBottom ?? 0)
         let borderHeight = CGFloat(max(block.data?.frame?.borderWidth ?? 0, 0)) * 2
 
         // wrap layout
