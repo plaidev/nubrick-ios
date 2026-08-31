@@ -337,6 +337,10 @@ final class TrackOutbox {
             trackWarn("Dropping oversized tracking event.")
             return nil
         }
+        guard !persistentContainer.persistentStoreCoordinator.persistentStores.isEmpty else {
+            trackWarn("Dropping tracking event because the outbox store is unavailable.")
+            return nil
+        }
 
         let context = persistentContainer.newBackgroundContext()
         let limits = limits
@@ -526,22 +530,17 @@ final class TrackOutbox {
     }
 
     private static func totalPendingBytes(in context: NSManagedObjectContext) throws -> Int {
-        let totalByteCount = NSExpressionDescription()
-        totalByteCount.name = "totalByteCount"
-        totalByteCount.expression = NSExpression(
-            forFunction: "sum:",
-            arguments: [NSExpression(forKeyPath: "byteCount")]
-        )
-        totalByteCount.expressionResultType = .integer64AttributeType
-
-        let request = NSFetchRequest<NSDictionary>(entityName: "NativebrikPendingTrackEvent")
-        request.resultType = .dictionaryResultType
-        request.propertiesToFetch = [totalByteCount]
-        let result = try context.fetch(request)
-        let byteCount = result.first?[totalByteCount.name] as? NSNumber
-        let totalBytes = byteCount.map { Int($0.int64Value) } ?? 0
-        guard totalBytes >= 0 else {
-            throw TrackOutboxError.invalidByteCount
+        let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
+        var totalBytes = 0
+        for entry in try context.fetch(request) {
+            guard let byteCount = Int(exactly: entry.byteCount), byteCount >= 0 else {
+                throw TrackOutboxError.invalidByteCount
+            }
+            let (updatedTotal, overflow) = totalBytes.addingReportingOverflow(byteCount)
+            guard !overflow else {
+                throw TrackOutboxError.invalidByteCount
+            }
+            totalBytes = updatedTotal
         }
         return totalBytes
     }
