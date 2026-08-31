@@ -225,6 +225,108 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
+    func testTrackingOutboxEvictsIntMaxByteCountWithoutOverflowing() throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let outbox = TrackOutbox(
+            persistentContainer: persistentContainer,
+            limits: TrackOutboxLimits(maxQueueSize: 10, maxQueueBytes: .max)
+        )
+        let oversizedEntry = PendingTrackEventEntity(context: persistentContainer.viewContext)
+        oversizedEntry.eventID = "oversized-entry"
+        oversizedEntry.payload = Data()
+        oversizedEntry.eventType = TrackEvent.Typename.Event.rawValue
+        oversizedEntry.byteCount = .max
+        oversizedEntry.createdAt = Date(timeIntervalSince1970: 1)
+        try persistentContainer.viewContext.save()
+
+        let event = makePendingTrackEvent(name: "new-event")
+        XCTAssertNotNil(insertOutboxEvent(outbox, event, enqueuedAt: Date(timeIntervalSince1970: 2)))
+
+        XCTAssertEqual(try pendingTrackEventIDs(in: persistentContainer), [event.eventUuid])
+    }
+
+    @MainActor
+    func testTrackingOutboxDropsPersistedEventWithInvalidByteCount() throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let event = makePendingTrackEvent(name: "invalid-byte-count")
+        let payload = try JSONEncoder().encode(event)
+        let corruptedEntry = PendingTrackEventEntity(context: persistentContainer.viewContext)
+        corruptedEntry.eventID = event.eventUuid
+        corruptedEntry.payload = payload
+        corruptedEntry.eventType = event.typename.rawValue
+        corruptedEntry.byteCount = Int64(payload.count - 1)
+        corruptedEntry.createdAt = Date()
+        try persistentContainer.viewContext.save()
+
+        let outbox = TrackOutbox(persistentContainer: persistentContainer)
+        XCTAssertTrue(try outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).isEmpty)
+        persistentContainer.viewContext.reset()
+        XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 0)
+    }
+
+    @MainActor
+    func testTrackingOutboxStopsBatchAtPayloadByteLimit() throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let outbox = TrackOutbox(persistentContainer: persistentContainer)
+        let first = makePendingTrackEvent(name: "first-event")
+        let second = makePendingTrackEvent(name: "second-event")
+        let firstPayloadSize = try JSONEncoder().encode(first).count
+        let secondPayloadSize = try JSONEncoder().encode(second).count
+
+        XCTAssertNotNil(insertOutboxEvent(outbox, first, enqueuedAt: Date(timeIntervalSince1970: 1)))
+        XCTAssertNotNil(insertOutboxEvent(outbox, second, enqueuedAt: Date(timeIntervalSince1970: 2)))
+
+        let batch = try outbox.nextBatch(
+            maxEvents: 50,
+            maxPayloadBytes: firstPayloadSize + secondPayloadSize - 1
+        )
+        XCTAssertEqual(batch.map(\.eventID), [first.eventUuid])
+    }
+
+    @MainActor
+    func testTrackingOutboxDoesNotInsertWhenTotalByteCountOverflows() throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        for index in 0..<2 {
+            let entry = PendingTrackEventEntity(context: persistentContainer.viewContext)
+            entry.eventID = "overflow-\(index)"
+            entry.payload = Data()
+            entry.eventType = TrackEvent.Typename.Event.rawValue
+            entry.byteCount = .max
+            entry.createdAt = Date(timeIntervalSince1970: TimeInterval(index))
+        }
+        try persistentContainer.viewContext.save()
+
+        let outbox = TrackOutbox(persistentContainer: persistentContainer)
+        let event = makePendingTrackEvent(name: "new-event")
+        XCTAssertNil(insertOutboxEvent(outbox, event, enqueuedAt: Date()))
+        persistentContainer.viewContext.reset()
+        XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 2)
+    }
+
+    @MainActor
+    func testTrackingOutboxDoesNotReportSuccessWhenPersistentStoreIsUnavailable() throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let outbox = TrackOutbox(persistentContainer: persistentContainer)
+        let coordinator = persistentContainer.persistentStoreCoordinator
+        persistentContainer.viewContext.reset()
+        let store = try XCTUnwrap(coordinator.persistentStores.first)
+        try coordinator.remove(store)
+
+        let event = makePendingTrackEvent(name: "unavailable-store")
+        XCTAssertNil(insertOutboxEvent(outbox, event, enqueuedAt: Date()))
+    }
+
+    @MainActor
     func testTrackingEventPersistsThenFlushesAfterSuccessfulResponse() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))

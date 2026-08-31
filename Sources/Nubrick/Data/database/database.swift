@@ -100,7 +100,12 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
                 let request = ExperimentHistoryEntity.fetchRequest()
                 request.predicate = NSPredicate(format: "experimentId = %@ && timestamp >= %@", experimentId, after as NSDate)
 
-                return try bgContext.count(for: request)
+                let count = try bgContext.count(for: request)
+                guard count != NSNotFound else {
+                    print("Couldn’t count ExperimentHistoryEntity")
+                    return 0
+                }
+                return count
             } catch {
                 print("Couldn’t fetch ExperimentHistoryEntity: \(error)")
                 return 0

@@ -337,6 +337,10 @@ final class TrackOutbox {
             trackWarn("Dropping oversized tracking event.")
             return nil
         }
+        guard !persistentContainer.persistentStoreCoordinator.persistentStores.isEmpty else {
+            trackWarn("Dropping tracking event because the outbox store is unavailable.")
+            return nil
+        }
 
         let context = persistentContainer.newBackgroundContext()
         let limits = limits
@@ -358,7 +362,7 @@ final class TrackOutbox {
                 try context.save()
 
                 let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
-                return try context.count(for: request)
+                return try Self.count(in: context, for: request)
             } catch {
                 context.rollback()
                 trackWarn("Dropping tracking event because the outbox could not be saved: \(error)")
@@ -385,7 +389,10 @@ final class TrackOutbox {
             if entry.userId != first.userId || entry.meta != first.meta {
                 break
             }
-            if !batch.isEmpty && payloadBytes + entry.payloadSize > maxPayloadBytes {
+            if !batch.isEmpty && (
+                payloadBytes > maxPayloadBytes ||
+                entry.payloadSize > maxPayloadBytes - payloadBytes
+            ) {
                 break
             }
             batch.append(entry)
@@ -419,7 +426,7 @@ final class TrackOutbox {
         return try context.performAndWait {
             let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
             request.fetchLimit = 1
-            return try context.count(for: request) > 0
+            return try Self.count(in: context, for: request) > 0
         }
     }
 
@@ -435,6 +442,11 @@ final class TrackOutbox {
                     guard let event = try? JSONDecoder().decode(TrackEvent.self, from: entity.payload) else {
                         context.delete(entity)
                         trackWarn("Dropping corrupt tracking event from the outbox.")
+                        continue
+                    }
+                    guard entity.byteCount >= 0, entity.byteCount == Int64(entity.payload.count) else {
+                        context.delete(entity)
+                        trackWarn("Dropping tracking event with an invalid payload size from the outbox.")
                         continue
                     }
                     let meta: TrackEventMeta?
@@ -469,25 +481,52 @@ final class TrackOutbox {
         incomingByteCount: Int
     ) throws {
         let request = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
-        var totalCount = try context.count(for: request)
+        var totalCount = try count(in: context, for: request)
         var totalBytes = try totalPendingBytes(in: context)
         var didEvict = false
 
         let oldestRequest = NSFetchRequest<PendingTrackEventEntity>(entityName: "NativebrikPendingTrackEvent")
         oldestRequest.fetchLimit = 1
         oldestRequest.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: true)]
-        while totalCount + 1 > limits.maxQueueSize || totalBytes + incomingByteCount > limits.maxQueueBytes {
+        while totalCount >= limits.maxQueueSize || exceedsByteLimit(
+            totalBytes: totalBytes,
+            incomingByteCount: incomingByteCount,
+            limit: limits.maxQueueBytes
+        ) {
             guard let entry = try context.fetch(oldestRequest).first else {
                 break
             }
+            let entryByteCount = Int(entry.byteCount)
+            guard entryByteCount >= 0 else {
+                throw TrackOutboxError.invalidByteCount
+            }
             totalCount -= 1
-            totalBytes -= Int(entry.byteCount)
+            totalBytes -= entryByteCount
             context.delete(entry)
             didEvict = true
         }
         if didEvict {
             trackWarn("Discarded oldest pending tracking events because the outbox limit was reached.")
         }
+    }
+
+    private static func count(
+        in context: NSManagedObjectContext,
+        for request: NSFetchRequest<PendingTrackEventEntity>
+    ) throws -> Int {
+        let count = try context.count(for: request)
+        guard count != NSNotFound else {
+            throw TrackOutboxError.countFailed
+        }
+        return count
+    }
+
+    private static func exceedsByteLimit(
+        totalBytes: Int,
+        incomingByteCount: Int,
+        limit: Int
+    ) -> Bool {
+        totalBytes > limit || incomingByteCount > limit - totalBytes
     }
 
     private static func totalPendingBytes(in context: NSManagedObjectContext) throws -> Int {
@@ -504,8 +543,42 @@ final class TrackOutbox {
         request.propertiesToFetch = [totalByteCount]
         let result = try context.fetch(request)
         let byteCount = result.first?[totalByteCount.name] as? NSNumber
-        return byteCount.map { Int($0.int64Value) } ?? 0
+        let totalBytes = byteCount.map { Int($0.int64Value) } ?? 0
+        guard totalBytes >= 0 else {
+            throw TrackOutboxError.invalidByteCount
+        }
+        // Core Data can saturate an overflowing integer aggregate at Int.max.
+        if totalBytes == .max {
+            return try exactTotalPendingBytes(in: context)
+        }
+        return totalBytes
     }
+
+    private static func exactTotalPendingBytes(in context: NSManagedObjectContext) throws -> Int {
+        let request = NSFetchRequest<NSDictionary>(entityName: "NativebrikPendingTrackEvent")
+        request.resultType = .dictionaryResultType
+        request.propertiesToFetch = ["byteCount"]
+
+        var totalBytes = 0
+        for result in try context.fetch(request) {
+            guard let byteCount = result["byteCount"] as? NSNumber,
+                  let byteCountValue = Int(exactly: byteCount.int64Value),
+                  byteCountValue >= 0 else {
+                throw TrackOutboxError.invalidByteCount
+            }
+            let (updatedTotal, overflow) = totalBytes.addingReportingOverflow(byteCountValue)
+            guard !overflow else {
+                throw TrackOutboxError.invalidByteCount
+            }
+            totalBytes = updatedTotal
+        }
+        return totalBytes
+    }
+}
+
+private enum TrackOutboxError: Error {
+    case countFailed
+    case invalidByteCount
 }
 
 actor TrackRespositoryImpl: TrackRepository2 {
