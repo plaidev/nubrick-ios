@@ -17,7 +17,7 @@
       location = "group:Examples/Example/Example.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:Example-Local/Example-Local.xcodeproj">
+      location = "group:Examples/Example-Local/Example-Local.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:E2E/E2E.xcodeproj">
