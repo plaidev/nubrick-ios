@@ -28,7 +28,7 @@ actor ExperimentContentStore {
     }
 
     private struct Revalidation {
-        let id: UUID
+        let fetchGeneration: UInt64
         let task: Task<Void, Never>
     }
 
@@ -46,7 +46,6 @@ actor ExperimentContentStore {
         let key = url.absoluteString
         guard revalidations[key] == nil else { return entry.data }
 
-        let revalidationID = UUID()
         let fetchGeneration = beginFetch(for: url)
         let task = Task {
             _ = await self.fetchExperimentContentFromNetwork(
@@ -55,9 +54,9 @@ actor ExperimentContentStore {
                 syncDateTime: syncDateTime,
                 contentClient: contentClient
             )
-            self.finishRevalidation(for: url, id: revalidationID)
+            self.finishRevalidation(for: url, fetchGeneration: fetchGeneration)
         }
-        revalidations[key] = Revalidation(id: revalidationID, task: task)
+        revalidations[key] = Revalidation(fetchGeneration: fetchGeneration, task: task)
         return entry.data
     }
 
@@ -177,8 +176,8 @@ actor ExperimentContentStore {
         return entry
     }
 
-    private func finishRevalidation(for url: URL, id: UUID) {
-        guard revalidations[url.absoluteString]?.id == id else { return }
+    private func finishRevalidation(for url: URL, fetchGeneration: UInt64) {
+        guard revalidations[url.absoluteString]?.fetchGeneration == fetchGeneration else { return }
         revalidations.removeValue(forKey: url.absoluteString)
     }
 
