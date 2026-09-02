@@ -589,7 +589,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
     private let config: Config
     private let user: NubrickUser
     private let outbox: TrackOutbox
-    private let trackingHTTPClient: any TrackingHTTPClient
+    private let trackingHTTPClient: any HTTPClient
     private var flushTask: Task<Void, Never>?
     private var scheduledFlushID: UUID?
     private var isSending = false
@@ -600,7 +600,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
         config: Config,
         user: NubrickUser,
         persistentContainer: NSPersistentContainer,
-        trackingHTTPClient: any TrackingHTTPClient = trackingSession
+        trackingHTTPClient: any HTTPClient = trackingSession
     ) {
         self.config = config
         self.user = user
@@ -916,7 +916,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
             )
             let url = URL(string: config.surveyResponsesUrl)!
             let request = try makeJsonRequest(url: url, body: requestBody)
-            let _ = try await nativebrikSession.data(for: request)
+            let _ = try await trackingSession.data(for: request)
         } catch {
             // Form submissions are one-shot; keep the event pipeline unaffected on failure.
             return

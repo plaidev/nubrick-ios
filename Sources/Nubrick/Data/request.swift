@@ -57,7 +57,7 @@ final class HttpRequestRepositoryImpl: HttpRequestRepository {
         })
         
         do {
-            let (data, response) = try await nativebrikSession.data(for: self.intercepter(request))
+            let (data, response) = try await experimentHttpSession.data(for: self.intercepter(request))
             guard let res = response as? HTTPURLResponse else {
                 return Result.failure(NubrickError.irregular("Failed to parse as HttpURLResponse"))
             }
