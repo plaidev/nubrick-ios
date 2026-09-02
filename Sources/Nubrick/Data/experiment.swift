@@ -23,7 +23,7 @@ final class ExperimentRepositoryImpl: ExperimentRepository2 {
             return Result.failure(NubrickError.irregular("Failed to create URL object"))
         }
         
-        let data = await getData(url: url, syncDateTime: true)
+        let data = await getExperimentContent(url: url, syncDateTime: true)
         switch data {
         case .success(let data):
             let decoder = JSONDecoder()
@@ -42,7 +42,7 @@ final class ExperimentRepositoryImpl: ExperimentRepository2 {
             return Result.failure(NubrickError.irregular("Failed to create URL object"))
         }
         
-        let data = await getData(url: url, syncDateTime: true)
+        let data = await getExperimentContent(url: url, syncDateTime: true)
         switch data {
         case .success(let data):
             let decoder = JSONDecoder()

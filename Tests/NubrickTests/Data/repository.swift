@@ -72,7 +72,7 @@ private actor FlushCompletionFlag {
     }
 }
 
-private actor TrackingHTTPClientSpy: TrackingHTTPClient {
+private actor TrackingHTTPClientSpy: HTTPClient {
     enum Response {
         case statusCode(Int)
         case failure

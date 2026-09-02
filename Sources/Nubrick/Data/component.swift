@@ -22,7 +22,7 @@ final class ComponentRepositoryImpl: ComponentRepository2 {
             return Result.failure(NubrickError.irregular("Failed to create URL object"))
         }
         
-        let data = await getData(url: url)
+        let data = await getExperimentContent(url: url)
         switch data {
         case .success(let data):
             let decoder = JSONDecoder()
