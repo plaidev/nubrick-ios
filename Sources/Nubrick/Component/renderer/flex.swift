@@ -63,7 +63,7 @@ class FlexView: AnimatedUIView, BackgroundImageObserver {
         // own border configuration. HIDDEN uses normal flex measurement and
         // differs from VISIBLE solely by UIKit clipping.
         self.isScrollContentView = isScrollContentView
-        self.clipsToBounds = block.data?.overflow == Overflow.HIDDEN
+        self.clipsToBounds = parseOverflow(block.data?.overflow) == .hidden
         self.configureLayout { layout in
             layout.isEnabled = true
             layout.display = .flex

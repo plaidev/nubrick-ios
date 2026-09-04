@@ -70,7 +70,7 @@ func parseOverflow(_ data: Overflow?) -> YGOverflow {
     case .VISIBLE:
         return .visible
     default:
-        return .visible
+        return .hidden
     }
 }
 
