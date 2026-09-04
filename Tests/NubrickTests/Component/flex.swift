@@ -87,6 +87,17 @@ final class FlexOverflowViewTests: XCTestCase {
     }
 
     @MainActor
+    func testOmittedOverflowDefaultsToHiddenAndClips() {
+        let view = FlexView(
+            block: UIFlexContainerBlock(),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+
+        XCTAssertEqual(parseOverflow(nil), .hidden)
+        XCTAssertTrue(view.clipsToBounds)
+    }
+
+    @MainActor
     func testVisibleAndHiddenFlexHaveTheSameYogaSizing() throws {
         let context = UIBlockContext(UIBlockContextInit())
         let visible = FlexView(
