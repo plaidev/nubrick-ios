@@ -12,13 +12,15 @@ import Foundation
 protocol FormRepository: Sendable {
     var formDataPublisher: AnyPublisher<[String: Any], Never> { get }
     func getFormData() -> [String: Any]
-    func setValue(key: String, value: Any)
+    func setValue(key: String, value: Any, regex: String?)
     func getValue(key: String) -> Any?
+    func getFormRegexes() -> [String: String]
 }
 
 @MainActor
 final class FormRepositoryImpl: FormRepository {
     @Published private var formData: [String: Any] = [:]
+    private var regexByKey: [String: String] = [:]
 
     var formDataPublisher: AnyPublisher<[String: Any], Never> {
         $formData.eraseToAnyPublisher()
@@ -32,7 +34,16 @@ final class FormRepositoryImpl: FormRepository {
         return formData[key]
     }
 
-    func setValue(key: String, value: Any) {
+    func setValue(key: String, value: Any, regex: String? = nil) {
+        if let regex, !regex.isEmpty {
+            regexByKey[key] = regex
+        } else {
+            regexByKey.removeValue(forKey: key)
+        }
         formData[key] = value
+    }
+
+    func getFormRegexes() -> [String: String] {
+        return regexByKey
     }
 }

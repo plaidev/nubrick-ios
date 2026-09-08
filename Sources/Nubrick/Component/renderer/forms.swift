@@ -146,9 +146,8 @@ class TextInputView: UIView, UITextFieldDelegate {
         if let formKey = self.formKey {
             if let value = self.context?.getFormValueByKey(key: formKey) as? String {
                 initialValue = value
-            } else {
-                self.context?.writeToForm(key: formKey, value: initialValue ?? "")
             }
+            self.context?.writeToForm(key: formKey, value: initialValue ?? "", regex: self.validateRegex)
         }
 
         // toolbar for input
@@ -243,7 +242,7 @@ class TextInputView: UIView, UITextFieldDelegate {
         guard let regexPattern = self.validateRegex else {
             // when it doesnt have validation
             if let formKey = self.formKey {
-                self.context?.writeToForm(key: formKey, value: text)
+                self.context?.writeToForm(key: formKey, value: text, regex: nil)
             }
             return
         }
@@ -252,19 +251,14 @@ class TextInputView: UIView, UITextFieldDelegate {
             let view = InputIconView(systemName: "checkmark.circle", message: nil, color: .systemBlue, size: self.fontSize, padding: self.paddingRight)
             sender.rightView = view
             sender.rightViewMode = .always
-
-            if let formKey = self.formKey {
-                self.context?.writeToForm(key: formKey, value: text)
-            }
         } else {
             // when its not vali
             let view = InputIconView(systemName: "info.circle.fill", message: self.errorMessage?.title, color: .systemRed, size: self.fontSize, padding: self.paddingRight)
             sender.rightView = view
             sender.rightViewMode = .always
-
-            if let formKey = self.formKey {
-                self.context?.writeToForm(key: formKey, value: "")
-            }
+        }
+        if let formKey = self.formKey {
+            self.context?.writeToForm(key: formKey, value: text, regex: regexPattern)
         }
         return
     }

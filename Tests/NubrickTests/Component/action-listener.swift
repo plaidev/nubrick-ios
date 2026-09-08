@@ -13,7 +13,29 @@ final class ActionListenerTests: XCTestCase {
     func testRequiredFieldsTreatPresentValuesAsEnabled() {
         XCTAssertFalse(isDisabled(requiredFields: ["answer"], values: ["answer": "yes"]))
         XCTAssertFalse(isDisabled(requiredFields: ["answer"], values: ["answer": ["yes"]]))
-        XCTAssertFalse(isDisabled(requiredFields: ["answer"], values: ["answer": false]))
+        XCTAssertFalse(isDisabled(requiredFields: ["tos"], values: ["tos": true]))
+    }
+
+    func testRequiredFieldsTreatFalseBoolAsDisabled() {
+        XCTAssertTrue(isDisabled(requiredFields: ["tos"], values: ["tos": false]))
+    }
+
+    func testRequiredFieldsTreatRegexMismatchAsDisabled() {
+        let email = #"^\S+@\S+$"#
+        XCTAssertTrue(isDisabled(
+            requiredFields: ["email"],
+            values: ["email": "not-an-email"],
+            regexByKey: ["email": email]
+        ))
+        XCTAssertFalse(isDisabled(
+            requiredFields: ["email"],
+            values: ["email": "user@example.com"],
+            regexByKey: ["email": email]
+        ))
+        XCTAssertFalse(isDisabled(
+            requiredFields: ["email"],
+            values: ["email": "not-an-email"]
+        ))
     }
 
     @MainActor

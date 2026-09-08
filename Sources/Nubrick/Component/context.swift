@@ -103,8 +103,12 @@ class UIBlockContext {
         self.actionHandler?(action, onHttpSettled)
     }
 
-    func writeToForm(key: String, value: Any) {
-        self.container?.setFormValue(key: key, value: value)
+    func writeToForm(key: String, value: Any, regex: String? = nil) {
+        self.container?.setFormValue(key: key, value: value, regex: regex)
+    }
+
+    func getFormRegexes() -> [String: String] {
+        return self.container?.formRegexes() ?? [:]
     }
 
     func getFormValueByKey(key: String) -> Any? {

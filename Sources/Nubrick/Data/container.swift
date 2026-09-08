@@ -44,7 +44,9 @@ protocol Container : Sendable {
     @MainActor
     func getFormValues() -> [String: Any]
     @MainActor
-    func setFormValue(key: String, value: Any)
+    func setFormValue(key: String, value: Any, regex: String?)
+    @MainActor
+    func formRegexes() -> [String: String]
     @MainActor
     func formDataPublisher() -> AnyPublisher<[String: Any], Never>
     @MainActor
@@ -54,6 +56,13 @@ protocol Container : Sendable {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
+}
+
+extension Container {
+    @MainActor
+    func setFormValue(key: String, value: Any) {
+        setFormValue(key: key, value: value, regex: nil)
+    }
 }
 
 final class ContainerImpl: Container {
@@ -147,8 +156,13 @@ final class ContainerImpl: Container {
     }
 
     @MainActor
-    func setFormValue(key: String, value: Any) {
-        self.formRepository.setValue(key: key, value: value)
+    func setFormValue(key: String, value: Any, regex: String? = nil) {
+        self.formRepository.setValue(key: key, value: value, regex: regex)
+    }
+
+    @MainActor
+    func formRegexes() -> [String: String] {
+        self.formRepository.getFormRegexes()
     }
 
     @MainActor
