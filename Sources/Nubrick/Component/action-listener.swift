@@ -109,14 +109,26 @@ class AnimatedUIView: UIView {
     }
 }
 
-func isDisabled(requiredFields: [String], values: [String: Any]) -> Bool {
+func isDisabled(
+    requiredFields: [String],
+    values: [String: Any],
+    regexByKey: [String: String] = [:]
+) -> Bool {
     return requiredFields.contains { field in
         guard let value = values[field] else {
             return true
         }
         switch value {
         case let value as String:
-            return value.isEmpty
+            if value.isEmpty {
+                return true
+            }
+            if let pattern = regexByKey[field], !pattern.isEmpty {
+                return !containsPattern(value, pattern)
+            }
+            return false
+        case let value as Bool:
+            return !value
         case let value as [String]:
             return value.isEmpty
         case let value as [Any]:
@@ -133,7 +145,7 @@ func isDisabled(requiredFields: [String], values: [String: Any]) -> Bool {
 func makeDisabledStateListener(target: UIView, context: UIBlockContext, requiredFields: [String]?) -> AnyCancellable? {
     guard let requiredFields, !requiredFields.isEmpty else { return nil }
     return context.formPublisher()
-        .map { isDisabled(requiredFields: requiredFields, values: $0) }
+        .map { isDisabled(requiredFields: requiredFields, values: $0, regexByKey: context.getFormRegexes()) }
         .removeDuplicates()
         .sink { [weak target] disabled in
             guard let target else { return }

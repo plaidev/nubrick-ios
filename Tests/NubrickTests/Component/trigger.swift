@@ -29,7 +29,10 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
     func getFormValues() -> [String: Any] { [:] }
 
     @MainActor
-    func setFormValue(key: String, value: Any) {}
+    func setFormValue(key: String, value: Any, regex: String?) {}
+
+    @MainActor
+    func formRegexes() -> [String: String] { [:] }
 
     @MainActor
     func formDataPublisher() -> AnyPublisher<[String: Any], Never> {
