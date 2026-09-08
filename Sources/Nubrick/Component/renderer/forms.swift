@@ -242,7 +242,7 @@ class TextInputView: UIView, UITextFieldDelegate {
         guard let regexPattern = self.validateRegex else {
             // when it doesnt have validation
             if let formKey = self.formKey {
-                self.context?.writeToForm(key: formKey, value: text)
+                self.context?.writeToForm(key: formKey, value: text, regex: nil)
             }
             return
         }

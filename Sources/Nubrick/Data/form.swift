@@ -35,12 +35,10 @@ final class FormRepositoryImpl: FormRepository {
     }
 
     func setValue(key: String, value: Any, regex: String? = nil) {
-        if let regex {
-            if regex.isEmpty {
-                regexByKey.removeValue(forKey: key)
-            } else {
-                regexByKey[key] = regex
-            }
+        if let regex, !regex.isEmpty {
+            regexByKey[key] = regex
+        } else {
+            regexByKey.removeValue(forKey: key)
         }
         formData[key] = value
     }
