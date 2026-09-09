@@ -255,6 +255,7 @@ struct TrackEventMeta: Codable, Equatable {
 
 struct TrackUserEvent {
     var name: String
+    var experimentId: String? = nil
 }
 
 struct TrackExperimentEvent {
@@ -632,6 +633,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
     func trackEvent(_ event: TrackUserEvent) async {
         await enqueue(TrackEvent(
             typename: .Event,
+            experimentId: event.experimentId,
             name: event.name,
             timestamp: getCurrentDate().ISO8601Format(),
             eventUuid: UUID().uuidString

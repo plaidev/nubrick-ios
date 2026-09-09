@@ -13,6 +13,16 @@ import XCTest
 
 let HEALTH_CHECK_URL = "https://track.nativebrik.com/health"
 
+private struct NoMatchingExperimentRepository: ExperimentRepository2 {
+    func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NubrickError> {
+        .failure(.notFound)
+    }
+
+    func fetchTriggerExperimentConfigs(name: String) async -> Result<ExperimentConfigs, NubrickError> {
+        .failure(.notFound)
+    }
+}
+
 private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
     struct Response {
         let experimentId: String
@@ -353,6 +363,61 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let events = try XCTUnwrap(body["events"] as? [[String: Any]])
         XCTAssertEqual(events.count, 1)
         XCTAssertEqual(events.first?["name"] as? String, "persisted-event")
+        XCTAssertNil(events.first?["experimentId"])
+    }
+
+    @MainActor
+    func testUIBlockEventTracksOriginatingExperimentWithoutMatchingTrigger() async throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let config = Config(projectId: PROJECT_ID_FOR_TEST)
+        let user = NubrickUser()
+        let repository = TrackRespositoryImpl(
+            config: config,
+            user: user,
+            persistentContainer: persistentContainer,
+            trackingHTTPClient: client
+        )
+        var dispatchedEvent: NubrickEvent?
+        var sourceExperimentId: String?
+        let container = ContainerImpl(
+            config: config,
+            user: user,
+            actionHandler: { action, experimentId in
+                dispatchedEvent = NubrickEvent(convertEvent(action).name ?? "")
+                sourceExperimentId = experimentId
+            },
+            experimentRepository: NoMatchingExperimentRepository(),
+            componentRepository: ComponentRepositoryImpl(config: config),
+            trackRepository: repository,
+            databaseRepository: DatabaseRepositoryImpl(persistentContainer: persistentContainer),
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+        let sourceContainer = container.makeContainer(experimentId: "source-experiment", variantId: "source-variant")
+        let action = try JSONDecoder().decode(UIBlockAction.self, from: Data(#"{"eventName":"button-clicked"}"#.utf8))
+        sourceContainer.handleEvent(action)
+        let event = try XCTUnwrap(dispatchedEvent)
+        XCTAssertEqual(sourceExperimentId, "source-experiment")
+
+        let controller = TriggerViewController(user: user, container: container, modalViewController: nil)
+        await controller.performDispatch(event: event, sourceExperimentId: sourceExperimentId)
+        await controller.performDispatch(event: NubrickEvent("public-event"))
+        await repository.flushNow()
+
+        let requests = await client.recordedRequests()
+        let events = try requests.flatMap { request -> [[String: Any]] in
+            let payload = try XCTUnwrap(request.httpBody)
+            let body = try XCTUnwrap(JSONSerialization.jsonObject(with: payload) as? [String: Any])
+            return try XCTUnwrap(body["events"] as? [[String: Any]])
+        }
+        XCTAssertEqual(events.count, 2)
+        let actionEvent = try XCTUnwrap(events.first { $0["name"] as? String == "button-clicked" })
+        XCTAssertEqual(actionEvent["typename"] as? String, "event")
+        XCTAssertEqual(actionEvent["experimentId"] as? String, "source-experiment")
+        let publicEvent = try XCTUnwrap(events.first { $0["name"] as? String == "public-event" })
+        XCTAssertNil(publicEvent["experimentId"])
     }
 
     @MainActor

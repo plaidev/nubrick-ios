@@ -113,18 +113,22 @@ class TriggerViewController: UIViewController {
     }
     
     @MainActor
-    func dispatch(event: NubrickEvent) {
+    func dispatch(event: NubrickEvent, sourceExperimentId: String? = nil) {
         Task {
-            await self.performDispatch(event: event)
+            await self.performDispatch(event: event, sourceExperimentId: sourceExperimentId)
         }
     }
 
     @MainActor
-    func performDispatch(event: NubrickEvent) async {
+    func performDispatch(event: NubrickEvent, sourceExperimentId: String? = nil) async {
         // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,
         // so we fetch both popups and tooltips when running in Flutter, and popups only otherwise.
         let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
-        let triggerResult = await self.container.fetchTriggerContent(trigger: event.name, kinds: kinds)
+        let triggerResult = await self.container.fetchTriggerContent(
+            trigger: event.name,
+            kinds: kinds,
+            sourceExperimentId: sourceExperimentId
+        )
         let experimentId: String?
         let variantId: String?
         let kind: ExperimentKind?
