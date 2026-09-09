@@ -61,7 +61,8 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
 
     func fetchTriggerContent(
         trigger: String,
-        kinds: [ExperimentKind]
+        kinds: [ExperimentKind],
+        sourceExperimentId: String?
     ) async -> Result<FetchedTriggerContent, NubrickError> {
         guard trigger == "tooltip-trigger" else {
             return .failure(.notFound)

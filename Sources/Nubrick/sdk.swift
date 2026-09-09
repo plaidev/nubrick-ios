@@ -115,12 +115,12 @@ private func nubrickWarn(_ message: String) {
 }
 
 @MainActor
-private func dispatchMainActor(_ event: NubrickEvent) {
+private func dispatchMainActor(_ event: NubrickEvent, sourceExperimentId: String? = nil) {
     guard let runtime = NubrickSDK.requireRuntime() else {
         nubrickWarn("Dropping event before initialize: \(event.name)")
         return
     }
-    runtime.dispatch(event)
+    runtime.dispatch(event, sourceExperimentId: sourceExperimentId)
 }
 
 final class Config : Sendable{
@@ -208,7 +208,7 @@ final class NubrickCore {
     ) {
         let user = NubrickUser()
         let bridgeCallbackStore = BridgeCallbackStore(onEvent: onEvent)
-        let actionHandler: UIBlockActionHandler = { action, _ in
+        let actionHandler: @MainActor (_ action: UIBlockAction, _ experimentId: String?) -> Void = { action, experimentId in
             // Terminal sdk pipeline: convert -> side effects -> trigger dispatch.
             let converted = convertEvent(action)
             openLink(converted)
@@ -218,7 +218,7 @@ final class NubrickCore {
                   !name.isEmpty else {
                 return
             }
-            dispatchMainActor(NubrickEvent(name))
+            dispatchMainActor(NubrickEvent(name), sourceExperimentId: experimentId)
         }
         let config = Config(projectId: projectId)
         guard let persistentContainer = createNativebrikCoreDataHelper() else {
@@ -246,8 +246,8 @@ final class NubrickCore {
         }
     }
 
-    func dispatch(_ event: NubrickEvent) {
-        self.overlayVC.triggerViewController.dispatch(event: event)
+    func dispatch(_ event: NubrickEvent, sourceExperimentId: String? = nil) {
+        self.overlayVC.triggerViewController.dispatch(event: event, sourceExperimentId: sourceExperimentId)
     }
 
     func updateBridgeCallbacks(

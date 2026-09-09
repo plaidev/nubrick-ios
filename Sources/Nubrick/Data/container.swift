@@ -54,7 +54,7 @@ protocol Container : Sendable {
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
+    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
@@ -70,7 +70,7 @@ final class ContainerImpl: Container {
     let variantId: String?
     private let config: Config
     private let user: NubrickUser
-    private let actionHandler: UIBlockActionHandler
+    private let actionHandler: @MainActor (_ action: UIBlockAction, _ experimentId: String?) -> Void
     private let experimentRepository: ExperimentRepository2
     private let componentRepository: ComponentRepository2
     private let trackRepository: TrackRepository2
@@ -82,7 +82,7 @@ final class ContainerImpl: Container {
     init(
         config: Config,
         user: NubrickUser,
-        actionHandler: @escaping UIBlockActionHandler,
+        actionHandler: @escaping @MainActor (_ action: UIBlockAction, _ experimentId: String?) -> Void,
         experimentRepository: ExperimentRepository2,
         componentRepository: ComponentRepository2,
         trackRepository: TrackRepository2,
@@ -109,7 +109,7 @@ final class ContainerImpl: Container {
         if it.submitSurveyResponse == true {
             self.sendSurveyResponse()
         }
-        self.actionHandler(it, nil)
+        self.actionHandler(it, self.experimentId)
     }
 
     @MainActor
@@ -246,8 +246,8 @@ final class ContainerImpl: Container {
         }
     }
 
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError> {
-        await self.trackRepository.trackEvent(TrackUserEvent(name: trigger))
+    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError> {
+        await self.trackRepository.trackEvent(TrackUserEvent(name: trigger, experimentId: sourceExperimentId))
         await self.databaseRepository.appendUserEvent(name: trigger)
 
         var configs: ExperimentConfigs

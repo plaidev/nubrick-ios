@@ -14,12 +14,12 @@ struct NubrickDependencyContainer : Sendable {
     let trackRepository: TrackRepository2
     let databaseRepository: DatabaseRepository
     let httpRequestRepository: HttpRequestRepository
-    private let actionHandler: UIBlockActionHandler
+    private let actionHandler: @MainActor (_ action: UIBlockAction, _ experimentId: String?) -> Void
 
     init(
         config: Config,
         user: NubrickUser,
-        actionHandler: @escaping UIBlockActionHandler,
+        actionHandler: @escaping @MainActor (_ action: UIBlockAction, _ experimentId: String?) -> Void,
         persistentContainer: NSPersistentContainer,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil
     ) {
