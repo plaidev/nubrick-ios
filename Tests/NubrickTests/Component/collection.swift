@@ -56,6 +56,31 @@ final class CollectionViewTests: XCTestCase {
     }
 
     @MainActor
+    func testVerticalCollectionCellUsesWrapperRowLayoutAndCellBounds() throws {
+        let view = CollectionView(
+            block: try makeCollectionBlock(
+                kind: "GRID", direction: "COLUMN", fullItemWidth: false, childWidth: 0
+            ),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        let collection = try XCTUnwrap(view.subviews.first as? UICollectionView)
+        let indexPath = IndexPath(item: 0, section: 0)
+        let cell = try XCTUnwrap(
+            view.collectionView(collection, cellForItemAt: indexPath) as? CollectionViewCell
+        )
+        cell.frame = CGRect(x: 0, y: 0, width: 200, height: 80)
+        cell.layoutIfNeeded()
+
+        let wrapper = try XCTUnwrap(cell.contentView.subviews.first as? UIViewBlock)
+        let renderedChild = try XCTUnwrap(wrapper.subviews.first)
+
+        XCTAssertEqual(wrapper.frame, cell.contentView.bounds)
+        XCTAssertTrue(renderedChild.yoga.width.value.isNaN)
+        XCTAssertEqual(renderedChild.yoga.flexGrow, 1)
+        XCTAssertEqual(renderedChild.yoga.flexBasis.value, 0)
+    }
+
+    @MainActor
     func testUIKitViewportFollowsParentResolvedBoundsAndFullItemWidth() throws {
         let view = CollectionView(
             block: try makeCollectionBlock(kind: "CAROUSEL", direction: "ROW", fullItemWidth: true),
@@ -158,7 +183,8 @@ final class CollectionViewTests: XCTestCase {
     }
 
     private func makeCollectionBlock(
-        kind: String, direction: String, fullItemWidth: Bool, fullItemHeight: Bool = false
+        kind: String, direction: String, fullItemWidth: Bool, fullItemHeight: Bool = false,
+        childWidth: Int = 50
     ) throws
         -> UICollectionBlock
     {
@@ -186,12 +212,12 @@ final class CollectionViewTests: XCTestCase {
               {
                 "__typename": "UIFlexContainerBlock",
                 "id": "one",
-                "data": { "frame": { "width": 50, "height": 40 } }
+                "data": { "frame": { "width": \(childWidth), "height": 40 } }
               },
               {
                 "__typename": "UIFlexContainerBlock",
                 "id": "two",
-                "data": { "frame": { "width": 50, "height": 40 } }
+                "data": { "frame": { "width": \(childWidth), "height": 40 } }
               }
             ]
           }
