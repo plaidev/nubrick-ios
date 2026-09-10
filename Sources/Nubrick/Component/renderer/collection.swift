@@ -50,6 +50,8 @@ class CollectionViewCell: UICollectionViewCell {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        contentView.yoga.width = .init(value: Float(contentView.bounds.width), unit: .point)
+        contentView.yoga.height = .init(value: Float(contentView.bounds.height), unit: .point)
         self.contentView.yoga.applyLayout(preservingOrigin: false)
     }
 
@@ -413,7 +415,10 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
                                 return _replaceVariableData(base: variable, data: childData)
                             },
                             parentView: self,
-                            parentDirection: resolvedFlexDirection(self.block?.data?.direction),
+                            // UIViewBlock is the rendered block's direct Yoga parent and lays out
+                            // its child in a row. The collection direction describes scrolling,
+                            // not this immediate Yoga relationship.
+                            parentDirection: .ROW,
                             layoutInvalidationRoot: cell
                         )
                     )
@@ -428,7 +433,10 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
                     context: self.context.instanciateFrom(
                         UIBlockContextChildInit(
                             parentView: self,
-                            parentDirection: resolvedFlexDirection(self.block?.data?.direction),
+                            // UIViewBlock is the rendered block's direct Yoga parent and lays out
+                            // its child in a row. The collection direction describes scrolling,
+                            // not this immediate Yoga relationship.
+                            parentDirection: .ROW,
                             layoutInvalidationRoot: cell
                         )
                     )
