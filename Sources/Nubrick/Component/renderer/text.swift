@@ -38,7 +38,7 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
         } else {
             label.textColor = .label
         }
-        label.adjustsFontForContentSizeCategory = true
+        label.adjustsFontForContentSizeCategory = block.data?.scaleWithDeviceFontSize ?? true
         if let maxLines = block.data?.maxLines {
             label.numberOfLines = maxLines
         } else {
@@ -65,6 +65,7 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
+        guard block.data?.scaleWithDeviceFontSize ?? true else { return }
         guard previousTraitCollection?.preferredContentSizeCategory
             != traitCollection.preferredContentSizeCategory else { return }
 
@@ -75,14 +76,22 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
     private func setText(_ text: String) {
         let baseFont = parseTextBlockDataToUIFont(
             block.data?.size, block.data?.weight, block.data?.design)
-        let metrics = UIFontMetrics.default
-        let font = metrics.scaledFont(for: baseFont, compatibleWith: traitCollection)
         let baseLineHeight = CGFloat(
             block.data?.lineHeight
                 ?? Float(block.data?.size ?? 16) * defaultTextLineHeightRatio)
-        let lineHeight = metrics.scaledValue(
-            for: baseLineHeight,
-            compatibleWith: traitCollection)
+        let scaleWithDevice = block.data?.scaleWithDeviceFontSize ?? true
+        let font: UIFont
+        let lineHeight: CGFloat
+        if scaleWithDevice {
+            let metrics = UIFontMetrics.default
+            font = metrics.scaledFont(for: baseFont, compatibleWith: traitCollection)
+            lineHeight = metrics.scaledValue(
+                for: baseLineHeight,
+                compatibleWith: traitCollection)
+        } else {
+            font = baseFont
+            lineHeight = baseLineHeight
+        }
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.minimumLineHeight = lineHeight
         paragraphStyle.maximumLineHeight = lineHeight

@@ -62,6 +62,27 @@ final class TextViewTests: XCTestCase {
     }
 
     @MainActor
+    func testScaleWithDeviceFontSizeFalseKeepsAuthoredPointSize() throws {
+        let view = TextView(
+            block: try makeTextBlock(value: "Latin", scaleWithDeviceFontSize: false),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+
+        XCTAssertFalse(view.label.adjustsFontForContentSizeCategory)
+        XCTAssertEqual(view.label.font.pointSize, 13, accuracy: 0.01)
+    }
+
+    @MainActor
+    func testScaleWithDeviceFontSizeDefaultsToScaling() throws {
+        let view = TextView(
+            block: try makeTextBlock(value: "Latin"),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+
+        XCTAssertTrue(view.label.adjustsFontForContentSizeCategory)
+    }
+
+    @MainActor
     private func makeTextView(value: String, lineHeight: Float) throws -> TextView {
         TextView(
             block: try makeTextBlock(value: value, lineHeight: lineHeight),
@@ -69,14 +90,21 @@ final class TextViewTests: XCTestCase {
         )
     }
 
-    private func makeTextBlock(value: String, lineHeight: Float? = nil) throws -> UITextBlock {
+    private func makeTextBlock(
+        value: String,
+        lineHeight: Float? = nil,
+        scaleWithDeviceFontSize: Bool? = nil
+    ) throws -> UITextBlock {
         let lineHeightJSON = lineHeight.map { ",\n            \"lineHeight\": \($0)" } ?? ""
+        let scaleJSON = scaleWithDeviceFontSize.map {
+            ",\n            \"scaleWithDeviceFontSize\": \($0)"
+        } ?? ""
         let json = """
         {
           "id": "text",
           "data": {
             "value": "\(value.replacingOccurrences(of: "\n", with: "\\n"))",
-            "size": 13\(lineHeightJSON)
+            "size": 13\(lineHeightJSON)\(scaleJSON)
           }
         }
         """
