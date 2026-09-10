@@ -729,6 +729,7 @@ struct UITextBlockData: Decodable, Encodable {
   var design: FontDesign?
   var weight: FontWeight?
   var maxLines: Int?
+  var scaleWithDeviceFontSize: Boolean?
   var frame: FrameData?
   var onClick: UIBlockAction?
 }
