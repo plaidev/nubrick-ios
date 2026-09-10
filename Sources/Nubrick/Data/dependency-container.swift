@@ -20,7 +20,7 @@ struct NubrickDependencyContainer : Sendable {
         config: Config,
         user: NubrickUser,
         actionHandler: @escaping @MainActor (_ action: UIBlockAction, _ experimentId: String?) -> Void,
-        persistentContainer: NSPersistentContainer,
+        persistentContainerProvider: any PersistentContainerProvider,
         httpRequestInterceptor: NubrickHttpRequestInterceptor? = nil
     ) {
         self.config = config
@@ -30,10 +30,10 @@ struct NubrickDependencyContainer : Sendable {
         let trackRepository = TrackRespositoryImpl(
             config: config,
             user: user,
-            persistentContainer: persistentContainer
+            persistentContainerProvider: persistentContainerProvider
         )
         self.trackRepository = trackRepository
-        self.databaseRepository = DatabaseRepositoryImpl(persistentContainer: persistentContainer)
+        self.databaseRepository = DatabaseRepositoryImpl(persistentContainerProvider: persistentContainerProvider)
         self.httpRequestRepository = HttpRequestRepositoryImpl(intercepter: httpRequestInterceptor)
         self.actionHandler = actionHandler
     }

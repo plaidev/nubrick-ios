@@ -589,8 +589,9 @@ actor TrackRespositoryImpl: TrackRepository2 {
     private let flushInterval: TimeInterval = 10
     private let config: Config
     private let user: NubrickUser
-    private let outbox: TrackOutbox
+    private let persistentContainerProvider: any PersistentContainerProvider
     private let trackingHTTPClient: any HTTPClient
+    private var cachedOutbox: TrackOutbox?
     private var flushTask: Task<Void, Never>?
     private var scheduledFlushID: UUID?
     private var isSending = false
@@ -600,13 +601,25 @@ actor TrackRespositoryImpl: TrackRepository2 {
     init(
         config: Config,
         user: NubrickUser,
-        persistentContainer: NSPersistentContainer,
+        persistentContainerProvider: any PersistentContainerProvider,
         trackingHTTPClient: any HTTPClient = trackingSession
     ) {
         self.config = config
         self.user = user
-        self.outbox = TrackOutbox(persistentContainer: persistentContainer)
+        self.persistentContainerProvider = persistentContainerProvider
         self.trackingHTTPClient = trackingHTTPClient
+    }
+
+    private func outbox() async -> TrackOutbox? {
+        if let cachedOutbox {
+            return cachedOutbox
+        }
+        guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
+            return nil
+        }
+        let outbox = TrackOutbox(persistentContainer: persistentContainer)
+        cachedOutbox = outbox
+        return outbox
     }
 
     private func makeJsonRequest<Body: Encodable>(
@@ -651,10 +664,11 @@ actor TrackRespositoryImpl: TrackRepository2 {
         let (userId, meta) = await MainActor.run {
             (self.user.id, TrackEventMeta.current())
         }
-        enqueue(event, userId: userId, meta: meta)
+        await enqueue(event, userId: userId, meta: meta)
     }
 
-    private func enqueue(_ event: TrackEvent, userId: String, meta: TrackEventMeta) {
+    private func enqueue(_ event: TrackEvent, userId: String, meta: TrackEventMeta) async {
+        guard let outbox = await outbox() else { return }
         guard let pendingEventCount = outbox.insertAndGetPendingCount(event, userId: userId, meta: meta) else { return }
         if pendingEventCount >= maxBatchSize {
             requestFlush(after: 0)
@@ -702,12 +716,16 @@ actor TrackRespositoryImpl: TrackRepository2 {
             return
         }
 
+        guard let outbox = await outbox() else {
+            return
+        }
+
         isSending = true
         var retryAfter: TimeInterval?
 
         do {
             while try outbox.hasPendingEvents() {
-                if try await sendNextBatch() {
+                if try await sendNextBatch(outbox: outbox) {
                     retryDelay = 10
                     continue
                 }
@@ -736,7 +754,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
         }
     }
 
-    private func sendNextBatch() async throws -> Bool {
+    private func sendNextBatch(outbox: TrackOutbox) async throws -> Bool {
         let pending: [PendingTrackEvent]
         pending = try outbox.nextBatch(maxEvents: maxBatchSize, maxPayloadBytes: maxBatchEventPayloadBytes)
         guard !pending.isEmpty else { return true }
@@ -863,7 +881,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
 
         // Only send error tracking events for error or fatal severity
         if crashEvent.severity.isErrorLevel {
-            enqueue(TrackEvent(
+            await enqueue(TrackEvent(
                 typename: .Event,
                 name: TriggerEventNameDefs.N_ERROR_RECORD.rawValue,
                 timestamp: getCurrentDate().ISO8601Format(),
@@ -873,7 +891,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
         }
         if causedByNativebrik {
             if crashEvent.severity.isErrorLevel {
-                enqueue(TrackEvent(
+                await enqueue(TrackEvent(
                     typename: .Event,
                     name: TriggerEventNameDefs.N_ERROR_IN_SDK_RECORD.rawValue,
                     timestamp: getCurrentDate().ISO8601Format(),
@@ -881,7 +899,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
                     eventUuid: UUID().uuidString
                 ), userId: userId, meta: meta)
             }
-            enqueue(TrackEvent(
+            await enqueue(TrackEvent(
                 typename: .Crash,
                 timestamp: getCurrentDate().ISO8601Format(),
                 exceptions: crashEvent.exceptions,

@@ -122,24 +122,38 @@ final class PendingTrackEventEntity: NSManagedObject {
     }
 }
 
-@MainActor
-private let nativebrikManagedObjectModel: NSManagedObjectModel = {
-    let model = NSManagedObjectModel()
-    model.entities = [
-        UserEventEntity.entityDescription(),
-        ExperimentHistoryEntity.entityDescription(),
-        PendingTrackEventEntity.entityDescription(),
-    ]
-    return model
-}()
+/// Owns the SDK's immutable Core Data model.
+///
+/// The model is fully configured during initialization and never mutated after
+/// that point, so it is safe to share while persistent stores open off-main.
+private final class NativebrikManagedObjectModel: @unchecked Sendable {
+    static let shared = NativebrikManagedObjectModel()
 
-@MainActor
+    let value: NSManagedObjectModel
+
+    private init() {
+        let model = NSManagedObjectModel()
+        model.entities = [
+            UserEventEntity.entityDescription(),
+            ExperimentHistoryEntity.entityDescription(),
+            PendingTrackEventEntity.entityDescription(),
+        ]
+        self.value = model
+    }
+}
+
 func createNativebrikCoreDataHelper(storeURL: URL? = nil) -> NSPersistentContainer? {
-    let container = NSPersistentContainer(name: "com.nativebrik.sdk", managedObjectModel: nativebrikManagedObjectModel)
+    let container = NSPersistentContainer(
+        name: "com.nativebrik.sdk",
+        managedObjectModel: NativebrikManagedObjectModel.shared.value
+    )
     if let description = container.persistentStoreDescriptions.first {
         if let storeURL {
             description.url = storeURL
         }
+        // The provider runs this synchronous load in a detached task. Keeping
+        // this false makes its readiness task resolve only after migration and
+        // SQLite open have completed.
         description.shouldAddStoreAsynchronously = false
         description.shouldMigrateStoreAutomatically = true
         description.shouldInferMappingModelAutomatically = true
@@ -151,13 +165,48 @@ func createNativebrikCoreDataHelper(storeURL: URL? = nil) -> NSPersistentContain
     }
 
     if let loadError {
-        let message = "Couldn't create a persistent Core Data store. Nubrick SDK won't initialize without local database support: \(loadError)"
-        #if DEBUG
-        assertionFailure(message)
-        #endif
-        nubrickDatabaseWarn(message)
+        nubrickDatabaseWarn("Couldn't create a persistent Core Data store: \(loadError)")
         return nil
     }
 
     return container
+}
+
+/// Provides the persistent container once its store has finished opening.
+///
+/// The SDK starts this work during initialization but only awaits it from code
+/// paths that actually need Core Data. This keeps SQLite open/migration work
+/// out of the app's launch path.
+protocol PersistentContainerProvider: Sendable {
+    func persistentContainer() async -> NSPersistentContainer?
+}
+
+actor LazyPersistentContainerProvider: PersistentContainerProvider {
+    private static let maximumLoadAttempts = 3
+    private static let retryDelayNanoseconds: UInt64 = 250_000_000
+    private let loadTask: Task<NSPersistentContainer?, Never>
+
+    init(storeURL: URL? = nil) {
+        self.loadTask = Task.detached(priority: .utility) {
+            for attempt in 1...Self.maximumLoadAttempts {
+                if let container = createNativebrikCoreDataHelper(storeURL: storeURL) {
+                    return container
+                }
+
+                guard attempt < Self.maximumLoadAttempts else {
+                    nubrickDatabaseWarn(
+                        "Couldn't initialize the persistent Core Data store after \(Self.maximumLoadAttempts) attempts."
+                    )
+                    return nil
+                }
+
+                try? await Task.sleep(nanoseconds: Self.retryDelayNanoseconds)
+            }
+            return nil
+        }
+    }
+
+    func persistentContainer() async -> NSPersistentContainer? {
+        await loadTask.value
+    }
 }

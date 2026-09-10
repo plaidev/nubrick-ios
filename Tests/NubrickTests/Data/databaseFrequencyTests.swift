@@ -5,6 +5,46 @@ import XCTest
 
 @MainActor
 final class DatabaseFrequencyTests: XCTestCase {
+    @MainActor
+    func testRepositoryWaitsForPersistentContainerReadiness() async throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+
+        let provider = DeferredPersistentContainerProvider()
+        let repository = DatabaseRepositoryImpl(persistentContainerProvider: provider)
+        let appendTask = Task {
+            await repository.appendUserEvent(name: "event-before-ready")
+        }
+
+        await provider.waitUntilRequested()
+        let request = NSFetchRequest<UserEventEntity>(entityName: "NativebrikUserEvent")
+        XCTAssertEqual(try persistentContainer.viewContext.count(for: request), 0)
+
+        await provider.resolve(with: persistentContainer)
+        await appendTask.value
+
+        XCTAssertEqual(try persistentContainer.viewContext.count(for: request), 1)
+    }
+
+    func testRepositoryRejectsExperimentsWhenPersistentContainerFails() async {
+        let provider = DeferredPersistentContainerProvider()
+        let repository = DatabaseRepositoryImpl(persistentContainerProvider: provider)
+
+        let frequencyTask = Task {
+            await repository.isNotInFrequency(experimentId: "experiment", frequency: nil)
+        }
+        await provider.waitUntilRequested()
+        await provider.resolve(with: nil)
+
+        let isNotInFrequency = await frequencyTask.value
+        XCTAssertFalse(isNotInFrequency)
+        let userEventFrequencyMatches = await repository.isMatchedToUserEventFrequencyCondition(condition: nil)
+        XCTAssertFalse(userEventFrequencyMatches)
+    }
+
     func testDailyExperimentFrequencyAllowsDisplayOnTheNextLocalDay() async throws {
         let storeURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
@@ -163,6 +203,44 @@ final class DatabaseFrequencyTests: XCTestCase {
         }
         for suffix in ["", "-shm", "-wal"] {
             try? FileManager.default.removeItem(atPath: storeURL.path + suffix)
+        }
+    }
+}
+
+private actor DeferredPersistentContainerProvider: PersistentContainerProvider {
+    private var persistentContainer: NSPersistentContainer?
+    private var containerWaiters: [CheckedContinuation<NSPersistentContainer?, Never>] = []
+    private var requestWaiters: [CheckedContinuation<Void, Never>] = []
+    private var hasRequestedContainer = false
+    private var hasResolvedContainer = false
+
+    func persistentContainer() async -> NSPersistentContainer? {
+        hasRequestedContainer = true
+        let requestWaiters = requestWaiters
+        self.requestWaiters.removeAll()
+        for waiter in requestWaiters {
+            waiter.resume()
+        }
+
+        if hasResolvedContainer {
+            return persistentContainer
+        }
+
+        return await withCheckedContinuation { containerWaiters.append($0) }
+    }
+
+    func waitUntilRequested() async {
+        guard !hasRequestedContainer else { return }
+        await withCheckedContinuation { requestWaiters.append($0) }
+    }
+
+    func resolve(with persistentContainer: NSPersistentContainer?) {
+        self.persistentContainer = persistentContainer
+        hasResolvedContainer = true
+        let containerWaiters = containerWaiters
+        self.containerWaiters.removeAll()
+        for waiter in containerWaiters {
+            waiter.resume(returning: persistentContainer)
         }
     }
 }

@@ -1052,7 +1052,7 @@ final class ContainerTests: XCTestCase {
             config: config,
             user: user,
             actionHandler: { _, _ in },
-            persistentContainer: db,
+            persistentContainerProvider: TestPersistentContainerProvider(db),
             httpRequestInterceptor: nil
         )
         return dependencies.makeContainer()
