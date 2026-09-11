@@ -16,14 +16,16 @@ protocol DatabaseRepository : Sendable {
 }
 
 final class DatabaseRepositoryImpl: DatabaseRepository {
-    private let persistentContainer: NSPersistentContainer
+    private let persistentContainerProvider: any PersistentContainerProvider
 
-    init(persistentContainer: NSPersistentContainer) {
-        self.persistentContainer = persistentContainer
+    init(persistentContainerProvider: any PersistentContainerProvider) {
+        self.persistentContainerProvider = persistentContainerProvider
     }
 
     func appendUserEvent(name: String) async {
-        let persistentContainer = self.persistentContainer
+        guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
+            return
+        }
         await MainActor.run {
             let context = persistentContainer.viewContext
             let event = UserEventEntity(context: context)
@@ -38,7 +40,9 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
     }
 
     func appendExperimentHistory(experimentId: String) async {
-        let persistentContainer = self.persistentContainer
+        guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
+            return
+        }
         await MainActor.run {
             let context = persistentContainer.viewContext
             let history = ExperimentHistoryEntity(context: context)
@@ -53,6 +57,9 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
     }
 
     func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) async -> Boolean {
+        guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
+            return false
+        }
         guard let frequency = frequency else {
             return true
         }
@@ -89,11 +96,19 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
             unitsToSubtract = value
         }
         let after = unit.subtract(unitsToSubtract, from: baseDate, calendar: calendar)
-        let count = await self.experimentHisotryCountAfter(experimentId: experimentId, after: after)
+        let count = await self.experimentHisotryCountAfter(
+            persistentContainer: persistentContainer,
+            experimentId: experimentId,
+            after: after
+        )
         return count == 0
     }
 
-    private func experimentHisotryCountAfter(experimentId: String, after: Date) async -> Int {
+    private func experimentHisotryCountAfter(
+        persistentContainer: NSPersistentContainer,
+        experimentId: String,
+        after: Date
+    ) async -> Int {
         let bgContext = persistentContainer.newBackgroundContext()
         let count: Int = await bgContext.perform {
             do {
@@ -115,6 +130,9 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
     }
 
     func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) async -> Boolean {
+        guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
+            return false
+        }
         guard let condition = condition else {
             return true
         }
@@ -127,6 +145,7 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         let timeUnit: FrequencyUnit = condition.unit ?? .DAY
 
         let counts = await self.userEventCounts(
+            persistentContainer: persistentContainer,
             name: eventName,
             unit: timeUnit,
             lookbackPeriod: condition.lookbackPeriod,
@@ -141,6 +160,7 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
     // if `lookbackPeriod` is not provided, it will look back 50 years.
     // if `since` is not provided, it will be 50 years ago.
     private func userEventCounts(
+        persistentContainer: NSPersistentContainer,
         name: String,
         unit: FrequencyUnit,
         lookbackPeriod: Int?,

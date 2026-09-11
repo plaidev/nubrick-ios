@@ -199,7 +199,7 @@ final class NubrickCore {
     private let bridgeCallbackStore: BridgeCallbackStore
     private let trackingLifecycleObserver: TrackingLifecycleObserver
 
-    init?(
+    init(
         projectId: String,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
@@ -221,14 +221,11 @@ final class NubrickCore {
             dispatchMainActor(NubrickEvent(name), sourceExperimentId: experimentId)
         }
         let config = Config(projectId: projectId)
-        guard let persistentContainer = createNativebrikCoreDataHelper() else {
-            return nil
-        }
         let dependencies = NubrickDependencyContainer(
             config: config,
             user: user,
             actionHandler: actionHandler,
-            persistentContainer: persistentContainer,
+            persistentContainerProvider: LazyPersistentContainerProvider(),
             httpRequestInterceptor: httpRequestInterceptor
         )
 
@@ -517,17 +514,13 @@ public enum NubrickSDK {
             return true
         }
 
-        guard let runtime = NubrickCore(
+        let runtime = NubrickCore(
             projectId: projectId,
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
             onDispatch: onDispatch,
             onTooltip: onTooltip
-        ) else {
-            let message = "NubrickSDK.initialize(...) failed because the local database could not be created."
-            nubrickWarn(message)
-            return false
-        }
+        )
 
         self.runtime = runtime
 
