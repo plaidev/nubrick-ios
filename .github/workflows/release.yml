@@ -57,9 +57,27 @@ jobs:
           swift --version
 
       - name: Ensure iOS platform is installed for selected Xcode
+        shell: bash
         run: |
-          sudo xcodebuild -downloadPlatform iOS
-          xcodebuild -showsdks
+          for attempt in 1 2 3; do
+            echo "Platform installation attempt ${attempt}/3"
+
+            # Start CoreSimulator in the runner user's session before downloading.
+            xcrun simctl list > /dev/null 2>&1 || true
+
+            if xcodebuild -downloadPlatform iOS; then
+              xcodebuild -showsdks
+              exit 0
+            fi
+
+            if [ "${attempt}" -lt 3 ]; then
+              echo "Platform installation failed; retrying..."
+              sleep $((attempt * 5))
+            fi
+          done
+
+          echo "::error::Failed to install the iOS platform after 3 attempts"
+          exit 70
 
       - name: Validate version format
         run: |
