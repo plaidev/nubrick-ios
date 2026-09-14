@@ -1,5 +1,6 @@
 import UIKit
 import XCTest
+import YogaKit
 @testable import NubrickLocal
 
 final class TextViewTests: XCTestCase {
@@ -106,6 +107,27 @@ final class TextViewTests: XCTestCase {
     }
 
     @MainActor
+    func testUnframedTextWrapsInConstrainedHorizontalFlex() throws {
+        let row = FlexView(
+            block: try makeConstrainedRowBlock(),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        row.frame.size = CGSize(width: 180, height: 200)
+        row.yoga.applyLayout(preservingOrigin: true)
+
+        let unframed = try XCTUnwrap(row.subviews.first as? TextView)
+        let fixedWidth = try XCTUnwrap(row.subviews.last as? TextView)
+
+        XCTAssertEqual(unframed.yoga.flexShrink, 1)
+        XCTAssertEqual(unframed.yoga.minWidth.value, 0)
+        XCTAssertEqual(unframed.yoga.minWidth.unit, .point)
+        XCTAssertEqual(fixedWidth.frame.width, 120, accuracy: 0.01)
+        XCTAssertEqual(unframed.frame.width, 60, accuracy: 0.01)
+        XCTAssertEqual(unframed.label.frame.width, unframed.frame.width, accuracy: 0.01)
+        XCTAssertGreaterThan(unframed.label.frame.height, unframed.label.font.lineHeight)
+    }
+
+    @MainActor
     private func makeTextView(value: String, lineHeight: Float) throws -> TextView {
         TextView(
             block: try makeTextBlock(value: value, lineHeight: lineHeight),
@@ -134,5 +156,37 @@ final class TextViewTests: XCTestCase {
         }
         """
         return try JSONDecoder().decode(UITextBlock.self, from: Data(json.utf8))
+    }
+
+    private func makeConstrainedRowBlock() throws -> UIFlexContainerBlock {
+        let json = """
+        {
+          "id": "row",
+          "data": {
+            "direction": "ROW",
+            "frame": { "width": 180 },
+            "children": [
+              {
+                "__typename": "UITextBlock",
+                "id": "unframed",
+                "data": {
+                  "value": "Long text that needs to wrap",
+                  "size": 13
+                }
+              },
+              {
+                "__typename": "UITextBlock",
+                "id": "fixed",
+                "data": {
+                  "value": "Fixed text",
+                  "size": 13,
+                  "frame": { "width": 120 }
+                }
+              }
+            ]
+          }
+        }
+        """
+        return try JSONDecoder().decode(UIFlexContainerBlock.self, from: Data(json.utf8))
     }
 }
