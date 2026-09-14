@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import UIKit
+internal import YogaKit
 
 private let defaultTextLineHeightRatio: Float = 1.2
 
@@ -30,6 +31,10 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
             configureSize(
                 layout: layout, frame: block.data?.frame,
                 parentDirection: context.getParentDireciton())
+            if context.getParentDireciton() == .ROW, block.data?.frame?.width == nil {
+                layout.flexShrink = 1.0
+                layout.minWidth = YGValue(value: 0, unit: .point)
+            }
         }
         let label = UILabel()
         label.yoga.isEnabled = true
