@@ -39,11 +39,13 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
             label.textColor = .label
         }
         label.adjustsFontForContentSizeCategory = block.data?.scaleWithDeviceFontSize ?? true
-        if let maxLines = block.data?.maxLines {
+        let hasMaxLines = (block.data?.maxLines ?? 0) > 0
+        if hasMaxLines, let maxLines = block.data?.maxLines {
             label.numberOfLines = maxLines
         } else {
             label.numberOfLines = 0
         }
+        label.lineBreakMode = hasMaxLines ? .byTruncatingTail : .byWordWrapping
         
         self.label = label
         self.addSubview(label)
@@ -95,6 +97,9 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.minimumLineHeight = lineHeight
         paragraphStyle.maximumLineHeight = lineHeight
+        paragraphStyle.lineBreakMode = (block.data?.maxLines ?? 0) > 0
+            ? .byTruncatingTail
+            : .byWordWrapping
 
         label.font = font
         label.attributedText = NSAttributedString(

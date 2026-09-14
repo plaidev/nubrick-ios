@@ -83,6 +83,29 @@ final class TextViewTests: XCTestCase {
     }
 
     @MainActor
+    func testOnlyPositiveMaxLinesValuesClampAndEllipsize() throws {
+        let capped = TextView(
+            block: try makeTextBlock(value: "Line one", maxLines: 2),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        let uncapped = TextView(
+            block: try makeTextBlock(value: "Line one", maxLines: 0),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        let negative = TextView(
+            block: try makeTextBlock(value: "Line one", maxLines: -1),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+
+        XCTAssertEqual(capped.label.numberOfLines, 2)
+        XCTAssertEqual(capped.label.lineBreakMode, .byTruncatingTail)
+        XCTAssertEqual(uncapped.label.numberOfLines, 0)
+        XCTAssertEqual(uncapped.label.lineBreakMode, .byWordWrapping)
+        XCTAssertEqual(negative.label.numberOfLines, 0)
+        XCTAssertEqual(negative.label.lineBreakMode, .byWordWrapping)
+    }
+
+    @MainActor
     private func makeTextView(value: String, lineHeight: Float) throws -> TextView {
         TextView(
             block: try makeTextBlock(value: value, lineHeight: lineHeight),
@@ -93,18 +116,20 @@ final class TextViewTests: XCTestCase {
     private func makeTextBlock(
         value: String,
         lineHeight: Float? = nil,
-        scaleWithDeviceFontSize: Bool? = nil
+        scaleWithDeviceFontSize: Bool? = nil,
+        maxLines: Int? = nil
     ) throws -> UITextBlock {
         let lineHeightJSON = lineHeight.map { ",\n            \"lineHeight\": \($0)" } ?? ""
         let scaleJSON = scaleWithDeviceFontSize.map {
             ",\n            \"scaleWithDeviceFontSize\": \($0)"
         } ?? ""
+        let maxLinesJSON = maxLines.map { ",\n            \"maxLines\": \($0)" } ?? ""
         let json = """
         {
           "id": "text",
           "data": {
             "value": "\(value.replacingOccurrences(of: "\n", with: "\\n"))",
-            "size": 13\(lineHeightJSON)\(scaleJSON)
+            "size": 13\(lineHeightJSON)\(scaleJSON)\(maxLinesJSON)
           }
         }
         """
