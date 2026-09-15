@@ -128,6 +128,36 @@ final class TextViewTests: XCTestCase {
     }
 
     @MainActor
+    func testUnframedTextsShrinkProportionallyToIntrinsicWidthsInHorizontalFlex() throws {
+        let row = FlexView(
+            block: try makeProportionalTextRowBlock(),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        row.frame.size = CGSize(width: 300, height: 300)
+        row.yoga.applyLayout(preservingOrigin: true)
+
+        let longText = try XCTUnwrap(row.subviews[0] as? TextView)
+        let shortText = try XCTUnwrap(row.subviews[1] as? TextView)
+        let fixedWidth = try XCTUnwrap(row.subviews[2] as? TextView)
+        let textSpace = row.frame.width - fixedWidth.frame.width
+        let totalBasis = CGFloat(longText.yoga.flexBasis.value + shortText.yoga.flexBasis.value)
+
+        XCTAssertEqual(longText.yoga.maxWidth.unit, .undefined)
+        XCTAssertGreaterThan(longText.yoga.flexBasis.value, shortText.yoga.flexBasis.value)
+        XCTAssertEqual(fixedWidth.frame.width, 60, accuracy: 0.01)
+        XCTAssertEqual(
+            longText.frame.width,
+            textSpace * CGFloat(longText.yoga.flexBasis.value) / totalBasis,
+            accuracy: 1
+        )
+        XCTAssertEqual(
+            shortText.frame.width,
+            textSpace * CGFloat(shortText.yoga.flexBasis.value) / totalBasis,
+            accuracy: 1
+        )
+    }
+
+    @MainActor
     private func makeTextView(value: String, lineHeight: Float) throws -> TextView {
         TextView(
             block: try makeTextBlock(value: value, lineHeight: lineHeight),
@@ -181,6 +211,46 @@ final class TextViewTests: XCTestCase {
                   "value": "Fixed text",
                   "size": 13,
                   "frame": { "width": 120 }
+                }
+              }
+            ]
+          }
+        }
+        """
+        return try JSONDecoder().decode(UIFlexContainerBlock.self, from: Data(json.utf8))
+    }
+
+    private func makeProportionalTextRowBlock() throws -> UIFlexContainerBlock {
+        let json = """
+        {
+          "id": "row",
+          "data": {
+            "direction": "ROW",
+            "frame": { "width": 300 },
+            "children": [
+              {
+                "__typename": "UITextBlock",
+                "id": "long",
+                "data": {
+                  "value": "This is a substantially longer text block that should receive more row space",
+                  "size": 13
+                }
+              },
+              {
+                "__typename": "UITextBlock",
+                "id": "short",
+                "data": {
+                  "value": "Shorter text block",
+                  "size": 13
+                }
+              },
+              {
+                "__typename": "UITextBlock",
+                "id": "fixed",
+                "data": {
+                  "value": "Fixed",
+                  "size": 13,
+                  "frame": { "width": 60 }
                 }
               }
             ]

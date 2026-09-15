@@ -31,7 +31,7 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
             configureSize(
                 layout: layout, frame: block.data?.frame,
                 parentDirection: context.getParentDireciton())
-            if context.getParentDireciton() == .ROW, block.data?.frame?.width == nil {
+            if self.shrinksInHorizontalFlex {
                 layout.flexShrink = 1.0
                 layout.minWidth = YGValue(value: 0, unit: .point)
             }
@@ -113,6 +113,34 @@ class TextView: AnimatedUIView, BackgroundImageObserver {
                 .font: font,
                 .paragraphStyle: paragraphStyle,
             ])
+        configureIntrinsicFlexBasis()
+    }
+
+    private var shrinksInHorizontalFlex: Bool {
+        context?.getParentDireciton() == .ROW && block.data?.frame?.width == nil
+    }
+
+    private func configureIntrinsicFlexBasis() {
+        guard shrinksInHorizontalFlex else { return }
+
+        let frame = block.data?.frame
+        let contentWidth = label.sizeThatFits(
+            CGSize(
+                width: CGFloat.greatestFiniteMagnitude,
+                height: CGFloat.greatestFiniteMagnitude
+            )
+        ).width
+        let horizontalPadding = CGFloat(frame?.paddingLeft ?? 0) + CGFloat(frame?.paddingRight ?? 0)
+        let horizontalBorder = CGFloat(max(frame?.borderWidth ?? 0, 0)) * 2
+
+        configureLayout { layout in
+            // Yoga measures auto-basis text with the row width as fit-content.
+            // Use the label's max-content width so flexShrink is proportional to
+            // each Text's actual content, matching browser flexbox behavior.
+            layout.flexBasis = YGValue(
+                value: Float(contentWidth + horizontalPadding + horizontalBorder), unit: .point)
+            layout.maxWidth = YGValueUndefined
+        }
     }
 
     private func bindVariable() {
