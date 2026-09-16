@@ -26,8 +26,8 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
             return
         }
-        await MainActor.run {
-            let context = persistentContainer.viewContext
+        let context = persistentContainer.newBackgroundContext()
+        await context.perform {
             let event = UserEventEntity(context: context)
             event.name = name
             event.timestamp = getCurrentDate()
@@ -43,8 +43,8 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
             return
         }
-        await MainActor.run {
-            let context = persistentContainer.viewContext
+        let context = persistentContainer.newBackgroundContext()
+        await context.perform {
             let history = ExperimentHistoryEntity(context: context)
             history.experimentId = experimentId
             history.timestamp = getCurrentDate()
