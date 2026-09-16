@@ -108,22 +108,26 @@ fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollection
 fileprivate func configureCollectionSize(
     layout: YGLayout, data: UICollectionBlockData?, parentDirection: FlexDirection?
 ) {
-    // The editor serializes a fill value on the scrolling axis and an explicit
-    // cross-axis size. Fall back to the same calculation for older documents.
-    // On a matching parent flex axis, fill shares the remaining space with
-    // other fill children.
+    // A zero frame is Fill. A nil main-axis frame is Hug, including when this
+    // collection is inside a matching parent flex direction.
     layout.maxWidth = .init(value: 100, unit: .percent)
     layout.maxHeight = .init(value: 100, unit: .percent)
     if resolvedFlexDirection(data?.direction) == .COLUMN {
         let frameWidth = data?.frame?.width ?? 0
         let width = frameWidth > 0 ? CGFloat(frameWidth) : calcCollectionWidth(data)
         layout.width = .init(value: Float(width), unit: .point)
-        if parentDirection == .COLUMN {
+        if parentDirection == .COLUMN && data?.frame?.height == 0 {
             layout.height = YGValueAuto
             layout.minHeight = YGValueUndefined
             layout.flexGrow = 1
             layout.flexShrink = 1
             layout.flexBasis = .init(value: 0, unit: .point)
+        } else if parentDirection == .COLUMN {
+            layout.height = YGValueAuto
+            layout.minHeight = YGValueUndefined
+            layout.flexGrow = 0
+            layout.flexShrink = 0
+            layout.flexBasis = YGValueAuto
         } else {
             layout.height = .init(value: 100, unit: .percent)
             layout.minHeight = .init(value: 100, unit: .percent)
@@ -133,12 +137,18 @@ fileprivate func configureCollectionSize(
         let frameHeight = data?.frame?.height ?? 0
         let height = frameHeight > 0 ? CGFloat(frameHeight) : calcCollectionHeight(data)
         layout.height = .init(value: Float(height), unit: .point)
-        if parentDirection == .ROW {
+        if parentDirection == .ROW && data?.frame?.width == 0 {
             layout.width = YGValueAuto
             layout.minWidth = YGValueUndefined
             layout.flexGrow = 1
             layout.flexShrink = 1
             layout.flexBasis = .init(value: 0, unit: .point)
+        } else if parentDirection == .ROW {
+            layout.width = YGValueAuto
+            layout.minWidth = YGValueUndefined
+            layout.flexGrow = 0
+            layout.flexShrink = 0
+            layout.flexBasis = YGValueAuto
         } else {
             layout.width = .init(value: 100, unit: .percent)
             layout.minWidth = .init(value: 100, unit: .percent)

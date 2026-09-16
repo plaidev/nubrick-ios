@@ -56,6 +56,68 @@ final class CollectionViewTests: XCTestCase {
     }
 
     @MainActor
+    func testHorizontalGridHugsInRowParentWhenWidthIsNull() throws {
+        let view = CollectionView(
+            block: try makeCollectionBlock(
+                kind: "GRID", direction: "ROW", fullItemWidth: false, mainAxisFrame: nil
+            ),
+            context: UIBlockContext(UIBlockContextInit(parentDirection: .ROW))
+        )
+
+        XCTAssertTrue(view.yoga.width.value.isNaN)
+        XCTAssertEqual(view.yoga.flexGrow, 0)
+    }
+
+    @MainActor
+    func testVerticalGridHugsInColumnParentWhenHeightIsNull() throws {
+        let view = CollectionView(
+            block: try makeCollectionBlock(
+                kind: "GRID", direction: "COLUMN", fullItemWidth: false, mainAxisFrame: nil
+            ),
+            context: UIBlockContext(UIBlockContextInit(parentDirection: .COLUMN))
+        )
+
+        XCTAssertTrue(view.yoga.height.value.isNaN)
+        XCTAssertEqual(view.yoga.flexGrow, 0)
+    }
+
+    @MainActor
+    func testHorizontalGridHugsToContentWidthInRowParentAfterLayout() throws {
+        let row = FlexView(
+            block: try makeRowWithCollectionBlock(direction: "ROW", mainAxisFrame: nil),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        row.frame.size = CGSize(width: 300, height: 300)
+        row.yoga.applyLayout(preservingOrigin: true)
+
+        let collection = try XCTUnwrap(row.subviews.first as? CollectionView)
+        let fixedSibling = try XCTUnwrap(row.subviews.last)
+
+        XCTAssertEqual(collection.frame.width, 90, accuracy: 0.01)
+        XCTAssertEqual(collection.frame.height, 216, accuracy: 0.01)
+        XCTAssertEqual(fixedSibling.frame.width, 100, accuracy: 0.01)
+        XCTAssertLessThan(collection.frame.width + fixedSibling.frame.width, row.frame.width)
+    }
+
+    @MainActor
+    func testVerticalGridHugsToContentHeightInColumnParentAfterLayout() throws {
+        let column = FlexView(
+            block: try makeColumnWithCollectionBlock(direction: "COLUMN", mainAxisFrame: nil),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        column.frame.size = CGSize(width: 300, height: 300)
+        column.yoga.applyLayout(preservingOrigin: true)
+
+        let collection = try XCTUnwrap(column.subviews.first as? CollectionView)
+        let fixedSibling = try XCTUnwrap(column.subviews.last)
+
+        XCTAssertEqual(collection.frame.width, 270, accuracy: 0.01)
+        XCTAssertEqual(collection.frame.height, 66, accuracy: 0.01)
+        XCTAssertEqual(fixedSibling.frame.height, 100, accuracy: 0.01)
+        XCTAssertLessThan(collection.frame.height + fixedSibling.frame.height, column.frame.height)
+    }
+
+    @MainActor
     func testVerticalCollectionCellUsesWrapperRowLayoutAndCellBounds() throws {
         let view = CollectionView(
             block: try makeCollectionBlock(
@@ -184,10 +246,11 @@ final class CollectionViewTests: XCTestCase {
 
     private func makeCollectionBlock(
         kind: String, direction: String, fullItemWidth: Bool, fullItemHeight: Bool = false,
-        childWidth: Int = 50
+        childWidth: Int = 50, mainAxisFrame: Int? = 0
     ) throws
         -> UICollectionBlock
     {
+        let mainAxisSize = mainAxisFrame.map { String($0) } ?? "null"
         let json = """
         {
           "id": "collection",
@@ -201,8 +264,8 @@ final class CollectionViewTests: XCTestCase {
             "fullItemWidth": \(fullItemWidth),
             "fullItemHeight": \(fullItemHeight),
             "frame": {
-              "width": \(direction == "COLUMN" ? 270 : 0),
-              "height": \(direction == "COLUMN" ? 0 : 216),
+              "width": \(direction == "COLUMN" ? "270" : mainAxisSize),
+              "height": \(direction == "COLUMN" ? mainAxisSize : "216"),
               "paddingLeft": 16,
               "paddingRight": 24,
               "paddingTop": 8,
@@ -224,5 +287,119 @@ final class CollectionViewTests: XCTestCase {
         }
         """
         return try JSONDecoder().decode(UICollectionBlock.self, from: Data(json.utf8))
+    }
+
+    private func makeRowWithCollectionBlock(direction: String, mainAxisFrame: Int?) throws
+        -> UIFlexContainerBlock
+    {
+        let mainAxisSize = mainAxisFrame.map { String($0) } ?? "null"
+        let json = """
+        {
+          "id": "row",
+          "data": {
+            "direction": "ROW",
+            "frame": { "width": 300 },
+            "children": [
+              {
+                "__typename": "UICollectionBlock",
+                "id": "collection",
+                "data": {
+                  "kind": "GRID",
+                  "direction": "\(direction)",
+                  "gridSize": 4,
+                  "gap": 10,
+                  "itemWidth": 50,
+                  "itemHeight": 40,
+                  "fullItemWidth": false,
+                  "fullItemHeight": false,
+                  "frame": {
+                    "width": \(direction == "COLUMN" ? "270" : mainAxisSize),
+                    "height": \(direction == "COLUMN" ? mainAxisSize : "216"),
+                    "paddingLeft": 16,
+                    "paddingRight": 24,
+                    "paddingTop": 8,
+                    "paddingBottom": 18
+                  },
+                  "children": [
+                    {
+                      "__typename": "UIFlexContainerBlock",
+                      "id": "one",
+                      "data": { "frame": { "width": 50, "height": 40 } }
+                    },
+                    {
+                      "__typename": "UIFlexContainerBlock",
+                      "id": "two",
+                      "data": { "frame": { "width": 50, "height": 40 } }
+                    }
+                  ]
+                }
+              },
+              {
+                "__typename": "UIFlexContainerBlock",
+                "id": "fixed",
+                "data": { "frame": { "width": 100, "height": 50 } }
+              }
+            ]
+          }
+        }
+        """
+        return try JSONDecoder().decode(UIFlexContainerBlock.self, from: Data(json.utf8))
+    }
+
+    private func makeColumnWithCollectionBlock(direction: String, mainAxisFrame: Int?) throws
+        -> UIFlexContainerBlock
+    {
+        let mainAxisSize = mainAxisFrame.map { String($0) } ?? "null"
+        let json = """
+        {
+          "id": "column",
+          "data": {
+            "direction": "COLUMN",
+            "frame": { "height": 300 },
+            "children": [
+              {
+                "__typename": "UICollectionBlock",
+                "id": "collection",
+                "data": {
+                  "kind": "GRID",
+                  "direction": "\(direction)",
+                  "gridSize": 4,
+                  "gap": 10,
+                  "itemWidth": 50,
+                  "itemHeight": 40,
+                  "fullItemWidth": false,
+                  "fullItemHeight": false,
+                  "frame": {
+                    "width": \(direction == "COLUMN" ? "270" : mainAxisSize),
+                    "height": \(direction == "COLUMN" ? mainAxisSize : "216"),
+                    "paddingLeft": 16,
+                    "paddingRight": 24,
+                    "paddingTop": 8,
+                    "paddingBottom": 18
+                  },
+                  "children": [
+                    {
+                      "__typename": "UIFlexContainerBlock",
+                      "id": "one",
+                      "data": { "frame": { "width": 50, "height": 40 } }
+                    },
+                    {
+                      "__typename": "UIFlexContainerBlock",
+                      "id": "two",
+                      "data": { "frame": { "width": 50, "height": 40 } }
+                    }
+                  ]
+                }
+              },
+              {
+                "__typename": "UIFlexContainerBlock",
+                "id": "fixed",
+                "data": { "frame": { "width": 50, "height": 100 } }
+              }
+            ]
+          }
+        }
+        """
+        return try JSONDecoder().decode(UIFlexContainerBlock.self, from: Data(json.utf8))
     }
 }
