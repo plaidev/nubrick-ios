@@ -9,8 +9,8 @@ import Foundation
 import CoreData
 
 protocol DatabaseRepository : Sendable {
-    func appendUserEvent(name: String) async
-    func appendExperimentHistory(experimentId: String) async
+    @discardableResult func appendUserEvent(name: String) async -> Bool
+    @discardableResult func appendExperimentHistory(experimentId: String) async -> Bool
     func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) async -> Boolean
     func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) async -> Boolean
 }
@@ -22,42 +22,57 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         self.persistentContainerProvider = persistentContainerProvider
     }
 
-    func appendUserEvent(name: String) async {
+    @discardableResult
+    func appendUserEvent(name: String) async -> Bool {
         guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
-            return
+            return false
+        }
+        guard !persistentContainer.persistentStoreCoordinator.persistentStores.isEmpty else {
+            return false
         }
         let context = persistentContainer.newBackgroundContext()
-        await context.perform {
+        return await context.perform {
             let event = UserEventEntity(context: context)
             event.name = name
             event.timestamp = getCurrentDate()
             do {
                 try context.save()
+                return true
             } catch {
                 print("Couldn't save UserEventEntity \(error)")
+                return false
             }
         }
     }
 
-    func appendExperimentHistory(experimentId: String) async {
+    @discardableResult
+    func appendExperimentHistory(experimentId: String) async -> Bool {
         guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
-            return
+            return false
+        }
+        guard !persistentContainer.persistentStoreCoordinator.persistentStores.isEmpty else {
+            return false
         }
         let context = persistentContainer.newBackgroundContext()
-        await context.perform {
+        return await context.perform {
             let history = ExperimentHistoryEntity(context: context)
             history.experimentId = experimentId
             history.timestamp = getCurrentDate()
             do {
                 try context.save()
+                return true
             } catch {
                 print("Couldn't save ExperimentHistoryEntity \(error)")
+                return false
             }
         }
     }
 
     func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) async -> Boolean {
         guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
+            return false
+        }
+        guard !persistentContainer.persistentStoreCoordinator.persistentStores.isEmpty else {
             return false
         }
         guard let frequency = frequency else {
@@ -70,27 +85,26 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
 
         // A missing period means "only once", so include the experiment's
         // complete display history instead of approximating it with a cutoff.
+        let now = getCurrentDate()
         let after: Date?
         if let period = frequency.period {
             guard period > 0 else {
                 return true
             }
 
-            let today = getCurrentDate()
-
             // Minute/hour frequencies are rolling windows. Longer units are calendar periods.
             let baseDate: Date
             switch unit {
             case .MINUTE, .HOUR:
-                baseDate = today
+                baseDate = now
             case .DAY, .unknown:
-                baseDate = calendar.startOfDay(for: today)
+                baseDate = calendar.startOfDay(for: now)
             case .WEEK:
-                baseDate = calendar.dateInterval(of: .weekOfYear, for: today)?.start
-                    ?? calendar.startOfDay(for: today)
+                baseDate = calendar.dateInterval(of: .weekOfYear, for: now)?.start
+                    ?? calendar.startOfDay(for: now)
             case .MONTH:
-                baseDate = calendar.dateInterval(of: .month, for: today)?.start
-                    ?? calendar.startOfDay(for: today)
+                baseDate = calendar.dateInterval(of: .month, for: now)?.start
+                    ?? calendar.startOfDay(for: now)
             }
 
             // The current calendar unit is included in the frequency interval.
@@ -106,49 +120,54 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
             after = nil
         }
 
-        let count = await self.experimentHistoryCount(
+        guard let count = await self.experimentHistoryCount(
             persistentContainer: persistentContainer,
             experimentId: experimentId,
-            after: after
-        )
+            after: after,
+            now: now
+        ) else {
+            return false
+        }
         return count == 0
     }
 
     private func experimentHistoryCount(
         persistentContainer: NSPersistentContainer,
         experimentId: String,
-        after: Date?
-    ) async -> Int {
+        after: Date?,
+        now: Date
+    ) async -> Int? {
         let bgContext = persistentContainer.newBackgroundContext()
-        let count: Int = await bgContext.perform {
+        return await bgContext.perform {
             do {
                 let request = ExperimentHistoryEntity.fetchRequest()
+                var predicates = [
+                    NSPredicate(format: "experimentId = %@", experimentId),
+                    NSPredicate(format: "timestamp <= %@", now as NSDate),
+                ]
                 if let after {
-                    request.predicate = NSPredicate(
-                        format: "experimentId = %@ && timestamp >= %@",
-                        experimentId,
-                        after as NSDate
-                    )
-                } else {
-                    request.predicate = NSPredicate(format: "experimentId = %@", experimentId)
+                    predicates.append(NSPredicate(format: "timestamp >= %@", after as NSDate))
                 }
+                request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
 
                 let count = try bgContext.count(for: request)
                 guard count != NSNotFound else {
                     print("Couldn’t count ExperimentHistoryEntity")
-                    return 0
+                    return nil
                 }
                 return count
             } catch {
                 print("Couldn’t fetch ExperimentHistoryEntity: \(error)")
-                return 0
+                return nil
             }
         }
-        return count
     }
 
     func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) async -> Boolean {
         guard let persistentContainer = await persistentContainerProvider.persistentContainer() else {
+            return false
+        }
+        guard !persistentContainer.persistentStoreCoordinator.persistentStores.isEmpty else {
             return false
         }
         guard let condition = condition else {
@@ -162,13 +181,15 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         }
         let timeUnit: FrequencyUnit = condition.unit ?? .DAY
 
-        let counts = await self.userEventCounts(
+        guard let counts = await self.userEventCounts(
             persistentContainer: persistentContainer,
             name: eventName,
             unit: timeUnit,
             lookbackPeriod: condition.lookbackPeriod,
             since: condition.since
-        )
+        ) else {
+            return false
+        }
 
         let total = counts.values.reduce(0, +)
         return compareInteger(a: total, b: [threshold], op: condition.comparison ?? .Equal)
@@ -183,27 +204,34 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         unit: FrequencyUnit,
         lookbackPeriod: Int?,
         since: String?
-    ) async -> [Date: Int] {
+    ) async -> [Date: Int]? {
         let calendar = Calendar(identifier: .gregorian)
-        let isoFormatter = ISO8601DateFormatter()
-
-        let today = getCurrentDate()
+        let now = getCurrentDate()
 
         // Determine the reference ("since") date.
-        let sinceDate = since.flatMap(isoFormatter.date(from:))
+        let sinceDate: Date?
+        if let since {
+            guard let parsed = parseDateTime(since) else { return nil }
+            sinceDate = parsed
+        } else {
+            sinceDate = nil
+        }
 
         // Negative periods are invalid remote configuration. Clamp them to an
         // empty lookback rather than passing a potentially hostile value into
         // date arithmetic.
         let startDate = lookbackPeriod.map {
-            unit.subtract(max($0, 0), from: today, calendar: calendar)
+            unit.subtract(max($0, 0), from: now, calendar: calendar)
         }
 
         let bgContext = persistentContainer.newBackgroundContext()
-        let counts: [Date: Int] = await bgContext.perform {
+        return await bgContext.perform {
             do {
                 let request = NSFetchRequest<UserEventEntity>(entityName: "NativebrikUserEvent")
-                var predicates = [NSPredicate(format: "name = %@", name)]
+                var predicates = [
+                    NSPredicate(format: "name = %@", name),
+                    NSPredicate(format: "timestamp <= %@", now as NSDate),
+                ]
                 if let startDate {
                     predicates.append(NSPredicate(format: "timestamp >= %@", startDate as NSDate))
                 }
@@ -221,9 +249,8 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
                 return counts
             } catch {
                 print("Couldn’t fetch UserEventEntity: \(error)")
-                return [:]
+                return nil
             }
         }
-        return counts
     }
 }
