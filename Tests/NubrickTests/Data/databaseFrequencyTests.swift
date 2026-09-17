@@ -177,6 +177,75 @@ final class DatabaseFrequencyTests: XCTestCase {
         XCTAssertFalse(blockedAfterFirstDisplay)
     }
 
+    func testMissingPeriodBlocksDisplaysAcrossAllHistory() async throws {
+        let (repository, cleanup) = try makeRepository()
+        defer { cleanup() }
+
+        let originalOffset = __for_test_get_datetime_offset()
+        defer { __for_test_sync_datetime_offset(offset: originalOffset) }
+
+        let calendar = Calendar(identifier: .gregorian)
+        let displayedAt = Date()
+        setCurrentDate(displayedAt)
+        await repository.appendExperimentHistory(experimentId: "once-only-experiment")
+
+        let later = try XCTUnwrap(calendar.date(byAdding: .year, value: 60, to: displayedAt))
+        setCurrentDate(later)
+
+        for unit in [FrequencyUnit.MINUTE, .HOUR] {
+            let allowed = await repository.isNotInFrequency(
+                experimentId: "once-only-experiment",
+                frequency: ExperimentFrequency(unit: unit)
+            )
+            XCTAssertFalse(allowed, "unit=\(unit.rawValue)")
+        }
+
+        let allowedWithExplicitHourPeriod = await repository.isNotInFrequency(
+            experimentId: "once-only-experiment",
+            frequency: ExperimentFrequency(period: 1, unit: .HOUR)
+        )
+        XCTAssertTrue(allowedWithExplicitHourPeriod)
+    }
+
+    func testMissingLookbackPeriodCountsEventsAcrossAllHistory() async throws {
+        let (repository, cleanup) = try makeRepository()
+        defer { cleanup() }
+
+        let originalOffset = __for_test_get_datetime_offset()
+        defer { __for_test_sync_datetime_offset(offset: originalOffset) }
+
+        let calendar = Calendar(identifier: .gregorian)
+        let recordedAt = Date()
+        setCurrentDate(recordedAt)
+        await repository.appendUserEvent(name: "purchase")
+
+        let later = try XCTUnwrap(calendar.date(byAdding: .year, value: 60, to: recordedAt))
+        setCurrentDate(later)
+
+        for unit in [FrequencyUnit.MINUTE, .HOUR] {
+            let matches = await repository.isMatchedToUserEventFrequencyCondition(
+                condition: UserEventFrequencyCondition(
+                    eventName: "purchase",
+                    unit: unit,
+                    comparison: .GreaterThanOrEqual,
+                    threshold: 1
+                )
+            )
+            XCTAssertTrue(matches, "unit=\(unit.rawValue)")
+        }
+
+        let explicitHourLookbackMisses = await repository.isMatchedToUserEventFrequencyCondition(
+            condition: UserEventFrequencyCondition(
+                eventName: "purchase",
+                lookbackPeriod: 1,
+                unit: .HOUR,
+                comparison: .GreaterThanOrEqual,
+                threshold: 1
+            )
+        )
+        XCTAssertFalse(explicitHourLookbackMisses)
+    }
+
     private func makeRepository() throws -> (DatabaseRepositoryImpl, () -> Void) {
         let storeURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)

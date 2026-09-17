@@ -66,37 +66,47 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         var calendar = Calendar(identifier: .gregorian)
         calendar.firstWeekday = 2 // Monday, matching Android's calendar-week boundary.
         calendar.minimumDaysInFirstWeek = 4
-        let value = frequency.period ?? (365 * 50)
-        guard value > 0 else {
-            return true
-        }
         let unit = frequency.unit ?? .DAY
 
-        // Minute/hour frequencies are rolling windows. Longer units are calendar periods.
-        let baseDate: Date
-        switch unit {
-        case .MINUTE, .HOUR:
-            baseDate = getCurrentDate()
-        case .DAY, .unknown:
-            baseDate = calendar.startOfDay(for: getCurrentDate())
-        case .WEEK:
-            baseDate = calendar.dateInterval(of: .weekOfYear, for: getCurrentDate())?.start
-                ?? calendar.startOfDay(for: getCurrentDate())
-        case .MONTH:
-            baseDate = calendar.dateInterval(of: .month, for: getCurrentDate())?.start
-                ?? calendar.startOfDay(for: getCurrentDate())
+        // A missing period means "only once", so include the experiment's
+        // complete display history instead of approximating it with a cutoff.
+        let after: Date?
+        if let period = frequency.period {
+            guard period > 0 else {
+                return true
+            }
+
+            let today = getCurrentDate()
+
+            // Minute/hour frequencies are rolling windows. Longer units are calendar periods.
+            let baseDate: Date
+            switch unit {
+            case .MINUTE, .HOUR:
+                baseDate = today
+            case .DAY, .unknown:
+                baseDate = calendar.startOfDay(for: today)
+            case .WEEK:
+                baseDate = calendar.dateInterval(of: .weekOfYear, for: today)?.start
+                    ?? calendar.startOfDay(for: today)
+            case .MONTH:
+                baseDate = calendar.dateInterval(of: .month, for: today)?.start
+                    ?? calendar.startOfDay(for: today)
+            }
+
+            // The current calendar unit is included in the frequency interval.
+            let unitsToSubtract: Int
+            switch unit {
+            case .DAY, .WEEK, .MONTH, .unknown:
+                unitsToSubtract = max(period - 1, 0)
+            case .MINUTE, .HOUR:
+                unitsToSubtract = period
+            }
+            after = unit.subtract(unitsToSubtract, from: baseDate, calendar: calendar)
+        } else {
+            after = nil
         }
 
-        // The current calendar unit is included in the frequency interval.
-        let unitsToSubtract: Int
-        switch unit {
-        case .DAY, .WEEK, .MONTH, .unknown:
-            unitsToSubtract = max(value - 1, 0)
-        case .MINUTE, .HOUR:
-            unitsToSubtract = value
-        }
-        let after = unit.subtract(unitsToSubtract, from: baseDate, calendar: calendar)
-        let count = await self.experimentHisotryCountAfter(
+        let count = await self.experimentHistoryCount(
             persistentContainer: persistentContainer,
             experimentId: experimentId,
             after: after
@@ -104,16 +114,24 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         return count == 0
     }
 
-    private func experimentHisotryCountAfter(
+    private func experimentHistoryCount(
         persistentContainer: NSPersistentContainer,
         experimentId: String,
-        after: Date
+        after: Date?
     ) async -> Int {
         let bgContext = persistentContainer.newBackgroundContext()
         let count: Int = await bgContext.perform {
             do {
                 let request = ExperimentHistoryEntity.fetchRequest()
-                request.predicate = NSPredicate(format: "experimentId = %@ && timestamp >= %@", experimentId, after as NSDate)
+                if let after {
+                    request.predicate = NSPredicate(
+                        format: "experimentId = %@ && timestamp >= %@",
+                        experimentId,
+                        after as NSDate
+                    )
+                } else {
+                    request.predicate = NSPredicate(format: "experimentId = %@", experimentId)
+                }
 
                 let count = try bgContext.count(for: request)
                 guard count != NSNotFound else {
@@ -156,9 +174,9 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         return compareInteger(a: total, b: [threshold], op: condition.comparison ?? .Equal)
     }
 
-    // calculate the number of events aggregated by the given unit, looking back `lookbackPeriod` * `unit` since `since` (ISO8601).
-    // if `lookbackPeriod` is not provided, it will look back 50 years.
-    // if `since` is not provided, it will be 50 years ago.
+    // Calculate the number of events aggregated by the given unit, looking back
+    // `lookbackPeriod` * `unit` and since `since` (ISO8601). Missing bounds are
+    // unbounded.
     private func userEventCounts(
         persistentContainer: NSPersistentContainer,
         name: String,
@@ -169,39 +187,30 @@ final class DatabaseRepositoryImpl: DatabaseRepository {
         let calendar = Calendar(identifier: .gregorian)
         let isoFormatter = ISO8601DateFormatter()
 
-        // Default values – 50 years expressed in days.
-        let fiftyYearsInDays = 365 * 50
+        let today = getCurrentDate()
 
         // Determine the reference ("since") date.
-        let sinceDate: Date = {
-            if let since = since, let parsed = isoFormatter.date(from: since) {
-                return parsed
-            }
-            // If `since` is not provided, default to 50 years ago.
-            return calendar.date(byAdding: .day, value: -fiftyYearsInDays, to: getCurrentDate()) ?? getCurrentDate()
-        }()
+        let sinceDate = since.flatMap(isoFormatter.date(from:))
 
-        // Determine the period length. If not provided, default to 50 years.
         // Negative periods are invalid remote configuration. Clamp them to an
         // empty lookback rather than passing a potentially hostile value into
         // date arithmetic.
-        let periodCount = max(lookbackPeriod ?? (365 * 50), 0)
-
-        // Lower-bound date.
-        let today = getCurrentDate()
-        let startDate = unit.subtract(periodCount, from: today, calendar: calendar)
+        let startDate = lookbackPeriod.map {
+            unit.subtract(max($0, 0), from: today, calendar: calendar)
+        }
 
         let bgContext = persistentContainer.newBackgroundContext()
         let counts: [Date: Int] = await bgContext.perform {
             do {
-                // Fetch events after latest of (startDate, sinceDate).
                 let request = NSFetchRequest<UserEventEntity>(entityName: "NativebrikUserEvent")
-                request.predicate = NSPredicate(
-                    format: "name = %@ AND timestamp >= %@ AND timestamp >= %@",
-                    name,
-                    startDate as NSDate,
-                    sinceDate as NSDate
-                )
+                var predicates = [NSPredicate(format: "name = %@", name)]
+                if let startDate {
+                    predicates.append(NSPredicate(format: "timestamp >= %@", startDate as NSDate))
+                }
+                if let sinceDate {
+                    predicates.append(NSPredicate(format: "timestamp >= %@", sinceDate as NSDate))
+                }
+                request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
 
                 let events = try bgContext.fetch(request)
                 var counts: [Date: Int] = [:]
