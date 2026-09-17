@@ -10,15 +10,23 @@ import UIKit
 internal import YogaKit
 
 @MainActor
+func canPresentModally(_ viewController: UIViewController) -> Bool {
+    viewController.presentedViewController == nil
+        && !viewController.isBeingPresented
+        && !viewController.isBeingDismissed
+        && viewController.viewIfLoaded?.window != nil
+}
+
+@MainActor
 func presentOnTop(window: UIWindow?, modal: UIViewController) {
     guard let root = window?.rootViewController else {
         return
     }
-    guard let presented = root.presentedViewController else {
-        root.present(modal, animated: true)
+    let top = findTopPresenting(root)
+    guard canPresentModally(top) else {
         return
     }
-    presented.present(modal, animated: true)
+    top.present(modal, animated: true)
 }
 
 @MainActor
