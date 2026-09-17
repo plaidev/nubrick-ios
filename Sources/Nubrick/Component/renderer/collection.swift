@@ -346,11 +346,12 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
             root.frame = self.bounds
         }
 
-        let itemSize = self.resolvedItemSize(in: root)
         let flowLayout = root.collectionViewLayout as? UICollectionViewFlowLayout
-        let itemSizeChanged = flowLayout?.itemSize != itemSize
+        let resolvedItemSize = self.resolvedItemSize(in: root)
+        let hasValidItemSize = resolvedItemSize.width > 0 && resolvedItemSize.height > 0
+        let itemSizeChanged = hasValidItemSize && flowLayout?.itemSize != resolvedItemSize
         if itemSizeChanged {
-            flowLayout?.itemSize = itemSize
+            flowLayout?.itemSize = resolvedItemSize
         }
         if boundsChanged || itemSizeChanged {
             root.collectionViewLayout.invalidateLayout()
@@ -462,7 +463,12 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        self.resolvedItemSize(in: collectionView)
+        let resolvedItemSize = self.resolvedItemSize(in: collectionView)
+        guard resolvedItemSize.width > 0, resolvedItemSize.height > 0 else {
+            return (collectionViewLayout as? UICollectionViewFlowLayout)?.itemSize
+                ?? CGSize(width: 1, height: 1)
+        }
+        return resolvedItemSize
     }
     
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
@@ -498,20 +504,31 @@ class CollectionView: AnimatedUIView, UICollectionViewDataSource, UICollectionVi
     }
     
     func automaticScroll() {
-        guard self.childrenCount > 0 else {
+        guard let collectionView = self.collectionView,
+              collectionView.window != nil,
+              collectionView.bounds.width > 0,
+              collectionView.bounds.height > 0,
+              collectionView.numberOfSections > 0 else {
             return
         }
-        if self.counter >= self.childrenCount - 1 {
+        let itemCount = collectionView.numberOfItems(inSection: 0)
+        guard itemCount > 0 else {
+            return
+        }
+        if self.counter >= itemCount - 1 {
             self.counter = 0
         } else {
             self.counter += 1
         }
+        guard self.counter < itemCount else {
+            return
+        }
         let scrollPosition: UICollectionView.ScrollPosition =
-            (self.collectionView?.collectionViewLayout as? UICollectionViewFlowLayout)?
+            (collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?
                 .scrollDirection == .vertical
                 ? .centeredVertically
                 : .centeredHorizontally
-        self.collectionView?.scrollToItem(
+        collectionView.scrollToItem(
             at: IndexPath(item: self.counter, section: 0), at: scrollPosition, animated: true
         )
     }

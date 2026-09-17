@@ -18,6 +18,10 @@ class TooltipViewController: UIViewController, UIPopoverPresentationControllerDe
         self.preferredContentSize = CGSize(width: 400, height: 32)
         self.modalPresentationStyle = .popover
         self.popoverPresentationController?.sourceView = source
+        let sourceRect = source.bounds
+        self.popoverPresentationController?.sourceRect = sourceRect.isEmpty
+            ? CGRect(x: 0, y: 0, width: 1, height: 1)
+            : sourceRect
         self.popoverPresentationController?.delegate = self
         self.popoverPresentationController?.permittedArrowDirections = UIPopoverArrowDirection([.down, .up])
     }
@@ -84,7 +88,7 @@ class InputIconView: UIControl {
 
         if let message = message {
             self.addAction(.init { [weak self] _ in
-                guard let self = self else { return }
+                guard let self = self, iconView.window != nil else { return }
                 if #available(iOS 17.0, *) {
                     if let existingTooltip = self.presentedTooltip, existingTooltip.presentingViewController != nil {
                         existingTooltip.dismiss(animated: false)

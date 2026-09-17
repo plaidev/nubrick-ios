@@ -26,6 +26,26 @@ final class ImageUtilTests: XCTestCase {
     }
 }
 
+final class PresentationUtilTests: XCTestCase {
+    @MainActor
+    func testCanPresentModallyRequiresAWindow() {
+        let viewController = UIViewController()
+        XCTAssertFalse(canPresentModally(viewController))
+
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 568))
+        window.rootViewController = viewController
+        window.makeKeyAndVisible()
+        XCTAssertTrue(canPresentModally(viewController))
+    }
+
+    @MainActor
+    func testPresentOnTopDoesNothingWithoutAWindow() {
+        let modal = UIViewController()
+        presentOnTop(window: nil, modal: modal)
+        XCTAssertNil(modal.presentingViewController)
+    }
+}
+
 final class BorderUtilTests: XCTestCase {
     @MainActor
     func testAsymmetricBorderPathRemainsLocalWhenScrollViewScrolls() throws {

@@ -244,6 +244,35 @@ final class CollectionViewTests: XCTestCase {
         XCTAssertEqual(layout.itemSize, CGSize(width: 50, height: 40))
     }
 
+    @MainActor
+    func testAutomaticScrollDoesNotCrashWhenTheCollectionIsNotLaidOut() throws {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 568))
+        let host = UIViewController()
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+
+        let view = CollectionView(
+            block: try makeCollectionBlock(kind: "CAROUSEL", direction: "ROW", fullItemWidth: true),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        view.frame = .zero
+        host.view.addSubview(view)
+        view.layoutIfNeeded()
+
+        let collection = try XCTUnwrap(view.subviews.first as? UICollectionView)
+        let layout = try XCTUnwrap(collection.collectionViewLayout as? UICollectionViewFlowLayout)
+        XCTAssertNotNil(collection.window)
+        XCTAssertEqual(collection.bounds, .zero)
+        XCTAssertGreaterThan(layout.itemSize.width, 0)
+        XCTAssertGreaterThan(layout.itemSize.height, 0)
+
+        view.automaticScroll()
+
+        view.frame = CGRect(x: 0, y: 0, width: 320, height: 100)
+        view.layoutIfNeeded()
+        XCTAssertEqual(layout.itemSize, CGSize(width: 280, height: 40))
+    }
+
     private func makeCollectionBlock(
         kind: String, direction: String, fullItemWidth: Bool, fullItemHeight: Bool = false,
         childWidth: Int = 50, mainAxisFrame: Int? = 0
