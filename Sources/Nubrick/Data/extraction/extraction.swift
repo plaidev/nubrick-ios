@@ -565,7 +565,7 @@ func parseStringToBoolean(_ str: String) -> Bool {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .uppercased(with: Locale(identifier: "en_US_POSIX"))
     switch normalized {
-    case "FALSE", "NO", "0", "NIL", "OFF", "NULL", "UNDEFINED", "ZERO":
+    case "FALSE", "NO", "0", "NIL", "OFF", "NULL", "UNDEFINED", "ZERO", "":
         return false
     default:
         return true

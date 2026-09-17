@@ -894,6 +894,10 @@ final class CompareTests: XCTestCase {
         XCTAssertEqual(parseStringToBoolean("Nil"), false)
         XCTAssertEqual(parseStringToBoolean("null"), false)
         XCTAssertEqual(parseStringToBoolean("0"), false)
+        XCTAssertEqual(parseStringToBoolean("off"), false)
+        XCTAssertEqual(parseStringToBoolean("undefined"), false)
+        XCTAssertEqual(parseStringToBoolean("zero"), false)
+        XCTAssertEqual(parseStringToBoolean(""), false)
     }
     
 }
