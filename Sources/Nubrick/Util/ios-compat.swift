@@ -66,6 +66,11 @@ func getCurrentDate() -> Date {
 
 func parseDateTime(_ date: DateTime) -> Date? {
     let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let parsed = formatter.date(from: date) {
+        return parsed
+    }
+    formatter.formatOptions = [.withInternetDateTime]
     return formatter.date(from: date)
 }
 

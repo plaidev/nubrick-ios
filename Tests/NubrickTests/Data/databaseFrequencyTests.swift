@@ -24,7 +24,8 @@ final class DatabaseFrequencyTests: XCTestCase {
         XCTAssertEqual(try persistentContainer.viewContext.count(for: request), 0)
 
         await provider.resolve(with: persistentContainer)
-        await appendTask.value
+        let appendSucceeded = await appendTask.value
+        XCTAssertTrue(appendSucceeded)
 
         XCTAssertEqual(try persistentContainer.viewContext.count(for: request), 1)
     }
@@ -246,13 +247,99 @@ final class DatabaseFrequencyTests: XCTestCase {
         XCTAssertFalse(explicitHourLookbackMisses)
     }
 
+    func testFutureFrequencyHistoryIsIgnored() async throws {
+        let (repository, cleanup) = try makeRepository()
+        defer { cleanup() }
+        let originalOffset = __for_test_get_datetime_offset()
+        defer { __for_test_sync_datetime_offset(offset: originalOffset) }
+
+        let now = Date()
+        setCurrentDate(now.addingTimeInterval(3600))
+        await repository.appendUserEvent(name: "future-event")
+        await repository.appendExperimentHistory(experimentId: "future-experiment")
+        setCurrentDate(now)
+
+        let eventMatches = await repository.isMatchedToUserEventFrequencyCondition(
+            condition: eventCondition(name: "future-event")
+        )
+        let experimentAllowed = await repository.isNotInFrequency(
+            experimentId: "future-experiment",
+            frequency: ExperimentFrequency()
+        )
+        XCTAssertFalse(eventMatches)
+        XCTAssertTrue(experimentAllowed)
+    }
+
+    func testLowerFrequencyBoundsAreInclusive() async throws {
+        let (repository, container, cleanup) = try makeRepositoryContext()
+        defer { cleanup() }
+        let originalOffset = __for_test_get_datetime_offset()
+        defer { __for_test_sync_datetime_offset(offset: originalOffset) }
+
+        let now = Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970) + 0.5)
+        let eventBoundary = now.addingTimeInterval(-7200)
+        let dayBoundary = Calendar(identifier: .gregorian).startOfDay(for: now)
+        let event = UserEventEntity(context: container.viewContext)
+        event.name = "boundary-event"
+        event.timestamp = eventBoundary
+        let history = ExperimentHistoryEntity(context: container.viewContext)
+        history.experimentId = "boundary-experiment"
+        history.timestamp = dayBoundary
+        try container.viewContext.save()
+        setCurrentDate(now)
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let eventMatches = await repository.isMatchedToUserEventFrequencyCondition(
+            condition: eventCondition(name: "boundary-event", since: formatter.string(from: eventBoundary))
+        )
+        let experimentAllowed = await repository.isNotInFrequency(
+            experimentId: "boundary-experiment",
+            frequency: ExperimentFrequency(period: 1, unit: .DAY)
+        )
+        XCTAssertTrue(eventMatches)
+        XCTAssertFalse(experimentAllowed)
+    }
+
+    func testDatabaseFailuresFailClosed() async throws {
+        let (repository, container, cleanup) = try makeRepositoryContext()
+        defer { cleanup() }
+        for store in container.persistentStoreCoordinator.persistentStores {
+            try container.persistentStoreCoordinator.remove(store)
+        }
+
+        let eventWriteSucceeded = await repository.appendUserEvent(name: "event")
+        let historyWriteSucceeded = await repository.appendExperimentHistory(experimentId: "experiment")
+        let eventMatches = await repository.isMatchedToUserEventFrequencyCondition(
+            condition: eventCondition(name: "event", threshold: 0, comparison: .Equal)
+        )
+        let experimentAllowed = await repository.isNotInFrequency(
+            experimentId: "experiment",
+            frequency: ExperimentFrequency()
+        )
+        XCTAssertFalse(eventWriteSucceeded)
+        XCTAssertFalse(historyWriteSucceeded)
+        XCTAssertFalse(eventMatches)
+        XCTAssertFalse(experimentAllowed)
+    }
+
     private func makeRepository() throws -> (DatabaseRepositoryImpl, () -> Void) {
+        let (repository, _, cleanup) = try makeRepositoryContext()
+        return (repository, cleanup)
+    }
+
+    private func makeRepositoryContext() throws -> (
+        DatabaseRepositoryImpl,
+        NSPersistentContainer,
+        () -> Void
+    ) {
         let storeURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("sqlite")
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
         return (
             DatabaseRepositoryImpl(persistentContainer: persistentContainer),
+            persistentContainer,
             { self.closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
         )
     }
@@ -274,6 +361,21 @@ final class DatabaseFrequencyTests: XCTestCase {
             try? FileManager.default.removeItem(atPath: storeURL.path + suffix)
         }
     }
+}
+
+private func eventCondition(
+    name: String,
+    threshold: Int = 1,
+    comparison: ConditionOperator = .GreaterThanOrEqual,
+    since: String? = nil
+) -> UserEventFrequencyCondition {
+    UserEventFrequencyCondition(
+        eventName: name,
+        unit: .HOUR,
+        comparison: comparison,
+        since: since,
+        threshold: threshold
+    )
 }
 
 private actor DeferredPersistentContainerProvider: PersistentContainerProvider {

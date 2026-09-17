@@ -295,7 +295,10 @@ final class NubrickCore {
 
     func appendTooltipExperimentHistory(experimentId: String) async {
         guard !experimentId.isEmpty else { return }
-        await self.dependencies.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+        guard await self.dependencies.databaseRepository.appendExperimentHistory(experimentId: experimentId) else {
+            print("Couldn't save tooltip experiment history")
+            return
+        }
     }
 
     func processMetricKitCrash(

@@ -228,7 +228,9 @@ final class ContainerImpl: Container {
         await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
         ))
-        await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
+        guard await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId) else {
+            return .failure(NubrickError.irregular("Couldn't save experiment history"))
+        }
 
         guard let componentId = extractComponentId(variant: extracted.variant) else {
             return Result.failure(NubrickError.notFound)
@@ -248,7 +250,9 @@ final class ContainerImpl: Container {
 
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError> {
         await self.trackRepository.trackEvent(TrackUserEvent(name: trigger, experimentId: sourceExperimentId))
-        await self.databaseRepository.appendUserEvent(name: trigger)
+        guard await self.databaseRepository.appendUserEvent(name: trigger) else {
+            return .failure(NubrickError.irregular("Couldn't save user event"))
+        }
 
         var configs: ExperimentConfigs
         switch await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger) {
@@ -276,7 +280,9 @@ final class ContainerImpl: Container {
         // Tooltip is a Flutter-only flow. Persist tooltip history only after
         // Flutter confirms the tooltip actually started rendering.
         if extracted.kind != .TOOLTIP {
-            await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
+            guard await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId) else {
+                return .failure(NubrickError.irregular("Couldn't save experiment history"))
+            }
         }
 
         guard let componentId = extractComponentId(variant: extracted.variant) else {
@@ -320,7 +326,9 @@ final class ContainerImpl: Container {
         await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
         ))
-        await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)
+        guard await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId) else {
+            return .failure(NubrickError.irregular("Couldn't save experiment history"))
+        }
 
         return Result.success((extracted.experimentId, extracted.variant))
     }
