@@ -95,17 +95,19 @@ func extractExperimentConfigMatchedToProperties(
             continue
         }
         if let startedAt = config.startedAt {
-            if let startedAt = parseDateTime(startedAt) {
-                if now.compare(startedAt) == ComparisonResult.orderedAscending {
-                    continue
-                }
+            guard let startedAt = parseDateTime(startedAt) else {
+                continue
+            }
+            if now.compare(startedAt) == ComparisonResult.orderedAscending {
+                continue
             }
         }
         if let endedAt = config.endedAt {
-            if let endedAt = parseDateTime(endedAt) {
-                if now.compare(endedAt) == ComparisonResult.orderedDescending {
-                    continue
-                }
+            guard let endedAt = parseDateTime(endedAt) else {
+                continue
+            }
+            if now.compare(endedAt) == ComparisonResult.orderedDescending {
+                continue
             }
         }
 

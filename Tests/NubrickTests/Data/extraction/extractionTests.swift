@@ -293,6 +293,73 @@ final class ExtractionTests: XCTestCase {
         XCTAssertEqual("now", actual?.id)
     }
 
+    func testExtractExperimentConfigMatchedToPropertiesRespectsFractionalSecondWindows() async throws {
+        let now = getCurrentDate()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let startedAt = formatter.string(from: now.addingTimeInterval(-1_000))
+        let endedAt = formatter.string(from: now.addingTimeInterval(1_000))
+        let futureStart = formatter.string(from: now.addingTimeInterval(1_000))
+
+        let active = await extractExperimentConfigMatchedToProperties(
+            configs: ExperimentConfigs(configs: [
+                ExperimentConfig(id: "active", kind: .POPUP, startedAt: startedAt, endedAt: endedAt),
+            ]),
+            kinds: [.POPUP]
+        ) { _ in
+            []
+        } isNotInFrequency: { _, _ in
+            true
+        } isMatchedToUserEventFrequencyConditions: { _ in
+            true
+        }
+        let notYetStarted = await extractExperimentConfigMatchedToProperties(
+            configs: ExperimentConfigs(configs: [
+                ExperimentConfig(id: "future", kind: .POPUP, startedAt: futureStart),
+            ]),
+            kinds: [.POPUP]
+        ) { _ in
+            []
+        } isNotInFrequency: { _, _ in
+            true
+        } isMatchedToUserEventFrequencyConditions: { _ in
+            true
+        }
+
+        XCTAssertEqual("active", active?.id)
+        XCTAssertNil(notYetStarted)
+    }
+
+    func testExtractExperimentConfigMatchedToPropertiesSkipsUnparseableWindows() async throws {
+        let invalidStart = await extractExperimentConfigMatchedToProperties(
+            configs: ExperimentConfigs(configs: [
+                ExperimentConfig(id: "invalid-start", kind: .POPUP, startedAt: "not-a-date"),
+            ]),
+            kinds: [.POPUP]
+        ) { _ in
+            []
+        } isNotInFrequency: { _, _ in
+            true
+        } isMatchedToUserEventFrequencyConditions: { _ in
+            true
+        }
+        let invalidEnd = await extractExperimentConfigMatchedToProperties(
+            configs: ExperimentConfigs(configs: [
+                ExperimentConfig(id: "invalid-end", kind: .POPUP, endedAt: "not-a-date"),
+            ]),
+            kinds: [.POPUP]
+        ) { _ in
+            []
+        } isNotInFrequency: { _, _ in
+            true
+        } isMatchedToUserEventFrequencyConditions: { _ in
+            true
+        }
+
+        XCTAssertNil(invalidStart)
+        XCTAssertNil(invalidEnd)
+    }
+
     func testExtractExperimentConfigMatchedToPropertiesSelectsHighestPriority() async throws {
         let configs = ExperimentConfigs(
             configs: [
@@ -661,6 +728,9 @@ final class CompareTests: XCTestCase {
         XCTAssertTrue(compareSemver(a: "1.0", b: ["0.0.9", "1.0.1"], op: .Between))
         XCTAssertFalse(compareSemver(a: "1.0", b: ["1.0.1", "2"], op: .Between))
         XCTAssertFalse(compareSemver(a: "1.0", b: [], op: .Between))
+
+        XCTAssertFalse(compareSemver(a: "1.0", b: ["1.0"], op: .Regex))
+        XCTAssertFalse(compareSemver(a: "1.0", b: ["1.0"], op: .unknown))
     }
 
     func testCompareSemverRejectsEmptyConditionValues() throws {
@@ -689,6 +759,8 @@ final class CompareTests: XCTestCase {
         XCTAssertTrue(compareString(a: "a", b: [], op: .NotIn))
         XCTAssertTrue(compareString(a: "a", b: ["b", "c"], op: .NotIn))
         XCTAssertFalse(compareString(a: "a", b: ["a", "b"], op: .NotIn))
+
+        XCTAssertFalse(compareString(a: "a", b: ["a"], op: .unknown))
     }
     
     func testCompareStringWithRegex() throws {
@@ -784,6 +856,9 @@ final class CompareTests: XCTestCase {
         XCTAssertTrue(compareDouble(a: 5, b: [0, 10], op: .Between))
         XCTAssertFalse(compareDouble(a: 5, b: [10, 20], op: .Between))
         XCTAssertFalse(compareDouble(a: 5, b: [], op: .Between))
+
+        XCTAssertFalse(compareDouble(a: 1, b: [1], op: .Regex))
+        XCTAssertFalse(compareDouble(a: 1, b: [1], op: .unknown))
     }
 
     func testCompareDoubleDoesNotTreatInvalidOrEmptyValuesAsZero() throws {
@@ -838,6 +913,9 @@ final class CompareTests: XCTestCase {
         XCTAssertTrue(compareInteger(a: 5, b: [0, 10], op: .Between))
         XCTAssertFalse(compareInteger(a: 5, b: [10, 20], op: .Between))
         XCTAssertFalse(compareInteger(a: 5, b: [], op: .Between))
+
+        XCTAssertFalse(compareInteger(a: 1, b: [1], op: .Regex))
+        XCTAssertFalse(compareInteger(a: 1, b: [1], op: .unknown))
     }
 
     func testCompareIntegerOutsideInt32Range() throws {
