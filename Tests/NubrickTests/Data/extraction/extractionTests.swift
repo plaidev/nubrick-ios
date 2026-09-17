@@ -149,6 +149,30 @@ final class ExtractionTests: XCTestCase {
         XCTAssertTrue(actual)
     }
 
+    func testIsInDistributionRejectsUnknownOperators() async throws {
+        let distribution = [
+            ExperimentCondition(property: "userId", operator: "not-an-operator", value: "hello"),
+        ]
+        let props = [
+            UserProperty(name: "userId", value: "hello", type: .STRING),
+        ]
+
+        let actual = await isInDistribution(distribution: distribution, properties: props)
+        XCTAssertFalse(actual)
+    }
+
+    func testIsInDistributionRejectsUnknownEnumOperator() async throws {
+        let distribution = [
+            ExperimentCondition(property: "userId", operator: ConditionOperator.unknown.rawValue, value: "hello"),
+        ]
+        let props = [
+            UserProperty(name: "userId", value: "hello", type: .STRING),
+        ]
+
+        let actual = await isInDistribution(distribution: distribution, properties: props)
+        XCTAssertFalse(actual)
+    }
+
     func testIsInDistributionPrefersGeneratedPropertiesWhenNamesAreDuplicated() async throws {
         let distribution = [
             ExperimentCondition(property: BuiltinUserProperty.currentTime.rawValue, operator: ConditionOperator.Equal.rawValue, value: "generated")
@@ -844,6 +868,9 @@ final class CompareTests: XCTestCase {
         // not equal
         XCTAssertTrue(compareBoolean(a: false, b: [true], op: .NotEqual))
         XCTAssertFalse(compareBoolean(a: false, b: [false], op: .NotEqual))
+
+        XCTAssertFalse(compareBoolean(a: true, b: [true], op: .GreaterThan))
+        XCTAssertFalse(compareBoolean(a: true, b: [true], op: .unknown))
     }
 
     func testCompareBooleanRejectsEmptyConditionValues() throws {
