@@ -108,8 +108,8 @@ fileprivate func getCollectionLayout(_ block: UICollectionBlock) -> UICollection
 fileprivate func configureCollectionSize(
     layout: YGLayout, data: UICollectionBlockData?, parentDirection: FlexDirection?
 ) {
-    // A zero frame is Fill. A nil main-axis frame is Hug, including when this
-    // collection is inside a matching parent flex direction.
+    // Collections fill their scrolling axis. A fill child cannot resolve
+    // against a hugging parent, so use a zero-sized fallback in that case.
     layout.maxWidth = .init(value: 100, unit: .percent)
     layout.maxHeight = .init(value: 100, unit: .percent)
     if resolvedFlexDirection(data?.direction) == .COLUMN {
@@ -123,11 +123,11 @@ fileprivate func configureCollectionSize(
             layout.flexShrink = 1
             layout.flexBasis = .init(value: 0, unit: .point)
         } else if parentDirection == .COLUMN {
-            layout.height = YGValueAuto
-            layout.minHeight = YGValueUndefined
+            layout.height = .init(value: 0, unit: .point)
+            layout.minHeight = .init(value: 0, unit: .point)
             layout.flexGrow = 0
             layout.flexShrink = 0
-            layout.flexBasis = YGValueAuto
+            layout.flexBasis = .init(value: 0, unit: .point)
         } else {
             layout.height = .init(value: 100, unit: .percent)
             layout.minHeight = .init(value: 100, unit: .percent)
@@ -144,11 +144,11 @@ fileprivate func configureCollectionSize(
             layout.flexShrink = 1
             layout.flexBasis = .init(value: 0, unit: .point)
         } else if parentDirection == .ROW {
-            layout.width = YGValueAuto
-            layout.minWidth = YGValueUndefined
+            layout.width = .init(value: 0, unit: .point)
+            layout.minWidth = .init(value: 0, unit: .point)
             layout.flexGrow = 0
             layout.flexShrink = 0
-            layout.flexBasis = YGValueAuto
+            layout.flexBasis = .init(value: 0, unit: .point)
         } else {
             layout.width = .init(value: 100, unit: .percent)
             layout.minWidth = .init(value: 100, unit: .percent)

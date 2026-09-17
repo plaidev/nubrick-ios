@@ -56,7 +56,7 @@ final class CollectionViewTests: XCTestCase {
     }
 
     @MainActor
-    func testHorizontalGridHugsInRowParentWhenWidthIsNull() throws {
+    func testHorizontalGridUsesZeroFallbackInRowParentWhenWidthIsNull() throws {
         let view = CollectionView(
             block: try makeCollectionBlock(
                 kind: "GRID", direction: "ROW", fullItemWidth: false, mainAxisFrame: nil
@@ -64,12 +64,13 @@ final class CollectionViewTests: XCTestCase {
             context: UIBlockContext(UIBlockContextInit(parentDirection: .ROW))
         )
 
-        XCTAssertTrue(view.yoga.width.value.isNaN)
+        XCTAssertEqual(view.yoga.width.unit, .point)
+        XCTAssertEqual(view.yoga.width.value, 0)
         XCTAssertEqual(view.yoga.flexGrow, 0)
     }
 
     @MainActor
-    func testVerticalGridHugsInColumnParentWhenHeightIsNull() throws {
+    func testVerticalGridUsesZeroFallbackInColumnParentWhenHeightIsNull() throws {
         let view = CollectionView(
             block: try makeCollectionBlock(
                 kind: "GRID", direction: "COLUMN", fullItemWidth: false, mainAxisFrame: nil
@@ -77,14 +78,15 @@ final class CollectionViewTests: XCTestCase {
             context: UIBlockContext(UIBlockContextInit(parentDirection: .COLUMN))
         )
 
-        XCTAssertTrue(view.yoga.height.value.isNaN)
+        XCTAssertEqual(view.yoga.height.unit, .point)
+        XCTAssertEqual(view.yoga.height.value, 0)
         XCTAssertEqual(view.yoga.flexGrow, 0)
     }
 
     @MainActor
-    func testHorizontalGridHugsToContentWidthInRowParentAfterLayout() throws {
+    func testHorizontalGridFillsRemainingWidthInFixedRowParentAfterLayout() throws {
         let row = FlexView(
-            block: try makeRowWithCollectionBlock(direction: "ROW", mainAxisFrame: nil),
+            block: try makeRowWithCollectionBlock(direction: "ROW", mainAxisFrame: 0),
             context: UIBlockContext(UIBlockContextInit())
         )
         row.frame.size = CGSize(width: 300, height: 300)
@@ -93,16 +95,16 @@ final class CollectionViewTests: XCTestCase {
         let collection = try XCTUnwrap(row.subviews.first as? CollectionView)
         let fixedSibling = try XCTUnwrap(row.subviews.last)
 
-        XCTAssertEqual(collection.frame.width, 90, accuracy: 0.01)
+        XCTAssertEqual(collection.frame.width, 200, accuracy: 0.01)
         XCTAssertEqual(collection.frame.height, 216, accuracy: 0.01)
         XCTAssertEqual(fixedSibling.frame.width, 100, accuracy: 0.01)
-        XCTAssertLessThan(collection.frame.width + fixedSibling.frame.width, row.frame.width)
+        XCTAssertEqual(collection.frame.width + fixedSibling.frame.width, row.frame.width, accuracy: 0.01)
     }
 
     @MainActor
-    func testVerticalGridHugsToContentHeightInColumnParentAfterLayout() throws {
+    func testVerticalGridFillsRemainingHeightInFixedColumnParentAfterLayout() throws {
         let column = FlexView(
-            block: try makeColumnWithCollectionBlock(direction: "COLUMN", mainAxisFrame: nil),
+            block: try makeColumnWithCollectionBlock(direction: "COLUMN", mainAxisFrame: 0),
             context: UIBlockContext(UIBlockContextInit())
         )
         column.frame.size = CGSize(width: 300, height: 300)
@@ -112,9 +114,24 @@ final class CollectionViewTests: XCTestCase {
         let fixedSibling = try XCTUnwrap(column.subviews.last)
 
         XCTAssertEqual(collection.frame.width, 270, accuracy: 0.01)
-        XCTAssertEqual(collection.frame.height, 66, accuracy: 0.01)
+        XCTAssertEqual(collection.frame.height, 200, accuracy: 0.01)
         XCTAssertEqual(fixedSibling.frame.height, 100, accuracy: 0.01)
-        XCTAssertLessThan(collection.frame.height + fixedSibling.frame.height, column.frame.height)
+        XCTAssertEqual(collection.frame.height + fixedSibling.frame.height, column.frame.height, accuracy: 0.01)
+    }
+
+    @MainActor
+    func testVerticalGridHasZeroHeightInHuggingColumnParent() throws {
+        let column = FlexView(
+            block: try makeColumnWithCollectionBlock(
+                direction: "COLUMN", mainAxisFrame: nil, parentMainAxisFrame: nil
+            ),
+            context: UIBlockContext(UIBlockContextInit())
+        )
+        column.frame.size = CGSize(width: 300, height: 260)
+        column.yoga.applyLayout(preservingOrigin: true, dimensionFlexibility: .flexibleHeight)
+
+        let collection = try XCTUnwrap(column.subviews.first as? CollectionView)
+        XCTAssertEqual(collection.frame.height, 0, accuracy: 0.01)
     }
 
     @MainActor
@@ -318,16 +335,19 @@ final class CollectionViewTests: XCTestCase {
         return try JSONDecoder().decode(UICollectionBlock.self, from: Data(json.utf8))
     }
 
-    private func makeRowWithCollectionBlock(direction: String, mainAxisFrame: Int?) throws
+    private func makeRowWithCollectionBlock(
+        direction: String, mainAxisFrame: Int?, parentMainAxisFrame: Int? = 300
+    ) throws
         -> UIFlexContainerBlock
     {
         let mainAxisSize = mainAxisFrame.map { String($0) } ?? "null"
+        let parentMainAxisSize = parentMainAxisFrame.map { String($0) } ?? "null"
         let json = """
         {
           "id": "row",
           "data": {
             "direction": "ROW",
-            "frame": { "width": 300 },
+            "frame": { "width": \(parentMainAxisSize) },
             "children": [
               {
                 "__typename": "UICollectionBlock",
@@ -375,16 +395,19 @@ final class CollectionViewTests: XCTestCase {
         return try JSONDecoder().decode(UIFlexContainerBlock.self, from: Data(json.utf8))
     }
 
-    private func makeColumnWithCollectionBlock(direction: String, mainAxisFrame: Int?) throws
+    private func makeColumnWithCollectionBlock(
+        direction: String, mainAxisFrame: Int?, parentMainAxisFrame: Int? = 300
+    ) throws
         -> UIFlexContainerBlock
     {
         let mainAxisSize = mainAxisFrame.map { String($0) } ?? "null"
+        let parentMainAxisSize = parentMainAxisFrame.map { String($0) } ?? "null"
         let json = """
         {
           "id": "column",
           "data": {
             "direction": "COLUMN",
-            "frame": { "height": 300 },
+            "frame": { "height": \(parentMainAxisSize) },
             "children": [
               {
                 "__typename": "UICollectionBlock",
