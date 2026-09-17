@@ -844,6 +844,9 @@ final class CompareTests: XCTestCase {
         // not equal
         XCTAssertTrue(compareBoolean(a: false, b: [true], op: .NotEqual))
         XCTAssertFalse(compareBoolean(a: false, b: [false], op: .NotEqual))
+
+        XCTAssertFalse(compareBoolean(a: true, b: [true], op: .GreaterThan))
+        XCTAssertFalse(compareBoolean(a: true, b: [true], op: .unknown))
     }
 
     func testCompareBooleanRejectsEmptyConditionValues() throws {

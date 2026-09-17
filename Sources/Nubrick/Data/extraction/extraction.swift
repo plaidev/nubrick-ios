@@ -163,10 +163,13 @@ private func isInDistributionSync(distribution: [ExperimentCondition], propertie
         guard let op = condition.operator else {
             return true
         }
+        guard let parsedOp = ConditionOperator(rawValue: op), parsedOp != .unknown else {
+            return true
+        }
         guard let prop = props[propKey] else {
             return true
         }
-        return !comparePropWithConditionValue(prop: prop, asType: condition.asType, value: conditionValue, op: ConditionOperator(rawValue: op) ?? .Equal)
+        return !comparePropWithConditionValue(prop: prop, asType: condition.asType, value: conditionValue, op: parsedOp)
     }
     return foundNotMatched == nil
 }
@@ -339,11 +342,8 @@ func compareInteger(a: Int, b: [Int], op: ConditionOperator) -> Bool {
             return false
         }
         return b[0] <= a && a <= b[1]
-    default:
-        if b.count == 0 {
-            return false
-        }
-        return a == b[0]
+    case .Regex, .unknown:
+        return false
     }
 }
 
@@ -392,11 +392,8 @@ func compareDouble(a: Double, b: [Double], op: ConditionOperator) -> Bool {
             return false
         }
         return b[0] <= a && a <= b[1]
-    default:
-        if b.count == 0 {
-            return false
-        }
-        return a == b[0]
+    case .Regex, .unknown:
+        return false
     }
 }
 
@@ -450,11 +447,8 @@ func compareString(a: String, b: [String], op: ConditionOperator) -> Bool {
             return false
         }
         return b[0] <= a && a <= b[1]
-    default:
-        if b.count == 0 {
-            return false
-        }
-        return a == b[0]
+    case .unknown:
+        return false
     }
 }
 
@@ -478,11 +472,8 @@ func compareBoolean(a: Bool, b: [Bool], op: ConditionOperator) -> Bool {
         return !b.contains { value in
             return value == a
         }
-    default:
-        if b.count == 0 {
-            return false
-        }
-        return a == b[0]
+    case .Regex, .GreaterThan, .GreaterThanOrEqual, .LessThan, .LessThanOrEqual, .Between, .unknown:
+        return false
     }
 }
 
@@ -534,11 +525,8 @@ func compareSemver(a: String, b: [String], op: ConditionOperator) -> Bool {
         let left = compareSemverAsComparisonResult(a, b[0])
         let right = compareSemverAsComparisonResult(a, b[1])
         return left >= 0 && right <= 0
-    default:
-        if b.count == 0 {
-            return false
-        }
-        return compareSemverAsComparisonResult(a, b[0]) == 0
+    case .Regex, .unknown:
+        return false
     }
 }
 
