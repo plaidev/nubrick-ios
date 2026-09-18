@@ -23,6 +23,47 @@ private struct NoMatchingExperimentRepository: ExperimentRepository2 {
     }
 }
 
+private final class TriggerExperimentRepositorySpy: ExperimentRepository2, @unchecked Sendable {
+    private let configsByTrigger: [String: ExperimentConfigs]
+
+    init(configsByTrigger: [String: ExperimentConfigs]) {
+        self.configsByTrigger = configsByTrigger
+    }
+
+    func fetchExperimentConfigs(id: String) async -> Result<ExperimentConfigs, NubrickError> {
+        .failure(.notFound)
+    }
+
+    func fetchTriggerExperimentConfigs(name: String) async -> Result<ExperimentConfigs, NubrickError> {
+        guard let configs = self.configsByTrigger[name] else {
+            return .failure(.notFound)
+        }
+        return .success(configs)
+    }
+}
+
+private final class TriggerComponentRepositorySpy: ComponentRepository2, @unchecked Sendable {
+    func fetchComponent(experimentId: String, id: String) async -> Result<UIBlock, NubrickError> {
+        .success(.EUIRootBlock(UIRootBlock(id: id, data: nil)))
+    }
+}
+
+private final class TriggerDatabaseRepositorySpy: DatabaseRepository, @unchecked Sendable {
+    func appendUserEvent(name: String) async -> Bool { true }
+    func appendExperimentHistory(experimentId: String) async -> Bool { true }
+    func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) async -> Boolean { true }
+    func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) async -> Boolean { true }
+}
+
+private actor TriggerTrackRepositorySpy: TrackRepository2 {
+    func trackExperimentEvent(_ event: TrackExperimentEvent) async {}
+    func trackEvent(_ event: TrackUserEvent) async {}
+    func flushNow() async {}
+    func processMetricKitCrash(callStackTreeJSON: Data, terminationReason: String?, exceptionType: UInt32?) async {}
+    func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async {}
+    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {}
+}
+
 private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
     struct Response {
         let experimentId: String
@@ -1068,6 +1109,56 @@ final class ContainerTests: XCTestCase {
         case .failure(let err):
             XCTFail("should found the remote config \(err)")
         }
+    }
+
+    func testFetchTriggerContentForMultipleEventsPrefersLatestStartDateAtEqualPriority() async throws {
+        let now = getCurrentDate()
+        let olderConfig = ExperimentConfig(
+            id: "older",
+            kind: .POPUP,
+            baseline: ExperimentVariant(
+                id: "older-variant",
+                configs: [VariantConfig(kind: .COMPONENT, value: "older-component")]
+            ),
+            startedAt: now.addingTimeInterval(-2000).ISO8601Format(),
+            priority: 5
+        )
+        let newerConfig = ExperimentConfig(
+            id: "newer",
+            kind: .POPUP,
+            baseline: ExperimentVariant(
+                id: "newer-variant",
+                configs: [VariantConfig(kind: .COMPONENT, value: "newer-component")]
+            ),
+            startedAt: now.addingTimeInterval(-1000).ISO8601Format(),
+            priority: 5
+        )
+        let container = ContainerImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST),
+            user: NubrickUser(),
+            actionHandler: { _, _ in },
+            experimentRepository: TriggerExperimentRepositorySpy(configsByTrigger: [
+                "boot": ExperimentConfigs(configs: [olderConfig]),
+                "return": ExperimentConfigs(configs: [newerConfig]),
+            ]),
+            componentRepository: TriggerComponentRepositorySpy(),
+            trackRepository: TriggerTrackRepositorySpy(),
+            databaseRepository: TriggerDatabaseRepositorySpy(),
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+
+        let result = await container.fetchTriggerContent(
+            triggers: ["boot", "return"],
+            kinds: [.POPUP],
+            sourceExperimentId: nil
+        )
+
+        guard case .success(let content) = result else {
+            XCTFail("Expected a matching trigger content")
+            return
+        }
+        XCTAssertEqual("newer", content.experimentId)
+        XCTAssertEqual("newer-variant", content.variantId)
     }
 
     func testMakeContainerShouldApplyArgumentsPerContext() throws {

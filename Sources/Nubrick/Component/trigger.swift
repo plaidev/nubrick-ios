@@ -62,22 +62,20 @@ class TriggerViewController: UIViewController {
 
     func initialLoad() {
         self.didLoaded = true
+        var events = [NubrickEvent(TriggerEventNameDefs.USER_BOOT_APP.rawValue)]
 
-        // dispatch an event when the user is only booted
-        self.dispatch(event: NubrickEvent(TriggerEventNameDefs.USER_BOOT_APP.rawValue))
-
-        // dispatch user enter the app firtly
         let count = UserDefaults.standard.object(forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue) as? Int ?? 0
         UserDefaults.standard.set(
             count == Int.max ? Int.max : count + 1,
             forKey: UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue
         )
         if count == 0 {
-            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
+            events.append(NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
         }
-
-        // dispatch retention event
-        self.callWhenUserComeBack()
+        events.append(contentsOf: self.userReturnEvents())
+        Task {
+            await self.dispatchPredefinedEvents(events)
+        }
 
         // Dispatch a retention event when the user returns to the foreground from the background
         NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
@@ -88,28 +86,30 @@ class TriggerViewController: UIViewController {
             self.ignoreFirstUserEventToForegroundEvent = false
             return
         }
-        self.dispatch(event: NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue))
-        self.callWhenUserComeBack()
+        var events = [NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue)]
+        events.append(contentsOf: self.userReturnEvents())
+        Task {
+            await self.dispatchPredefinedEvents(events)
+        }
     }
 
-    func callWhenUserComeBack() {
+    private func userReturnEvents() -> [NubrickEvent] {
         self.user.comeBack()
-
-        // dispatch the event when every time the user is activated
-        self.dispatch(event: NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue))
+        var events = [NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue)]
 
         let retention = self.user.retention
         if retention == 1 {
-            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_1.rawValue))
+            events.append(NubrickEvent(TriggerEventNameDefs.RETENTION_1.rawValue))
         } else if 1 < retention && retention <= 3 {
-            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_2_3.rawValue))
+            events.append(NubrickEvent(TriggerEventNameDefs.RETENTION_2_3.rawValue))
         } else if 3 < retention && retention <= 7 {
-            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_4_7.rawValue))
+            events.append(NubrickEvent(TriggerEventNameDefs.RETENTION_4_7.rawValue))
         } else if 7 < retention && retention <= 14 {
-            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_8_14.rawValue))
+            events.append(NubrickEvent(TriggerEventNameDefs.RETENTION_8_14.rawValue))
         } else if 14 < retention {
-            self.dispatch(event: NubrickEvent(TriggerEventNameDefs.RETENTION_15.rawValue))
+            events.append(NubrickEvent(TriggerEventNameDefs.RETENTION_15.rawValue))
         }
+        return events
     }
     
     @MainActor
@@ -129,60 +129,53 @@ class TriggerViewController: UIViewController {
             kinds: kinds,
             sourceExperimentId: sourceExperimentId
         )
-        let experimentId: String?
-        let variantId: String?
-        let kind: ExperimentKind?
-        let result: Result<UIBlock, NubrickError>
-        switch triggerResult {
-        case .success(let content):
-            experimentId = content.experimentId
-            variantId = content.variantId
-            kind = content.kind
-            result = .success(content.block)
-        case .failure(let error):
-            experimentId = nil
-            variantId = nil
-            kind = nil
-            result = .failure(error)
-        }
-
         self.onDispatch?(event)
 
         if !self.didLoaded {
             print("nativebrik.dispatch should be called after nativebrik.overlay did load")
             return
         }
-        switch result {
-        case .success(let block):
-            switch block {
-            case .EUIRootBlock(let root):
-                if kind == .TOOLTIP,
-                   let onTooltip = self.onTooltip,
-                   let experimentId = experimentId {
-                    if let jsonData = try? JSONEncoder().encode(block),
-                       let jsonString = String(data: jsonData, encoding: .utf8) {
-                        onTooltip(jsonString, experimentId, variantId)
-                    }
-                } else {
-                    let root = ModalRootViewController(
-                        root: root,
-                        experimentId: experimentId,
-                        variantId: variantId,
-                        container: self.container,
-                        modalViewController: self.modalViewController
-                    )
-                    if let currentVC = self.currentVC {
-                        currentVC.removeFromParent()
-                        self.currentVC = nil
-                    }
-                    self.addChild(root)
-                    self.currentVC = root
-                }
-            default:
-                break
-            }
-        default:
-            break
+        guard case .success(let content) = triggerResult else { return }
+        self.presentTriggerContent(content)
+    }
+
+    @MainActor
+    private func dispatchPredefinedEvents(_ events: [NubrickEvent]) async {
+        let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
+        for event in events {
+            self.onDispatch?(event)
         }
+        guard self.didLoaded,
+              case .success(let winner) = await self.container.fetchTriggerContent(
+                triggers: events.map(\.name),
+                kinds: kinds,
+                sourceExperimentId: nil
+              ) else { return }
+        self.presentTriggerContent(winner)
+    }
+
+    @MainActor
+    private func presentTriggerContent(_ content: FetchedTriggerContent) {
+        guard case .EUIRootBlock(let root) = content.block else { return }
+        if content.kind == .TOOLTIP,
+           let onTooltip = self.onTooltip,
+           let jsonData = try? JSONEncoder().encode(content.block),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            onTooltip(jsonString, content.experimentId, content.variantId)
+            return
+        }
+        let rootViewController = ModalRootViewController(
+            root: root,
+            experimentId: content.experimentId,
+            variantId: content.variantId,
+            container: self.container,
+            modalViewController: self.modalViewController
+        )
+        if let currentVC = self.currentVC {
+            currentVC.removeFromParent()
+            self.currentVC = nil
+        }
+        self.addChild(rootViewController)
+        self.currentVC = rootViewController
     }
 }
