@@ -123,18 +123,22 @@ func extractExperimentConfigMatchedToProperties(
         }
         matched.append(config)
     }
-    // Pick the highest-priority config. If tied, prefer the latest start date.
-    // Configs without a priority are ranked lowest; without a start date, earliest.
-    return matched.max { a, b in
-        let aPriority = a.priority ?? Int.min
-        let bPriority = b.priority ?? Int.min
-        if aPriority != bPriority {
-            return aPriority < bPriority
-        }
-        let aDate = a.startedAt.flatMap { parseDateTime($0) } ?? .distantPast
-        let bDate = b.startedAt.flatMap { parseDateTime($0) } ?? .distantPast
-        return aDate < bDate
+    return matched.max { current, candidate in
+        isExperimentConfigPreferred(candidate, over: current)
     }
+}
+
+// Pick the highest-priority config. If tied, prefer the latest start date.
+// Configs without a priority are ranked lowest; without a start date, earliest.
+func isExperimentConfigPreferred(_ candidate: ExperimentConfig, over current: ExperimentConfig) -> Bool {
+    let candidatePriority = candidate.priority ?? Int.min
+    let currentPriority = current.priority ?? Int.min
+    if candidatePriority != currentPriority {
+        return candidatePriority > currentPriority
+    }
+    let candidateDate = candidate.startedAt.flatMap { parseDateTime($0) } ?? .distantPast
+    let currentDate = current.startedAt.flatMap { parseDateTime($0) } ?? .distantPast
+    return candidateDate > currentDate
 }
 
 func isInDistribution(distribution: [ExperimentCondition], properties: [UserProperty]) async -> Bool {

@@ -12,6 +12,7 @@ private struct ExtractedVariant {
     let experimentId: String
     let kind: ExperimentKind?
     let variant: ExperimentVariant
+    let config: ExperimentConfig
 }
 
 struct FetchedEmbedding {
@@ -55,6 +56,7 @@ protocol Container : Sendable {
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError>
+    func fetchTriggerContent(triggers: [String], kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError>
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
@@ -248,28 +250,36 @@ final class ContainerImpl: Container {
         }
     }
 
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError> {
-        await self.trackRepository.trackEvent(TrackUserEvent(name: trigger, experimentId: sourceExperimentId))
-        guard await self.databaseRepository.appendUserEvent(name: trigger) else {
-            return .failure(NubrickError.irregular("Couldn't save user event"))
-        }
+    func fetchTriggerContent(
+        trigger: String,
+        kinds: [ExperimentKind],
+        sourceExperimentId: String?
+    ) async -> Result<FetchedTriggerContent, NubrickError> {
+        await self.fetchTriggerContent(
+            triggers: [trigger],
+            kinds: kinds,
+            sourceExperimentId: sourceExperimentId
+        )
+    }
 
-        var configs: ExperimentConfigs
-        switch await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger) {
-        case .success(let it):
-            configs = it
-        case .failure(let it):
-            return Result.failure(it)
+    func fetchTriggerContent(
+        triggers: [String],
+        kinds: [ExperimentKind],
+        sourceExperimentId: String?
+    ) async -> Result<FetchedTriggerContent, NubrickError> {
+        var selected: ExtractedVariant?
+        for trigger in triggers {
+            await self.trackRepository.trackEvent(TrackUserEvent(name: trigger, experimentId: sourceExperimentId))
+            guard await self.databaseRepository.appendUserEvent(name: trigger),
+                  case .success(let configs) = await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger),
+                  case .success(let extracted) = await self.extractVariant(configs: configs, kinds: kinds) else {
+                continue
+            }
+            if selected == nil || isExperimentConfigPreferred(extracted.config, over: selected!.config) {
+                selected = extracted
+            }
         }
-
-        var extracted: ExtractedVariant
-        switch await self.extractVariant(configs: configs, kinds: kinds) {
-        case .success(let it):
-            extracted = it
-        case .failure(let it):
-            return Result.failure(it)
-        }
-
+        guard let extracted = selected else { return .failure(.notFound) }
         guard let variantId = extracted.variant.id else {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
         }
@@ -279,10 +289,9 @@ final class ContainerImpl: Container {
         ))
         // Tooltip is a Flutter-only flow. Persist tooltip history only after
         // Flutter confirms the tooltip actually started rendering.
-        if extracted.kind != .TOOLTIP {
-            guard await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId) else {
-                return .failure(NubrickError.irregular("Couldn't save experiment history"))
-            }
+        if extracted.kind != .TOOLTIP,
+           !(await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)) {
+            return .failure(NubrickError.irregular("Couldn't save experiment history"))
         }
 
         guard let componentId = extractComponentId(variant: extracted.variant) else {
@@ -364,7 +373,12 @@ final class ContainerImpl: Container {
         guard let variant = extractExperimentVariant(config: config, normalizedUsrRnd: normalizedUserRnd) else {
             return Result.failure(NubrickError.notFound)
         }
-        return Result.success(ExtractedVariant(experimentId: experimentId, kind: config.kind, variant: variant))
+        return Result.success(ExtractedVariant(
+            experimentId: experimentId,
+            kind: config.kind,
+            variant: variant,
+            config: config
+        ))
     }
 
     @MainActor

@@ -336,6 +336,25 @@ final class ExtractionTests: XCTestCase {
         XCTAssertEqual("later", actual?.id)
     }
 
+    func testExperimentConfigPreferenceTiedPriorityPrefersLatestStartDate() throws {
+        let now = getCurrentDate()
+        let earlier = ExperimentConfig(
+            id: "earlier",
+            kind: .POPUP,
+            startedAt: now.addingTimeInterval(-2000).ISO8601Format(),
+            priority: 5
+        )
+        let later = ExperimentConfig(
+            id: "later",
+            kind: .POPUP,
+            startedAt: now.addingTimeInterval(-1000).ISO8601Format(),
+            priority: 5
+        )
+
+        XCTAssertTrue(isExperimentConfigPreferred(later, over: earlier))
+        XCTAssertFalse(isExperimentConfigPreferred(earlier, over: later))
+    }
+
     func testExtractExperimentConfigMatchedToPropertiesNilPriorityRankedLowest() async throws {
         let configs = ExperimentConfigs(
             configs: [

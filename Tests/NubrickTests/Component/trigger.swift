@@ -75,6 +75,14 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
         ))
     }
 
+    func fetchTriggerContent(
+        triggers: [String],
+        kinds: [ExperimentKind],
+        sourceExperimentId: String?
+    ) async -> Result<FetchedTriggerContent, NubrickError> {
+        .failure(.notFound)
+    }
+
     func fetchRemoteConfig(
         experimentId: String
     ) async -> Result<(String, ExperimentVariant), NubrickError> {
