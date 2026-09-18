@@ -95,6 +95,10 @@ extension NavigationViewControlller: UINavigationControllerDelegate {
 
         swipeNavigationController.duringPushAnimation = false
         swipeNavigationController.updateSheetBackground(for: viewController)
+        if let pageController = viewController as? ModalPageViewController,
+           let pageView = pageController.representedPageView {
+            pageController.onVisiblePageChanged?(pageView)
+        }
     }
 
 }

@@ -27,6 +27,9 @@ class ModalPageViewController: UIViewController {
     private var isFirstModal = false
     private let pageView: PageView?
     var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
+    var onVisiblePageChanged: ((PageView) -> Void)?
+    var pageId: String? { self.pageView?.page?.id }
+    var representedPageView: PageView? { self.pageView }
 
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(pageView:).")
     required init?(coder: NSCoder) {
