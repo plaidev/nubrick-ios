@@ -39,6 +39,32 @@ class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
     private var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
 
+    private func activeModal() -> NavigationViewControlller? {
+        guard let modal = self.currentModal else {
+            return nil
+        }
+        guard isPresenting(presented: self.presentedViewController, vc: modal) else {
+            modal.dismiss(animated: false)
+            self.currentModal = nil
+            return nil
+        }
+        return modal
+    }
+
+    func popToExistingNavigation(pageId: String?) -> PageView? {
+        guard let pageId,
+              let modal = self.activeModal(),
+              let pageController = modal.viewControllers
+                .compactMap({ $0 as? ModalPageViewController })
+                .first(where: { $0.pageId == pageId }) else {
+            return nil
+        }
+        if modal.topViewController !== pageController {
+            _ = modal.popToViewController(pageController, animated: true)
+        }
+        return pageController.representedPageView
+    }
+
     func presentWebview(url: String?, backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate?) {
         switch resolveWebviewModalURLAction(url) {
         case .ignore:
@@ -60,14 +86,7 @@ class ModalComponentViewController: UIViewController {
                 self.backButtonBehaviorDelegate = backButtonBehaviorDelegate
                 safariVC.delegate = self.backButtonBehaviorDelegate
             }
-            if let modal = self.currentModal {
-                if !isPresenting(presented: self.presentedViewController, vc: modal) {
-                    self.currentModal?.dismiss(animated: false)
-                    self.currentModal = nil
-                }
-            }
-
-            if let modal = self.currentModal {
+            if let modal = self.activeModal() {
                 modal.present(safariVC, animated: true)
             } else {
                 self.presentToTop(safariVC)
@@ -79,21 +98,16 @@ class ModalComponentViewController: UIViewController {
         pageView: PageView,
         modalPresentationStyle: ModalPresentationStyle?,
         modalScreenSize: ModalScreenSize?,
-        backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate?
+        backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate?,
+        onVisiblePageChanged: ((PageView) -> Void)? = nil
     ) {
-        if let modal = self.currentModal {
-            if !isPresenting(presented: self.presentedViewController, vc: modal) {
-                self.currentModal?.dismiss(animated: false)
-                self.currentModal = nil
-            }
-        }
-
         let pageController = ModalPageViewController(pageView: pageView)
         if let backButtonBehaviorDelegate = backButtonBehaviorDelegate {
             pageController.backButtonBehaviorDelegate = backButtonBehaviorDelegate
         }
+        pageController.onVisiblePageChanged = onVisiblePageChanged
 
-        if let modal = self.currentModal {
+        if let modal = self.activeModal() {
             modal.pushViewController(pageController, animated: true)
         } else {
             pageController.setIsFirstModalToTrue()

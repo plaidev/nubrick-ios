@@ -224,7 +224,7 @@ final class EmbeddingUIViewTests: XCTestCase {
             }
         )
 
-        rootView.presentPage(pageId: pageId, props: nil)
+        rootView.presentPage(pageId: pageId)
 
         waitForExpectations(timeout: 1)
         assertSize(try XCTUnwrap(reportedWidth), equals: .fill)
@@ -245,11 +245,58 @@ final class EmbeddingUIViewTests: XCTestCase {
             onEvent: nil
         )
 
-        rootView.presentPage(pageId: pageId, props: nil)
+        rootView.presentPage(pageId: pageId)
 
         let intrinsicSize = rootView.intrinsicContentSize
         XCTAssertEqual(intrinsicSize.width, 120)
         XCTAssertEqual(intrinsicSize.height, 80)
+    }
+
+    @MainActor
+    func testModalNavigationReportsThePageVisibleAfterBackNavigation() throws {
+        let container = try makeContainer()
+        let firstPage = try XCTUnwrap(
+            makeComponentRoot(pageId: "FIRST", frameWidth: nil, frameHeight: nil).data?.pages?.first
+        )
+        let secondPage = try XCTUnwrap(
+            makeComponentRoot(pageId: "SECOND", frameWidth: nil, frameHeight: nil).data?.pages?.first
+        )
+        let firstPageView = PageView(
+            page: firstPage,
+            props: nil,
+            container: container,
+            arguments: nil,
+            actionHandler: nil,
+            modalViewController: nil
+        )
+        let secondPageView = PageView(
+            page: secondPage,
+            props: nil,
+            container: container,
+            arguments: nil,
+            actionHandler: nil,
+            modalViewController: nil
+        )
+        let firstController = ModalPageViewController(pageView: firstPageView)
+        let navigationController = NavigationViewControlller(
+            rootViewController: firstController,
+            hasPrevious: true
+        )
+        var visiblePage: PageView?
+        firstController.onVisiblePageChanged = { visiblePage = $0 }
+
+        navigationController.pushViewController(
+            ModalPageViewController(pageView: secondPageView),
+            animated: false
+        )
+        _ = navigationController.popViewController(animated: false)
+        navigationController.navigationController(
+            navigationController,
+            didShow: firstController,
+            animated: false
+        )
+
+        XCTAssertTrue(visiblePage === firstPageView)
     }
 
     @MainActor

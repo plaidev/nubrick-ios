@@ -41,7 +41,7 @@ class ModalRootViewController: UIViewController {
                 return
             }
             if let destinationPageId = action.destinationPageId {
-                self.presentPage(pageId: destinationPageId, props: action.payload)
+                self.presentPage(pageId: destinationPageId)
             }
             self.container.handleEvent(action)
         }
@@ -56,7 +56,7 @@ class ModalRootViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func presentPage(pageId: String, props: [Property]?) {
+    func presentPage(pageId: String) {
         var page = self.pages.first { page in
             return pageId == page.id
         }
@@ -101,9 +101,14 @@ class ModalRootViewController: UIViewController {
             return
         }
 
+        if page?.data?.kind == PageKind.MODAL,
+           self.modalViewController?.popToExistingNavigation(pageId: page?.id) != nil {
+            return
+        }
+
         let pageView = PageView(
             page: page,
-            props: props,
+            props: nil,
             container: self.container,
             arguments: nil,
             actionHandler: self.actionHandler,
@@ -278,7 +283,7 @@ class RootView: UIView {
                 return
             }
             if let destinationPageId = action.destinationPageId {
-                self.presentPage(pageId: destinationPageId, props: action.payload)
+                self.presentPage(pageId: destinationPageId)
             }
             self.container.handleEvent(action)
             self.onEvent?(action)
@@ -316,7 +321,7 @@ class RootView: UIView {
         self.dispatchAction(action)
     }
 
-    func presentPage(pageId: String, props: [Property]?) {
+    func presentPage(pageId: String) {
         var page = self.pages.first { page in
             return pageId == page.id
         }
@@ -382,9 +387,16 @@ class RootView: UIView {
             }
         }
 
+        if page?.data?.kind == PageKind.MODAL,
+           let existingPageView = self.modalViewController?.popToExistingNavigation(pageId: page?.id) {
+            existingPageView.update(arguments: self.arguments)
+            self.currentPageView = existingPageView
+            return
+        }
+
         let pageView = PageView(
             page: page,
-            props: props,
+            props: nil,
             container: self.container,
             arguments: self.arguments,
             actionHandler: self.actionHandler,
@@ -408,7 +420,10 @@ class RootView: UIView {
                         )
                     ),
                     variableProvider: { [weak pageView] in pageView?.currentVariable() }
-                ) : nil
+                ) : nil,
+                onVisiblePageChanged: { [weak self] pageView in
+                    self?.currentPageView = pageView
+                }
             )
         case .COMPONENT:
             // in case of embedding update size for swiftui
