@@ -681,6 +681,63 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
+    func testTrackingFlushFillsOnlyMissingLegacyRequestContext() async throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let user = NubrickUser()
+        user.setProperty(BuiltinUserProperty.userId.rawValue, value: "live-user")
+        let repository = TrackRespositoryImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST),
+            user: user,
+            persistentContainer: persistentContainer,
+            trackingHTTPClient: client
+        )
+        let liveMeta = TrackEventMeta.current()
+        var capturedMeta = liveMeta
+        capturedMeta.appVersion = "previous-app-version"
+        capturedMeta.sdkVersion = "previous-sdk-version"
+        let contexts: [(userId: String?, meta: TrackEventMeta?)] = [
+            (nil, nil),
+            ("captured-user", nil),
+            (nil, capturedMeta),
+            ("captured-user", capturedMeta),
+            ("", capturedMeta),
+        ]
+
+        for (index, context) in contexts.enumerated() {
+            let event = makePendingTrackEvent(name: "context-\(index)")
+            let entity = PendingTrackEventEntity(context: persistentContainer.viewContext)
+            entity.eventID = event.eventUuid
+            entity.payload = try JSONEncoder().encode(event)
+            entity.eventType = event.typename.rawValue
+            entity.byteCount = Int64(entity.payload.count)
+            entity.createdAt = Date(timeIntervalSince1970: Double(index))
+            entity.userId = context.userId
+            entity.metaPayload = try context.meta.map { try JSONEncoder().encode($0) }
+        }
+        try persistentContainer.viewContext.save()
+
+        await repository.flushNow()
+
+        let requests = await client.recordedRequests()
+        XCTAssertEqual(requests.count, contexts.count)
+        struct RequestContext: Decodable {
+            let userId: String
+            let meta: TrackEventMeta
+        }
+        for (index, pair) in zip(requests, contexts).enumerated() {
+            let (request, context) = pair
+            let body = try JSONDecoder().decode(RequestContext.self, from: XCTUnwrap(request.httpBody))
+            XCTAssertEqual(body.userId, context.userId ?? "live-user")
+            XCTAssertEqual(body.meta, context.meta ?? liveMeta)
+            XCTAssertEqual(try eventNames(in: request), ["context-\(index)"])
+        }
+        XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 0)
+    }
+
+    @MainActor
     func testTrackingFlushSendsSeparateRequestsWhenCapturedUserIdChanges() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))

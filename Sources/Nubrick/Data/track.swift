@@ -242,15 +242,23 @@ struct TrackEventMeta: Codable, Equatable {
 
     @MainActor
     static func current() -> TrackEventMeta {
-        TrackEventMeta(
+        cached
+    }
+
+    // App, OS, and SDK versions are stable for the lifetime of the process.
+    // Capture them once instead of repeatedly bridging Info.plist on the main actor.
+    @MainActor
+    private static let cached: TrackEventMeta = {
+        let info = Bundle.main.infoDictionary
+        return TrackEventMeta(
             appId: Bundle.main.bundleIdentifier ?? "",
-            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "",
-            cfBundleVersion: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "",
+            appVersion: info?["CFBundleShortVersionString"] as? String ?? "",
+            cfBundleVersion: info?["CFBundleVersion"] as? String ?? "",
             osName: UIDevice.current.systemName,
             osVersion: UIDevice.current.systemVersion,
             sdkVersion: NubrickConstants.sdkVersion
         )
-    }
+    }()
 }
 
 struct TrackUserEvent {
@@ -760,11 +768,18 @@ actor TrackRespositoryImpl: TrackRepository2 {
         guard !pending.isEmpty else { return true }
 
         do {
-            let (liveUserId, liveMeta) = await MainActor.run {
-                (self.user.id, TrackEventMeta.current())
+            let first = pending[0]
+            let userID: String
+            let meta: TrackEventMeta
+            if let capturedUserID = first.userId, let capturedMeta = first.meta {
+                userID = capturedUserID
+                meta = capturedMeta
+            } else {
+                // Only legacy records with missing context need the main actor.
+                (userID, meta) = await MainActor.run {
+                    (first.userId ?? self.user.id, first.meta ?? TrackEventMeta.current())
+                }
             }
-            let userID = pending[0].userId ?? liveUserId
-            let meta = pending[0].meta ?? liveMeta
             var batch = pending
 
             while !batch.isEmpty {
