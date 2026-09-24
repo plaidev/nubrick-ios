@@ -220,7 +220,7 @@ jobs:
           git add Nubrick/Nubrick.xcodeproj/project.pbxproj
           git add Package.swift
           git add Nubrick.podspec
-          git commit -m "[bot] Release ${TAG}: update framework version, Package.swift, and Nubrick.podspec"
+          git commit -m "[bot] Release ${TAG}: update framework version, Package.swift, and Nubrick.podspec [skip ci]"
 
       - name: Validate Package.swift syntax
         run: swift package dump-package > /dev/null
