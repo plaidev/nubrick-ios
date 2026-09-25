@@ -212,6 +212,9 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
             isScrollContentView: true
         )
         flexView.configureLayout { layout in
+            // Use scroll measurement rules while retaining children's explicit
+            // maxima and a definite viewport for zero-basis fill allocation.
+            layout.overflow = .scroll
             if direction == .column {
                 layout.maxHeight = YGValueUndefined
                 layout.minHeight = YGValueUndefined
@@ -251,36 +254,75 @@ class FlexOverflowView: UIScrollView, BackgroundImageObserver {
     override func layoutSubviews() {
         super.layoutSubviews()
 
-        // Re-apply yoga to inner FlexView with flexible dimensions
-        // This allows scroll content to grow beyond the scroll view's visible bounds
-        // Set min size so inner FlexView fills at least the visible area
         let direction = parseDirection(self.block.data?.direction)
         let borderWidth = CGFloat(max(self.block.data?.frame?.borderWidth ?? 0, 0))
-        if direction == .column {
-            let visibleHeight = max(
-                0,
-                self.bounds.height
-                    - self.contentInset.top - self.contentInset.bottom
-                    - borderWidth * 2
-            )
-            self.flexView.yoga.minHeight = YGValue(value: Float(visibleHeight), unit: .point)
-            self.flexView.yoga.applyLayout(preservingOrigin: true, dimensionFlexibility: .flexibleHeight)
-        } else {
-            let visibleWidth = max(
-                0,
-                self.bounds.width
-                    - self.contentInset.left - self.contentInset.right
-                    - borderWidth * 2
-            )
-            self.flexView.yoga.minWidth = YGValue(value: Float(visibleWidth), unit: .point)
-            self.flexView.yoga.applyLayout(preservingOrigin: true, dimensionFlexibility: .flexibleWidth)
+        let viewport = CGSize(
+            width: max(0, bounds.width - contentInset.left - contentInset.right - borderWidth * 2),
+            height: max(0, bounds.height - contentInset.top - contentInset.bottom - borderWidth * 2)
+        )
+        let isColumn = direction == .column
+        let frame = self.block.data?.frame
+        let leadingPadding = CGFloat(isColumn ? frame?.paddingTop ?? 0 : frame?.paddingLeft ?? 0)
+        let trailingPadding = CGFloat(isColumn ? frame?.paddingBottom ?? 0 : frame?.paddingRight ?? 0)
+        let children = self.flexView.subviews.filter {
+            $0.yoga.isEnabled && $0.yoga.isIncludedInLayout && $0.yoga.display != .none
         }
 
+        // Start every pass from the viewport, including after content changes or
+        // rotation. An undefined main size makes Yoga measure fill descendants
+        // instead of using their zero flex basis.
+        self.flexView.bounds.origin = .zero
+        self.flexView.frame.size = viewport
+        self.flexView.yoga.applyLayout(preservingOrigin: true)
+
+        // Extend the UIKit content surface, not Yoga's available size: a second
+        // Yoga pass would resolve children's percentage maxima against the
+        // expanded content instead of the viewport. A negative bounds origin
+        // keeps CENTER/END overflow reachable without changing child frames.
+        let childBounds = children.map {
+            $0.convert(scrollableBounds(of: $0), to: self.flexView)
+        }
+        let firstEdge = childBounds.map { isColumn ? $0.minY : $0.minX }.min()
+        let lastEdge = childBounds.map { isColumn ? $0.maxY : $0.maxX }.max()
+        let start = min(0, (firstEdge ?? leadingPadding) - leadingPadding)
+        let end = max(
+            isColumn ? self.flexView.bounds.height : self.flexView.bounds.width,
+            (lastEdge ?? 0) + trailingPadding
+        )
+        if isColumn {
+            self.flexView.bounds.origin.y = start
+            self.flexView.bounds.size.height = end - start
+        } else {
+            self.flexView.bounds.origin.x = start
+            self.flexView.bounds.size.width = end - start
+        }
+
+        self.flexView.frame.origin = CGPoint(
+            x: borderWidth + (isColumn ? (viewport.width - self.flexView.frame.width) / 2 : 0),
+            y: borderWidth + (isColumn ? 0 : (viewport.height - self.flexView.frame.height) / 2)
+        )
+
         self.contentSize = CGSize(
-            width: max(self.bounds.width, self.flexView.frame.maxX + borderWidth),
-            height: max(self.bounds.height, self.flexView.frame.maxY + borderWidth)
+            width: max(viewport.width + borderWidth * 2, self.flexView.frame.maxX + borderWidth),
+            height: max(viewport.height + borderWidth * 2, self.flexView.frame.maxY + borderWidth)
         )
         configureBorder(view: self, frame: self.block.data?.frame)
+    }
+
+    private func scrollableBounds(of view: UIView) -> CGRect {
+        var bounds = view.bounds
+        // Visible flex descendants can extend the scroll range without changing
+        // their capped Yoga size. Other components, including nested scrollers,
+        // own their internal content and contribute only their outer box.
+        guard view is FlexView, !view.clipsToBounds, view.layer.mask == nil else {
+            return bounds
+        }
+        for child in view.subviews where
+            child.yoga.isEnabled && child.yoga.isIncludedInLayout && child.yoga.display != .none
+        {
+            bounds = bounds.union(child.convert(scrollableBounds(of: child), to: view))
+        }
+        return bounds
     }
 
 }
