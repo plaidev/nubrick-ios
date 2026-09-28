@@ -1,5 +1,6 @@
 import Combine
 import XCTest
+import UIKit
 @testable import NubrickLocal
 
 private final class TriggerContainerSpy: Container, @unchecked Sendable {
@@ -91,6 +92,28 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
 }
 
 final class TriggerViewControllerTests: XCTestCase {
+    @MainActor
+    func testFirstAndSubsequentForegroundReturnsDispatchEvents() async {
+        let countKey = UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue
+        let previousCount = UserDefaults.standard.object(forKey: countKey)
+        defer { UserDefaults.standard.set(previousCount, forKey: countKey) }
+        let controller = TriggerViewController(
+            user: NubrickUser(), container: TriggerContainerSpy(), modalViewController: nil
+        )
+        controller.initialLoad()
+
+        for visit in 1...2 {
+            let foreground = expectation(description: "Foreground return \(visit)")
+            controller.updateCallbacks(onDispatch: { event in
+                if event.name == TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue {
+                    foreground.fulfill()
+                }
+            }, onTooltip: nil)
+            NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+            await fulfillment(of: [foreground], timeout: 1)
+        }
+    }
+
     @MainActor
     func testTooltipCallbackIncludesExperimentAndVariantContext() async {
         var receivedData: String?
