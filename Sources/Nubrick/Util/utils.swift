@@ -221,13 +221,21 @@ func parseModalPresentationStyle(_ data: ModalPresentationStyle?) -> UIModalPres
 }
 
 @MainActor
-func parseModalScreenSize(_ data: ModalScreenSize?) -> [UISheetPresentationController.Detent] {
+func parseModalScreenSize(
+    _ data: ModalScreenSize?,
+    windowHeight: @escaping () -> CGFloat? = { nil }
+) -> [UISheetPresentationController.Detent] {
     var mediumDetent, fullDetent: UISheetPresentationController.Detent
 
     if #available(iOS 16.0, *) {
         let halfId = UISheetPresentationController.Detent.Identifier("half")
         let fullId = UISheetPresentationController.Detent.Identifier("full")
-        mediumDetent = .custom(identifier: halfId) { ctx in ctx.maximumDetentValue * 0.5 }
+        mediumDetent = .custom(identifier: halfId) { ctx in
+            // Match the fixed content canvas. UIKit adds the bottom safe-area
+            // inset to this value for edge-attached sheets.
+            let halfHeight = (windowHeight() ?? ctx.maximumDetentValue) * 0.5
+            return min(halfHeight, ctx.maximumDetentValue)
+        }
         fullDetent = .custom(identifier: fullId) { ctx in ctx.maximumDetentValue }
     } else {
         mediumDetent = .medium()
