@@ -95,7 +95,12 @@ class ModalPageViewController: UIViewController {
                     leftButton.title = title
                 }
             }
-            self.navigationController?.navigationBar.topItem?.backBarButtonItem = leftButton
+            if self.backButtonBehaviorDelegate != nil {
+                // UIKit ignores the target/action on backBarButtonItem.
+                self.navigationItem.leftBarButtonItem = leftButton
+            } else {
+                self.navigationController?.navigationBar.topItem?.backBarButtonItem = leftButton
+            }
         }
 
         // set background of navigation bar to transparent

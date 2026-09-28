@@ -21,7 +21,6 @@ class TriggerViewController: UIViewController {
     private var onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
     private var onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)? = nil
     private var didLoaded = false
-    private var ignoreFirstUserEventToForegroundEvent = true
 
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:container:modalViewController:onDispatch:onTooltip:).")
     required init?(coder: NSCoder) {
@@ -82,10 +81,6 @@ class TriggerViewController: UIViewController {
     }
 
     @objc func willEnterForeground() {
-        if self.ignoreFirstUserEventToForegroundEvent {
-            self.ignoreFirstUserEventToForegroundEvent = false
-            return
-        }
         var events = [NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue)]
         events.append(contentsOf: self.userReturnEvents())
         Task {
