@@ -50,6 +50,16 @@ class NavigationViewControlller: UINavigationController {
         self.parent?.viewDidLayoutSubviews()
     }
 
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            if #available(iOS 16.0, *) {
+                // The half-height detent depends on the window's new size.
+                self?.sheetPresentationController?.invalidateDetents()
+            }
+        }
+    }
+
     func updateSheetBackground(for viewController: UIViewController) {
         self.view.backgroundColor = viewController.view.backgroundColor
     }

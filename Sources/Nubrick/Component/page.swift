@@ -41,7 +41,9 @@ class ModalPageViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
         if pageView.page?.data?.kind == PageKind.MODAL {
             if let sheet = self.sheetPresentationController {
-                sheet.detents = parseModalScreenSize(pageView.page?.data?.modalScreenSize)
+                sheet.detents = parseModalScreenSize(pageView.page?.data?.modalScreenSize) { [weak pageView] in
+                    pageView?.window?.bounds.height
+                }
             }
         }
     }
