@@ -123,6 +123,11 @@ final class PageView: UIView {
     private var fullScreenInitialNavItemVisibility = false
     private var view: UIView = UIView()
 
+    private var usesFixedSheetLayout: Bool {
+        self.page?.data?.kind == .MODAL
+            && self.page?.data?.modalPresentationStyle == .DEPENDS_ON_CONTEXT_OR_PAGE_SHEET
+    }
+
     private var modalViewController: ModalComponentViewController? = nil
     private var cancellables = Set<AnyCancellable>()
     private var pageHttpRequestTask: Task<Void, Never>?
@@ -195,9 +200,10 @@ final class PageView: UIView {
             parentActionHandler?(action, nil)
         }
 
-        // setup layout
+        // UIKit owns the sheet page's frame; Yoga owns its existing inner view.
+        self.clipsToBounds = self.usesFixedSheetLayout
         self.configureLayout { layout in
-            layout.isEnabled = true
+            layout.isEnabled = !self.usesFixedSheetLayout
             if self.page?.data?.kind == .COMPONENT {
                 if let height = self.page?.data?.frameHeight, height != 0 {
                     layout.height = YGValue(value: Float(height), unit: .point)
@@ -321,6 +327,7 @@ final class PageView: UIView {
                 )
             )
             self.addSubview(self.view)
+            self.setNeedsLayout()
 
             if self.page?.data?.kind == .MODAL {
                 // An explicit page color must cover the sheet while it stretches.
@@ -339,9 +346,20 @@ final class PageView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        self.updateModalYogaHeight()
         self.updateModalSafeAreaPadding()
-        self.yoga.applyLayout(preservingOrigin: true)
+        if self.usesFixedSheetLayout {
+            guard self.view.yoga.isEnabled,
+                  let window = self.window ?? self.modalViewController?.view.window else { return }
+            self.updateModalContentSize(window: window)
+            // Resolve the explicit dimensions below without using the previous
+            // frame as a constraint. Yoga also assigns the inner view's frame.
+            self.view.yoga.applyLayout(
+                preservingOrigin: true,
+                dimensionFlexibility: [.flexibleWidth, .flexibleHeight]
+            )
+        } else {
+            self.yoga.applyLayout(preservingOrigin: true)
+        }
     }
 
     override func safeAreaInsetsDidChange() {
@@ -360,18 +378,8 @@ final class PageView: UIView {
         (self.view as? UIViewBlock)?.setSafeAreaInsets(insets)
     }
 
-    private func updateModalYogaHeight() {
-        guard self.page?.data?.kind == .MODAL,
-              self.page?.data?.modalPresentationStyle == .DEPENDS_ON_CONTEXT_OR_PAGE_SHEET else {
-            return
-        }
-
-        // Pin Yoga height to the host window size so it stays stable when a sheet detent changes,
-        // while still respecting iPad multitasking / rotation (window size changes).
-        guard let window = self.window ?? self.modalViewController?.view.window else {
-            return
-        }
-
+    private func updateModalContentSize(window: UIWindow) {
+        // Keep the existing window-based height rule independent of sheet dragging.
         let availableHeight = window.bounds.height
         let safeAreaTop = window.safeAreaInsets.top
 
@@ -386,7 +394,8 @@ final class PageView: UIView {
             targetHeight = availableHeight - safeAreaTop
         }
 
-        self.yoga.height = YGValue(value: Float(max(0, targetHeight)), unit: .point)
+        self.view.yoga.width = YGValue(value: Float(self.bounds.width), unit: .point)
+        self.view.yoga.height = YGValue(value: Float(max(0, targetHeight)), unit: .point)
     }
 
     private static func mergeProps(pageProps: [Property]?, actionProps: [Property]?) -> [Property] {
