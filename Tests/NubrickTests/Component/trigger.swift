@@ -7,6 +7,11 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
     let experimentId: String? = nil
     let variantId: String? = nil
 
+    @MainActor var onFetchTriggers: (([String]) -> Void)?
+
+    @MainActor
+    init() {}
+
     @MainActor
     func handleEvent(_ it: UIBlockAction) {}
 
@@ -81,7 +86,8 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
         kinds: [ExperimentKind],
         sourceExperimentId: String?
     ) async -> Result<FetchedTriggerContent, NubrickError> {
-        .failure(.notFound)
+        await MainActor.run { onFetchTriggers?(triggers) }
+        return .failure(.notFound)
     }
 
     func fetchRemoteConfig(
@@ -93,25 +99,133 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
 
 final class TriggerViewControllerTests: XCTestCase {
     @MainActor
+    func testLaunchForegroundNotificationDoesNotRepeatStartupTriggers() async {
+        let countKey = UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue
+        let previousCount = UserDefaults.standard.object(forKey: countKey)
+        defer { UserDefaults.standard.set(previousCount, forKey: countKey) }
+        let startup = expectation(description: "Startup triggers fetched")
+        let duplicate = expectation(description: "No duplicate trigger fetch at launch")
+        duplicate.isInverted = true
+        let container = TriggerContainerSpy()
+        var batches = [[String]]()
+        container.onFetchTriggers = { triggers in
+            batches.append(triggers)
+            if batches.count == 1 { startup.fulfill() }
+            else { duplicate.fulfill() }
+        }
+        var dispatched = [String]()
+        let controller = TriggerViewController(
+            user: NubrickUser(), container: container, modalViewController: nil,
+            onDispatch: { dispatched.append($0.name) }
+        )
+
+        controller.initialLoad()
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        await fulfillment(of: [startup, duplicate], timeout: 0.2)
+
+        XCTAssertEqual(batches.count, 1)
+        XCTAssertEqual(dispatched.filter { $0 == TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue }.count, 1)
+        XCTAssertFalse(dispatched.contains(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue))
+        XCTAssertTrue(batches.first?.contains(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue) == true)
+    }
+
+    @MainActor
     func testFirstAndSubsequentForegroundReturnsDispatchEvents() async {
         let countKey = UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue
         let previousCount = UserDefaults.standard.object(forKey: countKey)
         defer { UserDefaults.standard.set(previousCount, forKey: countKey) }
+        // Initialization can happen after UIKit has already posted the launch notification.
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        let startup = expectation(description: "Startup triggers fetched")
+        let container = TriggerContainerSpy()
+        container.onFetchTriggers = { _ in startup.fulfill() }
+        var dispatched = [String]()
         let controller = TriggerViewController(
-            user: NubrickUser(), container: TriggerContainerSpy(), modalViewController: nil
+            user: NubrickUser(), container: container, modalViewController: nil,
+            onDispatch: { dispatched.append($0.name) }
         )
         controller.initialLoad()
+        await fulfillment(of: [startup], timeout: 1)
 
         for visit in 1...2 {
             let foreground = expectation(description: "Foreground return \(visit)")
-            controller.updateCallbacks(onDispatch: { event in
-                if event.name == TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue {
+            let duplicate = expectation(description: "No repeated fetch for return \(visit)")
+            duplicate.isInverted = true
+            var batches = [[String]]()
+            container.onFetchTriggers = { triggers in
+                batches.append(triggers)
+                if batches.count == 1 {
                     foreground.fulfill()
+                } else {
+                    duplicate.fulfill()
                 }
-            }, onTooltip: nil)
+            }
+            dispatched.removeAll()
+            NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
             NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
-            await fulfillment(of: [foreground], timeout: 1)
+            NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+            await fulfillment(of: [foreground, duplicate], timeout: 0.2)
+            XCTAssertEqual(batches.count, 1)
+            XCTAssertEqual(dispatched.filter { $0 == TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue }.count, 1)
+            XCTAssertEqual(dispatched.filter { $0 == TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue }.count, 1)
+            XCTAssertTrue(batches.first?.contains(TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue) == true)
         }
+    }
+
+    @MainActor
+    func testInitializationAfterBackgroundDispatchesStartupWithoutForegroundReturn() async {
+        let countKey = UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue
+        let previousCount = UserDefaults.standard.object(forKey: countKey)
+        defer { UserDefaults.standard.set(previousCount, forKey: countKey) }
+        UserDefaults.standard.set(0, forKey: countKey)
+
+        // The controller did not exist when the app entered the background.
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        let container = TriggerContainerSpy()
+        var batches = [[String]]()
+        var dispatched = [String]()
+        let controller = TriggerViewController(
+            user: NubrickUser(), container: container, modalViewController: nil,
+            onDispatch: { dispatched.append($0.name) }
+        )
+        let startup = expectation(description: "Startup triggers fetched before foreground entry")
+        let duplicate = expectation(description: "No duplicate startup fetch")
+        duplicate.isInverted = true
+        container.onFetchTriggers = { triggers in
+            batches.append(triggers)
+            if batches.count == 1 { startup.fulfill() }
+            else { duplicate.fulfill() }
+        }
+        controller.initialLoad()
+        await fulfillment(of: [startup], timeout: 1)
+
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        await fulfillment(of: [duplicate], timeout: 0.2)
+
+        XCTAssertEqual(batches.count, 1)
+        XCTAssertEqual(batches.first, dispatched)
+        XCTAssertEqual(dispatched.filter { $0 == TriggerEventNameDefs.USER_BOOT_APP.rawValue }.count, 1)
+        XCTAssertEqual(dispatched.filter { $0 == TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue }.count, 1)
+        XCTAssertEqual(dispatched.filter { $0 == TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue }.count, 1)
+        XCTAssertFalse(dispatched.contains(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue))
+
+        let foreground = expectation(description: "Subsequent foreground return")
+        container.onFetchTriggers = { triggers in
+            batches.append(triggers)
+            foreground.fulfill()
+        }
+        dispatched.removeAll()
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        await fulfillment(of: [foreground], timeout: 1)
+
+        XCTAssertEqual(batches.count, 2)
+        XCTAssertEqual(batches.last, dispatched)
+        XCTAssertEqual(dispatched.filter { $0 == TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue }.count, 1)
+        XCTAssertEqual(dispatched.filter { $0 == TriggerEventNameDefs.USER_ENTER_TO_APP.rawValue }.count, 1)
+        XCTAssertFalse(dispatched.contains(TriggerEventNameDefs.USER_BOOT_APP.rawValue))
+        XCTAssertFalse(dispatched.contains(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
     }
 
     @MainActor

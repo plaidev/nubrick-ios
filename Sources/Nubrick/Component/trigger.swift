@@ -21,6 +21,7 @@ class TriggerViewController: UIViewController {
     private var onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
     private var onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)? = nil
     private var didLoaded = false
+    private var hasEnteredBackground = false
 
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:container:modalViewController:onDispatch:onTooltip:).")
     required init?(coder: NSCoder) {
@@ -76,11 +77,19 @@ class TriggerViewController: UIViewController {
             await self.dispatchPredefinedEvents(events)
         }
 
-        // Dispatch a retention event when the user returns to the foreground from the background
+        // Startup counts as the first entry even when initialized in the background.
+        // Only a background transition observed after initialization enables a return.
+        NotificationCenter.default.addObserver(self, selector: #selector(didEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
+    @objc private func didEnterBackground() {
+        self.hasEnteredBackground = true
+    }
+
     @objc func willEnterForeground() {
+        guard self.hasEnteredBackground else { return }
+        self.hasEnteredBackground = false
         var events = [NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue)]
         events.append(contentsOf: self.userReturnEvents())
         Task {
