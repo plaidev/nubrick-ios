@@ -41,9 +41,9 @@ class ModalPageViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
         if pageView.page?.data?.kind == PageKind.MODAL {
             if let sheet = self.sheetPresentationController {
-                sheet.detents = parseModalScreenSize(pageView.page?.data?.modalScreenSize) { [weak pageView] in
+                sheet.detents = parseModalScreenSize(pageView.page?.data?.modalScreenSize, windowHeight: { [weak pageView] in
                     pageView?.window?.bounds.height
-                }
+                })
             }
         }
     }
@@ -129,6 +129,11 @@ final class PageView: UIView {
     private var actionHandler: UIBlockActionHandler? = nil
     private var fullScreenInitialNavItemVisibility = false
     private var view: UIView = UIView()
+    var sheetContentHeight: CGFloat? {
+        didSet {
+            if oldValue != sheetContentHeight { setNeedsLayout() }
+        }
+    }
 
     private var usesFixedSheetLayout: Bool {
         self.page?.data?.kind == .MODAL
@@ -386,19 +391,22 @@ final class PageView: UIView {
     }
 
     private func updateModalContentSize(window: UIWindow) {
-        // Keep the existing window-based height rule independent of sheet dragging.
+        // The presenting sheet supplies its resolved resting height. Keep the
+        // window-based fallback before presentation and for iOS 15.
         let availableHeight = window.bounds.height
         let safeAreaTop = window.safeAreaInsets.top
 
         let targetHeight: CGFloat
-        switch self.page?.data?.modalScreenSize {
-        case .MEDIUM:
-            targetHeight = availableHeight * 0.5
-        case .LARGE:
-            targetHeight = availableHeight - safeAreaTop
-        default:
-            // Resizable (both MEDIUM and LARGE): use LARGE size
-            targetHeight = availableHeight - safeAreaTop
+        if let sheetContentHeight {
+            targetHeight = sheetContentHeight
+        } else {
+            switch self.page?.data?.modalScreenSize {
+            case .MEDIUM:
+                targetHeight = availableHeight * 0.5
+            default:
+                // Resizable (both MEDIUM and LARGE): use LARGE size
+                targetHeight = availableHeight - safeAreaTop
+            }
         }
 
         self.view.yoga.width = YGValue(value: Float(self.bounds.width), unit: .point)

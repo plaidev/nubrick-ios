@@ -131,16 +131,39 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     @MainActor
-    func testLargeSheetKeepsExistingHeightRule() throws {
+    func testLargeSheetUsesResolvedHeightInsteadOfWindowApproximation() throws {
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
         let page = try makePage(screenSize: "LARGE")
+        page.sheetContentHeight = 734
         window.addSubview(page)
         for height in [700.0, 710.0, 695.0] {
             page.frame = CGRect(x: 0, y: 0, width: 370, height: height)
             page.layoutIfNeeded()
-            XCTAssertEqual(try contentRoot(page).bounds.height, window.bounds.height - window.safeAreaInsets.top)
+            XCTAssertEqual(try contentRoot(page).bounds.height, 734)
             XCTAssertEqual(page.bounds.height, height)
         }
+    }
+
+    @MainActor
+    func testResolvedHeightReachesPushedAndPreviousPages() throws {
+        guard #available(iOS 16.0, *) else { return }
+        let page = try makePage()
+        let navigation = NavigationViewControlller(
+            rootViewController: ModalPageViewController(pageView: page), hasPrevious: true
+        )
+        navigation.modalPresentationStyle = .pageSheet
+        navigation.configureSheet(size: .MEDIUM_AND_LARGE) { 852 }
+        let detent = try XCTUnwrap(navigation.sheetPresentationController?.detents.last)
+        _ = detent.resolvedValue(in: SheetDetentContext(maximum: 750))
+        let next = try makePage()
+        navigation.pushViewController(ModalPageViewController(pageView: next), animated: false)
+        XCTAssertEqual(page.sheetContentHeight, 750)
+        XCTAssertEqual(next.sheetContentHeight, 750)
+        _ = detent.resolvedValue(in: SheetDetentContext(maximum: 350))
+        XCTAssertEqual(page.sheetContentHeight, 350)
+        XCTAssertEqual(next.sheetContentHeight, 350)
+        _ = navigation.popViewController(animated: false)
+        XCTAssertEqual(page.sheetContentHeight, 350)
     }
 
     @MainActor

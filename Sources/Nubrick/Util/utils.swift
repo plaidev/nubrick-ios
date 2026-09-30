@@ -223,7 +223,9 @@ func parseModalPresentationStyle(_ data: ModalPresentationStyle?) -> UIModalPres
 @MainActor
 func parseModalScreenSize(
     _ data: ModalScreenSize?,
-    windowHeight: @escaping () -> CGFloat? = { nil }
+    windowHeight: @escaping () -> CGFloat? = { nil },
+    bottomInset: @escaping () -> CGFloat = { 0 },
+    onContentHeight: @escaping (CGFloat) -> Void = { _ in }
 ) -> [UISheetPresentationController.Detent] {
     var mediumDetent, fullDetent: UISheetPresentationController.Detent
 
@@ -231,12 +233,21 @@ func parseModalScreenSize(
         let halfId = UISheetPresentationController.Detent.Identifier("half")
         let fullId = UISheetPresentationController.Detent.Identifier("full")
         mediumDetent = .custom(identifier: halfId) { ctx in
-            // Match the fixed content canvas. UIKit adds the bottom safe-area
-            // inset to this value for edge-attached sheets.
+            // Detents exclude the bottom safe area; the Yoga canvas includes it.
+            let inset = bottomInset()
             let halfHeight = (windowHeight() ?? ctx.maximumDetentValue) * 0.5
-            return min(halfHeight, ctx.maximumDetentValue)
+            let height = max(0, min(halfHeight - inset, ctx.maximumDetentValue))
+            if data == .MEDIUM {
+                onContentHeight(height + inset)
+            }
+            return height
         }
-        fullDetent = .custom(identifier: fullId) { ctx in ctx.maximumDetentValue }
+        fullDetent = .custom(identifier: fullId) { ctx in
+            if data != .MEDIUM {
+                onContentHeight(ctx.maximumDetentValue + bottomInset())
+            }
+            return ctx.maximumDetentValue
+        }
     } else {
         mediumDetent = .medium()
         fullDetent = .large()
