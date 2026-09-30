@@ -11,6 +11,9 @@ import UIKit
 class NavigationViewControlller: UINavigationController {
     fileprivate var duringPushAnimation = false
     fileprivate var willDismiss = false
+    private var sheetContentHeight: CGFloat?
+    private var sheetWindowSize: CGSize?
+    private var sheetBottomInset: CGFloat = 0
 
     init(rootViewController: UIViewController, hasPrevious: Bool) {
         if hasPrevious {
@@ -47,7 +50,37 @@ class NavigationViewControlller: UINavigationController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        self.updateSheetGeometry()
         self.parent?.viewDidLayoutSubviews()
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        self.updateSheetGeometry()
+    }
+
+    func configureSheet(size: ModalScreenSize?, windowHeight: @escaping () -> CGFloat?) {
+        self.sheetPresentationController?.detents = parseModalScreenSize(
+            size, windowHeight: windowHeight,
+            bottomInset: { [weak self] in self?.viewIfLoaded?.safeAreaInsets.bottom ?? 0 },
+            onContentHeight: { [weak self] height in
+                guard let self, self.sheetContentHeight != height else { return }
+                self.sheetContentHeight = height
+                for case let page as ModalPageViewController in self.viewControllers {
+                    page.representedPageView?.sheetContentHeight = height
+                }
+            }
+        )
+    }
+
+    private func updateSheetGeometry() {
+        guard #available(iOS 16.0, *), let window = self.viewIfLoaded?.window,
+              self.sheetContentHeight != nil else { return }
+        let bottomInset = self.view.safeAreaInsets.bottom
+        guard self.sheetWindowSize != window.bounds.size || self.sheetBottomInset != bottomInset else { return }
+        self.sheetWindowSize = window.bounds.size
+        self.sheetBottomInset = bottomInset
+        self.sheetPresentationController?.invalidateDetents()
     }
 
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -66,6 +99,7 @@ class NavigationViewControlller: UINavigationController {
 
     override func pushViewController(_ viewController: UIViewController, animated: Bool) {
         duringPushAnimation = true
+        (viewController as? ModalPageViewController)?.representedPageView?.sheetContentHeight = self.sheetContentHeight
 
         super.pushViewController(viewController, animated: animated)
     }

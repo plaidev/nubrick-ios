@@ -116,10 +116,8 @@ class ModalComponentViewController: UIViewController {
                 hasPrevious: true
             )
             modal.modalPresentationStyle = parseModalPresentationStyle(modalPresentationStyle)
-            if let sheet = modal.sheetPresentationController {
-                sheet.detents = parseModalScreenSize(modalScreenSize) { [weak self] in
-                    self?.view.window?.bounds.height
-                }
+            modal.configureSheet(size: modalScreenSize) { [weak self] in
+                self?.view.window?.bounds.height
             }
             modal.updateSheetBackground(for: pageController)
             self.currentModal = modal
