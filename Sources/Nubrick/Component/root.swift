@@ -490,16 +490,3 @@ func findTopPresenting(_ viewContorller: UIViewController) -> UIViewController {
         return viewContorller
     }
 }
-
-@MainActor
-func isPresenting(presented: UIViewController?, vc: UIViewController) -> Bool {
-    if let presented = presented {
-        if presented == vc {
-            return true
-        } else {
-            return isPresenting(presented: presented.presentedViewController, vc: vc)
-        }
-    } else {
-        return false
-    }
-}
