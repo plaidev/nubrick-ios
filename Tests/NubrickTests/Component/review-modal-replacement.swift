@@ -32,14 +32,14 @@ final class ModalNavigationReuseTests: XCTestCase {
         let firstPageView = PageView(page: firstPage, props: nil, container: container,
                                      arguments: nil, actionHandler: nil, modalViewController: component)
         component.presentNavigation(pageView: firstPageView, modalPresentationStyle: nil,
-                                    modalScreenSize: nil, backButtonBehaviorDelegate: nil)
+                                    modalScreenSize: nil, backButtonActionHandler: nil)
         try await Task.sleep(nanoseconds: 800_000_000)
         let navigation = try XCTUnwrap(host.presentedViewController as? NavigationViewControlller)
 
         let secondPageView = PageView(page: secondPage, props: nil, container: container,
                                       arguments: nil, actionHandler: nil, modalViewController: component)
         component.presentNavigation(pageView: secondPageView, modalPresentationStyle: nil,
-                                    modalScreenSize: nil, backButtonBehaviorDelegate: nil)
+                                    modalScreenSize: nil, backButtonActionHandler: nil)
 
         XCTAssertEqual(navigation.viewControllers.count, 2)
     }
