@@ -55,6 +55,10 @@ class OverlayViewController: UIViewController {
         self.triggerViewController.clearCallbacks()
     }
 
+    func prepareForRemoval() {
+        self.modalForTriggerViewController.resetTriggerExperiment()
+    }
+
     @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(user:container:onDispatch:onTooltip:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -69,5 +73,12 @@ struct OverlayViewControllerRepresentable: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: OverlayViewController, context: Context) {
+    }
+
+    static func dismantleUIViewController(
+        _ uiViewController: OverlayViewController,
+        coordinator: Void
+    ) {
+        uiViewController.prepareForRemoval()
     }
 }

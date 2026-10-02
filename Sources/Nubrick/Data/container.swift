@@ -57,6 +57,8 @@ protocol Container : Sendable {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError>
     func fetchTriggerContent(triggers: [String], kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError>
+    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async
+    func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
@@ -250,6 +252,24 @@ final class ContainerImpl: Container {
         }
     }
 
+    private func recordTriggerEvent(name: String, sourceExperimentId: String?) async -> Bool {
+        await self.trackRepository.trackEvent(TrackUserEvent(name: name, experimentId: sourceExperimentId))
+        return await self.databaseRepository.appendUserEvent(name: name)
+    }
+
+    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async {
+        for trigger in triggers {
+            _ = await self.recordTriggerEvent(name: trigger, sourceExperimentId: sourceExperimentId)
+        }
+    }
+
+    func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool {
+        await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
+            experimentId: experimentId, variantId: variantId
+        ))
+        return await self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+    }
+
     func fetchTriggerContent(
         trigger: String,
         kinds: [ExperimentKind],
@@ -269,8 +289,7 @@ final class ContainerImpl: Container {
     ) async -> Result<FetchedTriggerContent, NubrickError> {
         var selected: ExtractedVariant?
         for trigger in triggers {
-            await self.trackRepository.trackEvent(TrackUserEvent(name: trigger, experimentId: sourceExperimentId))
-            guard await self.databaseRepository.appendUserEvent(name: trigger),
+            guard await self.recordTriggerEvent(name: trigger, sourceExperimentId: sourceExperimentId),
                   case .success(let configs) = await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger),
                   case .success(let extracted) = await self.extractVariant(configs: configs, kinds: kinds) else {
                 continue
@@ -282,16 +301,6 @@ final class ContainerImpl: Container {
         guard let extracted = selected else { return .failure(.notFound) }
         guard let variantId = extracted.variant.id else {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
-        }
-
-        await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId: extracted.experimentId, variantId: variantId
-        ))
-        // Tooltip is a Flutter-only flow. Persist tooltip history only after
-        // Flutter confirms the tooltip actually started rendering.
-        if extracted.kind != .TOOLTIP,
-           !(await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)) {
-            return .failure(NubrickError.irregular("Couldn't save experiment history"))
         }
 
         guard let componentId = extractComponentId(variant: extracted.variant) else {
