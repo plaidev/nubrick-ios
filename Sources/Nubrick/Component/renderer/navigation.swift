@@ -54,7 +54,7 @@ class NavigationViewControlller: UINavigationController {
         guard isBeingDismissed || presentingViewController == nil else { return }
         let callback = onDismissed
         onDismissed = nil
-        DispatchQueue.main.async { callback?(self) }
+        callback?(self)
     }
 
     override func viewDidLayoutSubviews() {
