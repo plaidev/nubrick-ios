@@ -26,7 +26,7 @@ private struct PageHttpRequestSnapshot {
 class ModalPageViewController: UIViewController {
     private var isFirstModal = false
     private let pageView: PageView?
-    var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
+    var backButtonActionHandler: ModalBackButtonActionHandler? = nil
     var onVisiblePageChanged: ((PageView) -> Void)?
     var pageId: String? { self.pageView?.page?.id }
     var representedPageView: PageView? { self.pageView }
@@ -95,7 +95,7 @@ class ModalPageViewController: UIViewController {
                     leftButton.title = title
                 }
             }
-            if self.backButtonBehaviorDelegate != nil {
+            if self.backButtonActionHandler != nil {
                 // UIKit ignores the target/action on backBarButtonItem.
                 self.navigationItem.leftBarButtonItem = leftButton
             } else {
@@ -111,8 +111,8 @@ class ModalPageViewController: UIViewController {
     }
 
     @objc func onClickBack() {
-        if let backButtonBehaviorDelegate = self.backButtonBehaviorDelegate {
-            backButtonBehaviorDelegate.onBackButtonClick()
+        if let backButtonActionHandler = self.backButtonActionHandler {
+            backButtonActionHandler()
         } else {
             self.navigationController?.popViewController(animated: true)
         }

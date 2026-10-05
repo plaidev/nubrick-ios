@@ -1,19 +1,58 @@
 import Combine
 import XCTest
 import UIKit
+import SafariServices
 @testable import NubrickLocal
+
+@MainActor
+private final class TriggerModalSpy: ModalComponentViewController {
+    var presentations = [UIViewController]()
+    var onShown: (() -> Void)?
+    var canPresent = true
+
+    override func presentToTop(_ viewController: UIViewController, onPresented: (() -> Void)?) -> Bool {
+        guard canPresent else { return false }
+        self.presentations.append(viewController)
+        self.onShown = onPresented
+        return true
+    }
+}
 
 private final class TriggerContainerSpy: Container, @unchecked Sendable {
     let experimentId: String? = nil
     let variantId: String? = nil
 
     @MainActor var onFetchTriggers: (([String]) -> Void)?
+    @MainActor var onPopupFetchPaused: (() -> Void)?
+    @MainActor var onTriggerRecordingPaused: (() -> Void)?
+    @MainActor var onDisplayRecordingPaused: (() -> Void)?
+    @MainActor var onDisplayed: (() -> Void)?
+    @MainActor var popupFetches = [String]()
+    @MainActor var recordedTriggers = [String]()
+    @MainActor var recordedSources = [String?]()
+    @MainActor var failedTriggers = Set<String>()
+    @MainActor var displayedExperiments = [String]()
+    @MainActor var handledActions = [UIBlockAction]()
+    @MainActor var roots = [String: UIRootBlock]()
+    @MainActor var firstFetchContinuation: CheckedContinuation<Void, Never>?
+    @MainActor var triggerRecordingContinuation: CheckedContinuation<Void, Never>?
+    @MainActor var displayRecordingContinuation: CheckedContinuation<Void, Never>?
+    @MainActor var shouldPauseDisplayRecording = false
+    @MainActor var shouldPauseTriggerRecording = false
+
+    @MainActor
+    private func pauseFirstFetch() async {
+        await withCheckedContinuation { continuation in
+            self.firstFetchContinuation = continuation
+            self.onPopupFetchPaused?()
+        }
+    }
 
     @MainActor
     init() {}
 
     @MainActor
-    func handleEvent(_ it: UIBlockAction) {}
+    func handleEvent(_ it: UIBlockAction) { self.handledActions.append(it) }
 
     @MainActor
     func makeContainer() -> Container { self }
@@ -67,9 +106,22 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
 
     func fetchTriggerContent(
         trigger: String,
-        kinds: [ExperimentKind],
-        sourceExperimentId: String?
+        kinds: [ExperimentKind]
     ) async -> Result<FetchedTriggerContent, NubrickError> {
+        if trigger.hasPrefix("popup-") {
+            await MainActor.run { self.popupFetches.append(trigger) }
+            if trigger == "popup-first" { await self.pauseFirstFetch() }
+            let root = try! JSONDecoder().decode(UIRootBlock.self, from: Data("""
+            {"id":"root","data":{"pages":[
+              {"id":"start","data":{"kind":"TRIGGER","triggerSetting":{"onTrigger":{"destinationPageId":"modal"}}}},
+              {"id":"modal","data":{"kind":"MODAL"}}
+            ]}}
+            """.utf8))
+            return .success(FetchedTriggerContent(
+                experimentId: trigger, variantId: "variant", kind: .POPUP,
+                block: .EUIRootBlock(await MainActor.run { self.roots[trigger] ?? root })
+            ))
+        }
         guard trigger == "tooltip-trigger" else {
             return .failure(.notFound)
         }
@@ -83,11 +135,48 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
 
     func fetchTriggerContent(
         triggers: [String],
-        kinds: [ExperimentKind],
-        sourceExperimentId: String?
+        kinds: [ExperimentKind]
     ) async -> Result<FetchedTriggerContent, NubrickError> {
         await MainActor.run { onFetchTriggers?(triggers) }
+        if let trigger = triggers.first(where: { $0.hasPrefix("popup-") || $0 == "tooltip-trigger" }) {
+            return await self.fetchTriggerContent(trigger: trigger, kinds: kinds)
+        }
         return .failure(.notFound)
+    }
+
+    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async -> [String] {
+        await MainActor.run {
+            self.recordedTriggers.append(contentsOf: triggers)
+            self.recordedSources.append(sourceExperimentId)
+        }
+        if await MainActor.run(body: { self.shouldPauseTriggerRecording }) {
+            await self.pauseTriggerRecording()
+        }
+        return await MainActor.run { triggers.filter { !self.failedTriggers.contains($0) } }
+    }
+
+    @MainActor
+    private func pauseTriggerRecording() async {
+        await withCheckedContinuation { continuation in
+            self.triggerRecordingContinuation = continuation
+            self.onTriggerRecordingPaused?()
+        }
+    }
+
+    func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool {
+        if await MainActor.run(body: { self.shouldPauseDisplayRecording }) {
+            await withCheckedContinuation { continuation in
+                Task { @MainActor in
+                    self.displayRecordingContinuation = continuation
+                    self.onDisplayRecordingPaused?()
+                }
+            }
+        }
+        await MainActor.run {
+            self.displayedExperiments.append(experimentId)
+            self.onDisplayed?()
+        }
+        return true
     }
 
     func fetchRemoteConfig(
@@ -98,6 +187,618 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
 }
 
 final class TriggerViewControllerTests: XCTestCase {
+    @MainActor
+    func testCustomDispatchCallbackWaitsForRecordingWhenFetchingIsSkipped() async throws {
+        for reason in ["before-load", "active-popup", "recording-failed"] {
+            let recordingPaused = expectation(description: "Trigger recording paused")
+            let container = TriggerContainerSpy()
+            let modal = TriggerModalSpy()
+            let name = "popup-\(reason)"
+            var dispatched = [String]()
+            let controller = TriggerViewController(
+                user: NubrickUser(), container: container, modalViewController: modal,
+                onDispatch: { if $0.name == name { dispatched.append($0.name) } }
+            )
+            if reason != "before-load" {
+                let startup = expectation(description: "Startup fetch completed")
+                container.onFetchTriggers = { _ in startup.fulfill() }
+                controller.initialLoad()
+                await fulfillment(of: [startup], timeout: 1)
+            }
+            if reason == "active-popup" {
+                _ = try XCTUnwrap(modal.startTriggerExperiment())
+            }
+            if reason == "recording-failed" {
+                container.failedTriggers = [name]
+            }
+            container.onFetchTriggers = { _ in XCTFail("This dispatch must skip fetching") }
+            container.shouldPauseTriggerRecording = true
+            container.onTriggerRecordingPaused = { recordingPaused.fulfill() }
+
+            let dispatch = Task { await controller.performDispatch(events: [NubrickEvent(name)]) }
+            await fulfillment(of: [recordingPaused], timeout: 1)
+            XCTAssertTrue(dispatched.isEmpty)
+            container.triggerRecordingContinuation?.resume()
+            await dispatch.value
+
+            XCTAssertEqual(dispatched, [name])
+            XCTAssertTrue(container.recordedTriggers.contains(name))
+            XCTAssertTrue(modal.presentations.isEmpty)
+        }
+    }
+
+    @MainActor
+    func testLifecycleCallbacksFollowRecordingBeforeFetching() async {
+        let countKey = UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue
+        let previousCount = UserDefaults.standard.object(forKey: countKey)
+        defer { UserDefaults.standard.set(previousCount, forKey: countKey) }
+        let container = TriggerContainerSpy()
+        container.shouldPauseTriggerRecording = true
+        var dispatched = [String]()
+        let controller = TriggerViewController(
+            user: NubrickUser(), container: container, modalViewController: nil,
+            onDispatch: {
+                XCTAssertTrue(container.recordedTriggers.contains($0.name))
+                dispatched.append($0.name)
+            }
+        )
+
+        for visit in 0...1 {
+            let recordingPaused = expectation(description: "Lifecycle recording paused")
+            let fetched = expectation(description: "Lifecycle fetch completed")
+            container.recordedTriggers.removeAll()
+            dispatched.removeAll()
+            container.onTriggerRecordingPaused = { recordingPaused.fulfill() }
+            container.onFetchTriggers = { triggers in
+                XCTAssertEqual(dispatched, triggers)
+                fetched.fulfill()
+            }
+            if visit == 0 {
+                controller.initialLoad()
+            } else {
+                NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+                controller.willEnterForeground()
+            }
+            await fulfillment(of: [recordingPaused], timeout: 1)
+            XCTAssertTrue(dispatched.isEmpty, "Lifecycle callbacks must wait for recording")
+            container.triggerRecordingContinuation?.resume()
+            await fulfillment(of: [fetched], timeout: 1)
+            XCTAssertFalse(dispatched.isEmpty)
+            XCTAssertEqual(dispatched, container.recordedTriggers)
+        }
+    }
+
+    @MainActor
+    func testSingleAndBatchedDispatchUseCurrentPopupStateAfterRecording() async throws {
+        for names in [["popup-next"], ["unmatched", "popup-next"]] {
+            let startup = expectation(description: "Startup fetch completed")
+            let recordingPaused = expectation(description: "Trigger recording paused")
+            let container = TriggerContainerSpy()
+            container.onFetchTriggers = { _ in startup.fulfill() }
+            let modal = TriggerModalSpy()
+            var dispatched = [String]()
+            let controller = TriggerViewController(
+                user: NubrickUser(), container: container, modalViewController: modal,
+                onDispatch: { dispatched.append($0.name) }
+            )
+            controller.initialLoad()
+            await fulfillment(of: [startup], timeout: 1)
+            dispatched.removeAll()
+            var fetched = [[String]]()
+            container.onFetchTriggers = { triggers in
+                XCTAssertEqual(dispatched, names, "Callbacks must precede fetching")
+                fetched.append(triggers)
+            }
+            container.shouldPauseTriggerRecording = true
+            container.onTriggerRecordingPaused = { recordingPaused.fulfill() }
+            let session = try XCTUnwrap(modal.startTriggerExperiment())
+
+            let dispatch = Task {
+                await controller.performDispatch(
+                    events: names.map { NubrickEvent($0) }, sourceExperimentId: "source-experiment"
+                )
+            }
+            await fulfillment(of: [recordingPaused], timeout: 1)
+            XCTAssertTrue(dispatched.isEmpty, "Custom event callbacks must wait for recording")
+            XCTAssertEqual(container.recordedSources.last, "source-experiment")
+            XCTAssertTrue(fetched.isEmpty)
+
+            modal.finishTriggerExperimentIfUnpresented(session)
+            XCTAssertFalse(modal.hasActiveTriggerExperiment)
+            container.triggerRecordingContinuation?.resume()
+            await dispatch.value
+
+            XCTAssertEqual(fetched, [names])
+            XCTAssertEqual(modal.presentations.count, 1)
+            XCTAssertEqual(dispatched, names, "Each event is notified only once")
+        }
+    }
+
+    @MainActor
+    func testDispatchSelectsContentOnlyForSuccessfullyRecordedEvents() async {
+        for names in [["popup-failed"], ["popup-failed", "popup-ready"]] {
+            let startup = expectation(description: "Startup fetch completed")
+            let container = TriggerContainerSpy()
+            container.onFetchTriggers = { _ in startup.fulfill() }
+            let modal = TriggerModalSpy()
+            var dispatched = [String]()
+            let controller = TriggerViewController(
+                user: NubrickUser(), container: container, modalViewController: modal,
+                onDispatch: { dispatched.append($0.name) }
+            )
+            controller.initialLoad()
+            await fulfillment(of: [startup], timeout: 1)
+            dispatched.removeAll()
+            container.recordedTriggers.removeAll()
+            container.failedTriggers = ["popup-failed"]
+            var fetched = [[String]]()
+            container.onFetchTriggers = { fetched.append($0) }
+
+            await controller.performDispatch(events: names.map { NubrickEvent($0) })
+
+            XCTAssertEqual(dispatched, names)
+            XCTAssertEqual(container.recordedTriggers, names)
+            let successful = names.filter { $0 != "popup-failed" }
+            XCTAssertEqual(fetched, successful.isEmpty ? [] : [successful])
+            XCTAssertEqual(container.popupFetches, successful)
+            XCTAssertEqual(modal.presentations.count, successful.isEmpty ? 0 : 1)
+        }
+    }
+
+    @MainActor
+    func testDispatchBeforeInitialLoadRecordsAndNotifiesWithoutFetching() async {
+        let container = TriggerContainerSpy()
+        var dispatched = [String]()
+        var fetched = [[String]]()
+        container.onFetchTriggers = { fetched.append($0) }
+        let controller = TriggerViewController(
+            user: NubrickUser(), container: container, modalViewController: nil,
+            onDispatch: { dispatched.append($0.name) }
+        )
+
+        await controller.performDispatch(events: [NubrickEvent("popup-before-load")])
+
+        XCTAssertEqual(dispatched, ["popup-before-load"])
+        XCTAssertEqual(container.recordedTriggers, ["popup-before-load"])
+        XCTAssertTrue(fetched.isEmpty)
+    }
+
+    @MainActor
+    func testDismissalKeepsClaimUntilDisplayHistoryIsPersisted() async {
+        let recordingPaused = expectation(description: "Display recording paused")
+        let displayed = expectation(description: "Display history persisted")
+        let container = TriggerContainerSpy()
+        container.shouldPauseDisplayRecording = true
+        container.onDisplayRecordingPaused = { recordingPaused.fulfill() }
+        container.onDisplayed = { displayed.fulfill() }
+        let modal = TriggerModalSpy()
+        let controller = TriggerViewController(
+            user: NubrickUser(), container: container, modalViewController: modal
+        )
+        controller.initialLoad()
+
+        await controller.performDispatch(events: [NubrickEvent("popup-first-shown")])
+        XCTAssertEqual(modal.presentations.count, 1)
+        modal.onShown?()
+        await fulfillment(of: [recordingPaused], timeout: 1)
+
+        modal.presentations.last?.viewDidDisappear(false)
+        await settleUIKit()
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+
+        await controller.performDispatch(events: [NubrickEvent("popup-before-history")])
+        XCTAssertEqual(modal.presentations.count, 1)
+        XCTAssertEqual(container.popupFetches, ["popup-first-shown"])
+        XCTAssertTrue(container.recordedTriggers.contains("popup-before-history"))
+
+        container.displayRecordingContinuation?.resume()
+        await fulfillment(of: [displayed], timeout: 1)
+        await settleUIKit()
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+
+        await controller.performDispatch(events: [NubrickEvent("popup-after-history")])
+        XCTAssertEqual(container.popupFetches, ["popup-first-shown", "popup-after-history"])
+        XCTAssertEqual(modal.presentations.count, 2)
+    }
+
+    @MainActor
+    func testPendingFetchDoesNotBlockReadyExperimentAndLateCompletionIsDiscarded() async {
+        let startup = expectation(description: "Startup fetch completed")
+        let paused = expectation(description: "First popup fetch paused")
+        let displayed = expectation(description: "Ready popup displayed")
+        let container = TriggerContainerSpy()
+        container.onFetchTriggers = { _ in startup.fulfill() }
+        container.onPopupFetchPaused = { paused.fulfill() }
+        container.onDisplayed = { displayed.fulfill() }
+        let modal = TriggerModalSpy()
+        let controller = TriggerViewController(
+            user: NubrickUser(), container: container, modalViewController: modal
+        )
+        controller.initialLoad()
+        await fulfillment(of: [startup], timeout: 1)
+        container.onFetchTriggers = nil
+
+        let first = Task { await controller.performDispatch(events: [NubrickEvent("popup-first")]) }
+        await fulfillment(of: [paused], timeout: 1)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        await controller.performDispatch(events: [NubrickEvent("popup-second")])
+        XCTAssertEqual(container.popupFetches, ["popup-first", "popup-second"])
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+        XCTAssertEqual(modal.presentations.count, 1)
+        XCTAssertTrue(container.displayedExperiments.isEmpty)
+
+        container.firstFetchContinuation?.resume()
+        await first.value
+        XCTAssertEqual(modal.presentations.count, 1)
+        await controller.performDispatch(events: [NubrickEvent("popup-third")])
+        XCTAssertEqual(container.popupFetches, ["popup-first", "popup-second"])
+        XCTAssertTrue(container.recordedTriggers.contains("popup-third"))
+
+        modal.onShown?()
+        modal.onShown?()
+        await fulfillment(of: [displayed], timeout: 1)
+        XCTAssertEqual(container.displayedExperiments, ["popup-second"])
+
+        modal.presentations.last?.viewDidDisappear(false)
+        await settleUIKit()
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        XCTAssertEqual(modal.presentations.count, 1, "Skipped starts must not replay after dismissal")
+        await controller.performDispatch(events: [NubrickEvent("popup-fourth")])
+        XCTAssertEqual(modal.presentations.count, 2)
+    }
+
+    @MainActor
+    private func settleUIKit() async {
+        // Let dismissal lifecycle callbacks and display-recording tasks finish.
+        try? await Task.sleep(nanoseconds: 100_000_000)
+    }
+
+    @MainActor
+    private func webRoot(url: String = "https://example.com", backDestination: String? = nil, startPage: String = "web") -> UIRootBlock {
+        let back = backDestination.map { ",\"triggerSetting\":{\"onTrigger\":{\"destinationPageId\":\"\($0)\"}}" } ?? ""
+        return try! JSONDecoder().decode(UIRootBlock.self, from: Data("""
+        {"id":"root","data":{"pages":[
+          {"id":"start","data":{"kind":"TRIGGER","triggerSetting":{"onTrigger":{"destinationPageId":"\(startPage)"}}}},
+          {"id":"web","data":{"kind":"WEBVIEW_MODAL","webviewUrl":"\(url)"\(back)}},
+          {"id":"modal","data":{"kind":"MODAL"}},
+          {"id":"modal-two","data":{"kind":"MODAL"}},
+          {"id":"done","data":{"kind":"DISMISSED"}}
+        ]}}
+        """.utf8))
+    }
+
+    @MainActor
+    private func nativeRoot(backDestination: String = "modal-two", backButtonVisible: Bool = true) -> UIRootBlock {
+        try! JSONDecoder().decode(UIRootBlock.self, from: Data("""
+        {"id":"root","data":{"pages":[
+          {"id":"start","data":{"kind":"TRIGGER","triggerSetting":{"onTrigger":{"destinationPageId":"modal"}}}},
+          {"id":"modal","data":{"kind":"MODAL","modalNavigationBackButton":{"visible":\(backButtonVisible)},"triggerSetting":{"onTrigger":{"eventName":"native-back","destinationPageId":"\(backDestination)"}}}},
+          {"id":"modal-two","data":{"kind":"MODAL","triggerSetting":{"onTrigger":{"eventName":"second-back","destinationPageId":"done"}}}},
+          {"id":"done","data":{"kind":"DISMISSED"}}
+        ]}}
+        """.utf8))
+    }
+
+    @MainActor
+    func testNativeDismissalContinuesSameExperimentAndRecordsOnlyOnce() async throws {
+        let container = TriggerContainerSpy()
+        container.roots["popup-native"] = nativeRoot()
+        let modal = TriggerModalSpy()
+        let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
+        controller.initialLoad()
+        await controller.performDispatch(events: [NubrickEvent("popup-native")])
+        let first = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+        modal.onShown?()
+        await settleUIKit()
+        XCTAssertEqual(container.displayedExperiments, ["popup-native"])
+
+        first.viewDidDisappear(false)
+
+        XCTAssertTrue(modal.hasActiveTriggerExperiment, "The dismissal action continues within the current experiment")
+        XCTAssertEqual(modal.presentations.count, 2, "The continuation creates a new presentation after the old stack is cleared")
+        let second = try XCTUnwrap(modal.presentations.last as? NavigationViewControlller)
+        XCTAssertFalse(first === second)
+        XCTAssertEqual((second.topViewController as? ModalPageViewController)?.pageId, "modal-two")
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["native-back"])
+        first.viewDidDisappear(false)
+        XCTAssertEqual(modal.presentations.count, 2, "A repeated disappearance must not repeat the configured action")
+
+        modal.onShown?()
+        await settleUIKit()
+        XCTAssertEqual(container.displayedExperiments, ["popup-native"])
+        second.viewDidDisappear(false)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["native-back", "second-back"])
+    }
+
+    @MainActor
+    func testNativeDismissalUsesVisiblePageActionInsteadOfFirstPageAction() throws {
+        let container = TriggerContainerSpy()
+        let modal = TriggerModalSpy()
+        let session = try XCTUnwrap(modal.startTriggerExperiment())
+        let root = ModalRootViewController(
+            root: nativeRoot(), container: container, modalViewController: modal, triggerSession: session
+        )
+        let navigation = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+        let page = try JSONDecoder().decode(UIPageBlock.self, from: Data("""
+        {"id":"visible","data":{"kind":"MODAL","triggerSetting":{"onTrigger":{"eventName":"visible-back"}}}}
+        """.utf8))
+        let visible = ModalPageViewController(pageView: PageView(
+            page: page, props: nil, container: container, arguments: nil,
+            actionHandler: nil, modalViewController: modal
+        ))
+        visible.backButtonActionHandler = makeBackButtonAction(
+            event: page.data?.triggerSetting?.onTrigger,
+            context: UIBlockContext(UIBlockContextInit(container: container, actionHandler: { action, _ in
+                XCTAssertTrue(modal.ownsTriggerExperiment(session), "The session remains owned while the configured action runs")
+                container.handleEvent(action)
+            }))
+        )
+        navigation.pushViewController(visible, animated: false)
+
+        navigation.viewDidDisappear(false)
+        navigation.viewDidDisappear(false)
+
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["visible-back"])
+        XCTAssertEqual(modal.presentations.count, 1)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        withExtendedLifetime(root) {}
+    }
+
+    @MainActor
+    func testSDKDismissalAndResetSuppressNativeBackActionWithAndWithoutSession() throws {
+        for hasSession in [false, true] {
+            for reset in [false, true] {
+                let container = TriggerContainerSpy()
+                let modal = TriggerModalSpy()
+                let root: AnyObject
+                if hasSession {
+                    let session = try XCTUnwrap(modal.startTriggerExperiment())
+                    root = ModalRootViewController(
+                        root: nativeRoot(), container: container, modalViewController: modal, triggerSession: session
+                    )
+                } else {
+                    root = RootView(root: nativeRoot(), container: container, modalViewController: modal, onEvent: nil)
+                }
+                let navigation = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+
+                if reset {
+                    modal.resetTriggerExperiment()
+                } else {
+                    modal.dismissModal()
+                }
+                navigation.viewDidDisappear(false)
+                navigation.viewDidDisappear(false)
+
+                XCTAssertEqual(modal.presentations.count, 1, "Programmatic dismissal must not reopen the configured destination")
+                XCTAssertTrue(container.handledActions.compactMap(\.eventName).isEmpty)
+                XCTAssertFalse(modal.hasActiveTriggerExperiment)
+                withExtendedLifetime(root) {}
+            }
+        }
+    }
+
+    @MainActor
+    func testConfiguredNativeCloseToDismissedPageDispatchesOnlyOnce() throws {
+        let container = TriggerContainerSpy()
+        let modal = TriggerModalSpy()
+        let session = try XCTUnwrap(modal.startTriggerExperiment())
+        let root = ModalRootViewController(
+            root: nativeRoot(backDestination: "done"), container: container,
+            modalViewController: modal, triggerSession: session
+        )
+        let navigation = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+        let page = try XCTUnwrap(navigation.topViewController as? ModalPageViewController)
+        page.loadViewIfNeeded()
+        let button = try XCTUnwrap(page.navigationItem.leftBarButtonItem)
+        let target = try XCTUnwrap(button.target as? NSObject)
+        let action = try XCTUnwrap(button.action)
+
+        _ = target.perform(action)
+        navigation.viewDidDisappear(false)
+        navigation.viewDidDisappear(false)
+
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["native-back"])
+        XCTAssertEqual(modal.presentations.count, 1)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        withExtendedLifetime(root) {}
+    }
+
+    @MainActor
+    func testNativeGestureDismissalDispatchesActionWhenCloseButtonIsHidden() throws {
+        let container = TriggerContainerSpy()
+        let modal = TriggerModalSpy()
+        let session = try XCTUnwrap(modal.startTriggerExperiment())
+        let root = ModalRootViewController(
+            root: nativeRoot(backDestination: "done", backButtonVisible: false), container: container,
+            modalViewController: modal, triggerSession: session
+        )
+        let navigation = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+        let page = try XCTUnwrap(navigation.topViewController as? ModalPageViewController)
+        page.loadViewIfNeeded()
+        XCTAssertTrue(page.navigationItem.hidesBackButton)
+        XCTAssertNil(page.navigationItem.leftBarButtonItem)
+
+        navigation.viewDidDisappear(false)
+        navigation.viewDidDisappear(false)
+
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["native-back"])
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        withExtendedLifetime(root) {}
+    }
+
+    @MainActor
+    func testInvalidAndEmptyContentReleaseClaim() async {
+        let container = TriggerContainerSpy()
+        container.roots["popup-invalid-url"] = webRoot(url: "")
+        container.roots["popup-external"] = webRoot(url: "unknown-test-scheme://example")
+        container.roots["popup-empty"] = UIRootBlock(id: "empty", data: nil)
+        let modal = TriggerModalSpy()
+        let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
+        controller.initialLoad()
+        for trigger in ["popup-invalid-url", "popup-external", "popup-empty"] {
+            await controller.performDispatch(events: [NubrickEvent(trigger)])
+            XCTAssertFalse(modal.hasActiveTriggerExperiment, trigger)
+        }
+        modal.canPresent = false
+        await controller.performDispatch(events: [NubrickEvent("popup-unpresentable")])
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        XCTAssertTrue(container.displayedExperiments.isEmpty)
+    }
+
+    @MainActor
+    func testStandaloneSafariBlocksCompetingStartsUntilItDisappears() async {
+        let container = TriggerContainerSpy()
+        container.roots["popup-web"] = webRoot()
+        let modal = TriggerModalSpy()
+        let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
+        controller.initialLoad()
+        await controller.performDispatch(events: [NubrickEvent("popup-web")])
+        XCTAssertTrue(modal.presentations.first is SFSafariViewController)
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+        await controller.performDispatch(events: [NubrickEvent("popup-next")])
+        XCTAssertEqual(modal.presentations.count, 1)
+        modal.onShown?()
+        await settleUIKit()
+        XCTAssertEqual(container.displayedExperiments, ["popup-web"])
+        modal.presentations.first?.viewDidDisappear(false)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        await settleUIKit()
+        await controller.performDispatch(events: [NubrickEvent("popup-next")])
+        XCTAssertEqual(modal.presentations.count, 2)
+    }
+
+    @MainActor
+    func testStandaloneSafariBackActionContinuesSameExperimentAndRecordsOnlyOnce() async {
+        let container = TriggerContainerSpy()
+        container.roots["popup-web"] = webRoot(backDestination: "modal")
+        let modal = TriggerModalSpy()
+        let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
+        controller.initialLoad()
+        await controller.performDispatch(events: [NubrickEvent("popup-web")])
+        modal.onShown?()
+        await settleUIKit()
+        guard let safari = modal.presentations.first as? SFSafariViewController else {
+            XCTFail("Expected Safari presentation")
+            return
+        }
+        safari.loadViewIfNeeded()
+        await settleUIKit()
+        XCTAssertEqual(modal.presentations.count, 1, "The Back action must wait for disappearance")
+        safari.viewDidDisappear(false)
+        await settleUIKit()
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+        XCTAssertEqual(modal.presentations.count, 2)
+        XCTAssertTrue(modal.presentations.last is UINavigationController)
+        modal.onShown?()
+        await settleUIKit()
+        XCTAssertEqual(container.displayedExperiments, ["popup-web"])
+    }
+
+    @MainActor
+    func testNonTriggerSafariContinuesIntoNativeModalOnlyAfterDisappearance() async throws {
+        let modal = TriggerModalSpy()
+        let root = RootView(
+            root: webRoot(backDestination: "modal"), container: TriggerContainerSpy(),
+            modalViewController: modal, onEvent: nil
+        )
+        let safari = try XCTUnwrap(modal.presentations.first as? SFSafariViewController)
+        safari.loadViewIfNeeded()
+        await settleUIKit()
+        XCTAssertEqual(modal.presentations.count, 1)
+        safari.viewDidDisappear(false)
+        XCTAssertEqual(modal.presentations.count, 2)
+        XCTAssertTrue(modal.presentations.last is UINavigationController)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        safari.viewDidDisappear(false)
+        XCTAssertEqual(modal.presentations.count, 2, "The continuation runs only once")
+        withExtendedLifetime(root) {}
+    }
+
+    @MainActor
+    func testNonTriggerSafariDismissalToDismissedPageDoesNotReopen() throws {
+        let modal = TriggerModalSpy()
+        let root = RootView(
+            root: webRoot(backDestination: "done"), container: TriggerContainerSpy(),
+            modalViewController: modal, onEvent: nil
+        )
+        let safari = try XCTUnwrap(modal.presentations.first as? SFSafariViewController)
+        safari.loadViewIfNeeded()
+        safari.viewDidDisappear(false)
+        XCTAssertEqual(modal.presentations.count, 1)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        withExtendedLifetime(root) {}
+    }
+
+    @MainActor
+    func testStandaloneSafariDismissalToDismissedPageReleasesClaimWithoutReplay() async {
+        let container = TriggerContainerSpy()
+        container.roots["popup-web"] = webRoot(backDestination: "done")
+        let modal = TriggerModalSpy()
+        let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
+        controller.initialLoad()
+        await controller.performDispatch(events: [NubrickEvent("popup-web")])
+        XCTAssertEqual(modal.presentations.count, 1)
+
+        modal.presentations.first?.viewDidDisappear(false)
+        await settleUIKit()
+
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        XCTAssertEqual(modal.presentations.count, 1)
+        modal.presentations.first?.viewDidDisappear(false)
+        XCTAssertEqual(modal.presentations.count, 1)
+    }
+
+    @MainActor
+    func testSDKDismissalSuppressesSafariBackActionWithAndWithoutSession() throws {
+        for hasSession in [false, true] {
+            let modal = TriggerModalSpy()
+            let root: AnyObject
+            if hasSession {
+                let session = try XCTUnwrap(modal.startTriggerExperiment())
+                root = ModalRootViewController(
+                    root: webRoot(backDestination: "modal"), container: TriggerContainerSpy(),
+                    modalViewController: modal, triggerSession: session
+                )
+            } else {
+                root = RootView(
+                    root: webRoot(backDestination: "modal"), container: TriggerContainerSpy(),
+                    modalViewController: modal, onEvent: nil
+                )
+            }
+            let safari = try XCTUnwrap(modal.presentations.first as? SFSafariViewController)
+            safari.loadViewIfNeeded()
+            modal.dismissModal()
+            safari.viewDidDisappear(false)
+            XCTAssertEqual(modal.presentations.count, 1, "SDK dismissal must not open the Back destination")
+            XCTAssertFalse(modal.hasActiveTriggerExperiment)
+            withExtendedLifetime(root) {}
+        }
+    }
+
+    @MainActor
+    func testEmbeddedReplacementSuppressesSafariBackAction() throws {
+        let modal = TriggerModalSpy()
+        let data = try JSONDecoder().decode(UIRootBlock.self, from: Data("""
+        {"id":"root","data":{"pages":[
+          {"id":"start","data":{"kind":"TRIGGER","triggerSetting":{"onTrigger":{"destinationPageId":"web"}}}},
+          {"id":"web","data":{"kind":"WEBVIEW_MODAL","webviewUrl":"https://example.com","triggerSetting":{"onTrigger":{"destinationPageId":"modal"}}}},
+          {"id":"modal","data":{"kind":"MODAL"}},
+          {"id":"embedded","data":{"kind":"COMPONENT"}}
+        ]}}
+        """.utf8))
+        let root = RootView(
+            root: data, container: TriggerContainerSpy(), arguments: nil,
+            modalViewController: modal, onEvent: nil
+        )
+        let safari = try XCTUnwrap(modal.presentations.first as? SFSafariViewController)
+        safari.loadViewIfNeeded()
+        root.presentPage(pageId: "embedded")
+        safari.viewDidDisappear(false)
+        XCTAssertEqual(modal.presentations.count, 1, "Replacing embedded content must not reopen a modal")
+        withExtendedLifetime(root) {}
+    }
+
     @MainActor
     func testLaunchForegroundNotificationDoesNotRepeatStartupTriggers() async {
         let countKey = UserDefaultsKeys.SDK_INITIALIZED_COUNT.rawValue
@@ -245,7 +946,7 @@ final class TriggerViewControllerTests: XCTestCase {
         )
 
         controller.initialLoad()
-        await controller.performDispatch(event: NubrickEvent("tooltip-trigger"))
+        await controller.performDispatch(events: [NubrickEvent("tooltip-trigger")])
 
         guard let receivedData,
               let jsonData = receivedData.data(using: .utf8),

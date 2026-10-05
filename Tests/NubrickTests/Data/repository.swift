@@ -48,15 +48,34 @@ private final class TriggerComponentRepositorySpy: ComponentRepository2, @unchec
     }
 }
 
-private final class TriggerDatabaseRepositorySpy: DatabaseRepository, @unchecked Sendable {
+private actor TriggerDatabaseRepositorySpy: DatabaseRepository {
+    private(set) var displayedExperiments = [String]()
+    private(set) var appendExperimentHistoryAttempts = 0
+    private var failuresBeforeSuccess: Int
+
+    init(failuresBeforeSuccess: Int = 0) {
+        self.failuresBeforeSuccess = failuresBeforeSuccess
+    }
+
     func appendUserEvent(name: String) async -> Bool { true }
-    func appendExperimentHistory(experimentId: String) async -> Bool { true }
+    func appendExperimentHistory(experimentId: String) async -> Bool {
+        appendExperimentHistoryAttempts += 1
+        if failuresBeforeSuccess > 0 {
+            failuresBeforeSuccess -= 1
+            return false
+        }
+        displayedExperiments.append(experimentId)
+        return true
+    }
     func isNotInFrequency(experimentId: String, frequency: ExperimentFrequency?) async -> Boolean { true }
     func isMatchedToUserEventFrequencyCondition(condition: UserEventFrequencyCondition?) async -> Boolean { true }
 }
 
 private actor TriggerTrackRepositorySpy: TrackRepository2 {
-    func trackExperimentEvent(_ event: TrackExperimentEvent) async {}
+    private(set) var displayedExperiments = [String]()
+    func trackExperimentEvent(_ event: TrackExperimentEvent) async {
+        displayedExperiments.append(event.experimentId)
+    }
     func trackEvent(_ event: TrackUserEvent) async {}
     func flushNow() async {}
     func processMetricKitCrash(callStackTreeJSON: Data, terminationReason: String?, exceptionType: UInt32?) async {}
@@ -443,8 +462,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
         XCTAssertEqual(sourceExperimentId, "source-experiment")
 
         let controller = TriggerViewController(user: user, container: container, modalViewController: nil)
-        await controller.performDispatch(event: event, sourceExperimentId: sourceExperimentId)
-        await controller.performDispatch(event: NubrickEvent("public-event"))
+        await controller.performDispatch(events: [event], sourceExperimentId: sourceExperimentId)
+        await controller.performDispatch(events: [NubrickEvent("public-event")])
         await repository.flushNow()
 
         let requests = await client.recordedRequests()
@@ -1142,6 +1161,33 @@ final class HttpRequestReposotiryTests: XCTestCase {
 
 @MainActor
 final class ContainerTests: XCTestCase {
+    func testRecordDisplayedTriggerContentReturnsHistoryFailureWithoutRetrying() async {
+        let database = TriggerDatabaseRepositorySpy(failuresBeforeSuccess: 1)
+        let tracker = TriggerTrackRepositorySpy()
+        let container = ContainerImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST),
+            user: NubrickUser(),
+            actionHandler: { _, _ in },
+            experimentRepository: TriggerExperimentRepositorySpy(configsByTrigger: [:]),
+            componentRepository: TriggerComponentRepositorySpy(),
+            trackRepository: tracker,
+            databaseRepository: database,
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+
+        let recorded = await container.recordDisplayedTriggerContent(
+            experimentId: "experiment", variantId: "variant"
+        )
+
+        XCTAssertFalse(recorded)
+        let attempts = await database.appendExperimentHistoryAttempts
+        let history = await database.displayedExperiments
+        let exposures = await tracker.displayedExperiments
+        XCTAssertEqual(attempts, 1)
+        XCTAssertTrue(history.isEmpty)
+        XCTAssertEqual(exposures, ["experiment"])
+    }
+
     private func makeContainer() throws -> Container {
         let db = try XCTUnwrap(createNativebrikCoreDataHelper(), "Could not init DB")
         let user = NubrickUser()
@@ -1190,6 +1236,8 @@ final class ContainerTests: XCTestCase {
             startedAt: now.addingTimeInterval(-1000).ISO8601Format(),
             priority: 5
         )
+        let database = TriggerDatabaseRepositorySpy()
+        let tracker = TriggerTrackRepositorySpy()
         let container = ContainerImpl(
             config: Config(projectId: PROJECT_ID_FOR_TEST),
             user: NubrickUser(),
@@ -1199,15 +1247,14 @@ final class ContainerTests: XCTestCase {
                 "return": ExperimentConfigs(configs: [newerConfig]),
             ]),
             componentRepository: TriggerComponentRepositorySpy(),
-            trackRepository: TriggerTrackRepositorySpy(),
-            databaseRepository: TriggerDatabaseRepositorySpy(),
+            trackRepository: tracker,
+            databaseRepository: database,
             httpRequestRepository: HttpRequestRepositoryImpl()
         )
 
         let result = await container.fetchTriggerContent(
             triggers: ["boot", "return"],
-            kinds: [.POPUP],
-            sourceExperimentId: nil
+            kinds: [.POPUP]
         )
 
         guard case .success(let content) = result else {
@@ -1216,6 +1263,70 @@ final class ContainerTests: XCTestCase {
         }
         XCTAssertEqual("newer", content.experimentId)
         XCTAssertEqual("newer-variant", content.variantId)
+        let historyBefore = await database.displayedExperiments
+        let exposuresBefore = await tracker.displayedExperiments
+        XCTAssertTrue(historyBefore.isEmpty)
+        XCTAssertTrue(exposuresBefore.isEmpty)
+
+        let recorded = await container.recordDisplayedTriggerContent(
+            experimentId: content.experimentId, variantId: content.variantId
+        )
+        XCTAssertTrue(recorded)
+        let historyAfter = await database.displayedExperiments
+        let exposuresAfter = await tracker.displayedExperiments
+        XCTAssertEqual(historyAfter, ["newer"])
+        XCTAssertEqual(exposuresAfter, ["newer"])
+    }
+
+    func testFetchTooltipContentDoesNotRecordExposureBeforeDisplayConfirmation() async {
+        let config = ExperimentConfig(
+            id: "tooltip",
+            kind: .TOOLTIP,
+            baseline: ExperimentVariant(
+                id: "tooltip-variant",
+                configs: [VariantConfig(kind: .COMPONENT, value: "tooltip-component")]
+            )
+        )
+        let database = TriggerDatabaseRepositorySpy()
+        let tracker = TriggerTrackRepositorySpy()
+        let container = ContainerImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST),
+            user: NubrickUser(),
+            actionHandler: { _, _ in },
+            experimentRepository: TriggerExperimentRepositorySpy(configsByTrigger: [
+                "tooltip-trigger": ExperimentConfigs(configs: [config]),
+            ]),
+            componentRepository: TriggerComponentRepositorySpy(),
+            trackRepository: tracker,
+            databaseRepository: database,
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+
+        let result = await container.fetchTriggerContent(
+            trigger: "tooltip-trigger",
+            kinds: [.TOOLTIP]
+        )
+
+        guard case .success(let content) = result else {
+            XCTFail("Expected tooltip content")
+            return
+        }
+        XCTAssertEqual(content.experimentId, "tooltip")
+        XCTAssertEqual(content.variantId, "tooltip-variant")
+        let historyBeforeConfirmation = await database.displayedExperiments
+        let exposuresBeforeConfirmation = await tracker.displayedExperiments
+        XCTAssertTrue(historyBeforeConfirmation.isEmpty)
+        XCTAssertTrue(exposuresBeforeConfirmation.isEmpty)
+
+        let recorded = await container.recordDisplayedTriggerContent(
+            experimentId: content.experimentId,
+            variantId: content.variantId
+        )
+        XCTAssertTrue(recorded)
+        let historyAfterConfirmation = await database.displayedExperiments
+        let exposuresAfterConfirmation = await tracker.displayedExperiments
+        XCTAssertEqual(historyAfterConfirmation, ["tooltip"])
+        XCTAssertEqual(exposuresAfterConfirmation, ["tooltip"])
     }
 
     func testMakeContainerShouldApplyArgumentsPerContext() throws {

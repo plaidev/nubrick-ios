@@ -16,20 +16,27 @@ class ModalRootViewController: UIViewController {
     private let modalViewController: ModalComponentViewController?
     private var actionHandler: UIBlockActionHandler? = nil
     private let container: Container
+    private let experimentId: String?
+    private let variantId: String?
+    private var didRecordDisplay = false
+    private let triggerSession: UUID
 
     init(
         root: UIRootBlock?,
         experimentId: String? = nil,
         variantId: String? = nil,
         container: Container,
-        modalViewController: ModalComponentViewController?
+        modalViewController: ModalComponentViewController?,
+        triggerSession: UUID
     ) {
+        self.triggerSession = triggerSession
         self.pages = root?.data?.pages ?? []
         let trigger = self.pages.first { page in
             return page.data?.kind == PageKind.TRIGGER
         }
         self.modalViewController = modalViewController
-        self.modalViewController?.dismissModal()
+        self.experimentId = experimentId
+        self.variantId = variantId
         self.container = container.makeContainer(
             experimentId: experimentId ?? container.experimentId,
             variantId: variantId ?? container.variantId
@@ -40,23 +47,29 @@ class ModalRootViewController: UIViewController {
             guard let self else {
                 return
             }
+            guard self.modalViewController?.ownsTriggerExperiment(self.triggerSession) == true else { return }
             if let destinationPageId = action.destinationPageId {
                 self.presentPage(pageId: destinationPageId)
             }
             self.container.handleEvent(action)
         }
 
+        // Empty, invalid, external-only, or unpresentable content must not hold
+        // the claim after its synchronous start attempt has finished.
+        defer { self.finishIfUnpresented() }
         if let onTrigger = trigger?.data?.triggerSetting?.onTrigger {
             self.actionHandler?(compileAction(action: onTrigger, variable: self.rootVariable()), nil)
         }
     }
 
-    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(root:container:modalViewController:).")
+    @available(*, unavailable, message: "Storyboard/XIB initialization is not supported. Use init(root:container:modalViewController:triggerSession:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     func presentPage(pageId: String) {
+        guard self.modalViewController?.ownsTriggerExperiment(self.triggerSession) == true else { return }
+        defer { self.finishIfUnpresented() }
         var page = self.pages.first { page in
             return pageId == page.id
         }
@@ -87,7 +100,7 @@ class ModalRootViewController: UIViewController {
             }
             self.modalViewController?.presentWebview(
                 url: page?.data?.webviewUrl.map { compile($0, variableProvider()) },
-                backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
+                backButtonActionHandler: makeBackButtonAction(
                     event: onBackButtonClick,
                     context: UIBlockContext(
                         UIBlockContextInit(
@@ -96,7 +109,8 @@ class ModalRootViewController: UIViewController {
                         )
                     ),
                     variableProvider: variableProvider
-                ) : nil
+                ),
+                onShown: { [weak self] in self?.recordDisplay() }
             )
             return
         }
@@ -122,7 +136,7 @@ class ModalRootViewController: UIViewController {
                 pageView: pageView,
                 modalPresentationStyle: page?.data?.modalPresentationStyle,
                 modalScreenSize: page?.data?.modalScreenSize,
-                backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
+                backButtonActionHandler: makeBackButtonAction(
                     event: onBackButtonClick,
                     context: UIBlockContext(
                         UIBlockContextInit(
@@ -131,7 +145,8 @@ class ModalRootViewController: UIViewController {
                         )
                     ),
                     variableProvider: { [weak pageView] in pageView?.currentVariable() }
-                ) : nil
+                ),
+                onShown: { [weak self] in self?.recordDisplay() }
             )
             break
         default:
@@ -142,6 +157,26 @@ class ModalRootViewController: UIViewController {
 
     private func rootVariable() -> Variable? {
         self.container.createVariableForTemplate(data: nil, properties: nil, arguments: nil)
+    }
+
+    private func finishIfUnpresented() {
+        self.modalViewController?.finishTriggerExperimentIfUnpresented(self.triggerSession)
+    }
+
+    private func recordDisplay() {
+        guard self.modalViewController?.ownsTriggerExperiment(self.triggerSession) == true else { return }
+        guard !self.didRecordDisplay,
+              let experimentId = self.experimentId,
+              let variantId = self.variantId else { return }
+        guard self.modalViewController?.beginDisplayRecording(self.triggerSession) == true else { return }
+        self.didRecordDisplay = true
+        let container = self.container
+        let modalViewController = self.modalViewController
+        let triggerSession = self.triggerSession
+        Task { @MainActor in
+            _ = await container.recordDisplayedTriggerContent(experimentId: experimentId, variantId: variantId)
+            modalViewController?.finishDisplayRecording(triggerSession)
+        }
     }
 }
 
@@ -358,7 +393,7 @@ class RootView: UIView {
             }
             self.modalViewController?.presentWebview(
                 url: page?.data?.webviewUrl.map { compile($0, variableProvider()) },
-                backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
+                backButtonActionHandler: makeBackButtonAction(
                     event: onBackButtonClick,
                     context: UIBlockContext(
                         UIBlockContextInit(
@@ -367,7 +402,7 @@ class RootView: UIView {
                         )
                     ),
                     variableProvider: variableProvider
-                ) : nil
+                )
             )
             return
         }
@@ -411,7 +446,7 @@ class RootView: UIView {
                 pageView: pageView,
                 modalPresentationStyle: page?.data?.modalPresentationStyle,
                 modalScreenSize: page?.data?.modalScreenSize,
-                backButtonBehaviorDelegate: (onBackButtonClick != nil) ? ModalBackButtonBehaviorDelegate(
+                backButtonActionHandler: makeBackButtonAction(
                     event: onBackButtonClick,
                     context: UIBlockContext(
                         UIBlockContextInit(
@@ -420,7 +455,7 @@ class RootView: UIView {
                         )
                     ),
                     variableProvider: { [weak pageView] in pageView?.currentVariable() }
-                ) : nil,
+                ),
                 onVisiblePageChanged: { [weak self] pageView in
                     self?.currentPageView = pageView
                 }

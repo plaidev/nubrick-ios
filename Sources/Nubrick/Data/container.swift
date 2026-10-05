@@ -55,8 +55,10 @@ protocol Container : Sendable {
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError>
-    func fetchTriggerContent(triggers: [String], kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError>
+    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
+    func fetchTriggerContent(triggers: [String], kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
+    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async -> [String]
+    func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
@@ -250,28 +252,41 @@ final class ContainerImpl: Container {
         }
     }
 
+    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async -> [String] {
+        var recordedTriggers = [String]()
+        for trigger in triggers {
+            await self.trackRepository.trackEvent(TrackUserEvent(name: trigger, experimentId: sourceExperimentId))
+            if await self.databaseRepository.appendUserEvent(name: trigger) {
+                recordedTriggers.append(trigger)
+            }
+        }
+        return recordedTriggers
+    }
+
+    func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool {
+        await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
+            experimentId: experimentId, variantId: variantId
+        ))
+        return await self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+    }
+
     func fetchTriggerContent(
         trigger: String,
-        kinds: [ExperimentKind],
-        sourceExperimentId: String?
+        kinds: [ExperimentKind]
     ) async -> Result<FetchedTriggerContent, NubrickError> {
         await self.fetchTriggerContent(
             triggers: [trigger],
-            kinds: kinds,
-            sourceExperimentId: sourceExperimentId
+            kinds: kinds
         )
     }
 
     func fetchTriggerContent(
         triggers: [String],
-        kinds: [ExperimentKind],
-        sourceExperimentId: String?
+        kinds: [ExperimentKind]
     ) async -> Result<FetchedTriggerContent, NubrickError> {
         var selected: ExtractedVariant?
         for trigger in triggers {
-            await self.trackRepository.trackEvent(TrackUserEvent(name: trigger, experimentId: sourceExperimentId))
-            guard await self.databaseRepository.appendUserEvent(name: trigger),
-                  case .success(let configs) = await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger),
+            guard case .success(let configs) = await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger),
                   case .success(let extracted) = await self.extractVariant(configs: configs, kinds: kinds) else {
                 continue
             }
@@ -282,16 +297,6 @@ final class ContainerImpl: Container {
         guard let extracted = selected else { return .failure(.notFound) }
         guard let variantId = extracted.variant.id else {
             return Result.failure(NubrickError.irregular("ExperimentVariant.id is not found"))
-        }
-
-        await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId: extracted.experimentId, variantId: variantId
-        ))
-        // Tooltip is a Flutter-only flow. Persist tooltip history only after
-        // Flutter confirms the tooltip actually started rendering.
-        if extracted.kind != .TOOLTIP,
-           !(await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId)) {
-            return .failure(NubrickError.irregular("Couldn't save experiment history"))
         }
 
         guard let componentId = extractComponentId(variant: extracted.variant) else {

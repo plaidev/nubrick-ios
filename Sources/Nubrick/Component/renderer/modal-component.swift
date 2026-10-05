@@ -37,14 +37,67 @@ func resolveWebviewModalURLAction(_ urlString: String?) -> WebviewModalURLAction
 // vc for navigation view
 class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
-    private var backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate? = nil
+    private var triggerSession: UUID?
+    private var isRecordingDisplay = false
+    private var standaloneSafari: SFSafariViewController?
 
-    private func activeModal() -> NavigationViewControlller? {
-        guard let modal = self.currentModal else {
-            return nil
+    var hasActiveTriggerExperiment: Bool { self.triggerSession != nil }
+
+    func ownsTriggerExperiment(_ session: UUID) -> Bool { self.triggerSession == session }
+
+    func startTriggerExperiment() -> UUID? {
+        guard self.triggerSession == nil else { return nil }
+        let session = UUID()
+        self.triggerSession = session
+        self.isRecordingDisplay = false
+        return session
+    }
+
+    func beginDisplayRecording(_ session: UUID) -> Bool {
+        guard self.triggerSession == session,
+              !self.isRecordingDisplay else { return false }
+        self.isRecordingDisplay = true
+        return true
+    }
+
+    func finishDisplayRecording(_ session: UUID) {
+        guard self.triggerSession == session,
+              self.isRecordingDisplay else { return }
+        self.isRecordingDisplay = false
+        self.finishTriggerExperimentIfUnpresented(session)
+    }
+
+    func finishTriggerExperimentIfUnpresented(_ session: UUID) {
+        guard self.triggerSession == session,
+              !self.isRecordingDisplay,
+              self.currentModal == nil,
+              self.standaloneSafari == nil else { return }
+        self.triggerSession = nil
+    }
+
+    func resetTriggerExperiment() {
+        self.dismissModal()
+        self.isRecordingDisplay = false
+        self.triggerSession = nil
+        self.currentModal = nil
+        self.standaloneSafari = nil
+    }
+
+    private func presentationDidEnd(_ controller: UIViewController, session: UUID?, continuation: (() -> Void)? = nil) {
+        let ownsSession = self.triggerSession == session
+        if self.currentModal === controller { self.currentModal = nil }
+        if self.standaloneSafari === controller { self.standaloneSafari = nil }
+        // A close action may open another page in this experiment. Keep the
+        // session until that action has had a chance to present it.
+        if ownsSession { continuation?() }
+        if let session {
+            self.finishTriggerExperimentIfUnpresented(session)
         }
-        guard modal.presentingViewController != nil, !modal.isBeingDismissed else {
-            modal.dismiss(animated: false)
+    }
+    private func activeModal() -> NavigationViewControlller? {
+        guard let modal = self.currentModal else { return nil }
+        guard !modal.isBeingDismissed else { return nil }
+        guard modal.presentingViewController != nil else {
             self.currentModal = nil
             return nil
         }
@@ -65,7 +118,11 @@ class ModalComponentViewController: UIViewController {
         return pageController.representedPageView
     }
 
-    func presentWebview(url: String?, backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate?) {
+    func presentWebview(
+        url: String?,
+        backButtonActionHandler: ModalBackButtonActionHandler?,
+        onShown: (() -> Void)? = nil
+    ) {
         switch resolveWebviewModalURLAction(url) {
         case .ignore:
             return
@@ -80,16 +137,18 @@ class ModalComponentViewController: UIViewController {
             UIApplication.shared.open(urlObj)
             return
         case .presentInSafari(let urlObj):
-            let safariVC = SFSafariViewController(url: urlObj)
-            if let backButtonBehaviorDelegate = backButtonBehaviorDelegate {
-                // keep the instance, because it will be deallocated after the function call.
-                self.backButtonBehaviorDelegate = backButtonBehaviorDelegate
-                safariVC.delegate = self.backButtonBehaviorDelegate
+            let session = self.triggerSession
+            let safariVC = ModalSafariViewController(url: urlObj)
+            safariVC.onDismissed = { [weak self] controller in
+                self?.presentationDidEnd(controller, session: session) {
+                    if !controller.suppressBackAction { backButtonActionHandler?() }
+                }
             }
             if let modal = self.activeModal() {
-                modal.present(safariVC, animated: true)
-            } else {
-                self.presentToTop(safariVC)
+                guard modal.presentedViewController == nil else { return }
+                modal.present(safariVC, animated: true, completion: onShown)
+            } else if self.presentToTop(safariVC, onPresented: onShown) {
+                self.standaloneSafari = safariVC
             }
         }
     }
@@ -98,12 +157,15 @@ class ModalComponentViewController: UIViewController {
         pageView: PageView,
         modalPresentationStyle: ModalPresentationStyle?,
         modalScreenSize: ModalScreenSize?,
-        backButtonBehaviorDelegate: ModalBackButtonBehaviorDelegate?,
-        onVisiblePageChanged: ((PageView) -> Void)? = nil
+        backButtonActionHandler: ModalBackButtonActionHandler?,
+        onVisiblePageChanged: ((PageView) -> Void)? = nil,
+        onShown: (() -> Void)? = nil
     ) {
+        // Don't push or present a new modal while the current stack is dismissing.
+        guard self.currentModal?.isBeingDismissed != true else { return }
         let pageController = ModalPageViewController(pageView: pageView)
-        if let backButtonBehaviorDelegate = backButtonBehaviorDelegate {
-            pageController.backButtonBehaviorDelegate = backButtonBehaviorDelegate
+        if let backButtonActionHandler = backButtonActionHandler {
+            pageController.backButtonActionHandler = backButtonActionHandler
         }
         pageController.onVisiblePageChanged = onVisiblePageChanged
 
@@ -111,62 +173,77 @@ class ModalComponentViewController: UIViewController {
             modal.pushViewController(pageController, animated: true)
         } else {
             pageController.setIsFirstModalToTrue()
-            let modal = NavigationViewControlller(
-                rootViewController: pageController,
-                hasPrevious: true
-            )
+            let modal = NavigationViewControlller(rootViewController: pageController, hasPrevious: true)
+            let session = self.triggerSession
+            modal.onDismissed = { [weak self] controller in
+                self?.presentationDidEnd(controller, session: session) {
+                    if !controller.suppressBackAction {
+                        (controller.topViewController as? ModalPageViewController)?.backButtonActionHandler?()
+                    }
+                }
+            }
             modal.modalPresentationStyle = parseModalPresentationStyle(modalPresentationStyle)
             modal.configureSheet(size: modalScreenSize) { [weak self] in
                 self?.view.window?.bounds.height
             }
             modal.updateSheetBackground(for: pageController)
             self.currentModal = modal
-            self.presentToTop(modal)
+            if !self.presentToTop(modal, onPresented: onShown) {
+                self.currentModal = nil
+            }
         }
         return
     }
 
-    func presentToTop(_ viewController: UIViewController) {
-        guard let root = self.view.window?.rootViewController else {
-            return
-        }
+    @discardableResult
+    func presentToTop(_ viewController: UIViewController, onPresented: (() -> Void)? = nil) -> Bool {
+        guard let root = self.view.window?.rootViewController else { return false }
         let top = findTopPresenting(root)
-        top.present(viewController, animated: true)
+        guard top.viewIfLoaded?.window != nil,
+              !top.isBeingDismissed, !top.isBeingPresented,
+              top.presentedViewController == nil else { return false }
+        top.present(viewController, animated: true, completion: onPresented)
+        return viewController.presentingViewController != nil
     }
 
     @objc func dismissModal() {
-         if let modal = self.currentModal {
-             modal.dismiss(animated: true)
-         }
-         self.currentModal = nil
+        guard let modal = self.currentModal ?? self.standaloneSafari else { return }
+        var controller: UIViewController? = modal
+        while let presented = controller {
+            (presented as? NavigationViewControlller)?.suppressBackAction = true
+            (presented as? ModalSafariViewController)?.suppressBackAction = true
+            controller = presented.presentedViewController
+        }
+        guard !modal.isBeingDismissed else { return }
+        modal.dismiss(animated: true)
     }
 }
 
-@MainActor
-class ModalBackButtonBehaviorDelegate: NSObject, SFSafariViewControllerDelegate {
-    private let actionEvent: UIBlockAction?
-    private let context: UIBlockContext
-    private let variableProvider: @MainActor () -> Variable?
+private class ModalSafariViewController: SFSafariViewController {
+    var onDismissed: ((ModalSafariViewController) -> Void)?
+    var suppressBackAction = false
 
-    init(
-        event: UIBlockAction?,
-        context: UIBlockContext,
-        variableProvider: @escaping @MainActor () -> Variable? = { nil }
-    ) {
-        self.actionEvent = event
-        self.context = context
-        self.variableProvider = variableProvider
-    }
-
-    func onBackButtonClick() {
-        guard let actionEvent else { return }
-        let compiledAction = compileAction(action: actionEvent, variable: variableProvider())
-        context.dispatch(action: compiledAction)
-    }
-
-    nonisolated func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
-        Task { @MainActor in
-            self.onBackButtonClick()
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if self.isBeingDismissed || self.presentingViewController == nil {
+            let completion = self.onDismissed
+            self.onDismissed = nil
+            completion?(self)
         }
+    }
+}
+
+typealias ModalBackButtonActionHandler = @MainActor () -> Void
+
+@MainActor
+func makeBackButtonAction(
+    event: UIBlockAction?,
+    context: UIBlockContext,
+    variableProvider: @escaping @MainActor () -> Variable? = { nil }
+) -> ModalBackButtonActionHandler? {
+    guard let event else { return nil }
+    return {
+        let compiledAction = compileAction(action: event, variable: variableProvider())
+        context.dispatch(action: compiledAction)
     }
 }

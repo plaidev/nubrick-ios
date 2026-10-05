@@ -9,6 +9,8 @@ import Foundation
 import UIKit
 
 class NavigationViewControlller: UINavigationController {
+    var onDismissed: ((NavigationViewControlller) -> Void)?
+    var suppressBackAction = false
     fileprivate var duringPushAnimation = false
     fileprivate var willDismiss = false
     private var sheetContentHeight: CGFloat?
@@ -46,6 +48,14 @@ class NavigationViewControlller: UINavigationController {
         }
         self.interactivePopGestureRecognizer?.delegate = self
         self.interactivePopGestureRecognizer?.isEnabled = true
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        guard isBeingDismissed || presentingViewController == nil else { return }
+        let callback = onDismissed
+        onDismissed = nil
+        callback?(self)
     }
 
     override func viewDidLayoutSubviews() {
