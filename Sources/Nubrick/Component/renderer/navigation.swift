@@ -10,6 +10,7 @@ import UIKit
 
 class NavigationViewControlller: UINavigationController {
     var onDismissed: ((NavigationViewControlller) -> Void)?
+    var suppressBackAction = false
     fileprivate var duringPushAnimation = false
     fileprivate var willDismiss = false
     private var sheetContentHeight: CGFloat?

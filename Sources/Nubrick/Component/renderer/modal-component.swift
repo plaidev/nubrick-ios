@@ -87,7 +87,7 @@ class ModalComponentViewController: UIViewController {
         let ownsSession = self.triggerSession == session
         if self.currentModal === controller { self.currentModal = nil }
         if self.standaloneSafari === controller { self.standaloneSafari = nil }
-        // A Safari back action may open another page in this experiment. Keep the
+        // A close action may open another page in this experiment. Keep the
         // session until that action has had a chance to present it.
         if ownsSession { continuation?() }
         if let session {
@@ -176,7 +176,11 @@ class ModalComponentViewController: UIViewController {
             let modal = NavigationViewControlller(rootViewController: pageController, hasPrevious: true)
             let session = self.triggerSession
             modal.onDismissed = { [weak self] controller in
-                self?.presentationDidEnd(controller, session: session)
+                self?.presentationDidEnd(controller, session: session) {
+                    if !controller.suppressBackAction {
+                        (controller.topViewController as? ModalPageViewController)?.backButtonActionHandler?()
+                    }
+                }
             }
             modal.modalPresentationStyle = parseModalPresentationStyle(modalPresentationStyle)
             modal.configureSheet(size: modalScreenSize) { [weak self] in
@@ -203,13 +207,14 @@ class ModalComponentViewController: UIViewController {
     }
 
     @objc func dismissModal() {
-        guard let modal = self.currentModal ?? self.standaloneSafari,
-              !modal.isBeingDismissed else { return }
+        guard let modal = self.currentModal ?? self.standaloneSafari else { return }
         var controller: UIViewController? = modal
         while let presented = controller {
+            (presented as? NavigationViewControlller)?.suppressBackAction = true
             (presented as? ModalSafariViewController)?.suppressBackAction = true
             controller = presented.presentedViewController
         }
+        guard !modal.isBeingDismissed else { return }
         modal.dismiss(animated: true)
     }
 }

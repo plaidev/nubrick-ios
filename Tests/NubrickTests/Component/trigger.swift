@@ -32,6 +32,7 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
     @MainActor var recordedSources = [String?]()
     @MainActor var failedTriggers = Set<String>()
     @MainActor var displayedExperiments = [String]()
+    @MainActor var handledActions = [UIBlockAction]()
     @MainActor var roots = [String: UIRootBlock]()
     @MainActor var firstFetchContinuation: CheckedContinuation<Void, Never>?
     @MainActor var triggerRecordingContinuation: CheckedContinuation<Void, Never>?
@@ -51,7 +52,7 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
     init() {}
 
     @MainActor
-    func handleEvent(_ it: UIBlockAction) {}
+    func handleEvent(_ it: UIBlockAction) { self.handledActions.append(it) }
 
     @MainActor
     func makeContainer() -> Container { self }
@@ -464,6 +465,166 @@ final class TriggerViewControllerTests: XCTestCase {
           {"id":"done","data":{"kind":"DISMISSED"}}
         ]}}
         """.utf8))
+    }
+
+    @MainActor
+    private func nativeRoot(backDestination: String = "modal-two", backButtonVisible: Bool = true) -> UIRootBlock {
+        try! JSONDecoder().decode(UIRootBlock.self, from: Data("""
+        {"id":"root","data":{"pages":[
+          {"id":"start","data":{"kind":"TRIGGER","triggerSetting":{"onTrigger":{"destinationPageId":"modal"}}}},
+          {"id":"modal","data":{"kind":"MODAL","modalNavigationBackButton":{"visible":\(backButtonVisible)},"triggerSetting":{"onTrigger":{"eventName":"native-back","destinationPageId":"\(backDestination)"}}}},
+          {"id":"modal-two","data":{"kind":"MODAL","triggerSetting":{"onTrigger":{"eventName":"second-back","destinationPageId":"done"}}}},
+          {"id":"done","data":{"kind":"DISMISSED"}}
+        ]}}
+        """.utf8))
+    }
+
+    @MainActor
+    func testNativeDismissalContinuesSameExperimentAndRecordsOnlyOnce() async throws {
+        let container = TriggerContainerSpy()
+        container.roots["popup-native"] = nativeRoot()
+        let modal = TriggerModalSpy()
+        let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
+        controller.initialLoad()
+        await controller.performDispatch(events: [NubrickEvent("popup-native")])
+        let first = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+        modal.onShown?()
+        await settleUIKit()
+        XCTAssertEqual(container.displayedExperiments, ["popup-native"])
+
+        first.viewDidDisappear(false)
+
+        XCTAssertTrue(modal.hasActiveTriggerExperiment, "The dismissal action continues within the current experiment")
+        XCTAssertEqual(modal.presentations.count, 2, "The continuation creates a new presentation after the old stack is cleared")
+        let second = try XCTUnwrap(modal.presentations.last as? NavigationViewControlller)
+        XCTAssertFalse(first === second)
+        XCTAssertEqual((second.topViewController as? ModalPageViewController)?.pageId, "modal-two")
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["native-back"])
+        first.viewDidDisappear(false)
+        XCTAssertEqual(modal.presentations.count, 2, "A repeated disappearance must not repeat the configured action")
+
+        modal.onShown?()
+        await settleUIKit()
+        XCTAssertEqual(container.displayedExperiments, ["popup-native"])
+        second.viewDidDisappear(false)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["native-back", "second-back"])
+    }
+
+    @MainActor
+    func testNativeDismissalUsesVisiblePageActionInsteadOfFirstPageAction() throws {
+        let container = TriggerContainerSpy()
+        let modal = TriggerModalSpy()
+        let session = try XCTUnwrap(modal.startTriggerExperiment())
+        let root = ModalRootViewController(
+            root: nativeRoot(), container: container, modalViewController: modal, triggerSession: session
+        )
+        let navigation = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+        let page = try JSONDecoder().decode(UIPageBlock.self, from: Data("""
+        {"id":"visible","data":{"kind":"MODAL","triggerSetting":{"onTrigger":{"eventName":"visible-back"}}}}
+        """.utf8))
+        let visible = ModalPageViewController(pageView: PageView(
+            page: page, props: nil, container: container, arguments: nil,
+            actionHandler: nil, modalViewController: modal
+        ))
+        visible.backButtonActionHandler = makeBackButtonAction(
+            event: page.data?.triggerSetting?.onTrigger,
+            context: UIBlockContext(UIBlockContextInit(container: container, actionHandler: { action, _ in
+                XCTAssertTrue(modal.ownsTriggerExperiment(session), "The session remains owned while the configured action runs")
+                container.handleEvent(action)
+            }))
+        )
+        navigation.pushViewController(visible, animated: false)
+
+        navigation.viewDidDisappear(false)
+        navigation.viewDidDisappear(false)
+
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["visible-back"])
+        XCTAssertEqual(modal.presentations.count, 1)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        withExtendedLifetime(root) {}
+    }
+
+    @MainActor
+    func testSDKDismissalAndResetSuppressNativeBackActionWithAndWithoutSession() throws {
+        for hasSession in [false, true] {
+            for reset in [false, true] {
+                let container = TriggerContainerSpy()
+                let modal = TriggerModalSpy()
+                let root: AnyObject
+                if hasSession {
+                    let session = try XCTUnwrap(modal.startTriggerExperiment())
+                    root = ModalRootViewController(
+                        root: nativeRoot(), container: container, modalViewController: modal, triggerSession: session
+                    )
+                } else {
+                    root = RootView(root: nativeRoot(), container: container, modalViewController: modal, onEvent: nil)
+                }
+                let navigation = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+
+                if reset {
+                    modal.resetTriggerExperiment()
+                } else {
+                    modal.dismissModal()
+                }
+                navigation.viewDidDisappear(false)
+                navigation.viewDidDisappear(false)
+
+                XCTAssertEqual(modal.presentations.count, 1, "Programmatic dismissal must not reopen the configured destination")
+                XCTAssertTrue(container.handledActions.compactMap(\.eventName).isEmpty)
+                XCTAssertFalse(modal.hasActiveTriggerExperiment)
+                withExtendedLifetime(root) {}
+            }
+        }
+    }
+
+    @MainActor
+    func testConfiguredNativeCloseToDismissedPageDispatchesOnlyOnce() throws {
+        let container = TriggerContainerSpy()
+        let modal = TriggerModalSpy()
+        let session = try XCTUnwrap(modal.startTriggerExperiment())
+        let root = ModalRootViewController(
+            root: nativeRoot(backDestination: "done"), container: container,
+            modalViewController: modal, triggerSession: session
+        )
+        let navigation = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+        let page = try XCTUnwrap(navigation.topViewController as? ModalPageViewController)
+        page.loadViewIfNeeded()
+        let button = try XCTUnwrap(page.navigationItem.leftBarButtonItem)
+        let target = try XCTUnwrap(button.target as? NSObject)
+        let action = try XCTUnwrap(button.action)
+
+        _ = target.perform(action)
+        navigation.viewDidDisappear(false)
+        navigation.viewDidDisappear(false)
+
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["native-back"])
+        XCTAssertEqual(modal.presentations.count, 1)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        withExtendedLifetime(root) {}
+    }
+
+    @MainActor
+    func testNativeGestureDismissalDispatchesActionWhenCloseButtonIsHidden() throws {
+        let container = TriggerContainerSpy()
+        let modal = TriggerModalSpy()
+        let session = try XCTUnwrap(modal.startTriggerExperiment())
+        let root = ModalRootViewController(
+            root: nativeRoot(backDestination: "done", backButtonVisible: false), container: container,
+            modalViewController: modal, triggerSession: session
+        )
+        let navigation = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
+        let page = try XCTUnwrap(navigation.topViewController as? ModalPageViewController)
+        page.loadViewIfNeeded()
+        XCTAssertTrue(page.navigationItem.hidesBackButton)
+        XCTAssertNil(page.navigationItem.leftBarButtonItem)
+
+        navigation.viewDidDisappear(false)
+        navigation.viewDidDisappear(false)
+
+        XCTAssertEqual(container.handledActions.compactMap(\.eventName), ["native-back"])
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        withExtendedLifetime(root) {}
     }
 
     @MainActor
