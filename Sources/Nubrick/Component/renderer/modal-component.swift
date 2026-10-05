@@ -98,7 +98,6 @@ class ModalComponentViewController: UIViewController {
         guard let modal = self.currentModal else { return nil }
         guard !modal.isBeingDismissed else { return nil }
         guard modal.presentingViewController != nil else {
-            modal.dismiss(animated: false)
             self.currentModal = nil
             return nil
         }
