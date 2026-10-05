@@ -537,9 +537,9 @@ final class TriggerViewControllerTests: XCTestCase {
     @MainActor
     func testNonTriggerSafariContinuesIntoNativeModalOnlyAfterDisappearance() async throws {
         let modal = TriggerModalSpy()
-        let root = ModalRootViewController(
+        let root = RootView(
             root: webRoot(backDestination: "modal"), container: TriggerContainerSpy(),
-            modalViewController: modal
+            modalViewController: modal, onEvent: nil
         )
         let safari = try XCTUnwrap(modal.presentations.first as? SFSafariViewController)
         safari.loadViewIfNeeded()
@@ -557,9 +557,9 @@ final class TriggerViewControllerTests: XCTestCase {
     @MainActor
     func testNonTriggerSafariDismissalToDismissedPageDoesNotReopen() throws {
         let modal = TriggerModalSpy()
-        let root = ModalRootViewController(
+        let root = RootView(
             root: webRoot(backDestination: "done"), container: TriggerContainerSpy(),
-            modalViewController: modal
+            modalViewController: modal, onEvent: nil
         )
         let safari = try XCTUnwrap(modal.presentations.first as? SFSafariViewController)
         safari.loadViewIfNeeded()
@@ -592,11 +592,19 @@ final class TriggerViewControllerTests: XCTestCase {
     func testSDKDismissalSuppressesSafariBackActionWithAndWithoutSession() throws {
         for hasSession in [false, true] {
             let modal = TriggerModalSpy()
-            let session = hasSession ? modal.startTriggerExperiment() : nil
-            let root = ModalRootViewController(
-                root: webRoot(backDestination: "modal"), container: TriggerContainerSpy(),
-                modalViewController: modal, triggerSession: session
-            )
+            let root: AnyObject
+            if hasSession {
+                let session = try XCTUnwrap(modal.startTriggerExperiment())
+                root = ModalRootViewController(
+                    root: webRoot(backDestination: "modal"), container: TriggerContainerSpy(),
+                    modalViewController: modal, triggerSession: session
+                )
+            } else {
+                root = RootView(
+                    root: webRoot(backDestination: "modal"), container: TriggerContainerSpy(),
+                    modalViewController: modal, onEvent: nil
+                )
+            }
             let safari = try XCTUnwrap(modal.presentations.first as? SFSafariViewController)
             safari.loadViewIfNeeded()
             modal.dismissModal()

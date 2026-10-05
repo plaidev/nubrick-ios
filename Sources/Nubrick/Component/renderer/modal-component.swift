@@ -38,7 +38,7 @@ func resolveWebviewModalURLAction(_ urlString: String?) -> WebviewModalURLAction
 class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
     private var triggerSession: UUID?
-    private var displayRecordingSession: UUID?
+    private var isRecordingDisplay = false
     private var standaloneSafari: SFSafariViewController?
 
     var hasActiveTriggerExperiment: Bool { self.triggerSession != nil }
@@ -49,27 +49,27 @@ class ModalComponentViewController: UIViewController {
         guard self.triggerSession == nil else { return nil }
         let session = UUID()
         self.triggerSession = session
-        self.displayRecordingSession = nil
+        self.isRecordingDisplay = false
         return session
     }
 
     func beginDisplayRecording(_ session: UUID) -> Bool {
         guard self.triggerSession == session,
-              self.displayRecordingSession == nil else { return false }
-        self.displayRecordingSession = session
+              !self.isRecordingDisplay else { return false }
+        self.isRecordingDisplay = true
         return true
     }
 
     func finishDisplayRecording(_ session: UUID) {
         guard self.triggerSession == session,
-              self.displayRecordingSession == session else { return }
-        self.displayRecordingSession = nil
+              self.isRecordingDisplay else { return }
+        self.isRecordingDisplay = false
         self.finishTriggerExperimentIfUnpresented(session)
     }
 
     func finishTriggerExperimentIfUnpresented(_ session: UUID) {
         guard self.triggerSession == session,
-              self.displayRecordingSession != session,
+              !self.isRecordingDisplay,
               self.currentModal == nil,
               self.standaloneSafari == nil else { return }
         self.triggerSession = nil
@@ -77,7 +77,7 @@ class ModalComponentViewController: UIViewController {
 
     func resetTriggerExperiment() {
         self.dismissModal()
-        self.displayRecordingSession = nil
+        self.isRecordingDisplay = false
         self.triggerSession = nil
         self.currentModal = nil
         self.standaloneSafari = nil
