@@ -90,8 +90,8 @@ class ModalComponentViewController: UIViewController {
         // A Safari back action may open another page in this experiment. Keep the
         // session until that action has had a chance to present it.
         if ownsSession { continuation?() }
-        if let activeSession = self.triggerSession {
-            self.finishTriggerExperimentIfUnpresented(activeSession)
+        if let session {
+            self.finishTriggerExperimentIfUnpresented(session)
         }
     }
     private func activeModal() -> NavigationViewControlller? {
