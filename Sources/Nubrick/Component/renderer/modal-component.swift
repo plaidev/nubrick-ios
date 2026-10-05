@@ -161,8 +161,7 @@ class ModalComponentViewController: UIViewController {
         onVisiblePageChanged: ((PageView) -> Void)? = nil,
         onShown: (() -> Void)? = nil
     ) {
-        // Returning nil from activeModal must not turn a closing stack into a
-        // fresh presentation while its dismissal is still running.
+        // Don't push or present a new modal while the current stack is dismissing.
         guard self.currentModal?.isBeingDismissed != true else { return }
         let pageController = ModalPageViewController(pageView: pageView)
         if let backButtonActionHandler = backButtonActionHandler {
