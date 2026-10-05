@@ -462,8 +462,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
         XCTAssertEqual(sourceExperimentId, "source-experiment")
 
         let controller = TriggerViewController(user: user, container: container, modalViewController: nil)
-        await controller.performDispatch(event: event, sourceExperimentId: sourceExperimentId)
-        await controller.performDispatch(event: NubrickEvent("public-event"))
+        await controller.performDispatch(events: [event], sourceExperimentId: sourceExperimentId)
+        await controller.performDispatch(events: [NubrickEvent("public-event")])
         await repository.flushNow()
 
         let requests = await client.recordedRequests()
@@ -1254,8 +1254,7 @@ final class ContainerTests: XCTestCase {
 
         let result = await container.fetchTriggerContent(
             triggers: ["boot", "return"],
-            kinds: [.POPUP],
-            sourceExperimentId: nil
+            kinds: [.POPUP]
         )
 
         guard case .success(let content) = result else {
@@ -1305,8 +1304,7 @@ final class ContainerTests: XCTestCase {
 
         let result = await container.fetchTriggerContent(
             trigger: "tooltip-trigger",
-            kinds: [.TOOLTIP],
-            sourceExperimentId: nil
+            kinds: [.TOOLTIP]
         )
 
         guard case .success(let content) = result else {

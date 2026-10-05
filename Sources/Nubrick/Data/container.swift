@@ -55,9 +55,9 @@ protocol Container : Sendable {
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError>
-    func fetchTriggerContent(triggers: [String], kinds: [ExperimentKind], sourceExperimentId: String?) async -> Result<FetchedTriggerContent, NubrickError>
-    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async
+    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
+    func fetchTriggerContent(triggers: [String], kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
+    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async -> [String]
     func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
@@ -252,15 +252,15 @@ final class ContainerImpl: Container {
         }
     }
 
-    private func recordTriggerEvent(name: String, sourceExperimentId: String?) async -> Bool {
-        await self.trackRepository.trackEvent(TrackUserEvent(name: name, experimentId: sourceExperimentId))
-        return await self.databaseRepository.appendUserEvent(name: name)
-    }
-
-    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async {
+    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async -> [String] {
+        var recordedTriggers = [String]()
         for trigger in triggers {
-            _ = await self.recordTriggerEvent(name: trigger, sourceExperimentId: sourceExperimentId)
+            await self.trackRepository.trackEvent(TrackUserEvent(name: trigger, experimentId: sourceExperimentId))
+            if await self.databaseRepository.appendUserEvent(name: trigger) {
+                recordedTriggers.append(trigger)
+            }
         }
+        return recordedTriggers
     }
 
     func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool {
@@ -272,25 +272,21 @@ final class ContainerImpl: Container {
 
     func fetchTriggerContent(
         trigger: String,
-        kinds: [ExperimentKind],
-        sourceExperimentId: String?
+        kinds: [ExperimentKind]
     ) async -> Result<FetchedTriggerContent, NubrickError> {
         await self.fetchTriggerContent(
             triggers: [trigger],
-            kinds: kinds,
-            sourceExperimentId: sourceExperimentId
+            kinds: kinds
         )
     }
 
     func fetchTriggerContent(
         triggers: [String],
-        kinds: [ExperimentKind],
-        sourceExperimentId: String?
+        kinds: [ExperimentKind]
     ) async -> Result<FetchedTriggerContent, NubrickError> {
         var selected: ExtractedVariant?
         for trigger in triggers {
-            guard await self.recordTriggerEvent(name: trigger, sourceExperimentId: sourceExperimentId),
-                  case .success(let configs) = await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger),
+            guard case .success(let configs) = await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger),
                   case .success(let extracted) = await self.extractVariant(configs: configs, kinds: kinds) else {
                 continue
             }

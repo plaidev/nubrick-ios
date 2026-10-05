@@ -74,7 +74,7 @@ class TriggerViewController: UIViewController {
         }
         events.append(contentsOf: self.userReturnEvents())
         Task {
-            await self.dispatchPredefinedEvents(events)
+            await self.performDispatch(events: events)
         }
 
         // Startup counts as the first entry even when initialized in the background.
@@ -93,7 +93,7 @@ class TriggerViewController: UIViewController {
         var events = [NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue)]
         events.append(contentsOf: self.userReturnEvents())
         Task {
-            await self.dispatchPredefinedEvents(events)
+            await self.performDispatch(events: events)
         }
     }
 
@@ -119,54 +119,33 @@ class TriggerViewController: UIViewController {
     @MainActor
     func dispatch(event: NubrickEvent, sourceExperimentId: String? = nil) {
         Task {
-            await self.performDispatch(event: event, sourceExperimentId: sourceExperimentId)
+            await self.performDispatch(events: [event], sourceExperimentId: sourceExperimentId)
         }
     }
 
     @MainActor
-    func performDispatch(event: NubrickEvent, sourceExperimentId: String? = nil) async {
-        guard self.didLoaded else {
-            await self.container.recordTriggerEvents(triggers: [event.name], sourceExperimentId: sourceExperimentId)
+    func performDispatch(events: [NubrickEvent], sourceExperimentId: String? = nil) async {
+        let recordedTriggers = await self.container.recordTriggerEvents(
+            triggers: events.map(\.name), sourceExperimentId: sourceExperimentId
+        )
+        for event in events {
             self.onDispatch?(event)
+        }
+        guard self.didLoaded else {
             print("nativebrik.dispatch should be called after nativebrik.overlay did load")
             return
         }
-        if self.modalViewController?.hasActiveTriggerExperiment == true {
-            await self.container.recordTriggerEvents(triggers: [event.name], sourceExperimentId: sourceExperimentId)
-            self.onDispatch?(event)
+        if self.modalViewController?.hasActiveTriggerExperiment == true || recordedTriggers.isEmpty {
             return
         }
         // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,
         // so we fetch both popups and tooltips when running in Flutter, and popups only otherwise.
         let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
-        let triggerResult = await self.container.fetchTriggerContent(
-            trigger: event.name,
-            kinds: kinds,
-            sourceExperimentId: sourceExperimentId
-        )
-        self.onDispatch?(event)
-
-        guard case .success(let content) = triggerResult else { return }
+        guard case .success(let content) = await self.container.fetchTriggerContent(
+            triggers: recordedTriggers,
+            kinds: kinds
+        ) else { return }
         self.presentTriggerContent(content)
-    }
-
-    @MainActor
-    private func dispatchPredefinedEvents(_ events: [NubrickEvent]) async {
-        for event in events {
-            self.onDispatch?(event)
-        }
-        guard self.didLoaded else { return }
-        if self.modalViewController?.hasActiveTriggerExperiment == true {
-            await self.container.recordTriggerEvents(triggers: events.map(\.name), sourceExperimentId: nil)
-            return
-        }
-        let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
-        guard case .success(let winner) = await self.container.fetchTriggerContent(
-                triggers: events.map(\.name),
-                kinds: kinds,
-                sourceExperimentId: nil
-              ) else { return }
-        self.presentTriggerContent(winner)
     }
 
     @MainActor
