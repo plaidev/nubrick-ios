@@ -167,6 +167,29 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     @MainActor
+    func testSheetPageBackgroundFollowsReusedNavigationPresentation() throws {
+        let first = try makePage(style: "DEPENDS_ON_CONTEXT_OR_FULL_SCREEN")
+        let navigation = NavigationViewControlller(
+            rootViewController: ModalPageViewController(pageView: first), hasPrevious: true
+        )
+        navigation.modalPresentationStyle = .overFullScreen
+        let next = try makePage()
+        let nextController = ModalPageViewController(pageView: next)
+        navigation.pushViewController(nextController, animated: false)
+        navigation.updateSheetBackground(for: nextController)
+        XCTAssertEqual(navigation.view.backgroundColor, .systemBackground)
+        XCTAssertEqual(navigation.modalPresentationStyle, .overFullScreen)
+        if #available(iOS 26.0, *) { XCTAssertNil(next.backgroundColor) }
+
+        navigation.modalPresentationStyle = .pageSheet
+        navigation.updateSheetBackground(for: nextController)
+        XCTAssertEqual(navigation.view.backgroundColor, next.backgroundColor)
+        next.backgroundColor = .blue
+        navigation.updateSheetBackground(for: nextController)
+        XCTAssertEqual(navigation.view.backgroundColor, .blue)
+    }
+
+    @MainActor
     func testFullScreenPageKeepsNormalLayout() throws {
         let page = try makePage(style: "DEPENDS_ON_CONTEXT_OR_FULL_SCREEN")
         XCTAssertTrue(page.yoga.isEnabled)

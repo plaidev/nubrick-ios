@@ -104,7 +104,9 @@ class NavigationViewControlller: UINavigationController {
     }
 
     func updateSheetBackground(for viewController: UIViewController) {
-        self.view.backgroundColor = viewController.view.backgroundColor
+        // Pushed pages inherit this controller's presentation style.
+        let fallback: UIColor? = self.modalPresentationStyle == .overFullScreen ? .systemBackground : nil
+        self.view.backgroundColor = viewController.view.backgroundColor ?? fallback
     }
 
     override func pushViewController(_ viewController: UIViewController, animated: Bool) {
