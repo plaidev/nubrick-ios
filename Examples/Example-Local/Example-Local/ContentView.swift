@@ -5,13 +5,6 @@ struct ContentView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                Button("Dispatch test1 and test2") {
-                    NubrickSDK.dispatch(NubrickEvent("test1"))
-                    NubrickSDK.dispatch(NubrickEvent("test2"))
-                }
-                .buttonStyle(.borderedProminent)
-                .padding()
-
                 NubrickSDK.embedding("HEADER_INFORMATION")
                 NubrickSDK.embedding("TOP_COMPONENT")
             }
