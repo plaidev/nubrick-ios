@@ -49,6 +49,48 @@ final class NubrickClientTests: XCTestCase {
     }
 }
 
+final class NubrickBridgeRenderTests: XCTestCase {
+    @MainActor
+    func testMalformedJSONFinishesSessionBeforeNotifyingDismissal() throws {
+        let runtime = NubrickCore(projectId: PROJECT_ID_FOR_TEST, onEvent: nil,
+            httpRequestInterceptor: nil, onDispatch: nil, onTooltip: nil)
+        let overlay = try XCTUnwrap(runtime.overlayViewController() as? OverlayViewController)
+        let modal = overlay.modalForTriggerViewController
+        XCTAssertNotNil(modal.startTriggerExperiment("tooltip"))
+        var dismissals = 0
+
+        _ = runtime.renderUIView(json: "{", sessionId: "tooltip", onDismiss: {
+            XCTAssertFalse(modal.hasActiveTriggerExperiment)
+            dismissals += 1
+        })
+
+        XCTAssertEqual(dismissals, 1)
+        XCTAssertNotNil(modal.startTriggerExperiment("next"))
+    }
+
+    @MainActor
+    func testMalformedJSONCannotFinishAnotherSession() throws {
+        let runtime = NubrickCore(projectId: PROJECT_ID_FOR_TEST, onEvent: nil,
+            httpRequestInterceptor: nil, onDispatch: nil, onTooltip: nil)
+        let overlay = try XCTUnwrap(runtime.overlayViewController() as? OverlayViewController)
+        let modal = overlay.modalForTriggerViewController
+        XCTAssertNotNil(modal.startTriggerExperiment("old"))
+        modal.finishTriggerExperiment("old")
+        XCTAssertNotNil(modal.startTriggerExperiment("new"))
+        var dismissals = 0
+
+        for sessionId in ["old", nil] as [String?] {
+            _ = runtime.renderUIView(json: "{", sessionId: sessionId, onDismiss: {
+                XCTAssertTrue(modal.ownsTriggerExperiment("new"))
+                dismissals += 1
+            })
+        }
+
+        XCTAssertEqual(dismissals, 2)
+        XCTAssertTrue(modal.ownsTriggerExperiment("new"))
+    }
+}
+
 final class NubrickProviderTests: XCTestCase {
     struct NubrickConsumerView: View {
         var body: some View {

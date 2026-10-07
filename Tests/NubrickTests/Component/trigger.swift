@@ -188,6 +188,123 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
 
 final class TriggerViewControllerTests: XCTestCase {
     @MainActor
+    func testTooltipAndPopupShareClaimAndIgnoreStaleCleanup() {
+        let modal = TriggerModalSpy()
+        XCTAssertNil(modal.startTriggerExperiment(""))
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        XCTAssertNotNil(modal.startTriggerExperiment("tooltip-one"))
+        XCTAssertTrue(modal.ownsTriggerExperiment("tooltip-one"))
+        XCTAssertFalse(modal.beginDisplayRecording("wrong-session"))
+        XCTAssertNil(modal.startTriggerExperiment())
+        XCTAssertNil(modal.startTriggerExperiment("tooltip-two"))
+        modal.finishTriggerExperiment("wrong-session")
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+        modal.finishTriggerExperiment("tooltip-one")
+        let popup = modal.startTriggerExperiment()!
+        XCTAssertNil(modal.startTriggerExperiment("tooltip-two"))
+        modal.finishTriggerExperiment("tooltip-one")
+        XCTAssertTrue(modal.ownsTriggerExperiment(popup))
+        modal.finishTriggerExperiment(popup)
+        XCTAssertNotNil(modal.startTriggerExperiment("tooltip-two"))
+        modal.finishTriggerExperiment("tooltip-two")
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+    }
+
+    @MainActor
+    func testTooltipKeepsClaimUntilDismissalAndRecordingBothFinish() {
+        let modal = TriggerModalSpy()
+        XCTAssertNotNil(modal.startTriggerExperiment("one"))
+        XCTAssertTrue(modal.beginDisplayRecording("one"))
+        modal.finishDisplayRecording("one")
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+        XCTAssertFalse(modal.beginDisplayRecording("one"))
+        modal.finishTriggerExperiment("one")
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+
+        XCTAssertNotNil(modal.startTriggerExperiment("two"))
+        XCTAssertTrue(modal.beginDisplayRecording("two"))
+        modal.finishTriggerExperiment("two")
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+        XCTAssertNil(modal.startTriggerExperiment())
+        modal.finishDisplayRecording("two")
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+    }
+
+    @MainActor
+    func testDisplayRecordingIsSharedByAllSessionTypes() throws {
+        let modal = TriggerModalSpy()
+        for tooltip in [false, true] {
+            let session: String
+            if tooltip {
+                session = "tooltip-recording"
+                XCTAssertNotNil(modal.startTriggerExperiment(session))
+            } else {
+                session = try XCTUnwrap(modal.startTriggerExperiment())
+                modal.presentNavigation(pageView: PageView(page: nil, props: nil,
+                    container: TriggerContainerSpy(), arguments: nil,
+                    actionHandler: nil, modalViewController: modal),
+                    modalPresentationStyle: nil, modalScreenSize: nil,
+                    backButtonActionHandler: nil)
+            }
+            XCTAssertTrue(modal.beginDisplayRecording(session))
+            XCTAssertFalse(modal.beginDisplayRecording(session))
+            modal.finishDisplayRecording(session)
+            XCTAssertFalse(modal.beginDisplayRecording(session), "Finished recording cannot start again in the same session")
+            if !tooltip { modal.presentations.last?.viewDidDisappear(false) }
+            modal.finishTriggerExperiment(session)
+            XCTAssertFalse(modal.hasActiveTriggerExperiment)
+            XCTAssertFalse(modal.beginDisplayRecording(session))
+        }
+    }
+
+    @MainActor
+    func testStopFinishesSessionAfterNativePresentationCloses() throws {
+        let modal = TriggerModalSpy()
+        XCTAssertNotNil(modal.startTriggerExperiment("session"))
+        modal.presentWebview(url: "https://example.com", backButtonActionHandler: nil)
+        XCTAssertTrue(modal.beginDisplayRecording("session"))
+        modal.stopTriggerExperiment("session")
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+        modal.finishDisplayRecording("session")
+        XCTAssertTrue(modal.hasActiveTriggerExperiment, "Recording completion must still wait for native dismissal")
+        XCTAssertNil(modal.startTriggerExperiment("next"))
+        modal.presentations.last?.viewDidDisappear(false)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        XCTAssertFalse(modal.beginDisplayRecording("session"))
+    }
+
+    @MainActor
+    func testTooltipResetMakesDelayedRecordingHarmless() {
+        let modal = TriggerModalSpy()
+        XCTAssertNotNil(modal.startTriggerExperiment("old"))
+        XCTAssertTrue(modal.beginDisplayRecording("old"))
+        modal.resetTriggerExperiment()
+        XCTAssertNotNil(modal.startTriggerExperiment("new"))
+        modal.finishDisplayRecording("old")
+        modal.finishTriggerExperiment("old")
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+        modal.finishTriggerExperiment("new")
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+    }
+
+    @MainActor
+    func testTooltipBlocksFetchesButStillRecordsDispatchedEvents() async {
+        let container = TriggerContainerSpy()
+        let modal = TriggerModalSpy()
+        let controller = TriggerViewController(user: NubrickUser(), container: container,
+            modalViewController: modal)
+        controller.initialLoad()
+        XCTAssertNotNil(modal.startTriggerExperiment("tooltip"))
+        await controller.performDispatch(events: [NubrickEvent("popup-blocked")])
+        XCTAssertTrue(container.recordedTriggers.contains("popup-blocked"))
+        XCTAssertTrue(container.popupFetches.isEmpty)
+        XCTAssertTrue(container.displayedExperiments.isEmpty)
+        modal.finishTriggerExperiment("tooltip")
+        await controller.performDispatch(events: [NubrickEvent("popup-next")])
+        XCTAssertEqual(container.popupFetches, ["popup-next"])
+    }
+
+    @MainActor
     func testCustomDispatchCallbackWaitsForRecordingWhenFetchingIsSkipped() async throws {
         for reason in ["before-load", "active-popup", "recording-failed"] {
             let recordingPaused = expectation(description: "Trigger recording paused")
@@ -303,7 +420,7 @@ final class TriggerViewControllerTests: XCTestCase {
             XCTAssertEqual(container.recordedSources.last, "source-experiment")
             XCTAssertTrue(fetched.isEmpty)
 
-            modal.finishTriggerExperimentIfUnpresented(session)
+            modal.finishTriggerExperiment(session)
             XCTAssertFalse(modal.hasActiveTriggerExperiment)
             container.triggerRecordingContinuation?.resume()
             await dispatch.value
@@ -552,8 +669,8 @@ final class TriggerViewControllerTests: XCTestCase {
                 let container = TriggerContainerSpy()
                 let modal = TriggerModalSpy()
                 let root: AnyObject
-                if hasSession {
-                    let session = try XCTUnwrap(modal.startTriggerExperiment())
+                let session = hasSession ? try XCTUnwrap(modal.startTriggerExperiment()) : nil
+                if let session {
                     root = ModalRootViewController(
                         root: nativeRoot(), container: container, modalViewController: modal, triggerSession: session
                     )
@@ -564,6 +681,8 @@ final class TriggerViewControllerTests: XCTestCase {
 
                 if reset {
                     modal.resetTriggerExperiment()
+                } else if let session {
+                    modal.stopTriggerExperiment(session)
                 } else {
                     modal.dismissModal()
                 }
@@ -754,8 +873,8 @@ final class TriggerViewControllerTests: XCTestCase {
         for hasSession in [false, true] {
             let modal = TriggerModalSpy()
             let root: AnyObject
-            if hasSession {
-                let session = try XCTUnwrap(modal.startTriggerExperiment())
+            let session = hasSession ? try XCTUnwrap(modal.startTriggerExperiment()) : nil
+            if let session {
                 root = ModalRootViewController(
                     root: webRoot(backDestination: "modal"), container: TriggerContainerSpy(),
                     modalViewController: modal, triggerSession: session
@@ -768,7 +887,8 @@ final class TriggerViewControllerTests: XCTestCase {
             }
             let safari = try XCTUnwrap(modal.presentations.first as? SFSafariViewController)
             safari.loadViewIfNeeded()
-            modal.dismissModal()
+            if let session { modal.stopTriggerExperiment(session) }
+            else { modal.dismissModal() }
             safari.viewDidDisappear(false)
             XCTAssertEqual(modal.presentations.count, 1, "SDK dismissal must not open the Back destination")
             XCTAssertFalse(modal.hasActiveTriggerExperiment)
@@ -934,14 +1054,18 @@ final class TriggerViewControllerTests: XCTestCase {
         var receivedData: String?
         var receivedExperimentId: String?
         var receivedVariantId: String?
+        var receivedSessionId: String?
+        let modal = TriggerModalSpy()
         let controller = TriggerViewController(
             user: NubrickUser(),
             container: TriggerContainerSpy(),
-            modalViewController: nil,
-            onTooltip: { data, experimentId, variantId in
+            modalViewController: modal,
+            onTooltip: { data, experimentId, variantId, sessionId in
+                XCTAssertTrue(modal.hasActiveTriggerExperiment)
                 receivedData = data
                 receivedExperimentId = experimentId
                 receivedVariantId = variantId
+                receivedSessionId = sessionId
             }
         )
 
@@ -956,7 +1080,155 @@ final class TriggerViewControllerTests: XCTestCase {
             return
         }
         XCTAssertEqual(root.id, "tooltip-root")
+        guard let receivedSessionId else { return XCTFail("Expected a session ID") }
+        XCTAssertNotEqual(receivedSessionId, root.id)
+        XCTAssertTrue(modal.ownsTriggerExperiment(receivedSessionId))
+        await controller.performDispatch(events: [NubrickEvent("popup-blocked")])
+        XCTAssertTrue(modal.ownsTriggerExperiment(receivedSessionId))
+        modal.stopTriggerExperiment(receivedSessionId)
         XCTAssertEqual(receivedExperimentId, "tooltip-experiment-id")
         XCTAssertEqual(receivedVariantId, "tooltip-variant-id")
     }
+    @MainActor
+    func testStaleTooltipDismissalCannotCloseTheNextExperiment() throws {
+        let modal = TriggerModalSpy()
+        let container = TriggerContainerSpy()
+        XCTAssertNotNil(modal.startTriggerExperiment("old"))
+        var dismissals = 0
+        var events = [String]()
+        let oldRoot = RootView(root: webRoot(backDestination: "done"), container: container,
+            modalViewController: modal,
+            onEvent: { action in if let name = action.eventName { events.append(name) } },
+            onDismiss: { dismissals += 1 }, sessionId: "old")
+        modal.stopTriggerExperiment("old")
+        try XCTUnwrap(modal.presentations.first).viewDidDisappear(false)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        XCTAssertNotNil(modal.startTriggerExperiment("new"))
+        let newRoot = RootView(root: webRoot(backDestination: "done"), container: TriggerContainerSpy(),
+            modalViewController: modal, onEvent: nil, sessionId: "new")
+        let dismissalsBeforeStaleCallback = dismissals
+        oldRoot.dispatchAction(UIBlockAction(eventName: "delayed-tap",
+            destinationPageId: "done", submitSurveyResponse: true))
+        oldRoot.presentPage(pageId: "done")
+        modal.stopTriggerExperiment("old")
+        XCTAssertTrue(modal.hasPresentedContent)
+        XCTAssertTrue(modal.ownsTriggerExperiment("new"))
+        XCTAssertEqual(dismissals, dismissalsBeforeStaleCallback)
+        XCTAssertEqual(events, ["delayed-tap"])
+        XCTAssertEqual(container.handledActions.last?.eventName, "delayed-tap")
+        XCTAssertEqual(container.handledActions.last?.submitSurveyResponse, true)
+        withExtendedLifetime(newRoot) {}
+    }
+
+    @MainActor
+    func testTooltipNativeModalReturnKeepsSessionAndNativeDismissalEndsIt() throws {
+        let modal = TriggerModalSpy()
+        let session = "native-tooltip"
+        XCTAssertNotNil(modal.startTriggerExperiment(session))
+        let data = Data("""
+        {"id":"tooltip-root","data":{"pages":[
+          {"id":"start","data":{"kind":"TRIGGER","triggerSetting":{"onTrigger":{"destinationPageId":"tooltip"}}}},
+          {"id":"tooltip","data":{"kind":"TOOLTIP"}},
+          {"id":"modal","data":{"kind":"MODAL","triggerSetting":{"onTrigger":{"destinationPageId":"tooltip"}}}},
+          {"id":"done","data":{"kind":"DISMISSED"}}
+        ]}}
+        """.utf8)
+        var tooltips = [String]()
+        let root = RootView(root: try JSONDecoder().decode(UIRootBlock.self, from: data),
+            container: TriggerContainerSpy(), modalViewController: modal, onEvent: nil,
+            onNextTooltip: { tooltips.append($0) },
+            onDismiss: { modal.finishTriggerExperiment(session) }, sessionId: session)
+        root.presentPage(pageId: "modal")
+        XCTAssertTrue(modal.ownsTriggerExperiment(session))
+        XCTAssertNil(modal.startTriggerExperiment())
+        let navigation = try XCTUnwrap(modal.presentations.last as? NavigationViewControlller)
+        navigation.viewDidDisappear(false)
+        XCTAssertEqual(tooltips, ["tooltip", "tooltip"])
+        XCTAssertTrue(modal.ownsTriggerExperiment(session))
+        root.presentPage(pageId: "done")
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+    }
+
+    @MainActor
+    func testFlutterStopWaitsForNativePresentationAndSuppressesItsReturnAction() throws {
+        let modal = TriggerModalSpy()
+        let session = "stopped-tooltip"
+        XCTAssertNotNil(modal.startTriggerExperiment(session))
+        let root = RootView(root: webRoot(backDestination: "modal"), container: TriggerContainerSpy(),
+            modalViewController: modal, onEvent: nil,
+            onDismiss: { modal.finishTriggerExperiment(session) }, sessionId: session)
+        let safari = try XCTUnwrap(modal.presentations.first as? SFSafariViewController)
+        modal.stopTriggerExperiment(session)
+        XCTAssertTrue(modal.hasActiveTriggerExperiment)
+        XCTAssertFalse(modal.ownsTriggerExperiment(session), "Stopped flows cannot navigate while native UI closes")
+        safari.viewDidDisappear(false)
+        XCTAssertFalse(modal.hasActiveTriggerExperiment)
+        XCTAssertEqual(modal.presentations.count, 1)
+        withExtendedLifetime(root) {}
+    }
+
+    @MainActor
+    func testDefaultBackPreservesNavigationAndDismissalFinishesBothExperimentFlows() async throws {
+        let animationsWereEnabled = UIView.areAnimationsEnabled
+        UIView.setAnimationsEnabled(false)
+        defer { UIView.setAnimationsEnabled(animationsWereEnabled) }
+
+        for flutter in [false, true] {
+            let host = UIViewController()
+            let window = UIWindow(frame: UIScreen.main.bounds)
+            window.rootViewController = host
+            window.makeKeyAndVisible()
+            defer { window.isHidden = true }
+            let modal = ModalComponentViewController()
+            host.addChild(modal)
+            host.view.addSubview(modal.view)
+            modal.didMove(toParent: host)
+            let session = try XCTUnwrap(modal.startTriggerExperiment())
+            let rootData = try JSONDecoder().decode(UIRootBlock.self, from: Data("""
+            {"id":"root","data":{"pages":[
+              {"id":"start","data":{"kind":"TRIGGER","triggerSetting":{"onTrigger":{"destinationPageId":"\(flutter ? "tooltip" : "first")"}}}},
+              {"id":"tooltip","data":{"kind":"TOOLTIP"}},
+              {"id":"first","data":{"kind":"MODAL"}},
+              {"id":"second","data":{"kind":"MODAL"}}
+            ]}}
+            """.utf8))
+            let root: AnyObject
+            let navigate: (String) -> Void
+            if flutter {
+                let tooltipRoot = RootView(root: rootData, container: TriggerContainerSpy(),
+                    modalViewController: modal, onEvent: nil, onNextTooltip: { _ in },
+                    onDismiss: { modal.finishTriggerExperiment(session) }, sessionId: session)
+                root = tooltipRoot
+                navigate = tooltipRoot.presentPage
+                navigate("first")
+            } else {
+                let modalRoot = ModalRootViewController(root: rootData, container: TriggerContainerSpy(),
+                    modalViewController: modal, triggerSession: session)
+                root = modalRoot
+                navigate = modalRoot.presentPage
+            }
+            try await Task.sleep(nanoseconds: 800_000_000)
+            let navigation = try XCTUnwrap(host.presentedViewController as? NavigationViewControlller)
+            let first = try XCTUnwrap(navigation.topViewController as? ModalPageViewController)
+            XCTAssertNil(first.backButtonActionHandler)
+
+            navigate("second")
+            try await Task.sleep(nanoseconds: 100_000_000)
+            let second = try XCTUnwrap(navigation.topViewController as? ModalPageViewController)
+            XCTAssertEqual(navigation.viewControllers.count, 2)
+            XCTAssertNil(second.backButtonActionHandler)
+            second.onClickBack()
+            try await Task.sleep(nanoseconds: 600_000_000)
+            XCTAssertTrue(navigation.topViewController === first)
+            XCTAssertTrue(modal.ownsTriggerExperiment(session), "Popping a page keeps the experiment running")
+
+
+            first.onClickBack()
+            // Deliver UIKit's dismissal callback explicitly in this application-less test runner.
+            navigation.onDismissed?(navigation)
+            XCTAssertFalse(modal.hasActiveTriggerExperiment, "Final dismissal finishes the experiment")
+            withExtendedLifetime(root) {}
+        }
+    }
+
 }

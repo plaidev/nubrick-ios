@@ -37,61 +37,70 @@ func resolveWebviewModalURLAction(_ urlString: String?) -> WebviewModalURLAction
 // vc for navigation view
 class ModalComponentViewController: UIViewController {
     private var currentModal: NavigationViewControlller? = nil
-    private var triggerSession: UUID?
-    private var isRecordingDisplay = false
+    private let experimentSession = TriggerExperimentSession()
     private var standaloneSafari: SFSafariViewController?
 
-    var hasActiveTriggerExperiment: Bool { self.triggerSession != nil }
+    var hasPresentedContent: Bool { self.currentModal != nil || self.standaloneSafari != nil }
 
-    func ownsTriggerExperiment(_ session: UUID) -> Bool { self.triggerSession == session }
+    var hasActiveTriggerExperiment: Bool { self.experimentSession.isActive }
 
-    func startTriggerExperiment() -> UUID? {
-        guard self.triggerSession == nil else { return nil }
-        let session = UUID()
-        self.triggerSession = session
-        self.isRecordingDisplay = false
-        return session
+    func ownsTriggerExperiment(_ session: String) -> Bool {
+        self.experimentSession.owns(session)
     }
 
-    func beginDisplayRecording(_ session: UUID) -> Bool {
-        guard self.triggerSession == session,
-              !self.isRecordingDisplay else { return false }
-        self.isRecordingDisplay = true
-        return true
+    func startTriggerExperiment(_ session: String = UUID().uuidString) -> String? {
+        self.experimentSession.start(session)
     }
 
-    func finishDisplayRecording(_ session: UUID) {
-        guard self.triggerSession == session,
-              self.isRecordingDisplay else { return }
-        self.isRecordingDisplay = false
-        self.finishTriggerExperimentIfUnpresented(session)
+    func beginDisplayRecording(_ session: String) -> Bool {
+        self.experimentSession.beginRecording(session)
     }
 
-    func finishTriggerExperimentIfUnpresented(_ session: UUID) {
-        guard self.triggerSession == session,
-              !self.isRecordingDisplay,
-              self.currentModal == nil,
-              self.standaloneSafari == nil else { return }
-        self.triggerSession = nil
+    func finishDisplayRecording(_ session: String) {
+        self.experimentSession.finishRecording(session)
+        self.releaseFinishedExperimentIfUnpresented()
+    }
+
+    func finishTriggerExperiment(_ session: String) {
+        self.experimentSession.finish(session)
+        self.releaseFinishedExperimentIfUnpresented()
+    }
+
+    func stopTriggerExperiment(_ session: String) {
+        guard self.experimentSession.owns(session) else { return }
+        self.finishTriggerExperiment(session)
+        self.dismissModal()
     }
 
     func resetTriggerExperiment() {
+        self.experimentSession.reset()
         self.dismissModal()
-        self.isRecordingDisplay = false
-        self.triggerSession = nil
         self.currentModal = nil
         self.standaloneSafari = nil
     }
 
-    private func presentationDidEnd(_ controller: UIViewController, session: UUID?, continuation: (() -> Void)? = nil) {
-        let ownsSession = self.triggerSession == session
+    private func releaseFinishedExperimentIfUnpresented() {
+        guard !self.hasPresentedContent else { return }
+        self.experimentSession.releaseIfFinished()
+    }
+
+    private func presentationDidEnd(
+        _ controller: UIViewController,
+        session: String?,
+        suppressBackAction: Bool,
+        backButtonActionHandler: ModalBackButtonActionHandler?,
+        onDismissed: (@MainActor () -> Void)?
+    ) {
         if self.currentModal === controller { self.currentModal = nil }
         if self.standaloneSafari === controller { self.standaloneSafari = nil }
-        // A close action may open another page in this experiment. Keep the
-        // session until that action has had a chance to present it.
-        if ownsSession { continuation?() }
-        if let session {
-            self.finishTriggerExperimentIfUnpresented(session)
+        defer { self.releaseFinishedExperimentIfUnpresented() }
+        guard self.experimentSession.id == session, !suppressBackAction else { return }
+        // Run return navigation before deciding whether this flow has ended.
+        backButtonActionHandler?()
+        if let onDismissed {
+            onDismissed()
+        } else if let session, !self.hasPresentedContent {
+            self.finishTriggerExperiment(session)
         }
     }
     private func activeModal() -> NavigationViewControlller? {
@@ -121,6 +130,7 @@ class ModalComponentViewController: UIViewController {
     func presentWebview(
         url: String?,
         backButtonActionHandler: ModalBackButtonActionHandler?,
+        onDismissed: (@MainActor () -> Void)? = nil,
         onShown: (() -> Void)? = nil
     ) {
         switch resolveWebviewModalURLAction(url) {
@@ -137,12 +147,16 @@ class ModalComponentViewController: UIViewController {
             UIApplication.shared.open(urlObj)
             return
         case .presentInSafari(let urlObj):
-            let session = self.triggerSession
+            let session = self.experimentSession.id
             let safariVC = ModalSafariViewController(url: urlObj)
             safariVC.onDismissed = { [weak self] controller in
-                self?.presentationDidEnd(controller, session: session) {
-                    if !controller.suppressBackAction { backButtonActionHandler?() }
-                }
+                self?.presentationDidEnd(
+                    controller,
+                    session: session,
+                    suppressBackAction: controller.suppressBackAction,
+                    backButtonActionHandler: backButtonActionHandler,
+                    onDismissed: onDismissed
+                )
             }
             if let modal = self.activeModal() {
                 guard modal.presentedViewController == nil else { return }
@@ -159,6 +173,7 @@ class ModalComponentViewController: UIViewController {
         modalScreenSize: ModalScreenSize?,
         backButtonActionHandler: ModalBackButtonActionHandler?,
         onVisiblePageChanged: ((PageView) -> Void)? = nil,
+        onDismissed: (@MainActor () -> Void)? = nil,
         onShown: (() -> Void)? = nil
     ) {
         // Don't push or present a new modal while the current stack is dismissing.
@@ -168,19 +183,23 @@ class ModalComponentViewController: UIViewController {
             pageController.backButtonActionHandler = backButtonActionHandler
         }
         pageController.onVisiblePageChanged = onVisiblePageChanged
+        pageController.onPresentationDismissed = onDismissed
 
         if let modal = self.activeModal() {
             modal.pushViewController(pageController, animated: true)
         } else {
             pageController.setIsFirstModalToTrue()
             let modal = NavigationViewControlller(rootViewController: pageController, hasPrevious: true)
-            let session = self.triggerSession
+            let session = self.experimentSession.id
             modal.onDismissed = { [weak self] controller in
-                self?.presentationDidEnd(controller, session: session) {
-                    if !controller.suppressBackAction {
-                        (controller.topViewController as? ModalPageViewController)?.backButtonActionHandler?()
-                    }
-                }
+                let page = controller.topViewController as? ModalPageViewController
+                self?.presentationDidEnd(
+                    controller,
+                    session: session,
+                    suppressBackAction: controller.suppressBackAction,
+                    backButtonActionHandler: page?.backButtonActionHandler,
+                    onDismissed: page?.onPresentationDismissed
+                )
             }
             modal.modalPresentationStyle = parseModalPresentationStyle(modalPresentationStyle)
             modal.configureSheet(size: modalScreenSize) { [weak self] in

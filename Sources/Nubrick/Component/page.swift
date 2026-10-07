@@ -27,6 +27,7 @@ class ModalPageViewController: UIViewController {
     private var isFirstModal = false
     private let pageView: PageView?
     var backButtonActionHandler: ModalBackButtonActionHandler? = nil
+    var onPresentationDismissed: (@MainActor () -> Void)?
     var onVisiblePageChanged: ((PageView) -> Void)?
     var pageId: String? { self.pageView?.page?.id }
     var representedPageView: PageView? { self.pageView }
