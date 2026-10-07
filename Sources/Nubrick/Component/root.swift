@@ -18,8 +18,7 @@ class ModalRootViewController: UIViewController {
     private let container: Container
     private let experimentId: String?
     private let variantId: String?
-    private var didRecordDisplay = false
-    private let triggerSession: UUID
+    private let triggerSession: String
 
     init(
         root: UIRootBlock?,
@@ -27,7 +26,7 @@ class ModalRootViewController: UIViewController {
         variantId: String? = nil,
         container: Container,
         modalViewController: ModalComponentViewController?,
-        triggerSession: UUID
+        triggerSession: String
     ) {
         self.triggerSession = triggerSession
         self.pages = root?.data?.pages ?? []
@@ -83,12 +82,13 @@ class ModalRootViewController: UIViewController {
 
         // when there are no pages
         if page == nil {
+            self.modalViewController?.stopTriggerExperiment(self.triggerSession)
             return
         }
 
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
-            self.modalViewController?.dismissModal()
+            self.modalViewController?.stopTriggerExperiment(self.triggerSession)
             return
         }
 
@@ -150,7 +150,7 @@ class ModalRootViewController: UIViewController {
             )
             break
         default:
-            self.modalViewController?.dismissModal()
+            self.modalViewController?.stopTriggerExperiment(self.triggerSession)
             break
         }
     }
@@ -160,16 +160,15 @@ class ModalRootViewController: UIViewController {
     }
 
     private func finishIfUnpresented() {
-        self.modalViewController?.finishTriggerExperimentIfUnpresented(self.triggerSession)
+        guard let modal = self.modalViewController, !modal.hasPresentedContent else { return }
+        modal.finishTriggerExperiment(self.triggerSession)
     }
 
     private func recordDisplay() {
         guard self.modalViewController?.ownsTriggerExperiment(self.triggerSession) == true else { return }
-        guard !self.didRecordDisplay,
-              let experimentId = self.experimentId,
+        guard let experimentId = self.experimentId,
               let variantId = self.variantId else { return }
         guard self.modalViewController?.beginDisplayRecording(self.triggerSession) == true else { return }
-        self.didRecordDisplay = true
         let container = self.container
         let modalViewController = self.modalViewController
         let triggerSession = self.triggerSession
@@ -258,6 +257,13 @@ struct RootViewRepresentable: UIViewRepresentable {
 }
 
 class RootView: UIView {
+    private let sessionId: String?
+
+    private var ownsSession: Bool {
+        guard let sessionId = self.sessionId else { return true }
+        return self.modalViewController?.ownsTriggerExperiment(sessionId) == true
+    }
+
     private let id: String!
     private let pages: [UIPageBlock]!
     // use var instead of let, because to refer weak self.
@@ -290,8 +296,10 @@ class RootView: UIView {
         onEvent: ((_ action: UIBlockAction) -> Void)?,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil,
-        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil
+        onSizeChange: ((_ width: NubrickSize, _ height: NubrickSize) -> Void)? = nil,
+        sessionId: String? = nil
     ) {
+        self.sessionId = sessionId
         self.id = root?.id ?? ""
         self.container = container.makeContainer(
             experimentId: experimentId ?? container.experimentId,
@@ -329,6 +337,19 @@ class RootView: UIView {
         }
     }
 
+    private func handlePresentationDismissed(returnAction: UIBlockAction?) {
+        guard self.ownsSession else { return }
+        if returnAction?.destinationPageId == nil && self.modalViewController?.hasPresentedContent != true {
+            self.onDismiss()
+        }
+    }
+
+    private func dismissFlow() {
+        self.currentPageView = nil
+        self.modalViewController?.dismissModal()
+        self.onDismiss()
+    }
+
     // Canonical entrypoint for actions coming from UI gestures or bridge dispatch.
     func dispatchAction(_ action: UIBlockAction) {
         if let page = self.currentPageView {
@@ -357,6 +378,7 @@ class RootView: UIView {
     }
 
     func presentPage(pageId: String) {
+        guard self.ownsSession else { return }
         var page = self.pages.first { page in
             return pageId == page.id
         }
@@ -374,14 +396,13 @@ class RootView: UIView {
 
         // when there are no pages
         if page == nil {
+            self.dismissFlow()
             return
         }
 
         // when it's dismissed
         if page?.data?.kind == PageKind.DISMISSED {
-            self.currentPageView = nil
-            self.modalViewController?.dismissModal()
-            self.onDismiss()
+            self.dismissFlow()
             return
         }
 
@@ -402,8 +423,10 @@ class RootView: UIView {
                         )
                     ),
                     variableProvider: variableProvider
-                )
+                ),
+                onDismissed: { [weak self] in self?.handlePresentationDismissed(returnAction: onBackButtonClick) }
             )
+            if self.modalViewController?.hasPresentedContent != true { self.onDismiss() }
             return
         }
 
@@ -458,8 +481,10 @@ class RootView: UIView {
                 ),
                 onVisiblePageChanged: { [weak self] pageView in
                     self?.currentPageView = pageView
-                }
+                },
+                onDismissed: { [weak self] in self?.handlePresentationDismissed(returnAction: onBackButtonClick) }
             )
+            if self.modalViewController?.hasPresentedContent != true { self.onDismiss() }
         case .COMPONENT:
             // in case of embedding update size for swiftui
             let frameWidth = page?.data?.frameWidth ?? 0

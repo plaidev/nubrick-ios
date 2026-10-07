@@ -19,7 +19,7 @@ class TriggerViewController: UIViewController {
     private var modalViewController: ModalComponentViewController? = nil
     private var currentVC: ModalRootViewController? = nil
     private var onDispatch: ((_ event: NubrickEvent) -> Void)? = nil
-    private var onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)? = nil
+    private var onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?, _ sessionId: String) -> Void)? = nil
     private var didLoaded = false
     private var hasEnteredBackground = false
 
@@ -33,7 +33,7 @@ class TriggerViewController: UIViewController {
         container: Container,
         modalViewController: ModalComponentViewController?,
         onDispatch: ((_ event: NubrickEvent) -> Void)? = nil,
-        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)? = nil
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?, _ sessionId: String) -> Void)? = nil
     ) {
         self.user = user
         self.container = container
@@ -45,7 +45,7 @@ class TriggerViewController: UIViewController {
 
     func updateCallbacks(
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
-        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?, _ sessionId: String) -> Void)?
     ) {
         if let onDispatch {
             self.onDispatch = onDispatch
@@ -150,12 +150,16 @@ class TriggerViewController: UIViewController {
 
     @MainActor
     private func presentTriggerContent(_ content: FetchedTriggerContent) {
-        guard case .EUIRootBlock(let root) = content.block else { return }
-        if content.kind == .TOOLTIP,
-           let onTooltip = self.onTooltip,
-           let jsonData = try? JSONEncoder().encode(content.block),
-           let jsonString = String(data: jsonData, encoding: .utf8) {
-            onTooltip(jsonString, content.experimentId, content.variantId)
+        guard self.modalViewController?.hasActiveTriggerExperiment != true,
+              case .EUIRootBlock(let root) = content.block else { return }
+        if content.kind == .TOOLTIP {
+            guard let onTooltip = self.onTooltip,
+                  let modal = self.modalViewController else { return }
+            let session = UUID().uuidString
+            guard let jsonData = try? JSONEncoder().encode(content.block),
+                  let jsonString = String(data: jsonData, encoding: .utf8),
+                  modal.startTriggerExperiment(session) != nil else { return }
+            onTooltip(jsonString, content.experimentId, content.variantId, session)
             return
         }
         // No suspension between checking and claiming: completed fetches compete

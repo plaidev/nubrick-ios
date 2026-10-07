@@ -204,7 +204,7 @@ final class NubrickCore {
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
-        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?, _ sessionId: String) -> Void)?
     ) {
         let user = NubrickUser()
         let bridgeCallbackStore = BridgeCallbackStore(onEvent: onEvent)
@@ -250,7 +250,7 @@ final class NubrickCore {
     func updateBridgeCallbacks(
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
-        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?, _ sessionId: String) -> Void)?
     ) {
         if let onEvent {
             self.bridgeCallbackStore.onEvent = onEvent
@@ -293,8 +293,17 @@ final class NubrickCore {
         self.dependencies.user.getProperties()
     }
 
-    func appendTooltipExperimentHistory(experimentId: String, variantId: String) async {
+    func stopTooltipExperiment(sessionId: String) {
+        self.overlayVC.modalForTriggerViewController.stopTriggerExperiment(sessionId)
+    }
+
+    func appendTooltipExperimentHistory(experimentId: String, variantId: String, sessionId: String? = nil) async {
         guard !experimentId.isEmpty, !variantId.isEmpty else { return }
+        let modal = self.overlayVC.modalForTriggerViewController
+        if let sessionId, !modal.beginDisplayRecording(sessionId) { return }
+        defer {
+            if let sessionId { modal.finishDisplayRecording(sessionId) }
+        }
         guard await self.makeContainer().recordDisplayedTriggerContent(
             experimentId: experimentId,
             variantId: variantId
@@ -446,6 +455,7 @@ final class NubrickCore {
         json: String,
         experimentId: String? = nil,
         variantId: String? = nil,
+        sessionId: String? = nil,
         onEvent: ((_ event: ComponentEvent) -> Void)? = nil,
         onNextTooltip: ((_ pageId: String) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
@@ -454,20 +464,36 @@ final class NubrickCore {
             let decoder = JSONDecoder()
             let data = Data(json.utf8)
             let decoded = try decoder.decode(UIRootBlock.self, from: data)
+            let modal = sessionId == nil ? self.overlayVC.modalViewController : self.overlayVC.modalForTriggerViewController
+            if let sessionId, !modal.ownsTriggerExperiment(sessionId) {
+                onDismiss?()
+                return NubrickBridgedViewAccessor(uiview: UIView())
+            }
             return NubrickBridgedViewAccessor(rootView: RootView(
                 root: decoded,
                 experimentId: experimentId,
                 variantId: variantId,
                 container: self.makeContainer(),
                 arguments: nil,
-                modalViewController: self.overlayVC.modalViewController,
+                modalViewController: modal,
                 onEvent: { event in
                     onEvent?(convertEvent(event))
                 },
                 onNextTooltip: onNextTooltip,
-                onDismiss: onDismiss
+                onDismiss: {
+                    if let sessionId {
+                        guard modal.ownsTriggerExperiment(sessionId) else { return }
+                        modal.finishTriggerExperiment(sessionId)
+                    }
+                    onDismiss?()
+                },
+                sessionId: sessionId
             ))
         } catch {
+            if let sessionId {
+                self.overlayVC.modalForTriggerViewController.finishTriggerExperiment(sessionId)
+            }
+            onDismiss?()
             return NubrickBridgedViewAccessor(uiview: UIView())
         }
     }
@@ -513,7 +539,7 @@ public enum NubrickSDK {
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
-        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?, _ sessionId: String) -> Void)?
     ) -> Bool {
         guard runtime == nil else {
             nubrickWarn("NubrickSDK.initialize(...) called more than once. Ignoring subsequent call.")
@@ -544,7 +570,7 @@ public enum NubrickSDK {
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         trackCrashes: Bool,
-        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?) -> Void)?
+        onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?, _ sessionId: String) -> Void)?
     ) -> Bool {
         if runtime != nil {
             nubrickWarn("NubrickBridge.initialize(...) called more than once. Subsequent calls are ignored.")
@@ -692,13 +718,20 @@ public enum NubrickSDK {
         runtime.sendFlutterCrash(crashEvent)
     }
 
+    /// Flutter reports that it could not display or has stopped its tooltip UI.
     @_spi(FlutterBridge)
     @MainActor
-    public static func appendTooltipExperimentHistory(experimentId: String, variantId: String) async {
+    public static func stopTooltipExperiment(sessionId: String) {
+        requireRuntime()?.stopTooltipExperiment(sessionId: sessionId)
+    }
+
+    @_spi(FlutterBridge)
+    @MainActor
+    public static func appendTooltipExperimentHistory(experimentId: String, variantId: String, sessionId: String? = nil) async {
         guard let runtime = requireRuntime() else {
             return
         }
-        await runtime.appendTooltipExperimentHistory(experimentId: experimentId, variantId: variantId)
+        await runtime.appendTooltipExperimentHistory(experimentId: experimentId, variantId: variantId, sessionId: sessionId)
     }
 
     @available(*, deprecated, message: "NSException-based crash reporting has been replaced by MetricKit. This method no longer reports crashes. Crash reporting now happens automatically via MetricKit on iOS 14+.")
