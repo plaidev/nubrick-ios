@@ -126,7 +126,7 @@ class TriggerViewController: UIViewController {
     @MainActor
     func performDispatch(events: [NubrickEvent], sourceExperimentId: String? = nil) async {
         let recordedTriggers = await self.container.recordTriggerEvents(
-            triggers: events.map(\.name), sourceExperimentId: sourceExperimentId
+            events: events, sourceExperimentId: sourceExperimentId
         )
         for event in events {
             self.onDispatch?(event)

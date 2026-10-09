@@ -110,7 +110,7 @@ private func openLink(_ event: ComponentEvent) {
     UIApplication.shared.open(url)
 }
 
-private func nubrickWarn(_ message: String) {
+internal func nubrickWarn(_ message: String) {
     print("[Nubrick] \(message)")
 }
 
@@ -159,8 +159,23 @@ public struct ComponentEvent: Sendable {
 
 public struct NubrickEvent: Sendable {
     public let name: String
+
+    @_spi(ExperimentalEventProperties)
+    public let properties: [String: EventValue]
+
     public init(_ name: String) {
         self.name = name
+        self.properties = [:]
+    }
+
+    /// Native inputs are normalized to typed `EventValue` properties.
+    /// Supports Int/Int8/Int16/Int32/Int64, UInt/UInt8/UInt16/UInt32/UInt64, Float/Double/CGFloat,
+    /// String/NSString, Bool, Date/NSDate, NSNumber containing these scalar types, and EventValue.
+    @_spi(ExperimentalEventProperties)
+    public init(_ name: String, properties: [String: Any]) {
+        self.name = name
+        // Tracking enforces the encoded event size limit before queueing; no size check is needed here.
+        self.properties = normalizeEventProperties(properties)
     }
 }
 

@@ -144,7 +144,8 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
         return .failure(.notFound)
     }
 
-    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async -> [String] {
+    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [String] {
+        let triggers = events.map(\.name)
         await MainActor.run {
             self.recordedTriggers.append(contentsOf: triggers)
             self.recordedSources.append(sourceExperimentId)

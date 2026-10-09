@@ -189,6 +189,7 @@ struct TrackEvent: Codable {
         case Experiment = "experiment"
         case Crash = "crash"
     }
+    var properties: [String: EventValue]? = nil
     var typename: Typename
     var experimentId: String?
     var variantId: String?
@@ -264,6 +265,7 @@ struct TrackEventMeta: Codable, Equatable {
 struct TrackUserEvent {
     var name: String
     var experimentId: String? = nil
+    var properties: [String: EventValue]? = nil
 }
 
 struct TrackExperimentEvent {
@@ -653,6 +655,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
     
     func trackEvent(_ event: TrackUserEvent) async {
         await enqueue(TrackEvent(
+            properties: event.properties,
             typename: .Event,
             experimentId: event.experimentId,
             name: event.name,
