@@ -9,7 +9,7 @@ import CoreData
 import Foundation
 
 import XCTest
-@_spi(FlutterBridge) @testable import NubrickLocal
+@_spi(ExperimentalEventProperties) @_spi(FlutterBridge) @testable import NubrickLocal
 
 let HEALTH_CHECK_URL = "https://track.nativebrik.com/health"
 
@@ -226,6 +226,33 @@ private actor TrackingHTTPClientSpy: HTTPClient {
 }
 
 final class HttpRequestReposotiryTests: XCTestCase {
+    @MainActor
+    func testTrackingOutboxAppliesExistingEventSizeLimitToProperties() throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let outbox = TrackOutbox(persistentContainer: persistentContainer)
+        let key = "escaped\"🙂"
+        var tracked = makePendingTrackEvent(name: "purchase")
+        tracked.properties = [key: .string(""), "count": .integer(0)]
+        let encoder = JSONEncoder()
+        let available = 500 * 1024 - (try encoder.encode(tracked).count)
+        let value = String(repeating: "\"", count: available / 2) + String(repeating: "x", count: available % 2)
+        let event = NubrickEvent("purchase", properties: [key: value, "count": 0])
+        tracked.properties = event.properties
+        XCTAssertEqual(try encoder.encode(tracked).count, 500 * 1024)
+        XCTAssertNotNil(insertOutboxEvent(outbox, tracked, enqueuedAt: Date(timeIntervalSince1970: 1)))
+        let stored = try XCTUnwrap(outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).first)
+        XCTAssertEqual(stored.event.properties, event.properties)
+
+        let oversized = NubrickEvent("purchase", properties: [key: value + "x", "count": 0])
+        tracked.properties = oversized.properties
+        XCTAssertEqual(oversized.properties[key], .string(value + "x"))
+        XCTAssertEqual(try encoder.encode(tracked).count, 500 * 1024 + 1)
+        XCTAssertNil(insertOutboxEvent(outbox, tracked, enqueuedAt: Date(timeIntervalSince1970: 2)))
+        XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 1)
+    }
+
     @MainActor
     func testTrackingOutboxEvictsOnlyTheOldestEventAtCountLimit() throws {
         let storeURL = makeTemporaryStoreURL()
@@ -463,7 +490,11 @@ final class HttpRequestReposotiryTests: XCTestCase {
 
         let controller = TriggerViewController(user: user, container: container, modalViewController: nil)
         await controller.performDispatch(events: [event], sourceExperimentId: sourceExperimentId)
-        await controller.performDispatch(events: [NubrickEvent("public-event")])
+        var callbackEvent: NubrickEvent?
+        controller.updateCallbacks(onDispatch: { callbackEvent = $0 }, onTooltip: nil)
+        let publicDispatchedEvent = NubrickEvent("public-event", properties: ["amount": 12.5])
+        await controller.performDispatch(events: [publicDispatchedEvent])
+        XCTAssertEqual(callbackEvent?.properties, ["amount": .float(12.5)])
         await repository.flushNow()
 
         let requests = await client.recordedRequests()
@@ -478,6 +509,10 @@ final class HttpRequestReposotiryTests: XCTestCase {
         XCTAssertEqual(actionEvent["experimentId"] as? String, "source-experiment")
         let publicEvent = try XCTUnwrap(events.first { $0["name"] as? String == "public-event" })
         XCTAssertNil(publicEvent["experimentId"])
+        let properties = try XCTUnwrap(publicEvent["properties"] as? [String: Any])
+        let amount = try XCTUnwrap(properties["amount"] as? [String: Any])
+        XCTAssertEqual(amount["type"] as? String, "float")
+        XCTAssertEqual(amount["value"] as? Double, 12.5)
     }
 
     @MainActor

@@ -1,4 +1,4 @@
-import Nubrick
+@_spi(ExperimentalEventProperties) import Nubrick
 import SwiftUI
 
 struct ContentView: View {
@@ -7,6 +7,20 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 NubrickSDK.embedding("HEADER_INFORMATION")
                 NubrickSDK.embedding("TOP_COMPONENT")
+                Button("Send event with properties") {
+                    NubrickSDK.dispatch(NubrickEvent(
+                        "example_purchase",
+                        properties: [
+                            "item_id": "example-item",
+                            "price": 19.99,
+                            "quantity": 2,
+                            "is_test": true,
+                            "sent_at": Date(),
+                        ]
+                    ))
+                }
+                .buttonStyle(.borderedProminent)
+                .padding()
             }
         }
     }

@@ -57,7 +57,7 @@ protocol Container : Sendable {
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
     func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
     func fetchTriggerContent(triggers: [String], kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
-    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async -> [String]
+    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [String]
     func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
@@ -252,12 +252,16 @@ final class ContainerImpl: Container {
         }
     }
 
-    func recordTriggerEvents(triggers: [String], sourceExperimentId: String?) async -> [String] {
+    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [String] {
         var recordedTriggers = [String]()
-        for trigger in triggers {
-            await self.trackRepository.trackEvent(TrackUserEvent(name: trigger, experimentId: sourceExperimentId))
-            if await self.databaseRepository.appendUserEvent(name: trigger) {
-                recordedTriggers.append(trigger)
+        for event in events {
+            await self.trackRepository.trackEvent(TrackUserEvent(
+                name: event.name,
+                experimentId: sourceExperimentId,
+                properties: event.properties.isEmpty ? nil : event.properties
+            ))
+            if await self.databaseRepository.appendUserEvent(name: event.name) {
+                recordedTriggers.append(event.name)
             }
         }
         return recordedTriggers
