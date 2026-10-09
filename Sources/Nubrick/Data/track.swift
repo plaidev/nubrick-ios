@@ -189,7 +189,7 @@ struct TrackEvent: Codable {
         case Experiment = "experiment"
         case Crash = "crash"
     }
-    var properties: [String: EventValue]? = nil
+    var properties: [String: EventPropertyValue]? = nil
     var typename: Typename
     var experimentId: String?
     var variantId: String?
@@ -265,7 +265,7 @@ struct TrackEventMeta: Codable, Equatable {
 struct TrackUserEvent {
     var name: String
     var experimentId: String? = nil
-    var properties: [String: EventValue]? = nil
+    var properties: [String: EventPropertyValue]? = nil
 }
 
 struct TrackExperimentEvent {

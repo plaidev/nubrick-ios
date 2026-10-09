@@ -3,7 +3,7 @@ import CoreFoundation
 
 /// Canonical, immutable event property values
 @_spi(ExperimentalEventProperties)
-public enum EventValue: Sendable, Equatable, Codable {
+public enum EventPropertyValue: Sendable, Equatable, Codable {
     case integer(Int64)
     case float(Double)
     case string(String)
@@ -66,8 +66,8 @@ public enum EventValue: Sendable, Equatable, Codable {
     }
 }
 
-private func normalizedEventProperty(_ value: Any) -> EventValue? {
-    if let value = value as? EventValue {
+private func normalizedEventProperty(_ value: Any) -> EventPropertyValue? {
+    if let value = value as? EventPropertyValue {
         switch value {
         case .integer, .boolean, .string: return value
         case .float(let number): return number.isFinite ? value : nil
@@ -83,11 +83,11 @@ private func normalizedEventProperty(_ value: Any) -> EventValue? {
     }
     switch type(of: value) {
     case is Bool.Type:
-        return (value as? Bool).map(EventValue.boolean)
+        return (value as? Bool).map(EventPropertyValue.boolean)
     case is Int.Type, is Int8.Type, is Int16.Type, is Int32.Type, is Int64.Type,
          is UInt.Type, is UInt8.Type, is UInt16.Type, is UInt32.Type, is UInt64.Type:
         guard let integer = value as? any BinaryInteger else { return nil }
-        return Int64(exactly: integer).map(EventValue.integer)
+        return Int64(exactly: integer).map(EventPropertyValue.integer)
     case is Float.Type, is Double.Type, is CGFloat.Type:
         guard let number = value as? any BinaryFloatingPoint else { return nil }
         let double = Double(number)
@@ -101,7 +101,7 @@ private func normalizedEventProperty(_ value: Any) -> EventValue? {
     guard !(number is NSDecimalNumber) else { return nil }
     switch String(cString: number.objCType) {
     case "c", "s", "i", "l", "q": return .integer(number.int64Value)
-    case "C", "S", "I", "L", "Q": return Int64(exactly: number.uint64Value).map(EventValue.integer)
+    case "C", "S", "I", "L", "Q": return Int64(exactly: number.uint64Value).map(EventPropertyValue.integer)
     case "f", "d": return number.doubleValue.isFinite ? .float(number.doubleValue) : nil
     default: return nil
     }
@@ -138,8 +138,8 @@ private func eventTimestampDate(_ text: String) -> Date? {
     return eventTimestampString(date) == nil ? nil : date
 }
 
-internal func normalizeEventProperties(_ input: [String: Any]) -> [String: EventValue] {
-    var values: [String: EventValue] = [:]
+internal func normalizeEventProperties(_ input: [String: Any]) -> [String: EventPropertyValue] {
+    var values: [String: EventPropertyValue] = [:]
     var omittedProperty = false
     for (key, rawValue) in input {
         guard let property = normalizedEventProperty(rawValue) else {

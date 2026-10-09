@@ -161,16 +161,16 @@ public struct NubrickEvent: Sendable {
     public let name: String
 
     @_spi(ExperimentalEventProperties)
-    public let properties: [String: EventValue]
+    public let properties: [String: EventPropertyValue]
 
     public init(_ name: String) {
         self.name = name
         self.properties = [:]
     }
 
-    /// Native inputs are normalized to typed `EventValue` properties.
+    /// Native inputs are normalized to typed `EventPropertyValue` properties.
     /// Supports Int/Int8/Int16/Int32/Int64, UInt/UInt8/UInt16/UInt32/UInt64, Float/Double/CGFloat,
-    /// String/NSString, Bool, Date/NSDate, NSNumber containing these scalar types, and EventValue.
+    /// String/NSString, Bool, Date/NSDate, NSNumber containing these scalar types, and EventPropertyValue.
     @_spi(ExperimentalEventProperties)
     public init(_ name: String, properties: [String: Any]) {
         self.name = name
