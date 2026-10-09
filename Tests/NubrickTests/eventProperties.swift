@@ -12,7 +12,7 @@ final class EventPropertiesTests: XCTestCase {
             "date": Date(timeIntervalSince1970: 0),
         ])
         let data = try JSONEncoder().encode(event.properties)
-        let decoded = try JSONDecoder().decode([String: EventValue].self, from: data)
+        let decoded = try JSONDecoder().decode([String: EventPropertyValue].self, from: data)
         XCTAssertEqual(decoded["amount"], .float(19.99))
         XCTAssertEqual(decoded["count"], .integer(2))
         XCTAssertEqual(decoded["paid"], .boolean(true))
@@ -72,7 +72,7 @@ final class EventPropertiesTests: XCTestCase {
             ("property_\($0)", String(repeating: "x", count: 32))
         })
         XCTAssertEqual(NubrickEvent("e", properties: properties).properties,
-            properties.mapValues(EventValue.string))
+            properties.mapValues(EventPropertyValue.string))
     }
 
     func testFoundationPropertiesAreCopiedIntoImmutableValues() throws {
@@ -94,7 +94,7 @@ final class EventPropertiesTests: XCTestCase {
         XCTAssertEqual(event.properties["number"], .integer(1))
         XCTAssertEqual(event.properties["flag"], .boolean(true))
         XCTAssertEqual(event.properties["date"], .timestamp(Date(timeIntervalSince1970: 0)))
-        let decoded = try JSONDecoder().decode([String: EventValue].self, from: encoded)
+        let decoded = try JSONDecoder().decode([String: EventPropertyValue].self, from: encoded)
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         XCTAssertEqual(try encoder.encode(event.properties), try encoder.encode(decoded))
@@ -148,9 +148,9 @@ final class EventPropertiesTests: XCTestCase {
 
     func testTypedInputsAreValidated() {
         let event = NubrickEvent("e", properties: [
-            "nan": EventValue.float(.nan), "infinity": EventValue.float(.infinity),
-            "date": EventValue.timestamp(Date(timeIntervalSinceReferenceDate: .infinity)),
-            "valid": EventValue.integer(7),
+            "nan": EventPropertyValue.float(.nan), "infinity": EventPropertyValue.float(.infinity),
+            "date": EventPropertyValue.timestamp(Date(timeIntervalSinceReferenceDate: .infinity)),
+            "valid": EventPropertyValue.integer(7),
         ])
         XCTAssertEqual(event.properties, ["valid": .integer(7)])
     }
@@ -184,7 +184,7 @@ final class EventPropertiesTests: XCTestCase {
             "2026-10-09T00:00:00.Z", "2026-10-09T00:00:00.1e-1Z", "2026-10-09T00:00:00.NaNZ",
             "2026-10-09T00:00:00.1e999Z"] {
             let data = try JSONSerialization.data(withJSONObject: ["type": "timestamp", "value": timestamp])
-            XCTAssertThrowsError(try JSONDecoder().decode(EventValue.self, from: data), timestamp)
+            XCTAssertThrowsError(try JSONDecoder().decode(EventPropertyValue.self, from: data), timestamp)
         }
     }
 
@@ -204,7 +204,7 @@ final class EventPropertiesTests: XCTestCase {
             "false": false,
             "true": true,
         ])
-        let expected: [String: EventValue] = [
+        let expected: [String: EventPropertyValue] = [
             "min": .integer(Int64.min),
             "max": .integer(Int64.max),
             "unsigned": .integer(Int64.max),
