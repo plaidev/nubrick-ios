@@ -241,12 +241,12 @@ private func isInDistributionSync(distribution: [ExperimentCondition], propertie
         guard let prop = props[propKey] else {
             return true
         }
-        return !comparePropWithConditionValue(prop: prop, asType: condition.asType, value: conditionValue, op: parsedOp)
+        return !compareUserPropertyWithConditionValue(prop: prop, asType: condition.asType, value: conditionValue, op: parsedOp)
     }
     return foundNotMatched == nil
 }
 
-func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?, value: String, op: ConditionOperator) -> Bool {
+func compareUserPropertyWithConditionValue(prop: UserProperty, asType: UserPropertyType?, value: String, op: ConditionOperator) -> Bool {
     // Regex conditions are a single raw pattern, so commas are meaningful pattern
     // characters rather than list delimiters.
     let values: [Substring] = op == .Regex
