@@ -125,7 +125,7 @@ class TriggerViewController: UIViewController {
 
     @MainActor
     func performDispatch(events: [NubrickEvent], sourceExperimentId: String? = nil) async {
-        let recordedTriggers = await self.container.recordTriggerEvents(
+        let recordedEvents = await self.container.recordTriggerEvents(
             events: events, sourceExperimentId: sourceExperimentId
         )
         for event in events {
@@ -135,14 +135,14 @@ class TriggerViewController: UIViewController {
             print("nativebrik.dispatch should be called after nativebrik.overlay did load")
             return
         }
-        if self.modalViewController?.hasActiveTriggerExperiment == true || recordedTriggers.isEmpty {
+        if self.modalViewController?.hasActiveTriggerExperiment == true || recordedEvents.isEmpty {
             return
         }
         // onTooltip is only set in the Flutter SDK. Tooltips are a Flutter-only feature,
         // so we fetch both popups and tooltips when running in Flutter, and popups only otherwise.
         let kinds: [ExperimentKind] = self.onTooltip != nil ? [.POPUP, .TOOLTIP] : [.POPUP]
         guard case .success(let content) = await self.container.fetchTriggerContent(
-            triggers: recordedTriggers,
+            events: recordedEvents,
             kinds: kinds
         ) else { return }
         self.presentTriggerContent(content)

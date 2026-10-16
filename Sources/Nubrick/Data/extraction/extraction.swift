@@ -79,7 +79,8 @@ func extractExperimentConfigMatchedToProperties(
     kinds: [ExperimentKind],
     properties: (_ seed: Int) async -> [UserProperty],
     isNotInFrequency: (_ experimentId: String, _ frequency: ExperimentFrequency?) async -> Bool,
-    isMatchedToUserEventFrequencyConditions: (_ conditions: [UserEventFrequencyCondition]?) async -> Bool
+    isMatchedToUserEventFrequencyConditions: (_ conditions: [UserEventFrequencyCondition]?) async -> Bool,
+    triggerEvent: NubrickEvent? = nil
 ) async -> ExperimentConfig? {
     guard let configs = configs.configs else {
         return nil
@@ -116,6 +117,13 @@ func extractExperimentConfigMatchedToProperties(
         if !(await isMatchedToUserEventFrequencyConditions(config.eventFrequencyConditions)) {
             continue
         }
+        if let triggerEvent,
+           !isMatchedToTriggerEventPropertyConditions(
+                config.triggerEventPropertyConditions,
+                properties: triggerEvent.properties
+           ) {
+            continue
+        }
         if let distribution = config.distribution {
             if await !isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0)) {
                 continue
@@ -125,6 +133,66 @@ func extractExperimentConfigMatchedToProperties(
     }
     return matched.max { current, candidate in
         isExperimentConfigPreferred(candidate, over: current)
+    }
+}
+
+func isMatchedToTriggerEventPropertyConditions(
+    _ conditions: [EventPropertyCondition]?,
+    properties: [String: EventPropertyValue]
+) -> Bool {
+    guard let conditions, !conditions.isEmpty else { return true }
+    return conditions.allSatisfy { condition in
+        guard let name = condition.property,
+              let eventProperty = properties[name],
+              let conditionValue = condition.value,
+              let op = condition.operator,
+              op != .unknown else {
+            return false
+        }
+        return compareEventPropertyWithConditionValue(property: eventProperty, asType: condition.asType, conditionValue: conditionValue, op: op)
+    }
+}
+
+private func compareEventPropertyWithConditionValue(
+    property: EventPropertyValue,
+    asType: EventPropertyConditionType?,
+    conditionValue: String,
+    op: ConditionOperator
+) -> Bool {
+    let propertyValueString: String
+    let nativeType: EventPropertyConditionType
+    switch property {
+    case .integer(let propertyValue): (propertyValueString, nativeType) = (String(propertyValue), .INTEGER)
+    case .float(let propertyValue): (propertyValueString, nativeType) = (String(propertyValue), .FLOAT)
+    case .string(let propertyValue): (propertyValueString, nativeType) = (propertyValue, .STRING)
+    case .boolean(let propertyValue): (propertyValueString, nativeType) = (String(propertyValue), .BOOLEAN)
+    case .timestamp(let propertyValue): (propertyValueString, nativeType) = (propertyValue.ISO8601Format(), .TIMESTAMP)
+    }
+    let values = op == .Regex ? [conditionValue] : conditionValue.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+    switch asType ?? nativeType {
+    case .INTEGER:
+        guard let actual = Int(propertyValueString.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
+        let expected = values.compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        guard expected.count == values.count else { return false }
+        return compareInteger(a: actual, b: expected, op: op)
+    case .FLOAT:
+        guard let actual = Double(propertyValueString.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
+        let expected = values.compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        guard expected.count == values.count else { return false }
+        return compareDouble(a: actual, b: expected, op: op)
+    case .STRING:
+        return compareString(a: propertyValueString, b: values, op: op)
+    case .BOOLEAN:
+        let strings = values.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        guard !strings.contains(where: { $0.isEmpty }) else { return false }
+        return compareBoolean(a: parseStringToBoolean(propertyValueString), b: strings.map { parseStringToBoolean($0) }, op: op)
+    case .TIMESTAMP:
+        guard let actual = parseTimestampZAsUnixSeconds(propertyValueString) else { return false }
+        let expected = values.compactMap { parseTimestampZAsUnixSeconds($0) }
+        guard expected.count == values.count else { return false }
+        return compareDouble(a: actual, b: expected, op: op)
+    case .unknown:
+        return false
     }
 }
 

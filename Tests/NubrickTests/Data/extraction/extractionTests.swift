@@ -6,9 +6,34 @@
 //
 
 import XCTest
-@testable import NubrickLocal
+@_spi(ExperimentalEventProperties) @testable import NubrickLocal
 
 final class ExtractionTests: XCTestCase {
+    func testTriggerPropertiesHandleMissingConditionsAndInvalidValues() {
+        let properties = NubrickEvent("test", properties: ["amount": "12.5", "count": 3]).properties
+        XCTAssertTrue(isMatchedToTriggerEventPropertyConditions(nil, properties: [:]))
+        XCTAssertTrue(isMatchedToTriggerEventPropertyConditions([], properties: [:]))
+        XCTAssertTrue(isMatchedToTriggerEventPropertyConditions([
+            EventPropertyCondition(property: "amount", asType: .FLOAT, operator: .GreaterThan, value: "10"),
+            EventPropertyCondition(property: "count", operator: .Equal, value: "3"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .In, value: "1,3"),
+            EventPropertyCondition(property: "amount", asType: .STRING, operator: .Regex, value: "^[0-9]{1,2}[.]5$"),
+        ], properties: properties))
+        for condition in [
+            EventPropertyCondition(property: "missing", asType: .STRING, operator: .NotEqual, value: "x"),
+            EventPropertyCondition(property: "amount", asType: .INTEGER, operator: .Equal, value: "12"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .Equal, value: "invalid"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .In, value: "3,invalid"),
+            EventPropertyCondition(property: "count", asType: .unknown, operator: .Equal, value: "3"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .unknown, value: "3"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, value: "3"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .Equal),
+            EventPropertyCondition(asType: .INTEGER, operator: .Equal, value: "3"),
+        ] {
+            XCTAssertFalse(isMatchedToTriggerEventPropertyConditions([condition], properties: properties), "\(condition)")
+        }
+    }
+
     func testExtractComponentIdShouldReturnTheFirst() throws {
         let expected = "HELLO_WORLD"
         let actual = extractComponentId(variant: ExperimentVariant(
