@@ -58,7 +58,7 @@ public enum EventPropertyValue: Sendable, Equatable, Codable {
         case .timestamp(let value):
             guard let text = eventTimestampString(value) else {
                 throw EncodingError.invalidValue(value, .init(codingPath: encoder.codingPath,
-                    debugDescription: "Timestamp cannot be encoded without losing information"))
+                    debugDescription: "Timestamp is outside the supported date range"))
             }
             try container.encode(PropertyType.timestamp, forKey: .type)
             try container.encode(text, forKey: .value)
@@ -78,8 +78,8 @@ private func normalizedEventProperty(_ value: Any) -> EventPropertyValue? {
         return .string(value)
     }
     if let value = value as? Date {
-        guard eventTimestampString(value) != nil else { return nil }
-        return .timestamp(value)
+        guard let text = eventTimestampString(value), let date = eventTimestampDate(text) else { return nil }
+        return .timestamp(date)
     }
     switch type(of: value) {
     case is Bool.Type:
@@ -107,34 +107,43 @@ private func normalizedEventProperty(_ value: Any) -> EventPropertyValue? {
     }
 }
 
-/// Keep fractional seconds and verify that formatting preserves the original Date value.
-private func eventTimestampString(_ date: Date) -> String? {
+/// Limit fractional seconds to nanoseconds, matching Android's Instant representation.
+func eventTimestampString(_ date: Date) -> String? {
     let seconds = date.timeIntervalSinceReferenceDate
     guard seconds.isFinite,
           date >= Date(timeIntervalSince1970: -62_135_596_800),
           date < Date(timeIntervalSince1970: 253_402_300_800) else { return nil }
-    let wholeSeconds = floor(seconds)
+    var wholeSeconds = floor(seconds)
     let fraction = seconds - wholeSeconds
+    var nanoseconds = Int((fraction * 1_000_000_000).rounded(.toNearestOrEven))
+    if nanoseconds == 1_000_000_000 {
+        wholeSeconds += 1
+        nanoseconds = 0
+    }
     let base = Date(timeIntervalSinceReferenceDate: wholeSeconds).ISO8601Format()
-    guard fraction != 0 else { return base }
-    var fractionText = String(format: "%.17f", locale: Locale(identifier: "en_US_POSIX"), fraction)
+    guard nanoseconds != 0 else { return base }
+    var fractionText = String(format: "%09ld", nanoseconds)
     while fractionText.last == "0" { fractionText.removeLast() }
-    guard let recoveredFraction = Double(fractionText),
-          Date(timeIntervalSinceReferenceDate: wholeSeconds + recoveredFraction) == date else { return nil }
-    return String(base.dropLast()) + String(fractionText.dropFirst()) + "Z"
+    return String(base.dropLast()) + "." + fractionText + "Z"
 }
 
-// Parse whole seconds and the fraction separately to retain Date's original precision.
 private func eventTimestampDate(_ text: String) -> Date? {
     guard text.hasSuffix("Z") else { return nil }
     let parts = text.dropLast().split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
-    guard let wholeSeconds = parts.first,
-          let base = ISO8601DateFormatter().date(from: String(wholeSeconds) + "Z"),
-          base.ISO8601Format() == String(wholeSeconds) + "Z",
-          parts.count == 1 || (!parts[1].isEmpty && parts[1].allSatisfy { $0.isASCII && $0.isNumber }),
-          let fraction = parts.count == 2 ? Double("0." + parts[1]) : 0,
-          fraction.isFinite, (0..<1).contains(fraction) else { return nil }
-    let date = Date(timeIntervalSinceReferenceDate: base.timeIntervalSinceReferenceDate + fraction)
+    guard let wholeSecondsText = parts.first else { return nil }
+    let hasFractionalSeconds = parts.count == 2
+
+    if hasFractionalSeconds {
+        let fractionalDigits = parts[1]
+        guard !fractionalDigits.isEmpty,
+              fractionalDigits.count <= 9,
+              fractionalDigits.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
+    }
+
+    let format = Date.ISO8601FormatStyle(includingFractionalSeconds: hasFractionalSeconds)
+    guard let date = try? Date(text, strategy: format) else { return nil }
+
+    guard date.ISO8601Format() == String(wholeSecondsText) + "Z" else { return nil }
     return eventTimestampString(date) == nil ? nil : date
 }
 

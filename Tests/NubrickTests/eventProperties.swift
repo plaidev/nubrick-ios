@@ -155,13 +155,16 @@ final class EventPropertiesTests: XCTestCase {
         XCTAssertEqual(event.properties, ["valid": .integer(7)])
     }
 
-    func testTimestampOutputPreservesNativeDatesAndFractionalSeconds() throws {
+    func testTimestampOutputPreservesNanosecondPrecision() throws {
         for seconds in [0.0, -0.125, 0.125, 123_456.123456789, 800_000_000.123456789,
             Date(timeIntervalSince1970: -62_135_596_800).timeIntervalSinceReferenceDate,
             Date(timeIntervalSince1970: 253_402_300_799.125).timeIntervalSinceReferenceDate] {
             let date = Date(timeIntervalSinceReferenceDate: seconds)
             let event = NubrickEvent("e", properties: ["at": date])
-            XCTAssertEqual(event.properties["at"], .timestamp(date))
+            guard case .timestamp(let normalizedDate) = try XCTUnwrap(event.properties["at"]) else {
+                return XCTFail("Expected a timestamp")
+            }
+            XCTAssertEqual(normalizedDate.timeIntervalSinceReferenceDate, seconds, accuracy: max(0.5e-9, seconds.ulp))
             let stored = TrackEvent(properties: event.properties, typename: .Event,
                 name: event.name, timestamp: "2026-09-29T00:00:00Z", eventUuid: "uuid")
             let encoder = JSONEncoder()
@@ -171,18 +174,44 @@ final class EventPropertiesTests: XCTestCase {
             let properties = try XCTUnwrap(json["properties"] as? [String: [String: Any]])
             let timestamp = try XCTUnwrap(properties["at"]?["value"] as? String)
             XCTAssertTrue(timestamp.hasSuffix("Z"))
+            if let decimal = timestamp.firstIndex(of: ".") {
+                XCTAssertLessThanOrEqual(timestamp[decimal...].count - 2, 9)
+            }
             XCTAssertEqual(properties["at"]?["type"] as? String, "timestamp")
             let reloaded = try JSONDecoder().decode(TrackEvent.self, from: payload)
-            XCTAssertEqual(reloaded.properties?["at"], .timestamp(date))
+            XCTAssertEqual(reloaded.properties?["at"], event.properties["at"])
             XCTAssertEqual(try encoder.encode(reloaded), payload)
         }
-        XCTAssertTrue(NubrickEvent("e", properties: ["at": Date(timeIntervalSinceReferenceDate: Double.leastNonzeroMagnitude)]).properties.isEmpty)
+    }
+
+    func testTimestampNormalizationRoundsToNanoseconds() throws {
+        for (seconds, expected) in [
+            (0.000000001, "2001-01-01T00:00:00.000000001Z"),
+            (0.0009765625, "2001-01-01T00:00:00.000976562Z"),
+            (0.0029296875, "2001-01-01T00:00:00.002929688Z"),
+            (0.123456789123, "2001-01-01T00:00:00.123456789Z"),
+            (0.1234567899, "2001-01-01T00:00:00.12345679Z"),
+            (0.9999999999, "2001-01-01T00:00:01Z"),
+            (-0.0000000001, "2001-01-01T00:00:00Z"),
+            (Double.leastNonzeroMagnitude, "2001-01-01T00:00:00Z"),
+        ] {
+            let date = Date(timeIntervalSinceReferenceDate: seconds)
+            XCTAssertEqual(eventTimestampString(date), expected)
+            let normalized = try XCTUnwrap(NubrickEvent("e", properties: ["at": date]).properties["at"])
+            XCTAssertEqual(NubrickEvent("e", properties: ["at": EventPropertyValue.timestamp(date)]).properties["at"], normalized)
+            let encoded = try JSONEncoder().encode(normalized)
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: String])
+            XCTAssertEqual(json["value"], expected)
+            XCTAssertEqual(try JSONDecoder().decode(EventPropertyValue.self, from: encoded), normalized)
+            XCTAssertEqual(try JSONDecoder().decode(EventPropertyValue.self, from: JSONEncoder().encode(EventPropertyValue.timestamp(date))), normalized)
+        }
     }
 
     func testInvalidTimestampJSONIsRejected() throws {
         for timestamp in ["", "Z", "invalid", "2026-02-30T00:00:00Z", "2026-10-09T00:00:00ZjunkZ",
             "2026-10-09T00:00:00.Z", "2026-10-09T00:00:00.1e-1Z", "2026-10-09T00:00:00.NaNZ",
-            "2026-10-09T00:00:00.1e999Z"] {
+            "2026-10-09T00:00:00.1e999Z", "2001-01-01T00:00:00.1234567890Z",
+            "2001-01-01T00:00:00.123456789123Z", "2026-05-09T06:13:20.123456835746765Z"] {
             let data = try JSONSerialization.data(withJSONObject: ["type": "timestamp", "value": timestamp])
             XCTAssertThrowsError(try JSONDecoder().decode(EventPropertyValue.self, from: data), timestamp)
         }
