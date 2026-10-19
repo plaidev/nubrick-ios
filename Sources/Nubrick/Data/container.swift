@@ -55,9 +55,8 @@ protocol Container : Sendable {
 
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
-    func fetchTriggerContent(trigger: String, kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
-    func fetchTriggerContent(triggers: [String], kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
-    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [String]
+    func fetchTriggerContent(events: [NubrickEvent], kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
+    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [NubrickEvent]
     func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
@@ -252,8 +251,8 @@ final class ContainerImpl: Container {
         }
     }
 
-    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [String] {
-        var recordedTriggers = [String]()
+    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [NubrickEvent] {
+        var recordedEvents = [NubrickEvent]()
         for event in events {
             await self.trackRepository.trackEvent(TrackUserEvent(
                 name: event.name,
@@ -261,10 +260,10 @@ final class ContainerImpl: Container {
                 properties: event.properties.isEmpty ? nil : event.properties
             ))
             if await self.databaseRepository.appendUserEvent(name: event.name) {
-                recordedTriggers.append(event.name)
+                recordedEvents.append(event)
             }
         }
-        return recordedTriggers
+        return recordedEvents
     }
 
     func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool {
@@ -275,23 +274,17 @@ final class ContainerImpl: Container {
     }
 
     func fetchTriggerContent(
-        trigger: String,
-        kinds: [ExperimentKind]
-    ) async -> Result<FetchedTriggerContent, NubrickError> {
-        await self.fetchTriggerContent(
-            triggers: [trigger],
-            kinds: kinds
-        )
-    }
-
-    func fetchTriggerContent(
-        triggers: [String],
+        events: [NubrickEvent],
         kinds: [ExperimentKind]
     ) async -> Result<FetchedTriggerContent, NubrickError> {
         var selected: ExtractedVariant?
-        for trigger in triggers {
-            guard case .success(let configs) = await self.experimentRepository.fetchTriggerExperimentConfigs(name: trigger),
-                  case .success(let extracted) = await self.extractVariant(configs: configs, kinds: kinds) else {
+        for event in events {
+            guard case .success(let configs) = await self.experimentRepository.fetchTriggerExperimentConfigs(name: event.name),
+                  case .success(let extracted) = await self.extractVariant(
+                    configs: configs,
+                    kinds: kinds,
+                    triggerEvent: event
+                  ) else {
                 continue
             }
             if selected == nil || isExperimentConfigPreferred(extracted.config, over: selected!.config) {
@@ -351,7 +344,11 @@ final class ContainerImpl: Container {
         return Result.success((extracted.experimentId, extracted.variant))
     }
 
-    private func extractVariant(configs: ExperimentConfigs, kinds: [ExperimentKind]) async -> Result<ExtractedVariant, NubrickError> {
+    private func extractVariant(
+        configs: ExperimentConfigs,
+        kinds: [ExperimentKind],
+        triggerEvent: NubrickEvent? = nil
+    ) async -> Result<ExtractedVariant, NubrickError> {
         guard let config = await extractExperimentConfigMatchedToProperties(
             configs: configs,
             kinds: kinds,
@@ -371,7 +368,8 @@ final class ContainerImpl: Container {
                     }
                 }
                 return true
-            }
+            },
+            triggerEvent: triggerEvent
         ) else {
             return Result.failure(NubrickError.notFound)
         }

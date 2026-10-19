@@ -2,7 +2,7 @@ import Combine
 import XCTest
 import UIKit
 import SafariServices
-@testable import NubrickLocal
+@_spi(ExperimentalEventProperties) @testable import NubrickLocal
 
 @MainActor
 private final class TriggerModalSpy: ModalComponentViewController {
@@ -23,6 +23,7 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
     let variantId: String? = nil
 
     @MainActor var onFetchTriggers: (([String]) -> Void)?
+    @MainActor var fetchedEvents = [NubrickEvent]()
     @MainActor var onPopupFetchPaused: (() -> Void)?
     @MainActor var onTriggerRecordingPaused: (() -> Void)?
     @MainActor var onDisplayRecordingPaused: (() -> Void)?
@@ -105,9 +106,17 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
     }
 
     func fetchTriggerContent(
-        trigger: String,
+        events: [NubrickEvent],
         kinds: [ExperimentKind]
     ) async -> Result<FetchedTriggerContent, NubrickError> {
+        await MainActor.run {
+            self.fetchedEvents.append(contentsOf: events)
+            onFetchTriggers?(events.map(\.name))
+        }
+        guard let event = events.first(where: { $0.name.hasPrefix("popup-") || $0.name == "tooltip-trigger" }) else {
+            return .failure(.notFound)
+        }
+        let trigger = event.name
         if trigger.hasPrefix("popup-") {
             await MainActor.run { self.popupFetches.append(trigger) }
             if trigger == "popup-first" { await self.pauseFirstFetch() }
@@ -133,18 +142,7 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
         ))
     }
 
-    func fetchTriggerContent(
-        triggers: [String],
-        kinds: [ExperimentKind]
-    ) async -> Result<FetchedTriggerContent, NubrickError> {
-        await MainActor.run { onFetchTriggers?(triggers) }
-        if let trigger = triggers.first(where: { $0.hasPrefix("popup-") || $0 == "tooltip-trigger" }) {
-            return await self.fetchTriggerContent(trigger: trigger, kinds: kinds)
-        }
-        return .failure(.notFound)
-    }
-
-    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [String] {
+    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [NubrickEvent] {
         let triggers = events.map(\.name)
         await MainActor.run {
             self.recordedTriggers.append(contentsOf: triggers)
@@ -153,7 +151,7 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
         if await MainActor.run(body: { self.shouldPauseTriggerRecording }) {
             await self.pauseTriggerRecording()
         }
-        return await MainActor.run { triggers.filter { !self.failedTriggers.contains($0) } }
+        return await MainActor.run { events.filter { !self.failedTriggers.contains($0.name) } }
     }
 
     @MainActor
@@ -449,16 +447,18 @@ final class TriggerViewControllerTests: XCTestCase {
             dispatched.removeAll()
             container.recordedTriggers.removeAll()
             container.failedTriggers = ["popup-failed"]
+            container.fetchedEvents.removeAll()
             var fetched = [[String]]()
             container.onFetchTriggers = { fetched.append($0) }
 
-            await controller.performDispatch(events: names.map { NubrickEvent($0) })
+            await controller.performDispatch(events: names.map { NubrickEvent($0, properties: ["value": $0]) })
 
             XCTAssertEqual(dispatched, names)
             XCTAssertEqual(container.recordedTriggers, names)
             let successful = names.filter { $0 != "popup-failed" }
             XCTAssertEqual(fetched, successful.isEmpty ? [] : [successful])
             XCTAssertEqual(container.popupFetches, successful)
+            XCTAssertEqual(container.fetchedEvents.map(\.properties), successful.map { ["value": EventPropertyValue.string($0)] })
             XCTAssertEqual(modal.presentations.count, successful.isEmpty ? 0 : 1)
         }
     }

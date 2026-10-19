@@ -79,7 +79,8 @@ func extractExperimentConfigMatchedToProperties(
     kinds: [ExperimentKind],
     properties: (_ seed: Int) async -> [UserProperty],
     isNotInFrequency: (_ experimentId: String, _ frequency: ExperimentFrequency?) async -> Bool,
-    isMatchedToUserEventFrequencyConditions: (_ conditions: [UserEventFrequencyCondition]?) async -> Bool
+    isMatchedToUserEventFrequencyConditions: (_ conditions: [UserEventFrequencyCondition]?) async -> Bool,
+    triggerEvent: NubrickEvent? = nil
 ) async -> ExperimentConfig? {
     guard let configs = configs.configs else {
         return nil
@@ -116,6 +117,13 @@ func extractExperimentConfigMatchedToProperties(
         if !(await isMatchedToUserEventFrequencyConditions(config.eventFrequencyConditions)) {
             continue
         }
+        if let triggerEvent,
+           !isMatchedToTriggerEventPropertyConditions(
+                config.triggerEventPropertyConditions,
+                properties: triggerEvent.properties
+           ) {
+            continue
+        }
         if let distribution = config.distribution {
             if await !isInDistribution(distribution: distribution, properties: properties(config.seed ?? 0)) {
                 continue
@@ -125,6 +133,72 @@ func extractExperimentConfigMatchedToProperties(
     }
     return matched.max { current, candidate in
         isExperimentConfigPreferred(candidate, over: current)
+    }
+}
+
+func isMatchedToTriggerEventPropertyConditions(
+    _ conditions: [EventPropertyCondition]?,
+    properties: [String: EventPropertyValue]
+) -> Bool {
+    guard let conditions, !conditions.isEmpty else { return true }
+    return conditions.allSatisfy { condition in
+        guard let name = condition.property,
+              let eventProperty = properties[name],
+              let conditionValue = condition.value,
+              let op = condition.operator,
+              op != .unknown else {
+            return false
+        }
+        return compareEventPropertyWithConditionValue(property: eventProperty, asType: condition.asType, conditionValue: conditionValue, op: op)
+    }
+}
+
+private func compareEventPropertyWithConditionValue(
+    property: EventPropertyValue,
+    asType: EventPropertyConditionType?,
+    conditionValue: String,
+    op: ConditionOperator
+) -> Bool {
+    let propertyValueString: String
+    let nativeType: EventPropertyConditionType
+    switch property {
+    case .integer(let propertyValue): (propertyValueString, nativeType) = (String(propertyValue), .INTEGER)
+    case .float(let propertyValue): (propertyValueString, nativeType) = (String(propertyValue), .FLOAT)
+    case .string(let propertyValue): (propertyValueString, nativeType) = (propertyValue, .STRING)
+    case .boolean(let propertyValue): (propertyValueString, nativeType) = (String(propertyValue), .BOOLEAN)
+    case .timestamp(let propertyValue):
+        guard let timestamp = eventTimestampString(propertyValue) else { return false }
+        (propertyValueString, nativeType) = (timestamp, .TIMESTAMP)
+    }
+    let values = comparisonConditionValues(conditionValue, op: op)
+    if (asType ?? nativeType) != .STRING, values.contains(where: { $0.contains(",") }) { return false }
+    switch asType ?? nativeType {
+    case .INTEGER:
+        guard let actual = Int(propertyValueString.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
+        let expected = values.compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        guard expected.count == values.count else { return false }
+        return compareInteger(a: actual, b: expected, op: op)
+    case .FLOAT:
+        guard let actual = Double(propertyValueString.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
+        let expected = values.compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        guard expected.count == values.count else { return false }
+        return compareDouble(a: actual, b: expected, op: op)
+    case .STRING:
+        return compareString(a: propertyValueString, b: values, op: op)
+    case .BOOLEAN:
+        let strings = values.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        guard !strings.contains(where: { $0.isEmpty }) else { return false }
+        guard let actual = parseStringToBoolean(propertyValueString) else { return false }
+        let expected = strings.compactMap { parseStringToBoolean($0) }
+        guard expected.count == strings.count else { return false }
+        return compareBoolean(a: actual, b: expected, op: op)
+    case .TIMESTAMP:
+        guard let actual = parseTimestamp(propertyValueString) else { return false }
+        let expected = values.compactMap { parseTimestamp($0) }
+        guard expected.count == values.count else { return false }
+        return compareTimestamp(a: actual, b: expected, op: op)
+    case .unknown:
+        return false
     }
 }
 
@@ -173,18 +247,15 @@ private func isInDistributionSync(distribution: [ExperimentCondition], propertie
         guard let prop = props[propKey] else {
             return true
         }
-        return !comparePropWithConditionValue(prop: prop, asType: condition.asType, value: conditionValue, op: parsedOp)
+        return !compareUserPropertyWithConditionValue(prop: prop, asType: condition.asType, value: conditionValue, op: parsedOp)
     }
     return foundNotMatched == nil
 }
 
-func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?, value: String, op: ConditionOperator) -> Bool {
-    // Regex conditions are a single raw pattern, so commas are meaningful pattern
-    // characters rather than list delimiters.
-    let values: [Substring] = op == .Regex
-        ? [Substring(value)]
-        : value.split(separator: ",", omittingEmptySubsequences: false)
+func compareUserPropertyWithConditionValue(prop: UserProperty, asType: UserPropertyType?, value: String, op: ConditionOperator) -> Bool {
+    let values = comparisonConditionValues(value, op: op)
     let propType = asType ?? prop.type
+    if propType != .STRING, values.contains(where: { $0.contains(",") }) { return false }
     switch propType {
     case .INTEGER:
         guard let propValue = Int(prop.value.trimmingCharacters(in: .whitespacesAndNewlines)) else {
@@ -222,83 +293,95 @@ func comparePropWithConditionValue(prop: UserProperty, asType: UserPropertyType?
         }
         return compareSemver(a: prop.value, b: strings, op: op)
     case .TIMESTAMPZ:
-        guard let propValue = parseTimestampZAsUnixSeconds(prop.value) else {
+        guard let propValue = parseTimestamp(prop.value) else {
             return false
         }
         let conditionValues = values.compactMap { value in
-            return parseTimestampZAsUnixSeconds(String(value))
+            return parseTimestamp(String(value))
         }
         if conditionValues.count != values.count {
             return false
         }
-        return compareDouble(a: propValue, b: conditionValues, op: op)
+        return compareTimestamp(a: propValue, b: conditionValues, op: op)
     case .BOOLEAN:
-        let propValue = parseStringToBoolean(prop.value)
+        guard let propValue = parseStringToBoolean(prop.value) else { return false }
         let strings: [String] = values.map { value in
             return String(value).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         if strings.contains(where: { $0.isEmpty }) {
             return false
         }
-        let conditionValues = strings.map { value in
+        let conditionValues = strings.compactMap { value in
             return parseStringToBoolean(value)
         }
+        guard conditionValues.count == strings.count else { return false }
         return compareBoolean(a: propValue, b: conditionValues, op: op)
     default:
         return false
     }
 }
 
+private func comparisonConditionValues(_ value: String, op: ConditionOperator) -> [String] {
+    switch op {
+    case .In, .NotIn, .Between:
+        return value.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+    default:
+        return [value]
+    }
+}
+
+// TIMESTAMPZ values without an offset are defined as UTC so conditions have
+// identical results regardless of the device's configured time zone.
 private let timestampZTimeZone = TimeZone(secondsFromGMT: 0)!
 
-private let iso8601ParseStrategies: [Date.ISO8601FormatStyle] = [
-    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .colon),
-    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .colon),
-    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .omitted),
-    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: false).timeZone(separator: .omitted),
-    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day().time(includingFractionalSeconds: false),
-    Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day(),
-]
-
-private let fallbackParseStrategy = Date.ParseStrategy(
-    format: "\(year: .defaultDigits)-\(month: .twoDigits)-\(day: .twoDigits) \(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits):\(second: .twoDigits) \(timeZone: .iso8601(.short))",
-    locale: Locale(identifier: "en_US_POSIX"),
-    timeZone: timestampZTimeZone
-)
-
-private let localISO8601DateTimePattern = #"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$"#
-
-func parseTimestampZAsUnixSeconds(_ value: String) -> Double? {
+func parseTimestamp(_ value: String) -> Date? {
     let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
     if trimmed.isEmpty {
         return nil
     }
 
     if let timestamp = Int64(trimmed) {
-        return Double(timestamp)
+        return Date(timeIntervalSince1970: Double(timestamp))
     }
 
-    for strategy in iso8601ParseStrategies {
+    let parts = trimmed.split(separator: ".", omittingEmptySubsequences: false)
+    guard parts.count <= 2 else { return nil }
+    if parts.count == 2 {
+        let fractionalDigits = parts[1].prefix { $0.isASCII && $0.isNumber }
+        guard (1...9).contains(fractionalDigits.count) else { return nil }
+    }
+
+    let format = Date.ISO8601FormatStyle(timeZone: timestampZTimeZone)
+        .year().month().day().time(includingFractionalSeconds: trimmed.contains("."))
+    for strategy in [
+        format.timeZone(separator: .colon),
+        format.timeZone(separator: .omitted),
+        format,
+        format.dateTimeSeparator(.space).timeZone(separator: .omitted),
+    ] {
         if let date = try? Date(trimmed, strategy: strategy) {
-            return Double(Int64(date.timeIntervalSince1970))
+            return date
         }
     }
 
-    // TIMESTAMPZ values without an offset are defined as UTC so conditions have
-    // identical results regardless of the device's configured time zone.
-    if trimmed.range(of: localISO8601DateTimePattern, options: .regularExpression) != nil {
-        for strategy in iso8601ParseStrategies {
-            if let date = try? Date("\(trimmed)Z", strategy: strategy) {
-                return Double(Int64(date.timeIntervalSince1970))
-            }
-        }
-    }
+    guard trimmed.count == 10 else { return nil }
+    return try? Date(trimmed, strategy: Date.ISO8601FormatStyle(timeZone: timestampZTimeZone).year().month().day())
+}
 
-    if let date = try? Date(trimmed, strategy: fallbackParseStrategy) {
-        return Double(Int64(date.timeIntervalSince1970))
+private func compareTimestamp(a: Date, b: [Date], op: ConditionOperator) -> Bool {
+    guard let first = b.first else { return false }
+    switch op {
+    case .Equal: return a == first
+    case .NotEqual: return a != first
+    case .GreaterThan: return a > first
+    case .GreaterThanOrEqual: return a >= first
+    case .LessThan: return a < first
+    case .LessThanOrEqual: return a <= first
+    case .In: return b.contains(a)
+    case .NotIn: return !b.contains(a)
+    case .Between: return b.count == 2 && b[0] <= a && a <= b[1]
+    case .Regex, .unknown: return false
     }
-
-    return nil
 }
 
 func compareInteger(a: Int, b: [Int], op: ConditionOperator) -> Bool {
@@ -352,6 +435,7 @@ func compareInteger(a: Int, b: [Int], op: ConditionOperator) -> Bool {
 }
 
 func compareDouble(a: Double, b: [Double], op: ConditionOperator) -> Bool {
+    guard a.isFinite, b.allSatisfy({ $0.isFinite }) else { return false }
     switch op {
     case .Equal:
         if b.count == 0 {
@@ -564,15 +648,17 @@ func containsPattern(_ input: String, _ pattern: String) -> Bool {
     }
 }
 
-func parseStringToBoolean(_ str: String) -> Bool {
+func parseStringToBoolean(_ str: String) -> Bool? {
     let normalized = str
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .uppercased(with: Locale(identifier: "en_US_POSIX"))
     switch normalized {
     case "FALSE", "NO", "0", "NIL", "OFF", "NULL", "UNDEFINED", "ZERO", "":
         return false
-    default:
+    case "TRUE", "YES", "1", "ON":
         return true
+    default:
+        return nil
     }
 }
 

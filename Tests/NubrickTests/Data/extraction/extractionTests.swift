@@ -6,9 +6,183 @@
 //
 
 import XCTest
-@testable import NubrickLocal
+@_spi(ExperimentalEventProperties) @testable import NubrickLocal
+
+final class PropertyComparisonRegressionTests: XCTestCase {
+    private func check(
+        _ eventProperty: EventPropertyValue, _ userProperty: UserProperty,
+        _ condition: String, _ op: ConditionOperator, _ expected: Bool,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        XCTAssertEqual(isMatchedToTriggerEventPropertyConditions([
+            EventPropertyCondition(property: "value", operator: op, value: condition)
+        ], properties: ["value": eventProperty]), expected, "event: \(condition) \(op)", file: file, line: line)
+        XCTAssertEqual(compareUserPropertyWithConditionValue(prop: userProperty, asType: nil, value: condition, op: op),
+                       expected, "user: \(condition) \(op)", file: file, line: line)
+    }
+
+    func testNonStringScalarConditionsRejectCommas() throws {
+        let version = UserProperty(name: "version", value: "1.2.9", type: .SEMVER)
+        for op in [ConditionOperator.Equal, .NotEqual, .GreaterThan, .GreaterThanOrEqual, .LessThan, .LessThanOrEqual] {
+            XCTAssertFalse(compareUserPropertyWithConditionValue(prop: version, asType: nil, value: "1.2.3,2.0.0", op: op))
+            XCTAssertFalse(compareUserPropertyWithConditionValue(
+                prop: UserProperty(name: "version", value: "1.2.9", type: .STRING), asType: .SEMVER, value: "1.2.3,2.0.0", op: op))
+            let timestamp = "2026-10-16T12:00:00Z"
+            check(.timestamp(try XCTUnwrap(parseTimestamp(timestamp))),
+                  UserProperty(name: "time", value: timestamp, type: .TIMESTAMPZ), "\(timestamp),invalid", op, false)
+        }
+        XCTAssertTrue(compareUserPropertyWithConditionValue(prop: version, asType: nil, value: "1.2.9,2.0.0", op: .In))
+        XCTAssertTrue(compareUserPropertyWithConditionValue(prop: version, asType: nil, value: "1.2.3,2.0.0", op: .NotIn))
+        XCTAssertTrue(compareUserPropertyWithConditionValue(prop: version, asType: nil, value: "1.2.3,2.0.0", op: .Between))
+    }
+
+    func testTimestampsPreserveNativeDatePrecisionAndOrdering() throws {
+        for seconds in [-978_307_200.125, -0.125, 0.125, 800_000_000.123456789] {
+            let date = Date(timeIntervalSinceReferenceDate: seconds)
+            let text = try XCTUnwrap(eventTimestampString(date))
+            let step = abs(seconds) < 1 ? 0.125 : seconds.ulp
+            let before = try XCTUnwrap(eventTimestampString(Date(timeIntervalSinceReferenceDate: seconds - step)))
+            let after = try XCTUnwrap(eventTimestampString(Date(timeIntervalSinceReferenceDate: seconds + step)))
+            let user = UserProperty(name: "time", value: text, type: .TIMESTAMPZ)
+            check(.timestamp(date), user, before, .GreaterThan, true)
+            check(.timestamp(date), user, before, .Equal, false)
+            check(.timestamp(date), user, after, .LessThan, true)
+            check(.timestamp(date), user, text, .Equal, true)
+            check(.timestamp(date), user, "\(before),\(text)", .In, true)
+            check(.timestamp(date), user, "\(before),\(after)", .NotIn, true)
+            check(.timestamp(date), user, "\(before),\(after)", .Between, true)
+            check(.timestamp(date), user, "\(before),invalid", .NotIn, false)
+        }
+    }
+
+    func testTimestampFractionsOffsetsAndStringCast() throws {
+        let date = try XCTUnwrap(parseTimestamp("2026-10-16T12:00:00.900Z"))
+        let user = UserProperty(name: "time", value: "2026-10-16T12:00:00.900Z", type: .TIMESTAMPZ)
+        check(.timestamp(date), user, "2026-10-16T12:00:00.100Z", .GreaterThan, true)
+        check(.timestamp(date), user, "2026-10-16T12:00:00.100Z", .Equal, false)
+        for condition in ["2026-10-16T05:00:00.900-07:00", "2026-10-16T12:00:00.900"] {
+            check(.timestamp(date), user, condition, .Equal, true)
+        }
+        for invalid in ["2026-10-16T12:00:00.1.2Z", "2026-10-16T12:00:00.Z"] {
+            check(.timestamp(date), user, invalid, .NotEqual, false)
+        }
+        let text = try XCTUnwrap(eventTimestampString(date))
+        XCTAssertTrue(isMatchedToTriggerEventPropertyConditions([
+            EventPropertyCondition(property: "time", asType: .STRING, operator: .Equal, value: text)
+        ], properties: ["time": .timestamp(date)]))
+        for seconds in [-62_135_596_800.0, 253_402_300_799.125] {
+            let date = Date(timeIntervalSince1970: seconds)
+            let text = try XCTUnwrap(eventTimestampString(date))
+            check(.timestamp(date), UserProperty(name: "time", value: text, type: .TIMESTAMPZ), text, .Equal, true)
+        }
+    }
+
+    func testTimestampComparisonsUseNanosecondPrecision() throws {
+        let condition = "2001-01-01T00:00:00.123456789Z"
+        let property = EventPropertyValue.timestamp(Date(timeIntervalSinceReferenceDate: 0.123456789123))
+        let user = UserProperty(name: "time", value: condition, type: .TIMESTAMPZ)
+        check(property, user, condition, .Equal, true)
+        check(property, user, "2001-01-01T00:00:00.123456788Z", .GreaterThan, true)
+        check(property, user, "2001-01-01T00:00:00.123456790Z", .LessThan, true)
+        for fraction in ["1", "123", "123456", "123456789"] {
+            XCTAssertNotNil(parseTimestamp("2001-01-01T00:00:00.\(fraction)Z"))
+        }
+        for invalid in ["2001-01-01T00:00:00.1234567890Z", "2001-01-01T00:00:00.123456789123Z"] {
+            XCTAssertNil(parseTimestamp(invalid))
+            check(property, user, invalid, .NotEqual, false)
+        }
+    }
+
+    func testIntegersKeepFullSigned64BitRange() {
+        for number in [Int64.min, Int64.max, 9_007_199_254_740_993] {
+            let user = UserProperty(name: "number", value: String(number), type: .INTEGER)
+            check(.integer(number), user, String(number), .Equal, true)
+            check(.integer(number), user, "0,\(number)", .In, true)
+        }
+        check(.integer(9_007_199_254_740_993), UserProperty(name: "number", value: "9007199254740993", type: .INTEGER),
+              "9007199254740992", .Equal, false)
+    }
+
+    func testFiniteDoublesKeepPrecisionAndSignedZeroIsConsistent() {
+        for number in [Double.leastNonzeroMagnitude, Double.greatestFiniteMagnitude, -Double.greatestFiniteMagnitude, 0.1, -0.0] {
+            check(.float(number), UserProperty(name: "number", value: String(number), type: .DOUBLE), String(number), .Equal, true)
+        }
+        for number in [-0.0, 0.0] {
+            let user = UserProperty(name: "number", value: String(number), type: .DOUBLE)
+            for condition in ["0.0", "-0.0"] {
+                check(.float(number), user, condition, .Equal, true)
+                check(.float(number), user, condition, .In, true)
+                check(.float(number), user, condition, .NotIn, false)
+            }
+        }
+    }
+
+    func testNonFiniteNumbersFailEvenNegatedComparisons() {
+        let user = UserProperty(name: "number", value: "1.0", type: .DOUBLE)
+        for invalid in ["NaN", "Infinity", "-Infinity", "1e999", "-1e999"] {
+            for op in [ConditionOperator.Equal, .NotEqual, .LessThan, .In, .NotIn] {
+                check(.float(1), user, invalid, op, false)
+            }
+            check(.float(1), user, "1,\(invalid)", .NotIn, false)
+            XCTAssertFalse(compareUserPropertyWithConditionValue(
+                prop: UserProperty(name: "number", value: invalid, type: .DOUBLE), asType: nil, value: "1", op: .NotEqual))
+        }
+    }
+
+    func testBooleansRejectUnknownValuesButKeepKnownAliases() {
+        for boolean in [true, false] {
+            let user = UserProperty(name: "flag", value: String(boolean), type: .BOOLEAN)
+            for condition in ["garbage", "2", " "] {
+                check(.boolean(boolean), user, condition, .NotEqual, false)
+                check(.boolean(boolean), user, "true,\(condition)", .NotIn, false)
+            }
+            for condition in boolean ? ["true", "YES", "1", "on"] : ["false", "NO", "0", "off"] {
+                check(.boolean(boolean), user, condition, .Equal, true)
+            }
+        }
+        XCTAssertFalse(compareUserPropertyWithConditionValue(
+            prop: UserProperty(name: "flag", value: "garbage", type: .BOOLEAN), asType: nil, value: "true", op: .NotEqual))
+    }
+
+    func testScalarStringsKeepCommasWhitespaceAndUnicode() {
+        for text in ["a,b", "", " a,b ", "購入,✓"] {
+            let user = UserProperty(name: "text", value: text, type: .STRING)
+            check(.string(text), user, text, .Equal, true)
+            check(.string(text), user, text, .NotEqual, false)
+        }
+        let user = UserProperty(name: "text", value: "b", type: .STRING)
+        check(.string("b"), user, "a,b,c", .In, true)
+        check(.string("b"), user, "a,c", .Between, true)
+        check(.string("a,b"), UserProperty(name: "text", value: "a,b", type: .STRING), "^a,b$", .Regex, true)
+    }
+}
 
 final class ExtractionTests: XCTestCase {
+    func testTriggerPropertiesHandleMissingConditionsAndInvalidValues() {
+        let properties = NubrickEvent("test", properties: ["amount": "12.5", "count": 3]).properties
+        XCTAssertTrue(isMatchedToTriggerEventPropertyConditions(nil, properties: [:]))
+        XCTAssertTrue(isMatchedToTriggerEventPropertyConditions([], properties: [:]))
+        XCTAssertTrue(isMatchedToTriggerEventPropertyConditions([
+            EventPropertyCondition(property: "amount", asType: .FLOAT, operator: .GreaterThan, value: "10"),
+            EventPropertyCondition(property: "count", operator: .Equal, value: "3"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .In, value: "1,3"),
+            EventPropertyCondition(property: "amount", asType: .STRING, operator: .Regex, value: "^[0-9]{1,2}[.]5$"),
+        ], properties: properties))
+        for condition in [
+            EventPropertyCondition(property: "missing", asType: .STRING, operator: .NotEqual, value: "x"),
+            EventPropertyCondition(property: "amount", asType: .INTEGER, operator: .Equal, value: "12"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .Equal, value: "invalid"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .In, value: "3,invalid"),
+            EventPropertyCondition(property: "count", asType: .unknown, operator: .Equal, value: "3"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .unknown, value: "3"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, value: "3"),
+            EventPropertyCondition(property: "count", asType: .INTEGER, operator: .Equal),
+            EventPropertyCondition(asType: .INTEGER, operator: .Equal, value: "3"),
+        ] {
+            XCTAssertFalse(isMatchedToTriggerEventPropertyConditions([condition], properties: properties), "\(condition)")
+        }
+    }
+
     func testExtractComponentIdShouldReturnTheFirst() throws {
         let expected = "HELLO_WORLD"
         let actual = extractComponentId(variant: ExperimentVariant(
@@ -425,15 +599,15 @@ final class ExtractionTests: XCTestCase {
 final class CompareTests: XCTestCase {
     func testComparePropWithConditionValue() throws {
         let userId = "hello world"
-        XCTAssertTrue(comparePropWithConditionValue(prop: UserProperty(name: "userId", value: userId, type: .STRING), asType: nil, value: userId, op: .Equal))
-        XCTAssertTrue(comparePropWithConditionValue(prop: UserProperty(name: "userRnd", value: "40", type: .INTEGER), asType: nil, value: "100", op: .LessThanOrEqual))
-        XCTAssertTrue(comparePropWithConditionValue(prop: UserProperty(name: "version", value: "4", type: .SEMVER), asType: nil, value: "4.1", op: .LessThanOrEqual))
+        XCTAssertTrue(compareUserPropertyWithConditionValue(prop: UserProperty(name: "userId", value: userId, type: .STRING), asType: nil, value: userId, op: .Equal))
+        XCTAssertTrue(compareUserPropertyWithConditionValue(prop: UserProperty(name: "userRnd", value: "40", type: .INTEGER), asType: nil, value: "100", op: .LessThanOrEqual))
+        XCTAssertTrue(compareUserPropertyWithConditionValue(prop: UserProperty(name: "version", value: "4", type: .SEMVER), asType: nil, value: "4.1", op: .LessThanOrEqual))
     }
     
     func testComparePropWithConditionValueWithPropTypeOverride() throws {
-        XCTAssertFalse(comparePropWithConditionValue(
+        XCTAssertFalse(compareUserPropertyWithConditionValue(
             prop: UserProperty(name: "xxx", value: "12.3", type: .STRING), asType: .STRING, value: "12", op: .Equal))
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: UserProperty(name: "xxx", value: "12.3", type: .STRING), asType: .SEMVER, value: "12", op: .Equal))
     }
 
@@ -445,19 +619,19 @@ final class CompareTests: XCTestCase {
             type: .TIMESTAMPZ
         )
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: String(timestamp),
             op: .Equal
         ))
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: String(timestamp - 1),
             op: .GreaterThan
         ))
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: "\(timestamp - 1),\(timestamp + 1)",
@@ -473,7 +647,7 @@ final class CompareTests: XCTestCase {
             type: .TIMESTAMPZ
         )
 
-        XCTAssertFalse(comparePropWithConditionValue(
+        XCTAssertFalse(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: String(timestamp * 1000),
@@ -488,7 +662,7 @@ final class CompareTests: XCTestCase {
             type: .TIMESTAMPZ
         )
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: "2024-06-01T00:00:00.000Z",
@@ -503,19 +677,19 @@ final class CompareTests: XCTestCase {
             type: .TIMESTAMPZ
         )
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: "2024-06-01T00:00:00Z",
             op: .Equal
         ))
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: "2024-06-01T00:00:00.000+00:00",
             op: .Equal
         ))
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: "1717200000",
@@ -530,7 +704,7 @@ final class CompareTests: XCTestCase {
             type: .TIMESTAMPZ
         )
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: "2024-06-01T00:00:00Z",
@@ -545,7 +719,7 @@ final class CompareTests: XCTestCase {
             type: .TIMESTAMPZ
         )
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: "2024-06-01T09:30:00",
@@ -553,22 +727,45 @@ final class CompareTests: XCTestCase {
         ))
     }
 
-    func testParseTimestampZNormalizesLocalISO8601DateTimeToUTC() throws {
-        let expected = parseTimestampZAsUnixSeconds("2024-06-01T09:30:00Z")
+    func testTimestampParserPreservesSupportedFormats() throws {
+        let originalTimeZone = NSTimeZone.default
+        defer { NSTimeZone.default = originalTimeZone }
+        for identifier in ["America/Los_Angeles", "Asia/Tokyo"] {
+            NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: identifier))
+            let expected = Date(timeIntervalSince1970: 1_718_438_400)
+            for value in [
+                "1718438400", "2024-06-15T08:00:00Z",
+                "2024-06-15T17:00:00+09:00", "2024-06-15T17:00:00+0900",
+                "2024-06-15T08:00:00", "2024-06-15 08:00:00 +0000",
+            ] {
+                XCTAssertEqual(parseTimestamp(value), expected, value)
+            }
+            for value in [
+                "2024-06-15T08:00:00.125Z", "2024-06-15T17:00:00.125+09:00",
+                "2024-06-15T17:00:00.125+0900", "2024-06-15T08:00:00.125",
+            ] {
+                XCTAssertEqual(parseTimestamp(value), expected.addingTimeInterval(0.125), value)
+            }
+            XCTAssertEqual(parseTimestamp("2024-06-15"), Date(timeIntervalSince1970: 1_718_409_600))
+        }
+    }
 
-        XCTAssertEqual(parseTimestampZAsUnixSeconds("2024-06-01T09:30:00"), expected)
-        XCTAssertEqual(parseTimestampZAsUnixSeconds("2024-06-01T09:30:00.500"), expected)
+    func testParseTimestampZNormalizesLocalISO8601DateTimeToUTC() throws {
+        let expected = parseTimestamp("2024-06-01T09:30:00Z")
+
+        XCTAssertEqual(parseTimestamp("2024-06-01T09:30:00"), expected)
+        XCTAssertEqual(parseTimestamp("2024-06-01T09:30:00.500"), expected?.addingTimeInterval(0.5))
     }
 
     func testParseTimestampZLocalISO8601DateTimeIsIndependentOfDefaultTimeZone() throws {
         let originalTimeZone = NSTimeZone.default
         defer { NSTimeZone.default = originalTimeZone }
 
-        let expected = parseTimestampZAsUnixSeconds("2024-06-01T09:30:00Z")
+        let expected = parseTimestamp("2024-06-01T09:30:00Z")
         for identifier in ["America/Los_Angeles", "Asia/Tokyo"] {
             NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: identifier))
-            XCTAssertEqual(parseTimestampZAsUnixSeconds("2024-06-01T09:30:00"), expected)
-            XCTAssertEqual(parseTimestampZAsUnixSeconds("2024-06-01"), parseTimestampZAsUnixSeconds("2024-06-01T00:00:00Z"))
+            XCTAssertEqual(parseTimestamp("2024-06-01T09:30:00"), expected)
+            XCTAssertEqual(parseTimestamp("2024-06-01"), parseTimestamp("2024-06-01T00:00:00Z"))
         }
     }
 
@@ -579,7 +776,7 @@ final class CompareTests: XCTestCase {
             type: .TIMESTAMPZ
         )
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: "2024-06-01",
@@ -594,7 +791,7 @@ final class CompareTests: XCTestCase {
             type: .TIMESTAMPZ
         )
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop,
             asType: nil,
             value: "2024-06-01T00:00:00Z",
@@ -603,7 +800,7 @@ final class CompareTests: XCTestCase {
     }
 
     func testCompareTimestampZReturnsFalseWhenTimestampCannotBeParsed() throws {
-        XCTAssertFalse(comparePropWithConditionValue(
+        XCTAssertFalse(compareUserPropertyWithConditionValue(
             prop: UserProperty(
                 name: BuiltinUserProperty.currentTime.rawValue,
                 value: "invalid",
@@ -685,9 +882,9 @@ final class CompareTests: XCTestCase {
     func testCompareSemverRejectsEmptyConditionValues() throws {
         let prop = UserProperty(name: "version", value: "1.0", type: .SEMVER)
 
-        XCTAssertFalse(comparePropWithConditionValue(prop: prop, asType: nil, value: "1,", op: .In))
-        XCTAssertFalse(comparePropWithConditionValue(prop: prop, asType: nil, value: "1,,2", op: .In))
-        XCTAssertFalse(comparePropWithConditionValue(prop: prop, asType: nil, value: "", op: .Equal))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: prop, asType: nil, value: "1,", op: .In))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: prop, asType: nil, value: "1,,2", op: .In))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: prop, asType: nil, value: "", op: .Equal))
     }
     
     func testCompareString() throws {
@@ -718,13 +915,13 @@ final class CompareTests: XCTestCase {
     func testCompareStringConditionValuePreservesWhitespace() throws {
         let prop = UserProperty(name: "color", value: " red ", type: .STRING)
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop, asType: nil, value: " red ", op: .Equal
         ))
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop, asType: nil, value: "blue, red ", op: .In
         ))
-        XCTAssertFalse(comparePropWithConditionValue(
+        XCTAssertFalse(compareUserPropertyWithConditionValue(
             prop: prop, asType: nil, value: "red", op: .Equal
         ))
     }
@@ -732,7 +929,7 @@ final class CompareTests: XCTestCase {
     func testCompareStringRegexConditionPreservesCommas() throws {
         let prop = UserProperty(name: "coordinate", value: "12,34", type: .STRING)
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop, asType: nil, value: "^\\d+,\\d+$", op: .Regex
         ))
     }
@@ -740,7 +937,7 @@ final class CompareTests: XCTestCase {
     func testCompareStringRegexConditionPreservesWhitespace() throws {
         let prop = UserProperty(name: "greeting", value: " hello", type: .STRING)
 
-        XCTAssertTrue(comparePropWithConditionValue(
+        XCTAssertTrue(compareUserPropertyWithConditionValue(
             prop: prop, asType: nil, value: " hello", op: .Regex
         ))
     }
@@ -810,10 +1007,10 @@ final class CompareTests: XCTestCase {
         let zeroProp = UserProperty(name: "zero", value: "0", type: .DOUBLE)
         let oneProp = UserProperty(name: "one", value: "1", type: .DOUBLE)
 
-        XCTAssertFalse(comparePropWithConditionValue(prop: invalidProp, asType: nil, value: "invalid", op: .Equal))
-        XCTAssertFalse(comparePropWithConditionValue(prop: zeroProp, asType: nil, value: "invalid", op: .NotIn))
-        XCTAssertFalse(comparePropWithConditionValue(prop: oneProp, asType: nil, value: "1,", op: .In))
-        XCTAssertFalse(comparePropWithConditionValue(prop: oneProp, asType: nil, value: "1,,2", op: .In))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: invalidProp, asType: nil, value: "invalid", op: .Equal))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: zeroProp, asType: nil, value: "invalid", op: .NotIn))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: oneProp, asType: nil, value: "1,", op: .In))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: oneProp, asType: nil, value: "1,,2", op: .In))
     }
     
     func testCompareInteger() throws {
@@ -862,10 +1059,10 @@ final class CompareTests: XCTestCase {
     func testCompareIntegerOutsideInt32Range() throws {
         let prop = UserProperty(name: "long", value: "3000000000", type: .INTEGER)
 
-        XCTAssertTrue(comparePropWithConditionValue(prop: prop, asType: nil, value: "3000000000", op: .Equal))
-        XCTAssertFalse(comparePropWithConditionValue(prop: prop, asType: nil, value: "3000000001", op: .Equal))
-        XCTAssertTrue(comparePropWithConditionValue(prop: prop, asType: nil, value: "2999999999", op: .GreaterThan))
-        XCTAssertTrue(comparePropWithConditionValue(prop: prop, asType: nil, value: "3000000000,3000000001", op: .Between))
+        XCTAssertTrue(compareUserPropertyWithConditionValue(prop: prop, asType: nil, value: "3000000000", op: .Equal))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: prop, asType: nil, value: "3000000001", op: .Equal))
+        XCTAssertTrue(compareUserPropertyWithConditionValue(prop: prop, asType: nil, value: "2999999999", op: .GreaterThan))
+        XCTAssertTrue(compareUserPropertyWithConditionValue(prop: prop, asType: nil, value: "3000000000,3000000001", op: .Between))
     }
 
     func testCompareIntegerDoesNotTreatInvalidValuesAsZero() throws {
@@ -873,10 +1070,10 @@ final class CompareTests: XCTestCase {
         let zeroProp = UserProperty(name: "zero", value: "0", type: .INTEGER)
         let oneProp = UserProperty(name: "one", value: "1", type: .INTEGER)
 
-        XCTAssertFalse(comparePropWithConditionValue(prop: invalidProp, asType: nil, value: "invalid", op: .Equal))
-        XCTAssertFalse(comparePropWithConditionValue(prop: zeroProp, asType: nil, value: "invalid", op: .NotIn))
-        XCTAssertFalse(comparePropWithConditionValue(prop: oneProp, asType: nil, value: "1,", op: .In))
-        XCTAssertFalse(comparePropWithConditionValue(prop: oneProp, asType: nil, value: "1,,2", op: .In))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: invalidProp, asType: nil, value: "invalid", op: .Equal))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: zeroProp, asType: nil, value: "invalid", op: .NotIn))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: oneProp, asType: nil, value: "1,", op: .In))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: oneProp, asType: nil, value: "1,,2", op: .In))
     }
     
     func testCompareBoolean() throws {
@@ -896,9 +1093,9 @@ final class CompareTests: XCTestCase {
         let trueProp = UserProperty(name: "bool", value: "true", type: .BOOLEAN)
         let falseProp = UserProperty(name: "bool", value: "false", type: .BOOLEAN)
 
-        XCTAssertFalse(comparePropWithConditionValue(prop: trueProp, asType: nil, value: "true,", op: .In))
-        XCTAssertFalse(comparePropWithConditionValue(prop: falseProp, asType: nil, value: "true,,false", op: .In))
-        XCTAssertFalse(comparePropWithConditionValue(prop: falseProp, asType: nil, value: "", op: .Equal))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: trueProp, asType: nil, value: "true,", op: .In))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: falseProp, asType: nil, value: "true,,false", op: .In))
+        XCTAssertFalse(compareUserPropertyWithConditionValue(prop: falseProp, asType: nil, value: "", op: .Equal))
     }
     
     func testParseStrToBoolean() {

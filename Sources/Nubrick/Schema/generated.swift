@@ -168,6 +168,27 @@ enum ConditionOperator: String, Decodable, Encodable {
     try container.encode(rawValue)
   }
 }
+struct EventPropertyCondition: Decodable, Encodable {
+  var property: String?
+  var asType: EventPropertyConditionType?
+  var `operator`: ConditionOperator?
+  var value: String?
+}
+enum EventPropertyConditionType: String, Decodable, Encodable {
+  case INTEGER = "INTEGER"
+  case FLOAT = "FLOAT"
+  case STRING = "STRING"
+  case BOOLEAN = "BOOLEAN"
+  case TIMESTAMP = "TIMESTAMP"
+  case unknown = "unknown"
+  init(from decoder: Decoder) throws {
+    self = try EventPropertyConditionType(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ?? .unknown
+  }
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
+}
 struct ExperimentCondition: Decodable, Encodable {
   var property: String?
   var asType: UserPropertyType?
@@ -186,6 +207,7 @@ struct ExperimentConfig: Decodable, Encodable {
   var startedAt: DateTime?
   var endedAt: DateTime?
   var priority: Int?
+  var triggerEventPropertyConditions: [EventPropertyCondition]?
 }
 struct ExperimentConfigs: Decodable, Encodable {
   var configs: [ExperimentConfig]?

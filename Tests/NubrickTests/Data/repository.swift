@@ -52,12 +52,14 @@ private actor TriggerDatabaseRepositorySpy: DatabaseRepository {
     private(set) var displayedExperiments = [String]()
     private(set) var appendExperimentHistoryAttempts = 0
     private var failuresBeforeSuccess: Int
+    private let failedUserEvents: Set<String>
 
-    init(failuresBeforeSuccess: Int = 0) {
+    init(failuresBeforeSuccess: Int = 0, failedUserEvents: Set<String> = []) {
         self.failuresBeforeSuccess = failuresBeforeSuccess
+        self.failedUserEvents = failedUserEvents
     }
 
-    func appendUserEvent(name: String) async -> Bool { true }
+    func appendUserEvent(name: String) async -> Bool { !failedUserEvents.contains(name) }
     func appendExperimentHistory(experimentId: String) async -> Bool {
         appendExperimentHistoryAttempts += 1
         if failuresBeforeSuccess > 0 {
@@ -1288,7 +1290,7 @@ final class ContainerTests: XCTestCase {
         )
 
         let result = await container.fetchTriggerContent(
-            triggers: ["boot", "return"],
+            events: [NubrickEvent("boot"), NubrickEvent("return")],
             kinds: [.POPUP]
         )
 
@@ -1311,6 +1313,116 @@ final class ContainerTests: XCTestCase {
         let exposuresAfter = await tracker.displayedExperiments
         XCTAssertEqual(historyAfter, ["newer"])
         XCTAssertEqual(exposuresAfter, ["newer"])
+    }
+
+    func testFetchTriggerContentFiltersConfigsByTriggerEventProperties() async {
+        let config = ExperimentConfig(
+            id: "trigger-exp",
+            kind: .POPUP,
+            baseline: ExperimentVariant(
+                id: "trigger-var",
+                configs: [VariantConfig(kind: .COMPONENT, value: "component")]
+            ),
+            triggerEventPropertyConditions: [
+                EventPropertyCondition(property: "count", asType: .INTEGER, operator: .Equal, value: "3"),
+                EventPropertyCondition(property: "amount", asType: .FLOAT, operator: .GreaterThan, value: "10"),
+                EventPropertyCondition(property: "label", asType: .STRING, operator: .Equal, value: "checkout"),
+                EventPropertyCondition(property: "active", asType: .BOOLEAN, operator: .Equal, value: "true"),
+                EventPropertyCondition(
+                    property: "occurredAt",
+                    asType: .TIMESTAMP,
+                    operator: .GreaterThan,
+                    value: "2025-01-01T00:00:00Z"
+                ),
+            ]
+        )
+        let container = ContainerImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST),
+            user: NubrickUser(),
+            actionHandler: { _, _ in },
+            experimentRepository: TriggerExperimentRepositorySpy(configsByTrigger: [
+                "open": ExperimentConfigs(configs: [config]),
+            ]),
+            componentRepository: TriggerComponentRepositorySpy(),
+            trackRepository: TriggerTrackRepositorySpy(),
+            databaseRepository: TriggerDatabaseRepositorySpy(),
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+
+        let matched = await container.fetchTriggerContent(
+            events: [NubrickEvent("open", properties: [
+                "count": 3,
+                "amount": 12.5,
+                "label": "checkout",
+                "active": true,
+                "occurredAt": Date(timeIntervalSince1970: 1_738_368_000),
+            ])],
+            kinds: [.POPUP]
+        )
+        let rejected = await container.fetchTriggerContent(
+            events: [NubrickEvent("open", properties: [
+                "count": 3,
+                "amount": 5.0,
+                "label": "checkout",
+                "active": true,
+                "occurredAt": Date(timeIntervalSince1970: 1_738_368_000),
+            ])],
+            kinds: [.POPUP]
+        )
+
+        guard case .success = matched else {
+            XCTFail("Expected matching trigger event properties")
+            return
+        }
+        guard case .failure(.notFound) = rejected else {
+            XCTFail("Expected non-matching trigger event properties to be rejected")
+            return
+        }
+    }
+
+    func testBatchMatchesEachEventIndependentlyBeforeChoosingHighestPriority() async throws {
+        func config(_ id: String, priority: Int, expected: String) -> ExperimentConfig {
+            ExperimentConfig(
+                id: id, kind: .POPUP,
+                baseline: ExperimentVariant(id: "variant", configs: [VariantConfig(kind: .COMPONENT, value: "component")]),
+                priority: priority,
+                triggerEventPropertyConditions: [
+                    EventPropertyCondition(property: "value", asType: .STRING, operator: .Equal, value: expected)
+                ]
+            )
+        }
+        let container = ContainerImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST), user: NubrickUser(), actionHandler: { _, _ in },
+            experimentRepository: TriggerExperimentRepositorySpy(configsByTrigger: [
+                "first": ExperimentConfigs(configs: [config("first-exp", priority: 10, expected: "first")]),
+                "second": ExperimentConfigs(configs: [config("second-exp", priority: 20, expected: "second")]),
+            ]),
+            componentRepository: TriggerComponentRepositorySpy(), trackRepository: TriggerTrackRepositorySpy(),
+            databaseRepository: TriggerDatabaseRepositorySpy(failedUserEvents: ["failed"]),
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+        let first = NubrickEvent("first", properties: ["value": "first"])
+        let second = NubrickEvent("second", properties: ["value": "second"])
+        let recorded = await container.recordTriggerEvents(
+            events: [first, NubrickEvent("failed", properties: ["value": "failed"]), second], sourceExperimentId: nil
+        )
+        XCTAssertEqual(recorded.map(\.name), ["first", "second"])
+        XCTAssertEqual(recorded.map(\.properties), [first.properties, second.properties])
+        let both = try await container.fetchTriggerContent(events: recorded, kinds: [.POPUP]).get()
+        XCTAssertEqual(both.experimentId, "second-exp")
+        let missing = try await container.fetchTriggerContent(events: [first, NubrickEvent("second")], kinds: [.POPUP]).get()
+        XCTAssertEqual(missing.experimentId, "first-exp")
+        let swapped = await container.fetchTriggerContent(events: [
+            NubrickEvent("first", properties: ["value": "second"]),
+            NubrickEvent("second", properties: ["value": "first"]),
+        ], kinds: [.POPUP])
+        guard case .failure(.notFound) = swapped else {
+            return XCTFail("Properties must belong to the corresponding trigger event")
+        }
+        for events in [[NubrickEvent("first"), first], [first, NubrickEvent("first")]] {
+            let result = try await container.fetchTriggerContent(events: events, kinds: [.POPUP]).get()
+            XCTAssertEqual(result.experimentId, "first-exp")
+        }
     }
 
     func testFetchTooltipContentDoesNotRecordExposureBeforeDisplayConfirmation() async {
@@ -1338,7 +1450,7 @@ final class ContainerTests: XCTestCase {
         )
 
         let result = await container.fetchTriggerContent(
-            trigger: "tooltip-trigger",
+            events: [NubrickEvent("tooltip-trigger")],
             kinds: [.TOOLTIP]
         )
 
