@@ -774,13 +774,16 @@ actor TrackRespositoryImpl: TrackRepository2 {
             let first = pending[0]
             let userID: String
             let meta: TrackEventMeta
-            if let capturedUserID = first.userId, let capturedMeta = first.meta {
+            let capturedUserID = first.userId.flatMap {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
+            }
+            if let capturedUserID, let capturedMeta = first.meta {
                 userID = capturedUserID
                 meta = capturedMeta
             } else {
-                // Only legacy records with missing context need the main actor.
+                // Missing or empty user IDs need the current identity from the main actor.
                 (userID, meta) = await MainActor.run {
-                    (first.userId ?? self.user.id, first.meta ?? TrackEventMeta.current())
+                    (capturedUserID ?? self.user.id, first.meta ?? TrackEventMeta.current())
                 }
             }
             var batch = pending

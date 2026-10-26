@@ -101,6 +101,29 @@ final class UserTests: XCTestCase {
         XCTAssertEqual(userId, laterId)
     }
 
+    func testEmptyUserIdIsReplacedAndPersisted() throws {
+        let suiteName = "NubrickTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+        userDefaults.set("", forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
+
+        let user = NubrickUser(userDefaults: userDefaults)
+        XCTAssertFalse(user.id.isEmpty)
+        XCTAssertEqual(user.id, userDefaults.string(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue))
+
+        let originalId = user.id
+        user.setProperty(BuiltinUserProperty.userId.rawValue, value: " ")
+        XCTAssertFalse(user.id.isEmpty)
+        XCTAssertNotEqual(user.id, originalId)
+        XCTAssertEqual(user.id, NubrickUser(userDefaults: userDefaults).id)
+
+        user.setProperty(BuiltinUserProperty.userId.rawValue, value: "custom-user")
+        user.setProperty(BuiltinUserProperty.userId.rawValue, value: "")
+        XCTAssertFalse(user.id.isEmpty)
+        XCTAssertNotEqual(user.id, "custom-user")
+        XCTAssertEqual(user.id, NubrickUser(userDefaults: userDefaults).id)
+    }
+
     func testGetUserSeededNormalizedRndAndAlwaysTheSame() {
         let user = NubrickUser()
         let seeded0 = user.getSeededNormalizedUserRnd(seed: 0)

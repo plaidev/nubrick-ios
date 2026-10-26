@@ -87,7 +87,10 @@ class NubrickUser {
         self.customProperties = [:]
 
         // userId := uuid by default
-        let userId = self.userDB.object(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue) as? String ?? UUID().uuidString
+        let storedUserId = self.userDB.object(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue) as? String
+        let userId = storedUserId.flatMap {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
+        } ?? UUID().uuidString
         self.userDB.set(userId, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
         self.properties[BuiltinUserProperty.userId.rawValue] = userId
 
@@ -166,8 +169,10 @@ class NubrickUser {
     func setProperty(_ key: String, value: Any) {
         if key == BuiltinUserProperty.userId.rawValue {
             let strValue = String(describing: value)
-            self.properties[BuiltinUserProperty.userId.rawValue] = strValue
-            self.userDB.set(strValue, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
+            let userId = strValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? UUID().uuidString : strValue
+            self.properties[BuiltinUserProperty.userId.rawValue] = userId
+            self.userDB.set(userId, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
             return
         }
 
