@@ -786,7 +786,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         for (index, pair) in zip(requests, contexts).enumerated() {
             let (request, context) = pair
             let body = try JSONDecoder().decode(RequestContext.self, from: XCTUnwrap(request.httpBody))
-            XCTAssertEqual(body.userId, context.userId ?? "live-user")
+            XCTAssertEqual(body.userId, context.userId.flatMap { $0.isEmpty ? nil : $0 } ?? "live-user")
             XCTAssertEqual(body.meta, context.meta ?? liveMeta)
             XCTAssertEqual(try eventNames(in: request), ["context-\(index)"])
         }
