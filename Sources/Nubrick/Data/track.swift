@@ -170,6 +170,7 @@ struct SurveyResponseRequest: Encodable {
     var projectId: String
     var experimentId: String
     var variantId: String
+    // Legacy wire name: use NubrickUser.id (tracking identity), not customUserId.
     var userId: String
     var response_data: String
     var meta: TrackEventMeta
@@ -177,6 +178,7 @@ struct SurveyResponseRequest: Encodable {
 
 struct TrackRequest: Encodable {
     var projectId: String
+    // Legacy wire name: use NubrickUser.id (tracking identity), not customUserId.
     var userId: String
     var timestamp: DateTime
     var events: [TrackEvent]

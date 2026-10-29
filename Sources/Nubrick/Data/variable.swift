@@ -89,7 +89,7 @@ func _createVariableForTemplate(
 ) -> Variable {
     var userData: [String: Any] = [:]
     if let user = user {
-        userData["id"] = user.id
+        userData["id"] = user.customUserId
         user.getProperties().forEach { userData[$0.key] = $0.value }
     }
     

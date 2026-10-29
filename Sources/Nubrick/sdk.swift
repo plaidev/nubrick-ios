@@ -301,7 +301,7 @@ final class NubrickCore {
     }
 
     func getUserId() -> String {
-        self.dependencies.user.id
+        self.dependencies.user.customUserId
     }
 
     func getUserProperties() -> [String: String] {
@@ -786,6 +786,7 @@ public enum NubrickSDK {
         return runtime.getUserProperty(key)
     }
 
+    /// Returns the customer identity, an empty string when unset, or nil before initialization.
     @MainActor
     public static func getUserId() -> String? {
         guard let runtime = requireRuntime() else {

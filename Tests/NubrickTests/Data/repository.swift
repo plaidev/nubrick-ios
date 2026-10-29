@@ -730,7 +730,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
 
         let requests = await client.recordedRequests()
         let body = try requestJSON(in: try XCTUnwrap(requests.first))
-        XCTAssertEqual(body["userId"] as? String, "user-before")
+        XCTAssertEqual(body["userId"] as? String, user.id)
+        XCTAssertNil(body["customUserId"])
         let meta = try XCTUnwrap(body["meta"] as? [String: Any])
         XCTAssertEqual(meta["sdkVersion"] as? String, NubrickConstants.sdkVersion)
         XCTAssertEqual(meta["platform"] as? String, "ios")
@@ -786,7 +787,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         for (index, pair) in zip(requests, contexts).enumerated() {
             let (request, context) = pair
             let body = try JSONDecoder().decode(RequestContext.self, from: XCTUnwrap(request.httpBody))
-            XCTAssertEqual(body.userId, context.userId.flatMap { $0.isEmpty ? nil : $0 } ?? "live-user")
+            XCTAssertEqual(body.userId, context.userId.flatMap { $0.isEmpty ? nil : $0 } ?? user.id)
             XCTAssertEqual(body.meta, context.meta ?? liveMeta)
             XCTAssertEqual(try eventNames(in: request), ["context-\(index)"])
         }
@@ -794,7 +795,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
-    func testTrackingFlushSendsSeparateRequestsWhenCapturedUserIdChanges() async throws {
+    func testTrackingIdentityStaysStableAcrossCustomerIdentityChanges() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
         defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
@@ -811,14 +812,45 @@ final class HttpRequestReposotiryTests: XCTestCase {
         await repository.trackEvent(TrackUserEvent(name: "event-a"))
         user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-b")
         await repository.trackEvent(TrackUserEvent(name: "event-b"))
+        user.setProperty("userId", value: "")
+        await repository.trackEvent(TrackUserEvent(name: "logged-out"))
         await repository.flushNow()
 
         let requests = await client.recordedRequests()
-        XCTAssertEqual(requests.count, 2)
-        XCTAssertEqual(try requestJSON(in: requests[0])["userId"] as? String, "user-a")
-        XCTAssertEqual(try eventNames(in: requests[0]), ["event-a"])
-        XCTAssertEqual(try requestJSON(in: requests[1])["userId"] as? String, "user-b")
-        XCTAssertEqual(try eventNames(in: requests[1]), ["event-b"])
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertEqual(try requestJSON(in: requests[0])["userId"] as? String, user.id)
+        XCTAssertNil(try requestJSON(in: requests[0])["customUserId"])
+        XCTAssertEqual(try eventNames(in: requests[0]), ["event-a", "event-b", "logged-out"])
+    }
+
+    @MainActor
+    func testCrashTrackingKeepsInternalIdentityAfterLogout() async throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let suite = "NubrickTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let user = NubrickUser(userDefaults: defaults)
+        let internalId = user.id
+        let repository = TrackRespositoryImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST), user: user,
+            persistentContainer: persistentContainer, trackingHTTPClient: client
+        )
+        user.setProperty("userId", value: "customer")
+        await repository.sendFlutterCrash(TrackCrashEvent(
+            exceptions: [ExceptionRecord(type: "TestError", message: "test")], platform: "flutter"
+        ))
+        user.setProperty("userId", value: "")
+        await repository.flushNow()
+        let requests = await client.recordedRequests()
+        XCTAssertFalse(requests.isEmpty)
+        for request in requests {
+            let body = try requestJSON(in: request)
+            XCTAssertEqual(body["userId"] as? String, internalId)
+            XCTAssertNil(body["customUserId"])
+        }
     }
 
     @MainActor
