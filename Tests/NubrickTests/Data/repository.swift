@@ -730,7 +730,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
 
         let requests = await client.recordedRequests()
         let body = try requestJSON(in: try XCTUnwrap(requests.first))
-        XCTAssertEqual(body["userId"] as? String, user.id)
+        XCTAssertEqual(body["userId"] as? String, user.trackingId)
         XCTAssertNil(body["customUserId"])
         XCTAssertNil(body["trackingId"])
         let meta = try XCTUnwrap(body["meta"] as? [String: Any])
@@ -788,7 +788,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         for (index, pair) in zip(requests, contexts).enumerated() {
             let (request, context) = pair
             let body = try JSONDecoder().decode(RequestContext.self, from: XCTUnwrap(request.httpBody))
-            XCTAssertEqual(body.userId, context.trackingId.flatMap { $0.isEmpty ? nil : $0 } ?? user.id)
+            XCTAssertEqual(body.userId, context.trackingId.flatMap { $0.isEmpty ? nil : $0 } ?? user.trackingId)
             XCTAssertEqual(body.meta, context.meta ?? liveMeta)
             XCTAssertEqual(try eventNames(in: request), ["context-\(index)"])
         }
@@ -819,7 +819,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
 
         let requests = await client.recordedRequests()
         XCTAssertEqual(requests.count, 1)
-        XCTAssertEqual(try requestJSON(in: requests[0])["userId"] as? String, user.id)
+        XCTAssertEqual(try requestJSON(in: requests[0])["userId"] as? String, user.trackingId)
         XCTAssertNil(try requestJSON(in: requests[0])["customUserId"])
         XCTAssertEqual(try eventNames(in: requests[0]), ["event-a", "event-b", "logged-out"])
     }
@@ -834,7 +834,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let user = NubrickUser(userDefaults: defaults)
-        let internalId = user.id
+        let internalId = user.trackingId
         let repository = TrackRespositoryImpl(
             config: Config(projectId: PROJECT_ID_FOR_TEST), user: user,
             persistentContainer: persistentContainer, trackingHTTPClient: client

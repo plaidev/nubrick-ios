@@ -81,7 +81,7 @@ class NubrickUser {
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
     internal var userDB: UserDefaults
     // Stable tracking identity, serialized as "userId" for backend compatibility.
-    let id: String
+    let trackingId: String
 
     init(userDefaults: UserDefaults? = nil) {
         let suiteName = "\(Bundle.main.bundleIdentifier ?? "app").nativebrik.com"
@@ -105,8 +105,8 @@ class NubrickUser {
             }
             self.userDB.set(customUserId, forKey: NativebrikUserDefaultsKeys.CUSTOM_USER_ID.rawValue)
         }
-        self.id = trackingId
-        self.userDB.set(id, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
+        self.trackingId = trackingId
+        self.userDB.set(trackingId, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue)
         self.properties[BuiltinUserProperty.userId.rawValue] =
             self.userDB.string(forKey: NativebrikUserDefaultsKeys.CUSTOM_USER_ID.rawValue) ?? ""
 

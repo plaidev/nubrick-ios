@@ -683,7 +683,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
 
     private func enqueue(_ event: TrackEvent) async {
         let (trackingId, meta) = await MainActor.run {
-            (self.user.id, TrackEventMeta.current())
+            (self.user.trackingId, TrackEventMeta.current())
         }
         await enqueue(event, trackingId: trackingId, meta: meta)
     }
@@ -793,7 +793,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
             } else {
                 // Missing or empty tracking IDs need the current identity from the main actor.
                 (trackingId, meta) = await MainActor.run {
-                    (capturedTrackingId ?? self.user.id, first.meta ?? TrackEventMeta.current())
+                    (capturedTrackingId ?? self.user.trackingId, first.meta ?? TrackEventMeta.current())
                 }
             }
             var batch = pending
@@ -906,7 +906,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
 
     private func sendCrashToBackend(_ crashEvent: TrackCrashEvent) async {
         let (trackingId, meta) = await MainActor.run {
-            (self.user.id, TrackEventMeta.current())
+            (self.user.trackingId, TrackEventMeta.current())
         }
         let causedByNativebrik = isNubrickCausedCrash(crashEvent)
 
@@ -952,7 +952,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
             return
         }
         let trackingId = await MainActor.run {
-            self.user.id
+            self.user.trackingId
         }
 
         do {

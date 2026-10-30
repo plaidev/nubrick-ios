@@ -110,26 +110,26 @@ final class UserTests: XCTestCase {
             if let stored { defaults.set(stored, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue) }
             let user = NubrickUser(userDefaults: defaults)
             XCTAssertEqual(user.customUserId, expectedCustom, "Stored: \(stored ?? "nil")")
-            XCTAssertFalse(user.id.isEmpty)
+            XCTAssertFalse(user.trackingId.isEmpty)
             if stored == generated {
-                XCTAssertEqual(user.id, stored)
+                XCTAssertEqual(user.trackingId, stored)
             } else {
-                XCTAssertNotEqual(user.id, stored)
+                XCTAssertNotEqual(user.trackingId, stored)
             }
-            XCTAssertNotNil(user.id.range(
+            XCTAssertNotNil(user.trackingId.range(
                 of: "\\A[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}\\z",
                 options: .regularExpression
             ))
-            XCTAssertEqual(defaults.string(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue), user.id)
+            XCTAssertEqual(defaults.string(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue), user.trackingId)
             XCTAssertEqual(defaults.string(forKey: NativebrikUserDefaultsKeys.CUSTOM_USER_ID.rawValue), expectedCustom)
             let reloaded = NubrickUser(userDefaults: defaults)
-            XCTAssertEqual(reloaded.id, user.id)
+            XCTAssertEqual(reloaded.trackingId, user.trackingId)
             XCTAssertEqual(reloaded.customUserId, expectedCustom)
 
             user.setProperty("userId", value: "")
             let cleared = NubrickUser(userDefaults: defaults)
             XCTAssertEqual(cleared.customUserId, "")
-            XCTAssertEqual(cleared.id, user.id)
+            XCTAssertEqual(cleared.trackingId, user.trackingId)
         }
     }
 
@@ -138,7 +138,7 @@ final class UserTests: XCTestCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let user = NubrickUser(userDefaults: defaults)
-        let trackingId = user.id
+        let trackingId = user.trackingId
         let random = user.getSeededNormalizedUserRnd(seed: 42)
         let retention = user.retention
         var published: [String: Any] = [:]
@@ -168,12 +168,12 @@ final class UserTests: XCTestCase {
                 properties: properties
             )
             XCTAssertEqual(matchesEmpty, expected.isEmpty)
-            XCTAssertEqual(user.id, trackingId)
+            XCTAssertEqual(user.trackingId, trackingId)
             XCTAssertEqual(user.getSeededNormalizedUserRnd(seed: 42), random)
             XCTAssertEqual(user.retention, retention)
             let reloaded = NubrickUser(userDefaults: defaults)
             XCTAssertEqual(reloaded.customUserId, expected)
-            XCTAssertEqual(reloaded.id, trackingId)
+            XCTAssertEqual(reloaded.trackingId, trackingId)
         }
         XCTAssertEqual(user.getProperty("plan"), "pro")
     }
