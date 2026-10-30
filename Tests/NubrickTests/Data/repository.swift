@@ -710,7 +710,24 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
-    func testTrackingFlushUsesUserIdAndMetaCapturedAtTrackTime() async throws {
+    func testSurveyRequestKeepsUserIdJSONKey() throws {
+        let request = SurveyResponseRequest(
+            timestamp: getCurrentDate().ISO8601Format(),
+            projectId: PROJECT_ID_FOR_TEST,
+            experimentId: "experiment-123",
+            variantId: "variant-123",
+            trackingId: "tracking-123",
+            response_data: "{}",
+            meta: TrackEventMeta.current()
+        )
+        let data = try JSONEncoder().encode(request)
+        let body = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(body["userId"] as? String, "tracking-123")
+        XCTAssertEqual(Set(body.keys), ["timestamp", "projectId", "experimentId", "variantId", "userId", "response_data", "meta"])
+    }
+
+    @MainActor
+    func testTrackingFlushUsesTrackingIdAndMetaCapturedAtTrackTime() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
         defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
@@ -732,6 +749,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let body = try requestJSON(in: try XCTUnwrap(requests.first))
         XCTAssertEqual(body["userId"] as? String, user.id)
         XCTAssertNil(body["customUserId"])
+        XCTAssertNil(body["trackingId"])
         let meta = try XCTUnwrap(body["meta"] as? [String: Any])
         XCTAssertEqual(meta["sdkVersion"] as? String, NubrickConstants.sdkVersion)
         XCTAssertEqual(meta["platform"] as? String, "ios")
@@ -755,7 +773,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         var capturedMeta = liveMeta
         capturedMeta.appVersion = "previous-app-version"
         capturedMeta.sdkVersion = "previous-sdk-version"
-        let contexts: [(userId: String?, meta: TrackEventMeta?)] = [
+        let contexts: [(trackingId: String?, meta: TrackEventMeta?)] = [
             (nil, nil),
             ("captured-user", nil),
             (nil, capturedMeta),
@@ -771,7 +789,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             entity.eventType = event.typename.rawValue
             entity.byteCount = Int64(entity.payload.count)
             entity.createdAt = Date(timeIntervalSince1970: Double(index))
-            entity.userId = context.userId
+            entity.userId = context.trackingId
             entity.metaPayload = try context.meta.map { try JSONEncoder().encode($0) }
         }
         try persistentContainer.viewContext.save()
@@ -787,7 +805,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         for (index, pair) in zip(requests, contexts).enumerated() {
             let (request, context) = pair
             let body = try JSONDecoder().decode(RequestContext.self, from: XCTUnwrap(request.httpBody))
-            XCTAssertEqual(body.userId, context.userId.flatMap { $0.isEmpty ? nil : $0 } ?? user.id)
+            XCTAssertEqual(body.userId, context.trackingId.flatMap { $0.isEmpty ? nil : $0 } ?? user.id)
             XCTAssertEqual(body.meta, context.meta ?? liveMeta)
             XCTAssertEqual(try eventNames(in: request), ["context-\(index)"])
         }
@@ -886,14 +904,14 @@ final class HttpRequestReposotiryTests: XCTestCase {
         XCTAssertNotNil(insertOutboxEvent(
             outbox,
             makePendingTrackEvent(name: "old-app"),
-            userId: "same-user",
+            trackingId: "same-user",
             meta: firstMeta,
             enqueuedAt: Date(timeIntervalSince1970: 1)
         ))
         XCTAssertNotNil(insertOutboxEvent(
             outbox,
             makePendingTrackEvent(name: "new-app"),
-            userId: "same-user",
+            trackingId: "same-user",
             meta: secondMeta,
             enqueuedAt: Date(timeIntervalSince1970: 2)
         ))
@@ -1073,7 +1091,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
     private func insertOutboxEvent(
         _ outbox: TrackOutbox,
         _ event: TrackEvent,
-        userId: String = "test-user",
+        trackingId: String = "test-user",
         meta: TrackEventMeta = TrackEventMeta(
             appId: "test.app",
             appVersion: "1.0.0",
@@ -1084,7 +1102,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         ),
         enqueuedAt: Date
     ) -> Int? {
-        outbox.insertAndGetPendingCount(event, userId: userId, meta: meta, enqueuedAt: enqueuedAt)
+        outbox.insertAndGetPendingCount(event, trackingId: trackingId, meta: meta, enqueuedAt: enqueuedAt)
     }
 
     private func previousOutboxEntityDescription() -> NSEntityDescription {

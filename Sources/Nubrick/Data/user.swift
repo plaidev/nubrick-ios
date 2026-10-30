@@ -89,8 +89,8 @@ class NubrickUser {
         self.properties = [:]
         self.customProperties = [:]
 
-        let storedUserId = self.userDB.object(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue) as? String
-        var trackingId = storedUserId.flatMap {
+        let storedTrackingId = self.userDB.object(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue) as? String
+        var trackingId = storedTrackingId.flatMap {
             $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
         } ?? UUID().uuidString
         if self.userDB.object(forKey: NativebrikUserDefaultsKeys.CUSTOM_USER_ID.rawValue) == nil {
