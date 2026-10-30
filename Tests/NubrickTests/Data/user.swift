@@ -111,11 +111,15 @@ final class UserTests: XCTestCase {
             let user = NubrickUser(userDefaults: defaults)
             XCTAssertEqual(user.customUserId, expectedCustom, "Stored: \(stored ?? "nil")")
             XCTAssertFalse(user.id.isEmpty)
-            if let stored, !stored.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if stored == generated {
                 XCTAssertEqual(user.id, stored)
             } else {
-                XCTAssertNotNil(UUID(uuidString: user.id))
+                XCTAssertNotEqual(user.id, stored)
             }
+            XCTAssertNotNil(user.id.range(
+                of: "\\A[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}\\z",
+                options: .regularExpression
+            ))
             XCTAssertEqual(defaults.string(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue), user.id)
             XCTAssertEqual(defaults.string(forKey: NativebrikUserDefaultsKeys.CUSTOM_USER_ID.rawValue), expectedCustom)
             let reloaded = NubrickUser(userDefaults: defaults)
