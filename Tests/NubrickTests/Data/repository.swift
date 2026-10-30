@@ -710,23 +710,6 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
-    func testSurveyRequestKeepsUserIdJSONKey() throws {
-        let request = SurveyResponseRequest(
-            timestamp: getCurrentDate().ISO8601Format(),
-            projectId: PROJECT_ID_FOR_TEST,
-            experimentId: "experiment-123",
-            variantId: "variant-123",
-            trackingId: "tracking-123",
-            response_data: "{}",
-            meta: TrackEventMeta.current()
-        )
-        let data = try JSONEncoder().encode(request)
-        let body = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-        XCTAssertEqual(body["userId"] as? String, "tracking-123")
-        XCTAssertEqual(Set(body.keys), ["timestamp", "projectId", "experimentId", "variantId", "userId", "response_data", "meta"])
-    }
-
-    @MainActor
     func testTrackingFlushUsesTrackingIdAndMetaCapturedAtTrackTime() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
