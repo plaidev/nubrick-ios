@@ -21,8 +21,8 @@ let package = Package(
         // Production: Remote binary downloaded by SPM consumers
         .binaryTarget(
             name: "Nubrick",
-            url: "https://github.com/plaidev/nubrick-ios/releases/download/v0.19.21/Nubrick.xcframework.zip",
-            checksum: "4fd22486eb2960e40e2ce27c12c95f69090661754d0bead9881e2c257a3597a9"
+            url: "https://github.com/plaidev/nubrick-ios/releases/download/v0.20.0/Nubrick.xcframework.zip",
+            checksum: "9da2f79b794c502deff71282faf72ea2bbb74a9cf0782f6c0196a8b0ef2fe069"
         ),
 
         // Development: Source target for unit tests (supports @testable import)
