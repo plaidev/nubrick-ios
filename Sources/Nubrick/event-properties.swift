@@ -2,7 +2,6 @@ import Foundation
 import CoreFoundation
 
 /// Canonical, immutable event property values
-@_spi(ExperimentalEventProperties)
 public enum EventPropertyValue: Sendable, Equatable, Codable {
     case integer(Int64)
     case float(Double)

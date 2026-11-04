@@ -9,7 +9,7 @@ import CoreData
 import Foundation
 
 import XCTest
-@_spi(ExperimentalEventProperties) @_spi(FlutterBridge) @testable import NubrickLocal
+@_spi(FlutterBridge) @testable import NubrickLocal
 
 let HEALTH_CHECK_URL = "https://track.nativebrik.com/health"
 
