@@ -2,7 +2,7 @@ import Combine
 import XCTest
 import UIKit
 import SafariServices
-@_spi(ExperimentalEventProperties) @testable import NubrickLocal
+@testable import NubrickLocal
 
 @MainActor
 private final class TriggerModalSpy: ModalComponentViewController {

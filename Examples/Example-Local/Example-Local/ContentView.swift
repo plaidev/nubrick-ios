@@ -1,4 +1,4 @@
-@_spi(ExperimentalEventProperties) import Nubrick
+import Nubrick
 import SwiftUI
 
 struct ContentView: View {

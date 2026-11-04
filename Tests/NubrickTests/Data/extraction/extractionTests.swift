@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@_spi(ExperimentalEventProperties) @testable import NubrickLocal
+@testable import NubrickLocal
 
 final class PropertyComparisonRegressionTests: XCTestCase {
     private func check(
