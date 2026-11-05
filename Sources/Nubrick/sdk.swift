@@ -299,7 +299,7 @@ final class NubrickCore {
     }
 
     func getUserId() -> String {
-        self.dependencies.user.customUserId
+        self.dependencies.user.userId
     }
 
     func getUserProperties() -> [String: String] {
