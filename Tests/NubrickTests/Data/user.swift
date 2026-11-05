@@ -107,38 +107,139 @@ final class UserTests: XCTestCase {
             let suite = "NubrickTests.\(UUID().uuidString)"
             let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
             defer { defaults.removePersistentDomain(forName: suite) }
-            if let stored { defaults.set(stored, forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue) }
+            if let stored { defaults.set(stored, forKey: "NATIVEBRIK_SDK_USER_ID") }
             let user = NubrickUser(userDefaults: defaults)
-            XCTAssertEqual(user.customUserId, expectedCustom, "Stored: \(stored ?? "nil")")
-            XCTAssertFalse(user.trackingId.isEmpty)
+            XCTAssertEqual(user.userId, expectedCustom, "Stored: \(stored ?? "nil")")
+            XCTAssertFalse(user.installationId.isEmpty)
             if stored == generated {
-                XCTAssertEqual(user.trackingId, stored)
+                XCTAssertEqual(user.installationId, stored)
             } else {
-                XCTAssertNotEqual(user.trackingId, stored)
+                XCTAssertNotEqual(user.installationId, stored)
             }
-            XCTAssertNotNil(user.trackingId.range(
+            XCTAssertNotNil(user.installationId.range(
                 of: "\\A[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}\\z",
                 options: .regularExpression
             ))
-            XCTAssertEqual(defaults.string(forKey: NativebrikUserDefaultsKeys.USER_ID.rawValue), user.trackingId)
-            XCTAssertEqual(defaults.string(forKey: NativebrikUserDefaultsKeys.CUSTOM_USER_ID.rawValue), expectedCustom)
+            XCTAssertEqual(defaults.dictionary(forKey: "NATIVEBRIK_SDK_IDENTITY") as? [String: String],
+                           ["installationId": user.installationId, "userId": expectedCustom])
+            XCTAssertNil(defaults.object(forKey: "NATIVEBRIK_SDK_USER_ID"))
             let reloaded = NubrickUser(userDefaults: defaults)
-            XCTAssertEqual(reloaded.trackingId, user.trackingId)
-            XCTAssertEqual(reloaded.customUserId, expectedCustom)
+            XCTAssertEqual(reloaded.installationId, user.installationId)
+            XCTAssertEqual(reloaded.userId, expectedCustom)
 
             user.setProperty("userId", value: "")
             let cleared = NubrickUser(userDefaults: defaults)
-            XCTAssertEqual(cleared.customUserId, "")
-            XCTAssertEqual(cleared.trackingId, user.trackingId)
+            XCTAssertEqual(cleared.userId, "")
+            XCTAssertEqual(cleared.installationId, user.installationId)
         }
     }
 
-    func testCustomerIdentityDrivesPropertiesTemplatesAndDeliveryOnly() async throws {
+    func testLatestAndIntermediateIdentityStorage() throws {
+        let installationId = "ABCDEF01-2345-4678-9ABC-DEF012345678"
+        let uuidUserId = "ABCDEF02-2345-4678-9ABC-DEF012345678"
+        for isLatest in [true, false] {
+            for userId in ["customer-123", "", uuidUserId] {
+                let suite = "NubrickTests.\(UUID().uuidString)"
+                let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+                defer { defaults.removePersistentDomain(forName: suite) }
+                // Seed the actual keys used by each SDK version.
+                if isLatest {
+                    defaults.set(["installationId": installationId, "userId": userId], forKey: "NATIVEBRIK_SDK_IDENTITY")
+                    defaults.set("stale-installation", forKey: "NATIVEBRIK_SDK_USER_ID")
+                    defaults.set("stale-customer", forKey: "NATIVEBRIK_SDK_CUSTOM_USER_ID")
+                } else {
+                    defaults.set(installationId, forKey: "NATIVEBRIK_SDK_USER_ID")
+                    defaults.set(userId, forKey: "NATIVEBRIK_SDK_CUSTOM_USER_ID")
+                }
+                let user = NubrickUser(userDefaults: defaults)
+                XCTAssertEqual(user.installationId, installationId)
+                XCTAssertEqual(user.userId, userId)
+                XCTAssertEqual(defaults.dictionary(forKey: "NATIVEBRIK_SDK_IDENTITY") as? [String: String],
+                               ["installationId": installationId, "userId": userId])
+                XCTAssertNil(defaults.object(forKey: "NATIVEBRIK_SDK_USER_ID"))
+                XCTAssertNil(defaults.object(forKey: "NATIVEBRIK_SDK_CUSTOM_USER_ID"))
+                let reloaded = NubrickUser(userDefaults: defaults)
+                XCTAssertEqual(reloaded.installationId, installationId)
+                XCTAssertEqual(reloaded.userId, userId)
+                user.setProperty("userId", value: "")
+                let cleared = NubrickUser(userDefaults: defaults)
+                XCTAssertEqual(cleared.installationId, installationId)
+                XCTAssertEqual(cleared.userId, "")
+            }
+        }
+    }
+
+    func testIdentityMigrationResumesAfterEitherLegacyKeyIsRemoved() throws {
+        let installationId = "ABCDEF01-2345-4678-9ABC-DEF012345678"
+        for legacyKey in ["NATIVEBRIK_SDK_USER_ID", "NATIVEBRIK_SDK_CUSTOM_USER_ID"] {
+            for userId in ["customer-123", ""] {
+                let suite = "NubrickTests.\(UUID().uuidString)"
+                let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+                defer { defaults.removePersistentDomain(forName: suite) }
+                defaults.set(["installationId": installationId, "userId": userId], forKey: "NATIVEBRIK_SDK_IDENTITY")
+                defaults.set("stale-value", forKey: legacyKey)
+                let user = NubrickUser(userDefaults: defaults)
+                XCTAssertEqual(user.installationId, installationId)
+                XCTAssertEqual(user.userId, userId)
+                XCTAssertNil(defaults.object(forKey: legacyKey))
+            }
+        }
+    }
+
+    func testUserIDLengthValidationAcrossSetters() throws {
         let suite = "NubrickTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let user = NubrickUser(userDefaults: defaults)
-        let trackingId = user.trackingId
+        let installationId = user.installationId
+        let setters: [(String) -> Void] = [
+            { user.setProperty("userId", value: $0) },
+            { user.set(["userId": $0]) },
+            { user.setProperties(["userId": $0]) },
+        ]
+        for setter in setters {
+            for valid in [String(repeating: "a", count: 300), String(repeating: "🙂", count: 300), String(repeating: "e\u{0301}", count: 150)] {
+                setter(valid)
+                XCTAssertEqual(user.userId, valid)
+                setter(valid + "a")
+                XCTAssertEqual(user.userId, valid)
+                let reloaded = NubrickUser(userDefaults: defaults)
+                XCTAssertEqual(reloaded.userId, valid)
+                XCTAssertEqual(reloaded.installationId, installationId)
+            }
+            setter("")
+            XCTAssertEqual(user.userId, "")
+        }
+    }
+
+    func testOversizedStoredUserIDsAreClearedAcrossStorageVersions() throws {
+        let installationId = "ABCDEF01-2345-4678-9ABC-DEF012345678"
+        let oversized = String(repeating: "🙂", count: 301)
+        let stores: [[String: Any]] = [
+            ["NATIVEBRIK_SDK_USER_ID": oversized],
+            ["NATIVEBRIK_SDK_USER_ID": installationId, "NATIVEBRIK_SDK_CUSTOM_USER_ID": oversized],
+            ["NATIVEBRIK_SDK_IDENTITY": ["installationId": installationId, "userId": oversized]],
+        ]
+        for (index, store) in stores.enumerated() {
+            let suite = "NubrickTests.\(UUID().uuidString)"
+            let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+            defer { defaults.removePersistentDomain(forName: suite) }
+            for (key, value) in store { defaults.set(value, forKey: key) }
+            let user = NubrickUser(userDefaults: defaults)
+            XCTAssertEqual(user.userId, "")
+            if index > 0 { XCTAssertEqual(user.installationId, installationId) }
+            let reloaded = NubrickUser(userDefaults: defaults)
+            XCTAssertEqual(reloaded.userId, "")
+            XCTAssertEqual(reloaded.installationId, user.installationId)
+        }
+    }
+
+    func testUserIdentityDrivesPropertiesTemplatesAndDelivery() async throws {
+        let suite = "NubrickTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let user = NubrickUser(userDefaults: defaults)
+        let installationId = user.installationId
         let random = user.getSeededNormalizedUserRnd(seed: 42)
         let retention = user.retention
         var published: [String: Any] = [:]
@@ -152,7 +253,7 @@ final class UserTests: XCTestCase {
             default: user.set(["userId": input])
             }
             let expected = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : input
-            XCTAssertEqual(user.customUserId, expected)
+            XCTAssertEqual(user.userId, expected)
             XCTAssertEqual(user.getProperty("userId"), expected)
             XCTAssertEqual(user.getProperties()["userId"], expected)
             XCTAssertNil(user.getProperties()["customUserId"])
@@ -168,12 +269,12 @@ final class UserTests: XCTestCase {
                 properties: properties
             )
             XCTAssertEqual(matchesEmpty, expected.isEmpty)
-            XCTAssertEqual(user.trackingId, trackingId)
+            XCTAssertEqual(user.installationId, installationId)
             XCTAssertEqual(user.getSeededNormalizedUserRnd(seed: 42), random)
             XCTAssertEqual(user.retention, retention)
             let reloaded = NubrickUser(userDefaults: defaults)
-            XCTAssertEqual(reloaded.customUserId, expected)
-            XCTAssertEqual(reloaded.trackingId, trackingId)
+            XCTAssertEqual(reloaded.userId, expected)
+            XCTAssertEqual(reloaded.installationId, installationId)
         }
         XCTAssertEqual(user.getProperty("plan"), "pro")
     }
@@ -213,7 +314,7 @@ final class UserTests: XCTestCase {
         let customUserId = "hello"
         let user = NubrickUser()
         user.set(["userId": customUserId])
-        let userId = user.customUserId
+        let userId = user.userId
         XCTAssertEqual(userId, customUserId)
     }
     
