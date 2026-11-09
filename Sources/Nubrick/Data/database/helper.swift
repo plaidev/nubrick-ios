@@ -74,9 +74,8 @@ final class PendingTrackEventEntity: NSManagedObject {
     @NSManaged var eventType: String
     @NSManaged var byteCount: Int64
     @NSManaged var createdAt: Date
-    // Keep the legacy single-ID field for upgrades; new rows store installationId here.
     @NSManaged var userId: String?
-    @NSManaged var customerUserId: String?
+    @NSManaged var installationId: String?
     @NSManaged var metaPayload: Data?
 
     static func entityDescription() -> NSEntityDescription {
@@ -114,17 +113,17 @@ final class PendingTrackEventEntity: NSManagedObject {
         userId.attributeType = .stringAttributeType
         userId.isOptional = true
 
-        let customerUserId = NSAttributeDescription()
-        customerUserId.name = "customerUserId"
-        customerUserId.attributeType = .stringAttributeType
-        customerUserId.isOptional = true
+        let installationId = NSAttributeDescription()
+        installationId.name = "installationId"
+        installationId.attributeType = .stringAttributeType
+        installationId.isOptional = true
 
         let metaPayload = NSAttributeDescription()
         metaPayload.name = "metaPayload"
         metaPayload.attributeType = .binaryDataAttributeType
         metaPayload.isOptional = true
 
-        entity.properties = [eventID, payload, eventType, byteCount, createdAt, userId, customerUserId, metaPayload]
+        entity.properties = [eventID, payload, eventType, byteCount, createdAt, userId, installationId, metaPayload]
         return entity
     }
 }

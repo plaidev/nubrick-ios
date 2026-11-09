@@ -782,7 +782,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         var capturedMeta = liveMeta
         capturedMeta.appVersion = "previous-app-version"
         capturedMeta.sdkVersion = "previous-sdk-version"
-        let contexts: [(installationId: String?, meta: TrackEventMeta?)] = [
+        let contexts: [(userId: String?, meta: TrackEventMeta?)] = [
             (nil, nil),
             ("captured-user", nil),
             (nil, capturedMeta),
@@ -798,7 +798,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             entity.eventType = event.typename.rawValue
             entity.byteCount = Int64(entity.payload.count)
             entity.createdAt = Date(timeIntervalSince1970: Double(index))
-            entity.userId = context.installationId
+            entity.userId = context.userId
             entity.metaPayload = try context.meta.map { try JSONEncoder().encode($0) }
         }
         try persistentContainer.viewContext.save()
@@ -816,7 +816,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             let (request, context) = pair
             let body = try JSONDecoder().decode(RequestContext.self, from: XCTUnwrap(request.httpBody))
             XCTAssertNil(body.installationId)
-            XCTAssertEqual(body.userId, context.installationId.flatMap { $0.isEmpty ? nil : $0 } ?? user.installationId)
+            XCTAssertEqual(body.userId, context.userId.flatMap { $0.isEmpty ? nil : $0 } ?? user.installationId)
             XCTAssertEqual(body.meta, context.meta ?? liveMeta)
             XCTAssertEqual(try eventNames(in: request), ["context-\(index)"])
         }
@@ -1016,11 +1016,11 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
-    func testCoreDataPreservesIntermediateSDKOutboxIdentity() throws {
+    func testCoreDataPreservesLegacyOutboxUserId() async throws {
         let storeURL = makeTemporaryStoreURL()
         defer { removeSQLiteStore(at: storeURL) }
         let previousEntity = PendingTrackEventEntity.entityDescription()
-        previousEntity.properties.removeAll { $0.name == "customerUserId" }
+        previousEntity.properties.removeAll { $0.name == "installationId" }
         let previousModel = NSManagedObjectModel()
         previousModel.entities = [
             UserEventEntity.entityDescription(),
@@ -1041,7 +1041,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         entity.eventType = event.typename.rawValue
         entity.byteCount = Int64(entity.payload.count)
         entity.createdAt = Date()
-        entity.userId = "previous-installation"
+        entity.userId = "legacy-customer"
         entity.metaPayload = try JSONEncoder().encode(TrackEventMeta.current())
         try previousContainer.viewContext.save()
         previousContainer.viewContext.reset()
@@ -1052,14 +1052,34 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let outbox = TrackOutbox(persistentContainer: container)
         let pending = try XCTUnwrap(outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).first)
         XCTAssertEqual(pending.eventID, event.eventUuid)
-        XCTAssertEqual(pending.installationId, "previous-installation")
-        XCTAssertNil(pending.userId)
+        XCTAssertNil(pending.installationId)
+        XCTAssertEqual(pending.userId, "legacy-customer")
         XCTAssertNotNil(outbox.insertAndGetPendingCount(
             makePendingTrackEvent(name: "after-upgrade"), installationId: "previous-installation",
-            userId: "customer", meta: TrackEventMeta.current()
+            userId: "legacy-customer", meta: TrackEventMeta.current()
         ))
-        XCTAssertTrue(outbox.remove(eventIDs: [event.eventUuid]))
-        XCTAssertEqual(try outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).first?.userId, "customer")
+        XCTAssertNotNil(outbox.insertAndGetPendingCount(
+            makePendingTrackEvent(name: "anonymous"), installationId: "previous-installation",
+            userId: nil, meta: TrackEventMeta.current()
+        ))
+        XCTAssertEqual(try outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).map(\.eventID), [event.eventUuid])
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let repository = TrackRespositoryImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST), user: NubrickUser(),
+            persistentContainer: container, trackingHTTPClient: client
+        )
+        await repository.flushNow()
+        let requests = await client.recordedRequests()
+        XCTAssertEqual(requests.count, 3)
+        let legacy = try requestJSON(in: requests[0])
+        XCTAssertNil(legacy["installationId"])
+        XCTAssertEqual(legacy["userId"] as? String, "legacy-customer")
+        let identified = try requestJSON(in: requests[1])
+        XCTAssertEqual(identified["installationId"] as? String, "previous-installation")
+        XCTAssertEqual(identified["userId"] as? String, "legacy-customer")
+        let anonymous = try requestJSON(in: requests[2])
+        XCTAssertEqual(anonymous["installationId"] as? String, "previous-installation")
+        XCTAssertNil(anonymous["userId"])
     }
 
     @MainActor

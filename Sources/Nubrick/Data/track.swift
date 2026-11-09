@@ -372,9 +372,8 @@ final class TrackOutbox {
                 entity.eventType = eventType.rawValue
                 entity.byteCount = Int64(payload.count)
                 entity.createdAt = enqueuedAt
-                entity.userId = installationId
-                // Nil marks a legacy row; empty means a new event recorded without a user ID.
-                entity.customerUserId = userId ?? ""
+                entity.installationId = installationId
+                entity.userId = userId
                 entity.metaPayload = metaPayload
                 try context.save()
 
@@ -476,8 +475,8 @@ final class TrackOutbox {
                         eventID: entity.eventID,
                         event: event,
                         payloadSize: Int(entity.byteCount),
-                        installationId: entity.userId,
-                        userId: entity.customerUserId,
+                        installationId: entity.installationId,
+                        userId: entity.userId,
                         meta: meta
                     ))
                 }
@@ -779,29 +778,23 @@ actor TrackRespositoryImpl: TrackRepository2 {
 
         do {
             let first = pending[0]
-            let installationId: String
-            let meta: TrackEventMeta
-            let capturedInstallationId = first.installationId.flatMap {
-                $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
+            var userId = first.userId.flatMap { $0.isEmpty ? nil : $0 }
+            // The earliest outbox rows may have no captured identity at all.
+            if first.installationId == nil && userId == nil {
+                userId = await MainActor.run { self.user.installationId }
             }
-            if let capturedInstallationId, let capturedMeta = first.meta {
-                installationId = capturedInstallationId
+            let meta: TrackEventMeta
+            if let capturedMeta = first.meta {
                 meta = capturedMeta
             } else {
-                // Legacy events without an installation ID or metadata use the current installation context.
-                (installationId, meta) = await MainActor.run {
-                    (capturedInstallationId ?? self.user.installationId, first.meta ?? TrackEventMeta.current())
-                }
+                meta = await MainActor.run { TrackEventMeta.current() }
             }
-            // Legacy rows lack the customer-ID column value; keep their original single-ID contract.
-            let isLegacy = first.userId == nil
-            let userId = isLegacy ? installationId : first.userId.flatMap { $0.isEmpty ? nil : $0 }
             var batch = pending
 
             while !batch.isEmpty {
                 let trackRequest = TrackRequest(
                     projectId: config.projectId,
-                    installationId: isLegacy ? nil : installationId,
+                    installationId: first.installationId,
                     userId: userId,
                     timestamp: getCurrentDate().ISO8601Format(),
                     events: batch.map(\.event),
