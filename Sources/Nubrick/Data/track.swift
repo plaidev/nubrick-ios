@@ -152,7 +152,7 @@ public enum CrashSeverity: String, Sendable {
 
 protocol TrackRepository2 : Actor {
     func trackExperimentEvent(_ event: TrackExperimentEvent) async
-    func trackEvent(_ event: TrackUserEvent) async
+    func trackEvent(_ event: TrackUserEvent, userId: String) async
     func flushNow() async
 
     func processMetricKitCrash(
@@ -659,7 +659,10 @@ actor TrackRespositoryImpl: TrackRepository2 {
         ))
     }
     
-    func trackEvent(_ event: TrackUserEvent) async {
+    func trackEvent(_ event: TrackUserEvent, userId: String) async {
+        let (installationId, meta) = await MainActor.run {
+            (self.user.installationId, TrackEventMeta.current())
+        }
         await enqueue(TrackEvent(
             properties: event.properties,
             typename: .Event,
@@ -667,7 +670,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
             name: event.name,
             timestamp: getCurrentDate().ISO8601Format(),
             eventUuid: UUID().uuidString
-        ))
+        ), installationId: installationId, userId: userId.isEmpty ? nil : userId, meta: meta)
     }
 
     func flushNow() async {

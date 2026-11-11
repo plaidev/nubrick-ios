@@ -142,7 +142,7 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
         ))
     }
 
-    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [NubrickEvent] {
+    func recordTriggerEvents(events: [NubrickEvent], userId: String, sourceExperimentId: String?) async -> [NubrickEvent] {
         let triggers = events.map(\.name)
         await MainActor.run {
             self.recordedTriggers.append(contentsOf: triggers)
@@ -294,12 +294,12 @@ final class TriggerViewControllerTests: XCTestCase {
             modalViewController: modal)
         controller.initialLoad()
         XCTAssertNotNil(modal.startTriggerExperiment("tooltip"))
-        await controller.performDispatch(events: [NubrickEvent("popup-blocked")])
+        await controller.performDispatch(events: [NubrickEvent("popup-blocked")], userId: "")
         XCTAssertTrue(container.recordedTriggers.contains("popup-blocked"))
         XCTAssertTrue(container.popupFetches.isEmpty)
         XCTAssertTrue(container.displayedExperiments.isEmpty)
         modal.finishTriggerExperiment("tooltip")
-        await controller.performDispatch(events: [NubrickEvent("popup-next")])
+        await controller.performDispatch(events: [NubrickEvent("popup-next")], userId: "")
         XCTAssertEqual(container.popupFetches, ["popup-next"])
     }
 
@@ -331,7 +331,7 @@ final class TriggerViewControllerTests: XCTestCase {
             container.shouldPauseTriggerRecording = true
             container.onTriggerRecordingPaused = { recordingPaused.fulfill() }
 
-            let dispatch = Task { await controller.performDispatch(events: [NubrickEvent(name)]) }
+            let dispatch = Task { await controller.performDispatch(events: [NubrickEvent(name)], userId: "") }
             await fulfillment(of: [recordingPaused], timeout: 1)
             XCTAssertTrue(dispatched.isEmpty)
             container.triggerRecordingContinuation?.resume()
@@ -411,7 +411,7 @@ final class TriggerViewControllerTests: XCTestCase {
 
             let dispatch = Task {
                 await controller.performDispatch(
-                    events: names.map { NubrickEvent($0) }, sourceExperimentId: "source-experiment"
+                    events: names.map { NubrickEvent($0) }, userId: "", sourceExperimentId: "source-experiment"
                 )
             }
             await fulfillment(of: [recordingPaused], timeout: 1)
@@ -451,7 +451,7 @@ final class TriggerViewControllerTests: XCTestCase {
             var fetched = [[String]]()
             container.onFetchTriggers = { fetched.append($0) }
 
-            await controller.performDispatch(events: names.map { NubrickEvent($0, properties: ["value": $0]) })
+            await controller.performDispatch(events: names.map { NubrickEvent($0, properties: ["value": $0]) }, userId: "")
 
             XCTAssertEqual(dispatched, names)
             XCTAssertEqual(container.recordedTriggers, names)
@@ -474,7 +474,7 @@ final class TriggerViewControllerTests: XCTestCase {
             onDispatch: { dispatched.append($0.name) }
         )
 
-        await controller.performDispatch(events: [NubrickEvent("popup-before-load")])
+        await controller.performDispatch(events: [NubrickEvent("popup-before-load")], userId: "")
 
         XCTAssertEqual(dispatched, ["popup-before-load"])
         XCTAssertEqual(container.recordedTriggers, ["popup-before-load"])
@@ -495,7 +495,7 @@ final class TriggerViewControllerTests: XCTestCase {
         )
         controller.initialLoad()
 
-        await controller.performDispatch(events: [NubrickEvent("popup-first-shown")])
+        await controller.performDispatch(events: [NubrickEvent("popup-first-shown")], userId: "")
         XCTAssertEqual(modal.presentations.count, 1)
         modal.onShown?()
         await fulfillment(of: [recordingPaused], timeout: 1)
@@ -504,7 +504,7 @@ final class TriggerViewControllerTests: XCTestCase {
         await settleUIKit()
         XCTAssertTrue(modal.hasActiveTriggerExperiment)
 
-        await controller.performDispatch(events: [NubrickEvent("popup-before-history")])
+        await controller.performDispatch(events: [NubrickEvent("popup-before-history")], userId: "")
         XCTAssertEqual(modal.presentations.count, 1)
         XCTAssertEqual(container.popupFetches, ["popup-first-shown"])
         XCTAssertTrue(container.recordedTriggers.contains("popup-before-history"))
@@ -514,7 +514,7 @@ final class TriggerViewControllerTests: XCTestCase {
         await settleUIKit()
         XCTAssertFalse(modal.hasActiveTriggerExperiment)
 
-        await controller.performDispatch(events: [NubrickEvent("popup-after-history")])
+        await controller.performDispatch(events: [NubrickEvent("popup-after-history")], userId: "")
         XCTAssertEqual(container.popupFetches, ["popup-first-shown", "popup-after-history"])
         XCTAssertEqual(modal.presentations.count, 2)
     }
@@ -536,10 +536,10 @@ final class TriggerViewControllerTests: XCTestCase {
         await fulfillment(of: [startup], timeout: 1)
         container.onFetchTriggers = nil
 
-        let first = Task { await controller.performDispatch(events: [NubrickEvent("popup-first")]) }
+        let first = Task { await controller.performDispatch(events: [NubrickEvent("popup-first")], userId: "") }
         await fulfillment(of: [paused], timeout: 1)
         XCTAssertFalse(modal.hasActiveTriggerExperiment)
-        await controller.performDispatch(events: [NubrickEvent("popup-second")])
+        await controller.performDispatch(events: [NubrickEvent("popup-second")], userId: "")
         XCTAssertEqual(container.popupFetches, ["popup-first", "popup-second"])
         XCTAssertTrue(modal.hasActiveTriggerExperiment)
         XCTAssertEqual(modal.presentations.count, 1)
@@ -548,7 +548,7 @@ final class TriggerViewControllerTests: XCTestCase {
         container.firstFetchContinuation?.resume()
         await first.value
         XCTAssertEqual(modal.presentations.count, 1)
-        await controller.performDispatch(events: [NubrickEvent("popup-third")])
+        await controller.performDispatch(events: [NubrickEvent("popup-third")], userId: "")
         XCTAssertEqual(container.popupFetches, ["popup-first", "popup-second"])
         XCTAssertTrue(container.recordedTriggers.contains("popup-third"))
 
@@ -561,7 +561,7 @@ final class TriggerViewControllerTests: XCTestCase {
         await settleUIKit()
         XCTAssertFalse(modal.hasActiveTriggerExperiment)
         XCTAssertEqual(modal.presentations.count, 1, "Skipped starts must not replay after dismissal")
-        await controller.performDispatch(events: [NubrickEvent("popup-fourth")])
+        await controller.performDispatch(events: [NubrickEvent("popup-fourth")], userId: "")
         XCTAssertEqual(modal.presentations.count, 2)
     }
 
@@ -604,7 +604,7 @@ final class TriggerViewControllerTests: XCTestCase {
         let modal = TriggerModalSpy()
         let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
         controller.initialLoad()
-        await controller.performDispatch(events: [NubrickEvent("popup-native")])
+        await controller.performDispatch(events: [NubrickEvent("popup-native")], userId: "")
         let first = try XCTUnwrap(modal.presentations.first as? NavigationViewControlller)
         modal.onShown?()
         await settleUIKit()
@@ -757,11 +757,11 @@ final class TriggerViewControllerTests: XCTestCase {
         let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
         controller.initialLoad()
         for trigger in ["popup-invalid-url", "popup-external", "popup-empty"] {
-            await controller.performDispatch(events: [NubrickEvent(trigger)])
+            await controller.performDispatch(events: [NubrickEvent(trigger)], userId: "")
             XCTAssertFalse(modal.hasActiveTriggerExperiment, trigger)
         }
         modal.canPresent = false
-        await controller.performDispatch(events: [NubrickEvent("popup-unpresentable")])
+        await controller.performDispatch(events: [NubrickEvent("popup-unpresentable")], userId: "")
         XCTAssertFalse(modal.hasActiveTriggerExperiment)
         XCTAssertTrue(container.displayedExperiments.isEmpty)
     }
@@ -773,10 +773,10 @@ final class TriggerViewControllerTests: XCTestCase {
         let modal = TriggerModalSpy()
         let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
         controller.initialLoad()
-        await controller.performDispatch(events: [NubrickEvent("popup-web")])
+        await controller.performDispatch(events: [NubrickEvent("popup-web")], userId: "")
         XCTAssertTrue(modal.presentations.first is SFSafariViewController)
         XCTAssertTrue(modal.hasActiveTriggerExperiment)
-        await controller.performDispatch(events: [NubrickEvent("popup-next")])
+        await controller.performDispatch(events: [NubrickEvent("popup-next")], userId: "")
         XCTAssertEqual(modal.presentations.count, 1)
         modal.onShown?()
         await settleUIKit()
@@ -784,7 +784,7 @@ final class TriggerViewControllerTests: XCTestCase {
         modal.presentations.first?.viewDidDisappear(false)
         XCTAssertFalse(modal.hasActiveTriggerExperiment)
         await settleUIKit()
-        await controller.performDispatch(events: [NubrickEvent("popup-next")])
+        await controller.performDispatch(events: [NubrickEvent("popup-next")], userId: "")
         XCTAssertEqual(modal.presentations.count, 2)
     }
 
@@ -795,7 +795,7 @@ final class TriggerViewControllerTests: XCTestCase {
         let modal = TriggerModalSpy()
         let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
         controller.initialLoad()
-        await controller.performDispatch(events: [NubrickEvent("popup-web")])
+        await controller.performDispatch(events: [NubrickEvent("popup-web")], userId: "")
         modal.onShown?()
         await settleUIKit()
         guard let safari = modal.presentations.first as? SFSafariViewController else {
@@ -857,7 +857,7 @@ final class TriggerViewControllerTests: XCTestCase {
         let modal = TriggerModalSpy()
         let controller = TriggerViewController(user: NubrickUser(), container: container, modalViewController: modal)
         controller.initialLoad()
-        await controller.performDispatch(events: [NubrickEvent("popup-web")])
+        await controller.performDispatch(events: [NubrickEvent("popup-web")], userId: "")
         XCTAssertEqual(modal.presentations.count, 1)
 
         modal.presentations.first?.viewDidDisappear(false)
@@ -1071,7 +1071,7 @@ final class TriggerViewControllerTests: XCTestCase {
         )
 
         controller.initialLoad()
-        await controller.performDispatch(events: [NubrickEvent("tooltip-trigger")])
+        await controller.performDispatch(events: [NubrickEvent("tooltip-trigger")], userId: "")
 
         guard let receivedData,
               let jsonData = receivedData.data(using: .utf8),
@@ -1084,7 +1084,7 @@ final class TriggerViewControllerTests: XCTestCase {
         guard let receivedSessionId else { return XCTFail("Expected a session ID") }
         XCTAssertNotEqual(receivedSessionId, root.id)
         XCTAssertTrue(modal.ownsTriggerExperiment(receivedSessionId))
-        await controller.performDispatch(events: [NubrickEvent("popup-blocked")])
+        await controller.performDispatch(events: [NubrickEvent("popup-blocked")], userId: "")
         XCTAssertTrue(modal.ownsTriggerExperiment(receivedSessionId))
         modal.stopTriggerExperiment(receivedSessionId)
         XCTAssertEqual(receivedExperimentId, "tooltip-experiment-id")

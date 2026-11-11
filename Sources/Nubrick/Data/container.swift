@@ -56,7 +56,7 @@ protocol Container : Sendable {
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
     func fetchTriggerContent(events: [NubrickEvent], kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
-    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [NubrickEvent]
+    func recordTriggerEvents(events: [NubrickEvent], userId: String, sourceExperimentId: String?) async -> [NubrickEvent]
     func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
@@ -251,14 +251,14 @@ final class ContainerImpl: Container {
         }
     }
 
-    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [NubrickEvent] {
+    func recordTriggerEvents(events: [NubrickEvent], userId: String, sourceExperimentId: String?) async -> [NubrickEvent] {
         var recordedEvents = [NubrickEvent]()
         for event in events {
             await self.trackRepository.trackEvent(TrackUserEvent(
                 name: event.name,
                 experimentId: sourceExperimentId,
                 properties: event.properties.isEmpty ? nil : event.properties
-            ))
+            ), userId: userId)
             if await self.databaseRepository.appendUserEvent(name: event.name) {
                 recordedEvents.append(event)
             }

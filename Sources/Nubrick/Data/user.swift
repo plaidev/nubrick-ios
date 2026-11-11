@@ -80,16 +80,35 @@ private func formatUserPropertyValue(_ value: Any) -> String {
     return String(describing: value)
 }
 
+// Thread-safe copy of NubrickUser.properties["userId"] for dispatch before the main-actor hop.
+final class UserIdSnapshot: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = ""
+
+    var userId: String {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+
+    fileprivate func update(_ userId: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        value = userId
+    }
+}
+
 @MainActor
 class NubrickUser {
     @Published private var properties: [String: String]
     @Published private var customProperties: [String: String]
     private var lastBootTime: Double = getCurrentDate().timeIntervalSince1970
     internal var userDB: UserDefaults
+    private let userIdSnapshot: UserIdSnapshot
     // Stable SDK-generated identity, independent of the customer-provided userId.
     let installationId: String
 
-    init(userDefaults: UserDefaults? = nil) {
+    init(userDefaults: UserDefaults? = nil, userIdSnapshot: UserIdSnapshot = UserIdSnapshot()) {
         let suiteName = "\(Bundle.main.bundleIdentifier ?? "app").nativebrik.com"
         self.userDB = userDefaults ?? UserDefaults(suiteName: suiteName) ?? UserDefaults.standard
         self.properties = [:]
@@ -125,6 +144,8 @@ class NubrickUser {
             userId = ""
         }
         self.installationId = installationId
+        self.userIdSnapshot = userIdSnapshot
+        userIdSnapshot.update(userId)
         // Store the pair together before removing legacy values, so migration can safely resume.
         self.userDB.set(["installationId": installationId, "userId": userId], forKey: NativebrikUserDefaultsKeys.IDENTITY.rawValue)
         self.userDB.removeObject(forKey: NativebrikUserDefaultsKeys.LEGACY_USER_ID.rawValue)
@@ -212,6 +233,7 @@ class NubrickUser {
                 print("[Nubrick] userId must not exceed 300 Unicode code points.")
                 return
             }
+            self.userIdSnapshot.update(userId)
             self.properties[BuiltinUserProperty.userId.rawValue] = userId
             self.userDB.set(["installationId": self.installationId, "userId": userId], forKey: NativebrikUserDefaultsKeys.IDENTITY.rawValue)
             return

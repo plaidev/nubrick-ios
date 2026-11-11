@@ -78,7 +78,7 @@ private actor TriggerTrackRepositorySpy: TrackRepository2 {
     func trackExperimentEvent(_ event: TrackExperimentEvent) async {
         displayedExperiments.append(event.experimentId)
     }
-    func trackEvent(_ event: TrackUserEvent) async {}
+    func trackEvent(_ event: TrackUserEvent, userId: String) async {}
     func flushNow() async {}
     func processMetricKitCrash(callStackTreeJSON: Data, terminationReason: String?, exceptionType: UInt32?) async {}
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async {}
@@ -97,7 +97,7 @@ private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
 
     func trackExperimentEvent(_ event: TrackExperimentEvent) async {}
 
-    func trackEvent(_ event: TrackUserEvent) async {}
+    func trackEvent(_ event: TrackUserEvent, userId: String) async {}
 
     func flushNow() async {}
 
@@ -451,6 +451,77 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
+    func testDispatchPreservesUserIdAcrossTaskDelayAndCallbacks() async throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let userIdSnapshot = UserIdSnapshot()
+        let user = NubrickUser(userIdSnapshot: userIdSnapshot)
+        let previousUserId = user.userId
+        defer { user.setProperty("userId", value: previousUserId) }
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let config = Config(projectId: PROJECT_ID_FOR_TEST)
+        let repository = TrackRespositoryImpl(config: config, user: user,
+            persistentContainer: persistentContainer, trackingHTTPClient: client)
+        let container = ContainerImpl(
+            config: config, user: user, actionHandler: { _, _ in },
+            experimentRepository: NoMatchingExperimentRepository(),
+            componentRepository: ComponentRepositoryImpl(config: config), trackRepository: repository,
+            databaseRepository: DatabaseRepositoryImpl(persistentContainer: persistentContainer),
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+        let recorded = expectation(description: "All dispatch tasks recorded")
+        recorded.expectedFulfillmentCount = 3
+        let controller = TriggerViewController(user: user, container: container, modalViewController: nil,
+            onDispatch: { _ in
+                user.setProperty("userId", value: "callback-user")
+                recorded.fulfill()
+            })
+        user.setProperty("userId", value: "customer-a")
+        let userId = await Task.detached {
+            XCTAssertFalse(Thread.isMainThread)
+            return userIdSnapshot.userId
+        }.value
+        let event = NubrickEvent("delayed", properties: ["amount": 12.5])
+        controller.dispatch(event: event, userId: userId, sourceExperimentId: "source")
+        controller.dispatch(event: event, userId: userId, sourceExperimentId: "source")
+        user.setProperty("userId", value: "")
+        controller.dispatch(event: NubrickEvent("anonymous"), userId: userIdSnapshot.userId)
+        // No main-actor dispatch task can run until this test suspends.
+        user.setProperty("userId", value: "customer-b")
+        await fulfillment(of: [recorded], timeout: 3)
+
+        XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 3)
+        await repository.flushNow()
+        let requests = await client.recordedRequests()
+        var seen = Set<String>()
+        var identifiedCount = 0
+        var anonymousCount = 0
+        for request in requests {
+            let body = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any])
+            XCTAssertEqual(body["installationId"] as? String, user.installationId)
+            let events = try XCTUnwrap(body["events"] as? [[String: Any]])
+            for payload in events {
+                seen.insert(try XCTUnwrap(payload["eventUuid"] as? String))
+                if payload["name"] as? String == "delayed" {
+                    identifiedCount += 1
+                    XCTAssertEqual(body["userId"] as? String, "customer-a")
+                    XCTAssertEqual(payload["experimentId"] as? String, "source")
+                    let properties = try JSONSerialization.jsonObject(with: JSONEncoder().encode(event.properties)) as? NSDictionary
+                    XCTAssertEqual(payload["properties"] as? NSDictionary, properties)
+                } else {
+                    anonymousCount += 1
+                    XCTAssertEqual(payload["name"] as? String, "anonymous")
+                    XCTAssertNil(body["userId"])
+                }
+            }
+        }
+        XCTAssertEqual(identifiedCount, 2)
+        XCTAssertEqual(anonymousCount, 1)
+        XCTAssertEqual(seen.count, 3)
+    }
+
+    @MainActor
     func testTrackingEventPersistsThenFlushesAfterSuccessfulResponse() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
@@ -463,7 +534,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "persisted-event"))
+        await repository.trackEvent(TrackUserEvent(name: "persisted-event"), userId: "")
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 1)
 
         await repository.flushNow()
@@ -516,11 +587,11 @@ final class HttpRequestReposotiryTests: XCTestCase {
         XCTAssertEqual(sourceExperimentId, "source-experiment")
 
         let controller = TriggerViewController(user: user, container: container, modalViewController: nil)
-        await controller.performDispatch(events: [event], sourceExperimentId: sourceExperimentId)
+        await controller.performDispatch(events: [event], userId: "", sourceExperimentId: sourceExperimentId)
         var callbackEvent: NubrickEvent?
         controller.updateCallbacks(onDispatch: { callbackEvent = $0 }, onTooltip: nil)
         let publicDispatchedEvent = NubrickEvent("public-event", properties: ["amount": 12.5])
-        await controller.performDispatch(events: [publicDispatchedEvent])
+        await controller.performDispatch(events: [publicDispatchedEvent], userId: "")
         XCTAssertEqual(callbackEvent?.properties, ["amount": .float(12.5)])
         await repository.flushNow()
 
@@ -555,7 +626,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "retry-event"))
+        await repository.trackEvent(TrackUserEvent(name: "retry-event"), userId: "")
         await repository.flushNow()
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 1)
 
@@ -592,7 +663,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "bad-event"))
+        await repository.trackEvent(TrackUserEvent(name: "bad-event"), userId: "")
         await repository.flushNow()
 
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 0)
@@ -613,7 +684,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "retry-http-event"))
+        await repository.trackEvent(TrackUserEvent(name: "retry-http-event"), userId: "")
         await repository.flushNow()
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 1)
 
@@ -648,7 +719,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         await repository.flushNow()
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 0)
 
-        await repository.trackEvent(TrackUserEvent(name: "later-event"))
+        await repository.trackEvent(TrackUserEvent(name: "later-event"), userId: "")
         await repository.flushNow()
 
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 0)
@@ -671,7 +742,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "held-event"))
+        await repository.trackEvent(TrackUserEvent(name: "held-event"), userId: "")
         let firstFlush = Task {
             await repository.flushNow()
         }
@@ -749,7 +820,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "before-switch"))
+        await repository.trackEvent(TrackUserEvent(name: "before-switch"), userId: user.userId)
         user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-after")
         await repository.flushNow()
 
@@ -838,11 +909,11 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "event-a"))
+        await repository.trackEvent(TrackUserEvent(name: "event-a"), userId: user.userId)
         user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-b")
-        await repository.trackEvent(TrackUserEvent(name: "event-b"))
+        await repository.trackEvent(TrackUserEvent(name: "event-b"), userId: user.userId)
         user.setProperty("userId", value: "")
-        await repository.trackEvent(TrackUserEvent(name: "logged-out"))
+        await repository.trackEvent(TrackUserEvent(name: "logged-out"), userId: user.userId)
         await repository.flushNow()
 
         let requests = await client.recordedRequests()
@@ -1540,7 +1611,7 @@ final class ContainerTests: XCTestCase {
         let first = NubrickEvent("first", properties: ["value": "first"])
         let second = NubrickEvent("second", properties: ["value": "second"])
         let recorded = await container.recordTriggerEvents(
-            events: [first, NubrickEvent("failed", properties: ["value": "failed"]), second], sourceExperimentId: nil
+            events: [first, NubrickEvent("failed", properties: ["value": "failed"]), second], userId: "", sourceExperimentId: nil
         )
         XCTAssertEqual(recorded.map(\.name), ["first", "second"])
         XCTAssertEqual(recorded.map(\.properties), [first.properties, second.properties])

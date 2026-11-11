@@ -52,7 +52,7 @@ final class NubrickClientTests: XCTestCase {
 final class NubrickBridgeRenderTests: XCTestCase {
     @MainActor
     func testMalformedJSONFinishesSessionBeforeNotifyingDismissal() throws {
-        let runtime = NubrickCore(projectId: PROJECT_ID_FOR_TEST, onEvent: nil,
+        let runtime = NubrickCore(projectId: PROJECT_ID_FOR_TEST, user: NubrickUser(), onEvent: nil,
             httpRequestInterceptor: nil, onDispatch: nil, onTooltip: nil)
         let overlay = try XCTUnwrap(runtime.overlayViewController() as? OverlayViewController)
         let modal = overlay.modalForTriggerViewController
@@ -70,7 +70,7 @@ final class NubrickBridgeRenderTests: XCTestCase {
 
     @MainActor
     func testMalformedJSONCannotFinishAnotherSession() throws {
-        let runtime = NubrickCore(projectId: PROJECT_ID_FOR_TEST, onEvent: nil,
+        let runtime = NubrickCore(projectId: PROJECT_ID_FOR_TEST, user: NubrickUser(), onEvent: nil,
             httpRequestInterceptor: nil, onDispatch: nil, onTooltip: nil)
         let overlay = try XCTUnwrap(runtime.overlayViewController() as? OverlayViewController)
         let modal = overlay.modalForTriggerViewController

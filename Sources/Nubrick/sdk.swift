@@ -115,12 +115,12 @@ internal func nubrickWarn(_ message: String) {
 }
 
 @MainActor
-private func dispatchMainActor(_ event: NubrickEvent, sourceExperimentId: String? = nil) {
+private func dispatchMainActor(_ event: NubrickEvent, userId: String, sourceExperimentId: String? = nil) {
     guard let runtime = NubrickSDK.requireRuntime() else {
         nubrickWarn("Dropping event before initialize: \(event.name)")
         return
     }
-    runtime.dispatch(event, sourceExperimentId: sourceExperimentId)
+    runtime.dispatch(event, userId: userId, sourceExperimentId: sourceExperimentId)
 }
 
 final class Config : Sendable{
@@ -214,16 +214,18 @@ final class NubrickCore {
 
     init(
         projectId: String,
+        user: NubrickUser,
         onEvent: (@Sendable (_ event: ComponentEvent) -> Void)?,
         httpRequestInterceptor: NubrickHttpRequestInterceptor?,
         onDispatch: ((_ event: NubrickEvent) -> Void)?,
         onTooltip: ((_ data: String, _ experimentId: String, _ variantId: String?, _ sessionId: String) -> Void)?
     ) {
-        let user = NubrickUser()
         let bridgeCallbackStore = BridgeCallbackStore(onEvent: onEvent)
         let actionHandler: @MainActor (_ action: UIBlockAction, _ experimentId: String?) -> Void = { action, experimentId in
             // Terminal sdk pipeline: convert -> side effects -> trigger dispatch.
             let converted = convertEvent(action)
+            // Host callbacks may log in or out before the event reaches tracking.
+            let userId = user.userId
             openLink(converted)
             bridgeCallbackStore.onEvent?(converted)
 
@@ -231,7 +233,7 @@ final class NubrickCore {
                   !name.isEmpty else {
                 return
             }
-            dispatchMainActor(NubrickEvent(name), sourceExperimentId: experimentId)
+            dispatchMainActor(NubrickEvent(name), userId: userId, sourceExperimentId: experimentId)
         }
         let config = Config(projectId: projectId)
         let dependencies = NubrickDependencyContainer(
@@ -256,8 +258,8 @@ final class NubrickCore {
         }
     }
 
-    func dispatch(_ event: NubrickEvent, sourceExperimentId: String? = nil) {
-        self.overlayVC.triggerViewController.dispatch(event: event, sourceExperimentId: sourceExperimentId)
+    func dispatch(_ event: NubrickEvent, userId: String, sourceExperimentId: String? = nil) {
+        self.overlayVC.triggerViewController.dispatch(event: event, userId: userId, sourceExperimentId: sourceExperimentId)
     }
 
     func updateBridgeCallbacks(
@@ -513,6 +515,7 @@ final class NubrickCore {
 }
 
 public enum NubrickSDK {
+    private static let userIdSnapshot = UserIdSnapshot()
     @MainActor
     fileprivate static var runtime: NubrickCore? = nil
 
@@ -561,6 +564,7 @@ public enum NubrickSDK {
 
         let runtime = NubrickCore(
             projectId: projectId,
+            user: NubrickUser(userIdSnapshot: userIdSnapshot),
             onEvent: onEvent,
             httpRequestInterceptor: httpRequestInterceptor,
             onDispatch: onDispatch,
@@ -620,8 +624,10 @@ public enum NubrickSDK {
     }
 
     public nonisolated static func dispatch(_ event: NubrickEvent) {
+        // Snapshot before the main-actor hop, where the current user may have changed.
+        let userId = userIdSnapshot.userId
         Task { @MainActor in
-            dispatchMainActor(event)
+            dispatchMainActor(event, userId: userId)
         }
     }
 
