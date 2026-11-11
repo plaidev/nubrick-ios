@@ -319,10 +319,12 @@ final class NubrickCore {
         defer {
             if let sessionId { modal.finishDisplayRecording(sessionId) }
         }
-        guard await self.makeContainer().recordDisplayedTriggerContent(
-            experimentId: experimentId,
-            variantId: variantId
-        ) else {
+        let recorded = await withCheckedContinuation { continuation in
+            self.makeContainer().recordDisplayedTriggerContent(experimentId: experimentId, variantId: variantId) {
+                continuation.resume(returning: $0)
+            }
+        }
+        guard recorded else {
             print("Couldn't record displayed tooltip content")
             return
         }

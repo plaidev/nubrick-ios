@@ -75,27 +75,28 @@ private actor TriggerDatabaseRepositorySpy: DatabaseRepository {
 
 private actor TriggerTrackRepositorySpy: TrackRepository2 {
     private(set) var displayedExperiments = [String]()
-    func trackExperimentEvent(_ event: TrackExperimentEvent) async {
+    func trackExperimentEvent(_ event: TrackExperimentEvent, userId: String) async {
         displayedExperiments.append(event.experimentId)
     }
     func trackEvent(_ event: TrackUserEvent, userId: String) async {}
     func flushNow() async {}
     func processMetricKitCrash(callStackTreeJSON: Data, terminationReason: String?, exceptionType: UInt32?) async {}
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async {}
-    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {}
+    func sendSurveyResponse(experimentId: String, variantId: String, userId: String, response_data: String) async {}
 }
 
 private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
     struct Response {
         let experimentId: String
         let variantId: String
+        let userId: String
         let data: String
     }
 
     private var responses: [Response] = []
     private var responseWaiters: [CheckedContinuation<Response, Never>] = []
 
-    func trackExperimentEvent(_ event: TrackExperimentEvent) async {}
+    func trackExperimentEvent(_ event: TrackExperimentEvent, userId: String) async {}
 
     func trackEvent(_ event: TrackUserEvent, userId: String) async {}
 
@@ -109,10 +110,11 @@ private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async {}
 
-    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {
+    func sendSurveyResponse(experimentId: String, variantId: String, userId: String, response_data: String) async {
         let response = Response(
             experimentId: experimentId,
             variantId: variantId,
+            userId: userId,
             data: response_data
         )
         if responseWaiters.isEmpty {
@@ -821,11 +823,28 @@ final class HttpRequestReposotiryTests: XCTestCase {
         )
 
         await repository.trackEvent(TrackUserEvent(name: "before-switch"), userId: user.userId)
+        let container = ContainerImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST), user: user, actionHandler: { _, _ in },
+            experimentRepository: NoMatchingExperimentRepository(),
+            componentRepository: TriggerComponentRepositorySpy(), trackRepository: repository,
+            databaseRepository: DatabaseRepositoryImpl(persistentContainer: persistentContainer),
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+        let exposure = expectation(description: "Exposure recorded")
+        container.recordDisplayedTriggerContent(experimentId: "experiment", variantId: "variant") { recorded in
+            XCTAssertTrue(recorded)
+            exposure.fulfill()
+        }
         user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-after")
+        await fulfillment(of: [exposure], timeout: 3)
         await repository.flushNow()
 
         let requests = await client.recordedRequests()
+        XCTAssertEqual(requests.count, 1)
         let body = try requestJSON(in: try XCTUnwrap(requests.first))
+        let events = try XCTUnwrap(body["events"] as? [[String: Any]])
+        XCTAssertEqual(events.count, 2)
+        XCTAssertEqual(events.last?["experimentId"] as? String, "experiment")
         XCTAssertEqual(body["installationId"] as? String, user.installationId)
         XCTAssertEqual(body["userId"] as? String, "user-before")
         XCTAssertNil(body["customUserId"])
@@ -1111,7 +1130,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         entity.payload = try JSONEncoder().encode(event)
         entity.eventType = event.typename.rawValue
         entity.byteCount = Int64(entity.payload.count)
-        entity.createdAt = Date()
+        entity.createdAt = Date(timeIntervalSince1970: 1)
         entity.userId = "legacy-customer"
         entity.metaPayload = try JSONEncoder().encode(TrackEventMeta.current())
         try previousContainer.viewContext.save()
@@ -1127,11 +1146,13 @@ final class HttpRequestReposotiryTests: XCTestCase {
         XCTAssertEqual(pending.userId, "legacy-customer")
         XCTAssertNotNil(outbox.insertAndGetPendingCount(
             makePendingTrackEvent(name: "after-upgrade"), installationId: "previous-installation",
-            userId: "legacy-customer", meta: TrackEventMeta.current()
+            userId: "legacy-customer", meta: TrackEventMeta.current(),
+            enqueuedAt: Date(timeIntervalSince1970: 2)
         ))
         XCTAssertNotNil(outbox.insertAndGetPendingCount(
             makePendingTrackEvent(name: "anonymous"), installationId: "previous-installation",
-            userId: nil, meta: TrackEventMeta.current()
+            userId: nil, meta: TrackEventMeta.current(),
+            enqueuedAt: Date(timeIntervalSince1970: 3)
         ))
         XCTAssertEqual(try outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).map(\.eventID), [event.eventUuid])
         let client = TrackingHTTPClientSpy(response: .statusCode(200))
@@ -1419,9 +1440,11 @@ final class ContainerTests: XCTestCase {
             httpRequestRepository: HttpRequestRepositoryImpl()
         )
 
-        let recorded = await container.recordDisplayedTriggerContent(
-            experimentId: "experiment", variantId: "variant"
-        )
+        let recorded = await withCheckedContinuation { continuation in
+            container.recordDisplayedTriggerContent(experimentId: "experiment", variantId: "variant") {
+                continuation.resume(returning: $0)
+            }
+        }
 
         XCTAssertFalse(recorded)
         let attempts = await database.appendExperimentHistoryAttempts
@@ -1512,9 +1535,11 @@ final class ContainerTests: XCTestCase {
         XCTAssertTrue(historyBefore.isEmpty)
         XCTAssertTrue(exposuresBefore.isEmpty)
 
-        let recorded = await container.recordDisplayedTriggerContent(
-            experimentId: content.experimentId, variantId: content.variantId
-        )
+        let recorded = await withCheckedContinuation { continuation in
+            container.recordDisplayedTriggerContent(experimentId: content.experimentId, variantId: content.variantId) {
+                continuation.resume(returning: $0)
+            }
+        }
         XCTAssertTrue(recorded)
         let historyAfter = await database.displayedExperiments
         let exposuresAfter = await tracker.displayedExperiments
@@ -1672,10 +1697,11 @@ final class ContainerTests: XCTestCase {
         XCTAssertTrue(historyBeforeConfirmation.isEmpty)
         XCTAssertTrue(exposuresBeforeConfirmation.isEmpty)
 
-        let recorded = await container.recordDisplayedTriggerContent(
-            experimentId: content.experimentId,
-            variantId: content.variantId
-        )
+        let recorded = await withCheckedContinuation { continuation in
+            container.recordDisplayedTriggerContent(experimentId: content.experimentId, variantId: content.variantId) {
+                continuation.resume(returning: $0)
+            }
+        }
         XCTAssertTrue(recorded)
         let historyAfterConfirmation = await database.displayedExperiments
         let exposuresAfterConfirmation = await tracker.displayedExperiments
@@ -1714,13 +1740,18 @@ final class ContainerTests: XCTestCase {
     func testHandleEventSubmitsSurveyResponseWhenRequested() async throws {
         let db = try XCTUnwrap(createNativebrikCoreDataHelper(), "Could not init DB")
         let user = NubrickUser()
+        let previousUserId = user.userId
+        defer { user.setProperty("userId", value: previousUserId) }
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
         let trackRepository = SurveyResponseTrackRepositorySpy()
         var handledAction: UIBlockAction?
         let container = ContainerImpl(
             config: config,
             user: user,
-            actionHandler: { action, _ in handledAction = action },
+            actionHandler: { action, _ in
+                handledAction = action
+                user.setProperty("userId", value: "callback-user")
+            },
             experimentRepository: ExperimentRepositoryImpl(config: config),
             componentRepository: ComponentRepositoryImpl(config: config),
             trackRepository: trackRepository,
@@ -1742,17 +1773,22 @@ final class ContainerTests: XCTestCase {
             submitSurveyResponse: true
         )
 
-        container.handleEvent(action)
+        for userId in ["customer-123", ""] {
+            user.setProperty("userId", value: userId)
+            container.handleEvent(action)
+            XCTAssertEqual(user.userId, "callback-user")
 
-        let response = await trackRepository.nextResponse()
-        XCTAssertEqual(response.experimentId, "experiment-id")
-        XCTAssertEqual(response.variantId, "variant-id")
-        let responseData = try XCTUnwrap(response.data.data(using: .utf8))
-        let responseJSON = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: responseData) as? [String: String]
-        )
-        XCTAssertEqual(responseJSON, ["answer": "yes"])
-        XCTAssertEqual(handledAction?.eventName, "survey-submitted")
+            let response = await trackRepository.nextResponse()
+            XCTAssertEqual(response.userId, userId)
+            XCTAssertEqual(response.experimentId, "experiment-id")
+            XCTAssertEqual(response.variantId, "variant-id")
+            let responseData = try XCTUnwrap(response.data.data(using: .utf8))
+            let responseJSON = try XCTUnwrap(
+                JSONSerialization.jsonObject(with: responseData) as? [String: String]
+            )
+            XCTAssertEqual(responseJSON, ["answer": "yes"])
+            XCTAssertEqual(handledAction?.eventName, "survey-submitted")
+        }
     }
 
     func testRootViewAppliesExperimentContextToSurveyResponses() async throws {

@@ -151,7 +151,7 @@ public enum CrashSeverity: String, Sendable {
 }
 
 protocol TrackRepository2 : Actor {
-    func trackExperimentEvent(_ event: TrackExperimentEvent) async
+    func trackExperimentEvent(_ event: TrackExperimentEvent, userId: String) async
     func trackEvent(_ event: TrackUserEvent, userId: String) async
     func flushNow() async
 
@@ -162,7 +162,7 @@ protocol TrackRepository2 : Actor {
     ) async
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async
-    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async
+    func sendSurveyResponse(experimentId: String, variantId: String, userId: String, response_data: String) async
 }
 
 struct SurveyResponseRequest: Encodable {
@@ -649,14 +649,14 @@ actor TrackRespositoryImpl: TrackRepository2 {
         return request
     }
 
-    func trackExperimentEvent(_ event: TrackExperimentEvent) async {
+    func trackExperimentEvent(_ event: TrackExperimentEvent, userId: String) async {
         await enqueue(TrackEvent(
             typename: .Experiment,
             experimentId: event.experimentId,
             variantId: event.variantId,
             timestamp: getCurrentDate().ISO8601Format(),
             eventUuid: UUID().uuidString
-        ))
+        ), userId: userId)
     }
     
     func trackEvent(_ event: TrackUserEvent, userId: String) async {
@@ -680,11 +680,11 @@ actor TrackRespositoryImpl: TrackRepository2 {
         await drainOutbox()
     }
 
-    private func enqueue(_ event: TrackEvent) async {
-        let (installationId, userId, meta) = await MainActor.run {
-            (self.user.installationId, self.user.userId.isEmpty ? nil : self.user.userId, TrackEventMeta.current())
+    private func enqueue(_ event: TrackEvent, userId: String) async {
+        let (installationId, meta) = await MainActor.run {
+            (self.user.installationId, TrackEventMeta.current())
         }
-        await enqueue(event, installationId: installationId, userId: userId, meta: meta)
+        await enqueue(event, installationId: installationId, userId: userId.isEmpty ? nil : userId, meta: meta)
     }
 
     private func enqueue(_ event: TrackEvent, installationId: String, userId: String?, meta: TrackEventMeta) async {
@@ -944,13 +944,11 @@ actor TrackRespositoryImpl: TrackRepository2 {
         await sendCrashToBackend(crashEvent)
     }
 
-    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {
+    func sendSurveyResponse(experimentId: String, variantId: String, userId: String, response_data: String) async {
         guard !experimentId.isEmpty, !variantId.isEmpty else {
             return
         }
-        let (installationId, userId) = await MainActor.run {
-            (self.user.installationId, self.user.userId.isEmpty ? nil : self.user.userId)
-        }
+        let installationId = self.user.installationId
 
         do {
             let requestBody = SurveyResponseRequest(
@@ -959,7 +957,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
                 experimentId: experimentId,
                 variantId: variantId,
                 installationId: installationId,
-                userId: userId,
+                userId: userId.isEmpty ? nil : userId,
                 response_data: response_data,
                 meta: await TrackEventMeta.current()
             )

@@ -33,6 +33,7 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
     @MainActor var recordedSources = [String?]()
     @MainActor var failedTriggers = Set<String>()
     @MainActor var displayedExperiments = [String]()
+    @MainActor var displayRecordingRequests = [String]()
     @MainActor var handledActions = [UIBlockAction]()
     @MainActor var roots = [String: UIRootBlock]()
     @MainActor var firstFetchContinuation: CheckedContinuation<Void, Never>?
@@ -162,20 +163,20 @@ private final class TriggerContainerSpy: Container, @unchecked Sendable {
         }
     }
 
-    func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool {
-        if await MainActor.run(body: { self.shouldPauseDisplayRecording }) {
-            await withCheckedContinuation { continuation in
-                Task { @MainActor in
+    @MainActor
+    func recordDisplayedTriggerContent(experimentId: String, variantId: String, completion: @escaping @MainActor (Bool) -> Void) {
+        self.displayRecordingRequests.append(experimentId)
+        Task {
+            if self.shouldPauseDisplayRecording {
+                await withCheckedContinuation { continuation in
                     self.displayRecordingContinuation = continuation
                     self.onDisplayRecordingPaused?()
                 }
             }
-        }
-        await MainActor.run {
             self.displayedExperiments.append(experimentId)
             self.onDisplayed?()
+            completion(true)
         }
-        return true
     }
 
     func fetchRemoteConfig(
@@ -595,6 +596,25 @@ final class TriggerViewControllerTests: XCTestCase {
           {"id":"done","data":{"kind":"DISMISSED"}}
         ]}}
         """.utf8))
+    }
+
+    @MainActor
+    func testPopupStartsExposureRecordingAtDisplayConfirmation() async throws {
+        let container = TriggerContainerSpy()
+        let modal = TriggerModalSpy()
+        let session = try XCTUnwrap(modal.startTriggerExperiment())
+        let root = ModalRootViewController(
+            root: nativeRoot(), experimentId: "popup", variantId: "variant",
+            container: container, modalViewController: modal, triggerSession: session
+        )
+        let displayed = expectation(description: "Exposure recorded")
+        container.onDisplayed = { displayed.fulfill() }
+        XCTAssertTrue(container.displayRecordingRequests.isEmpty)
+        modal.onShown?()
+        XCTAssertEqual(container.displayRecordingRequests, ["popup"])
+
+        await fulfillment(of: [displayed], timeout: 1)
+        withExtendedLifetime(root) {}
     }
 
     @MainActor
