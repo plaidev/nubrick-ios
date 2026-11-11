@@ -75,29 +75,30 @@ private actor TriggerDatabaseRepositorySpy: DatabaseRepository {
 
 private actor TriggerTrackRepositorySpy: TrackRepository2 {
     private(set) var displayedExperiments = [String]()
-    func trackExperimentEvent(_ event: TrackExperimentEvent) async {
+    func trackExperimentEvent(_ event: TrackExperimentEvent, userId: String) async {
         displayedExperiments.append(event.experimentId)
     }
-    func trackEvent(_ event: TrackUserEvent) async {}
+    func trackEvent(_ event: TrackUserEvent, userId: String) async {}
     func flushNow() async {}
     func processMetricKitCrash(callStackTreeJSON: Data, terminationReason: String?, exceptionType: UInt32?) async {}
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async {}
-    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {}
+    func sendSurveyResponse(experimentId: String, variantId: String, userId: String, response_data: String) async {}
 }
 
 private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
     struct Response {
         let experimentId: String
         let variantId: String
+        let userId: String
         let data: String
     }
 
     private var responses: [Response] = []
     private var responseWaiters: [CheckedContinuation<Response, Never>] = []
 
-    func trackExperimentEvent(_ event: TrackExperimentEvent) async {}
+    func trackExperimentEvent(_ event: TrackExperimentEvent, userId: String) async {}
 
-    func trackEvent(_ event: TrackUserEvent) async {}
+    func trackEvent(_ event: TrackUserEvent, userId: String) async {}
 
     func flushNow() async {}
 
@@ -109,10 +110,11 @@ private actor SurveyResponseTrackRepositorySpy: TrackRepository2 {
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async {}
 
-    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {
+    func sendSurveyResponse(experimentId: String, variantId: String, userId: String, response_data: String) async {
         let response = Response(
             experimentId: experimentId,
             variantId: variantId,
+            userId: userId,
             data: response_data
         )
         if responseWaiters.isEmpty {
@@ -228,6 +230,31 @@ private actor TrackingHTTPClientSpy: HTTPClient {
 }
 
 final class HttpRequestReposotiryTests: XCTestCase {
+    @MainActor
+    func testSurveyResponseEncodesInstallationAndOptionalUserID() throws {
+        for userId in ["customer-123", nil] as [String?] {
+            let request = SurveyResponseRequest(
+                timestamp: "2024-06-15T12:30:45Z",
+                projectId: "project-123",
+                experimentId: "experiment-123",
+                variantId: "variant-123",
+                installationId: "installation-123",
+                userId: userId,
+                response_data: "{\"score\":10}",
+                meta: TrackEventMeta.current()
+            )
+            let data = try JSONEncoder().encode(request)
+            let body = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            XCTAssertEqual(body["installationId"] as? String, "installation-123")
+            if let userId {
+                XCTAssertEqual(body["userId"] as? String, userId)
+            } else {
+                XCTAssertNil(body["userId"])
+            }
+            XCTAssertEqual(body["response_data"] as? String, "{\"score\":10}")
+        }
+    }
+
     @MainActor
     func testTrackingOutboxAppliesExistingEventSizeLimitToProperties() throws {
         let storeURL = makeTemporaryStoreURL()
@@ -426,6 +453,77 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
+    func testDispatchPreservesUserIdAcrossTaskDelayAndCallbacks() async throws {
+        let storeURL = makeTemporaryStoreURL()
+        let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
+        let userIdSnapshot = UserIdSnapshot()
+        let user = NubrickUser(userIdSnapshot: userIdSnapshot)
+        let previousUserId = user.userId
+        defer { user.setProperty("userId", value: previousUserId) }
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let config = Config(projectId: PROJECT_ID_FOR_TEST)
+        let repository = TrackRespositoryImpl(config: config, user: user,
+            persistentContainer: persistentContainer, trackingHTTPClient: client)
+        let container = ContainerImpl(
+            config: config, user: user, actionHandler: { _, _ in },
+            experimentRepository: NoMatchingExperimentRepository(),
+            componentRepository: ComponentRepositoryImpl(config: config), trackRepository: repository,
+            databaseRepository: DatabaseRepositoryImpl(persistentContainer: persistentContainer),
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+        let recorded = expectation(description: "All dispatch tasks recorded")
+        recorded.expectedFulfillmentCount = 3
+        let controller = TriggerViewController(user: user, container: container, modalViewController: nil,
+            onDispatch: { _ in
+                user.setProperty("userId", value: "callback-user")
+                recorded.fulfill()
+            })
+        user.setProperty("userId", value: "customer-a")
+        let userId = await Task.detached {
+            XCTAssertFalse(Thread.isMainThread)
+            return userIdSnapshot.userId
+        }.value
+        let event = NubrickEvent("delayed", properties: ["amount": 12.5])
+        controller.dispatch(event: event, userId: userId, sourceExperimentId: "source")
+        controller.dispatch(event: event, userId: userId, sourceExperimentId: "source")
+        user.setProperty("userId", value: "")
+        controller.dispatch(event: NubrickEvent("anonymous"), userId: userIdSnapshot.userId)
+        // No main-actor dispatch task can run until this test suspends.
+        user.setProperty("userId", value: "customer-b")
+        await fulfillment(of: [recorded], timeout: 3)
+
+        XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 3)
+        await repository.flushNow()
+        let requests = await client.recordedRequests()
+        var seen = Set<String>()
+        var identifiedCount = 0
+        var anonymousCount = 0
+        for request in requests {
+            let body = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any])
+            XCTAssertEqual(body["installationId"] as? String, user.installationId)
+            let events = try XCTUnwrap(body["events"] as? [[String: Any]])
+            for payload in events {
+                seen.insert(try XCTUnwrap(payload["eventUuid"] as? String))
+                if payload["name"] as? String == "delayed" {
+                    identifiedCount += 1
+                    XCTAssertEqual(body["userId"] as? String, "customer-a")
+                    XCTAssertEqual(payload["experimentId"] as? String, "source")
+                    let properties = try JSONSerialization.jsonObject(with: JSONEncoder().encode(event.properties)) as? NSDictionary
+                    XCTAssertEqual(payload["properties"] as? NSDictionary, properties)
+                } else {
+                    anonymousCount += 1
+                    XCTAssertEqual(payload["name"] as? String, "anonymous")
+                    XCTAssertNil(body["userId"])
+                }
+            }
+        }
+        XCTAssertEqual(identifiedCount, 2)
+        XCTAssertEqual(anonymousCount, 1)
+        XCTAssertEqual(seen.count, 3)
+    }
+
+    @MainActor
     func testTrackingEventPersistsThenFlushesAfterSuccessfulResponse() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
@@ -438,7 +536,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "persisted-event"))
+        await repository.trackEvent(TrackUserEvent(name: "persisted-event"), userId: "")
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 1)
 
         await repository.flushNow()
@@ -491,11 +589,11 @@ final class HttpRequestReposotiryTests: XCTestCase {
         XCTAssertEqual(sourceExperimentId, "source-experiment")
 
         let controller = TriggerViewController(user: user, container: container, modalViewController: nil)
-        await controller.performDispatch(events: [event], sourceExperimentId: sourceExperimentId)
+        await controller.performDispatch(events: [event], userId: "", sourceExperimentId: sourceExperimentId)
         var callbackEvent: NubrickEvent?
         controller.updateCallbacks(onDispatch: { callbackEvent = $0 }, onTooltip: nil)
         let publicDispatchedEvent = NubrickEvent("public-event", properties: ["amount": 12.5])
-        await controller.performDispatch(events: [publicDispatchedEvent])
+        await controller.performDispatch(events: [publicDispatchedEvent], userId: "")
         XCTAssertEqual(callbackEvent?.properties, ["amount": .float(12.5)])
         await repository.flushNow()
 
@@ -530,7 +628,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "retry-event"))
+        await repository.trackEvent(TrackUserEvent(name: "retry-event"), userId: "")
         await repository.flushNow()
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 1)
 
@@ -567,7 +665,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "bad-event"))
+        await repository.trackEvent(TrackUserEvent(name: "bad-event"), userId: "")
         await repository.flushNow()
 
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 0)
@@ -588,7 +686,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "retry-http-event"))
+        await repository.trackEvent(TrackUserEvent(name: "retry-http-event"), userId: "")
         await repository.flushNow()
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 1)
 
@@ -623,7 +721,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         await repository.flushNow()
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 0)
 
-        await repository.trackEvent(TrackUserEvent(name: "later-event"))
+        await repository.trackEvent(TrackUserEvent(name: "later-event"), userId: "")
         await repository.flushNow()
 
         XCTAssertEqual(try pendingTrackEventCount(in: persistentContainer), 0)
@@ -646,7 +744,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "held-event"))
+        await repository.trackEvent(TrackUserEvent(name: "held-event"), userId: "")
         let firstFlush = Task {
             await repository.flushNow()
         }
@@ -710,7 +808,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
-    func testTrackingFlushUsesTrackingIdAndMetaCapturedAtTrackTime() async throws {
+    func testTrackingFlushUsesInstallationIdAndMetaCapturedAtTrackTime() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
         defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
@@ -724,13 +822,31 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "before-switch"))
+        await repository.trackEvent(TrackUserEvent(name: "before-switch"), userId: user.userId)
+        let container = ContainerImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST), user: user, actionHandler: { _, _ in },
+            experimentRepository: NoMatchingExperimentRepository(),
+            componentRepository: TriggerComponentRepositorySpy(), trackRepository: repository,
+            databaseRepository: DatabaseRepositoryImpl(persistentContainer: persistentContainer),
+            httpRequestRepository: HttpRequestRepositoryImpl()
+        )
+        let exposure = expectation(description: "Exposure recorded")
+        container.recordDisplayedTriggerContent(experimentId: "experiment", variantId: "variant") { recorded in
+            XCTAssertTrue(recorded)
+            exposure.fulfill()
+        }
         user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-after")
+        await fulfillment(of: [exposure], timeout: 3)
         await repository.flushNow()
 
         let requests = await client.recordedRequests()
+        XCTAssertEqual(requests.count, 1)
         let body = try requestJSON(in: try XCTUnwrap(requests.first))
-        XCTAssertEqual(body["userId"] as? String, user.trackingId)
+        let events = try XCTUnwrap(body["events"] as? [[String: Any]])
+        XCTAssertEqual(events.count, 2)
+        XCTAssertEqual(events.last?["experimentId"] as? String, "experiment")
+        XCTAssertEqual(body["installationId"] as? String, user.installationId)
+        XCTAssertEqual(body["userId"] as? String, "user-before")
         XCTAssertNil(body["customUserId"])
         XCTAssertNil(body["trackingId"])
         let meta = try XCTUnwrap(body["meta"] as? [String: Any])
@@ -756,7 +872,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         var capturedMeta = liveMeta
         capturedMeta.appVersion = "previous-app-version"
         capturedMeta.sdkVersion = "previous-sdk-version"
-        let contexts: [(trackingId: String?, meta: TrackEventMeta?)] = [
+        let contexts: [(userId: String?, meta: TrackEventMeta?)] = [
             (nil, nil),
             ("captured-user", nil),
             (nil, capturedMeta),
@@ -772,7 +888,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
             entity.eventType = event.typename.rawValue
             entity.byteCount = Int64(entity.payload.count)
             entity.createdAt = Date(timeIntervalSince1970: Double(index))
-            entity.userId = context.trackingId
+            entity.userId = context.userId
             entity.metaPayload = try context.meta.map { try JSONEncoder().encode($0) }
         }
         try persistentContainer.viewContext.save()
@@ -782,13 +898,15 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let requests = await client.recordedRequests()
         XCTAssertEqual(requests.count, contexts.count)
         struct RequestContext: Decodable {
-            let userId: String
+            let installationId: String?
+            let userId: String?
             let meta: TrackEventMeta
         }
         for (index, pair) in zip(requests, contexts).enumerated() {
             let (request, context) = pair
             let body = try JSONDecoder().decode(RequestContext.self, from: XCTUnwrap(request.httpBody))
-            XCTAssertEqual(body.userId, context.trackingId.flatMap { $0.isEmpty ? nil : $0 } ?? user.trackingId)
+            XCTAssertNil(body.installationId)
+            XCTAssertEqual(body.userId, context.userId.flatMap { $0.isEmpty ? nil : $0 } ?? user.installationId)
             XCTAssertEqual(body.meta, context.meta ?? liveMeta)
             XCTAssertEqual(try eventNames(in: request), ["context-\(index)"])
         }
@@ -796,7 +914,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
     }
 
     @MainActor
-    func testTrackingIdentityStaysStableAcrossCustomerIdentityChanges() async throws {
+    func testInstallationIdentityStaysStableAcrossCustomerIdentityChanges() async throws {
         let storeURL = makeTemporaryStoreURL()
         let persistentContainer = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
         defer { closeAndRemovePersistentStore(persistentContainer, at: storeURL) }
@@ -810,18 +928,25 @@ final class HttpRequestReposotiryTests: XCTestCase {
             trackingHTTPClient: client
         )
 
-        await repository.trackEvent(TrackUserEvent(name: "event-a"))
+        await repository.trackEvent(TrackUserEvent(name: "event-a"), userId: user.userId)
         user.setProperty(BuiltinUserProperty.userId.rawValue, value: "user-b")
-        await repository.trackEvent(TrackUserEvent(name: "event-b"))
+        await repository.trackEvent(TrackUserEvent(name: "event-b"), userId: user.userId)
         user.setProperty("userId", value: "")
-        await repository.trackEvent(TrackUserEvent(name: "logged-out"))
+        await repository.trackEvent(TrackUserEvent(name: "logged-out"), userId: user.userId)
         await repository.flushNow()
 
         let requests = await client.recordedRequests()
-        XCTAssertEqual(requests.count, 1)
-        XCTAssertEqual(try requestJSON(in: requests[0])["userId"] as? String, user.trackingId)
-        XCTAssertNil(try requestJSON(in: requests[0])["customUserId"])
-        XCTAssertEqual(try eventNames(in: requests[0]), ["event-a", "event-b", "logged-out"])
+        XCTAssertEqual(requests.count, 3)
+        let expectedUserIds: [String?] = ["user-a", "user-b", nil]
+        let expectedNames = ["event-a", "event-b", "logged-out"]
+        for (index, request) in requests.enumerated() {
+            let body = try requestJSON(in: request)
+            XCTAssertEqual(body["installationId"] as? String, user.installationId)
+            XCTAssertEqual(body["userId"] as? String, expectedUserIds[index])
+            XCTAssertNil(body["customUserId"])
+            XCTAssertNil(body["trackingId"])
+            XCTAssertEqual(try eventNames(in: request), [expectedNames[index]])
+        }
     }
 
     @MainActor
@@ -834,7 +959,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let user = NubrickUser(userDefaults: defaults)
-        let internalId = user.trackingId
+        let internalId = user.installationId
         let repository = TrackRespositoryImpl(
             config: Config(projectId: PROJECT_ID_FOR_TEST), user: user,
             persistentContainer: persistentContainer, trackingHTTPClient: client
@@ -849,7 +974,8 @@ final class HttpRequestReposotiryTests: XCTestCase {
         XCTAssertFalse(requests.isEmpty)
         for request in requests {
             let body = try requestJSON(in: request)
-            XCTAssertEqual(body["userId"] as? String, internalId)
+            XCTAssertEqual(body["installationId"] as? String, internalId)
+            XCTAssertEqual(body["userId"] as? String, "customer")
             XCTAssertNil(body["customUserId"])
         }
     }
@@ -887,14 +1013,14 @@ final class HttpRequestReposotiryTests: XCTestCase {
         XCTAssertNotNil(insertOutboxEvent(
             outbox,
             makePendingTrackEvent(name: "old-app"),
-            trackingId: "same-user",
+            installationId: "same-user",
             meta: firstMeta,
             enqueuedAt: Date(timeIntervalSince1970: 1)
         ))
         XCTAssertNotNil(insertOutboxEvent(
             outbox,
             makePendingTrackEvent(name: "new-app"),
-            trackingId: "same-user",
+            installationId: "same-user",
             meta: secondMeta,
             enqueuedAt: Date(timeIntervalSince1970: 2)
         ))
@@ -977,6 +1103,75 @@ final class HttpRequestReposotiryTests: XCTestCase {
         migratedContainer.viewContext.reset()
         let migratedStore = try XCTUnwrap(migratedContainer.persistentStoreCoordinator.persistentStores.first)
         try migratedContainer.persistentStoreCoordinator.remove(migratedStore)
+    }
+
+    @MainActor
+    func testCoreDataPreservesLegacyOutboxUserId() async throws {
+        let storeURL = makeTemporaryStoreURL()
+        defer { removeSQLiteStore(at: storeURL) }
+        let previousEntity = PendingTrackEventEntity.entityDescription()
+        previousEntity.properties.removeAll { $0.name == "installationId" }
+        let previousModel = NSManagedObjectModel()
+        previousModel.entities = [
+            UserEventEntity.entityDescription(),
+            ExperimentHistoryEntity.entityDescription(),
+            previousEntity,
+        ]
+        let previousContainer = NSPersistentContainer(name: "com.nativebrik.sdk", managedObjectModel: previousModel)
+        let description = NSPersistentStoreDescription(url: storeURL)
+        description.shouldAddStoreAsynchronously = false
+        previousContainer.persistentStoreDescriptions = [description]
+        var loadError: Error?
+        previousContainer.loadPersistentStores { _, error in loadError = error }
+        XCTAssertNil(loadError)
+        let event = makePendingTrackEvent(name: "before-upgrade")
+        let entity = PendingTrackEventEntity(entity: previousEntity, insertInto: previousContainer.viewContext)
+        entity.eventID = event.eventUuid
+        entity.payload = try JSONEncoder().encode(event)
+        entity.eventType = event.typename.rawValue
+        entity.byteCount = Int64(entity.payload.count)
+        entity.createdAt = Date(timeIntervalSince1970: 1)
+        entity.userId = "legacy-customer"
+        entity.metaPayload = try JSONEncoder().encode(TrackEventMeta.current())
+        try previousContainer.viewContext.save()
+        previousContainer.viewContext.reset()
+        try previousContainer.persistentStoreCoordinator.remove(XCTUnwrap(previousContainer.persistentStoreCoordinator.persistentStores.first))
+
+        let container = try XCTUnwrap(createNativebrikCoreDataHelper(storeURL: storeURL))
+        defer { closeAndRemovePersistentStore(container, at: storeURL) }
+        let outbox = TrackOutbox(persistentContainer: container)
+        let pending = try XCTUnwrap(outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).first)
+        XCTAssertEqual(pending.eventID, event.eventUuid)
+        XCTAssertNil(pending.installationId)
+        XCTAssertEqual(pending.userId, "legacy-customer")
+        XCTAssertNotNil(outbox.insertAndGetPendingCount(
+            makePendingTrackEvent(name: "after-upgrade"), installationId: "previous-installation",
+            userId: "legacy-customer", meta: TrackEventMeta.current(),
+            enqueuedAt: Date(timeIntervalSince1970: 2)
+        ))
+        XCTAssertNotNil(outbox.insertAndGetPendingCount(
+            makePendingTrackEvent(name: "anonymous"), installationId: "previous-installation",
+            userId: nil, meta: TrackEventMeta.current(),
+            enqueuedAt: Date(timeIntervalSince1970: 3)
+        ))
+        XCTAssertEqual(try outbox.nextBatch(maxEvents: 50, maxPayloadBytes: 512 * 1024).map(\.eventID), [event.eventUuid])
+        let client = TrackingHTTPClientSpy(response: .statusCode(200))
+        let repository = TrackRespositoryImpl(
+            config: Config(projectId: PROJECT_ID_FOR_TEST), user: NubrickUser(),
+            persistentContainer: container, trackingHTTPClient: client
+        )
+        await repository.flushNow()
+        let requests = await client.recordedRequests()
+        XCTAssertEqual(requests.count, 3)
+        let legacy = try requestJSON(in: requests[0])
+        XCTAssertNil(legacy["installationId"])
+        XCTAssertEqual(legacy["userId"] as? String, "legacy-customer")
+        let identified = try requestJSON(in: requests[1])
+        XCTAssertEqual(identified["installationId"] as? String, "previous-installation")
+        XCTAssertEqual(identified["userId"] as? String, "legacy-customer")
+        let anonymous = try requestJSON(in: requests[2])
+        XCTAssertEqual(anonymous["installationId"] as? String, "previous-installation")
+        XCTAssertNil(anonymous["userId"])
     }
 
     @MainActor
@@ -1074,7 +1269,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
     private func insertOutboxEvent(
         _ outbox: TrackOutbox,
         _ event: TrackEvent,
-        trackingId: String = "test-user",
+        installationId: String = "test-user",
         meta: TrackEventMeta = TrackEventMeta(
             appId: "test.app",
             appVersion: "1.0.0",
@@ -1085,7 +1280,7 @@ final class HttpRequestReposotiryTests: XCTestCase {
         ),
         enqueuedAt: Date
     ) -> Int? {
-        outbox.insertAndGetPendingCount(event, trackingId: trackingId, meta: meta, enqueuedAt: enqueuedAt)
+        outbox.insertAndGetPendingCount(event, installationId: installationId, userId: nil, meta: meta, enqueuedAt: enqueuedAt)
     }
 
     private func previousOutboxEntityDescription() -> NSEntityDescription {
@@ -1245,9 +1440,11 @@ final class ContainerTests: XCTestCase {
             httpRequestRepository: HttpRequestRepositoryImpl()
         )
 
-        let recorded = await container.recordDisplayedTriggerContent(
-            experimentId: "experiment", variantId: "variant"
-        )
+        let recorded = await withCheckedContinuation { continuation in
+            container.recordDisplayedTriggerContent(experimentId: "experiment", variantId: "variant") {
+                continuation.resume(returning: $0)
+            }
+        }
 
         XCTAssertFalse(recorded)
         let attempts = await database.appendExperimentHistoryAttempts
@@ -1338,9 +1535,11 @@ final class ContainerTests: XCTestCase {
         XCTAssertTrue(historyBefore.isEmpty)
         XCTAssertTrue(exposuresBefore.isEmpty)
 
-        let recorded = await container.recordDisplayedTriggerContent(
-            experimentId: content.experimentId, variantId: content.variantId
-        )
+        let recorded = await withCheckedContinuation { continuation in
+            container.recordDisplayedTriggerContent(experimentId: content.experimentId, variantId: content.variantId) {
+                continuation.resume(returning: $0)
+            }
+        }
         XCTAssertTrue(recorded)
         let historyAfter = await database.displayedExperiments
         let exposuresAfter = await tracker.displayedExperiments
@@ -1437,7 +1636,7 @@ final class ContainerTests: XCTestCase {
         let first = NubrickEvent("first", properties: ["value": "first"])
         let second = NubrickEvent("second", properties: ["value": "second"])
         let recorded = await container.recordTriggerEvents(
-            events: [first, NubrickEvent("failed", properties: ["value": "failed"]), second], sourceExperimentId: nil
+            events: [first, NubrickEvent("failed", properties: ["value": "failed"]), second], userId: "", sourceExperimentId: nil
         )
         XCTAssertEqual(recorded.map(\.name), ["first", "second"])
         XCTAssertEqual(recorded.map(\.properties), [first.properties, second.properties])
@@ -1498,10 +1697,11 @@ final class ContainerTests: XCTestCase {
         XCTAssertTrue(historyBeforeConfirmation.isEmpty)
         XCTAssertTrue(exposuresBeforeConfirmation.isEmpty)
 
-        let recorded = await container.recordDisplayedTriggerContent(
-            experimentId: content.experimentId,
-            variantId: content.variantId
-        )
+        let recorded = await withCheckedContinuation { continuation in
+            container.recordDisplayedTriggerContent(experimentId: content.experimentId, variantId: content.variantId) {
+                continuation.resume(returning: $0)
+            }
+        }
         XCTAssertTrue(recorded)
         let historyAfterConfirmation = await database.displayedExperiments
         let exposuresAfterConfirmation = await tracker.displayedExperiments
@@ -1540,13 +1740,18 @@ final class ContainerTests: XCTestCase {
     func testHandleEventSubmitsSurveyResponseWhenRequested() async throws {
         let db = try XCTUnwrap(createNativebrikCoreDataHelper(), "Could not init DB")
         let user = NubrickUser()
+        let previousUserId = user.userId
+        defer { user.setProperty("userId", value: previousUserId) }
         let config = Config(projectId: PROJECT_ID_FOR_TEST)
         let trackRepository = SurveyResponseTrackRepositorySpy()
         var handledAction: UIBlockAction?
         let container = ContainerImpl(
             config: config,
             user: user,
-            actionHandler: { action, _ in handledAction = action },
+            actionHandler: { action, _ in
+                handledAction = action
+                user.setProperty("userId", value: "callback-user")
+            },
             experimentRepository: ExperimentRepositoryImpl(config: config),
             componentRepository: ComponentRepositoryImpl(config: config),
             trackRepository: trackRepository,
@@ -1568,17 +1773,22 @@ final class ContainerTests: XCTestCase {
             submitSurveyResponse: true
         )
 
-        container.handleEvent(action)
+        for userId in ["customer-123", ""] {
+            user.setProperty("userId", value: userId)
+            container.handleEvent(action)
+            XCTAssertEqual(user.userId, "callback-user")
 
-        let response = await trackRepository.nextResponse()
-        XCTAssertEqual(response.experimentId, "experiment-id")
-        XCTAssertEqual(response.variantId, "variant-id")
-        let responseData = try XCTUnwrap(response.data.data(using: .utf8))
-        let responseJSON = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: responseData) as? [String: String]
-        )
-        XCTAssertEqual(responseJSON, ["answer": "yes"])
-        XCTAssertEqual(handledAction?.eventName, "survey-submitted")
+            let response = await trackRepository.nextResponse()
+            XCTAssertEqual(response.userId, userId)
+            XCTAssertEqual(response.experimentId, "experiment-id")
+            XCTAssertEqual(response.variantId, "variant-id")
+            let responseData = try XCTUnwrap(response.data.data(using: .utf8))
+            let responseJSON = try XCTUnwrap(
+                JSONSerialization.jsonObject(with: responseData) as? [String: String]
+            )
+            XCTAssertEqual(responseJSON, ["answer": "yes"])
+            XCTAssertEqual(handledAction?.eventName, "survey-submitted")
+        }
     }
 
     func testRootViewAppliesExperimentContextToSurveyResponses() async throws {

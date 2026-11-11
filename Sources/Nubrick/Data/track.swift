@@ -151,8 +151,8 @@ public enum CrashSeverity: String, Sendable {
 }
 
 protocol TrackRepository2 : Actor {
-    func trackExperimentEvent(_ event: TrackExperimentEvent) async
-    func trackEvent(_ event: TrackUserEvent) async
+    func trackExperimentEvent(_ event: TrackExperimentEvent, userId: String) async
+    func trackEvent(_ event: TrackUserEvent, userId: String) async
     func flushNow() async
 
     func processMetricKitCrash(
@@ -162,32 +162,24 @@ protocol TrackRepository2 : Actor {
     ) async
 
     func sendFlutterCrash(_ crashEvent: TrackCrashEvent) async
-    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async
+    func sendSurveyResponse(experimentId: String, variantId: String, userId: String, response_data: String) async
 }
 
 struct SurveyResponseRequest: Encodable {
-    enum CodingKeys: String, CodingKey {
-        case timestamp, projectId, experimentId, variantId, response_data, meta
-        case trackingId = "userId"
-    }
-
     var timestamp: DateTime
     var projectId: String
     var experimentId: String
     var variantId: String
-    var trackingId: String
+    var installationId: String
+    var userId: String?
     var response_data: String
     var meta: TrackEventMeta
 }
 
 struct TrackRequest: Encodable {
-    enum CodingKeys: String, CodingKey {
-        case projectId, timestamp, events, meta
-        case trackingId = "userId"
-    }
-
     var projectId: String
-    var trackingId: String
+    var installationId: String?
+    var userId: String?
     var timestamp: DateTime
     var events: [TrackEvent]
     var meta: TrackEventMeta
@@ -312,7 +304,8 @@ struct PendingTrackEvent {
     let eventID: String
     let event: TrackEvent
     let payloadSize: Int
-    let trackingId: String?
+    let installationId: String?
+    let userId: String?
     let meta: TrackEventMeta?
 }
 
@@ -346,7 +339,8 @@ final class TrackOutbox {
 
     func insertAndGetPendingCount(
         _ event: TrackEvent,
-        trackingId: String,
+        installationId: String,
+        userId: String?,
         meta: TrackEventMeta,
         enqueuedAt: Date = getCurrentDate()
     ) -> Int? {
@@ -378,7 +372,8 @@ final class TrackOutbox {
                 entity.eventType = eventType.rawValue
                 entity.byteCount = Int64(payload.count)
                 entity.createdAt = enqueuedAt
-                entity.userId = trackingId
+                entity.installationId = installationId
+                entity.userId = userId
                 entity.metaPayload = metaPayload
                 try context.save()
 
@@ -407,7 +402,7 @@ final class TrackOutbox {
             if entry.event.typename == .Crash {
                 break
             }
-            if entry.trackingId != first.trackingId || entry.meta != first.meta {
+            if entry.installationId != first.installationId || entry.userId != first.userId || entry.meta != first.meta {
                 break
             }
             if !batch.isEmpty && (
@@ -480,7 +475,8 @@ final class TrackOutbox {
                         eventID: entity.eventID,
                         event: event,
                         payloadSize: Int(entity.byteCount),
-                        trackingId: entity.userId,
+                        installationId: entity.installationId,
+                        userId: entity.userId,
                         meta: meta
                     ))
                 }
@@ -653,17 +649,20 @@ actor TrackRespositoryImpl: TrackRepository2 {
         return request
     }
 
-    func trackExperimentEvent(_ event: TrackExperimentEvent) async {
+    func trackExperimentEvent(_ event: TrackExperimentEvent, userId: String) async {
         await enqueue(TrackEvent(
             typename: .Experiment,
             experimentId: event.experimentId,
             variantId: event.variantId,
             timestamp: getCurrentDate().ISO8601Format(),
             eventUuid: UUID().uuidString
-        ))
+        ), userId: userId)
     }
     
-    func trackEvent(_ event: TrackUserEvent) async {
+    func trackEvent(_ event: TrackUserEvent, userId: String) async {
+        let (installationId, meta) = await MainActor.run {
+            (self.user.installationId, TrackEventMeta.current())
+        }
         await enqueue(TrackEvent(
             properties: event.properties,
             typename: .Event,
@@ -671,7 +670,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
             name: event.name,
             timestamp: getCurrentDate().ISO8601Format(),
             eventUuid: UUID().uuidString
-        ))
+        ), installationId: installationId, userId: userId.isEmpty ? nil : userId, meta: meta)
     }
 
     func flushNow() async {
@@ -681,16 +680,16 @@ actor TrackRespositoryImpl: TrackRepository2 {
         await drainOutbox()
     }
 
-    private func enqueue(_ event: TrackEvent) async {
-        let (trackingId, meta) = await MainActor.run {
-            (self.user.trackingId, TrackEventMeta.current())
+    private func enqueue(_ event: TrackEvent, userId: String) async {
+        let (installationId, meta) = await MainActor.run {
+            (self.user.installationId, TrackEventMeta.current())
         }
-        await enqueue(event, trackingId: trackingId, meta: meta)
+        await enqueue(event, installationId: installationId, userId: userId.isEmpty ? nil : userId, meta: meta)
     }
 
-    private func enqueue(_ event: TrackEvent, trackingId: String, meta: TrackEventMeta) async {
+    private func enqueue(_ event: TrackEvent, installationId: String, userId: String?, meta: TrackEventMeta) async {
         guard let outbox = await outbox() else { return }
-        guard let pendingEventCount = outbox.insertAndGetPendingCount(event, trackingId: trackingId, meta: meta) else { return }
+        guard let pendingEventCount = outbox.insertAndGetPendingCount(event, installationId: installationId, userId: userId, meta: meta) else { return }
         if pendingEventCount >= maxBatchSize {
             requestFlush(after: 0)
         } else {
@@ -782,26 +781,24 @@ actor TrackRespositoryImpl: TrackRepository2 {
 
         do {
             let first = pending[0]
-            let trackingId: String
-            let meta: TrackEventMeta
-            let capturedTrackingId = first.trackingId.flatMap {
-                $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
+            var userId = first.userId.flatMap { $0.isEmpty ? nil : $0 }
+            // The earliest outbox rows may have no captured identity at all.
+            if first.installationId == nil && userId == nil {
+                userId = await MainActor.run { self.user.installationId }
             }
-            if let capturedTrackingId, let capturedMeta = first.meta {
-                trackingId = capturedTrackingId
+            let meta: TrackEventMeta
+            if let capturedMeta = first.meta {
                 meta = capturedMeta
             } else {
-                // Missing or empty tracking IDs need the current identity from the main actor.
-                (trackingId, meta) = await MainActor.run {
-                    (capturedTrackingId ?? self.user.trackingId, first.meta ?? TrackEventMeta.current())
-                }
+                meta = await MainActor.run { TrackEventMeta.current() }
             }
             var batch = pending
 
             while !batch.isEmpty {
                 let trackRequest = TrackRequest(
                     projectId: config.projectId,
-                    trackingId: trackingId,
+                    installationId: first.installationId,
+                    userId: userId,
                     timestamp: getCurrentDate().ISO8601Format(),
                     events: batch.map(\.event),
                     meta: meta
@@ -905,8 +902,8 @@ actor TrackRespositoryImpl: TrackRepository2 {
     }
 
     private func sendCrashToBackend(_ crashEvent: TrackCrashEvent) async {
-        let (trackingId, meta) = await MainActor.run {
-            (self.user.trackingId, TrackEventMeta.current())
+        let (installationId, userId, meta) = await MainActor.run {
+            (self.user.installationId, self.user.userId.isEmpty ? nil : self.user.userId, TrackEventMeta.current())
         }
         let causedByNativebrik = isNubrickCausedCrash(crashEvent)
 
@@ -918,7 +915,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
                 timestamp: getCurrentDate().ISO8601Format(),
                 platform: nil,
                 eventUuid: UUID().uuidString
-            ), trackingId: trackingId, meta: meta)
+            ), installationId: installationId, userId: userId, meta: meta)
         }
         if causedByNativebrik {
             if crashEvent.severity.isErrorLevel {
@@ -928,7 +925,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
                     timestamp: getCurrentDate().ISO8601Format(),
                     platform: nil,
                     eventUuid: UUID().uuidString
-                ), trackingId: trackingId, meta: meta)
+                ), installationId: installationId, userId: userId, meta: meta)
             }
             await enqueue(TrackEvent(
                 typename: .Crash,
@@ -939,7 +936,7 @@ actor TrackRespositoryImpl: TrackRepository2 {
                 flutterSdkVersion: crashEvent.flutterSdkVersion,
                 severity: crashEvent.severity.rawValue,
                 eventUuid: UUID().uuidString
-            ), trackingId: trackingId, meta: meta)
+            ), installationId: installationId, userId: userId, meta: meta)
         }
     }
 
@@ -947,13 +944,11 @@ actor TrackRespositoryImpl: TrackRepository2 {
         await sendCrashToBackend(crashEvent)
     }
 
-    func sendSurveyResponse(experimentId: String, variantId: String, response_data: String) async {
+    func sendSurveyResponse(experimentId: String, variantId: String, userId: String, response_data: String) async {
         guard !experimentId.isEmpty, !variantId.isEmpty else {
             return
         }
-        let trackingId = await MainActor.run {
-            self.user.trackingId
-        }
+        let installationId = self.user.installationId
 
         do {
             let requestBody = SurveyResponseRequest(
@@ -961,7 +956,8 @@ actor TrackRespositoryImpl: TrackRepository2 {
                 projectId: self.config.projectId,
                 experimentId: experimentId,
                 variantId: variantId,
-                trackingId: trackingId,
+                installationId: installationId,
+                userId: userId.isEmpty ? nil : userId,
                 response_data: response_data,
                 meta: await TrackEventMeta.current()
             )

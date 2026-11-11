@@ -75,6 +75,7 @@ final class PendingTrackEventEntity: NSManagedObject {
     @NSManaged var byteCount: Int64
     @NSManaged var createdAt: Date
     @NSManaged var userId: String?
+    @NSManaged var installationId: String?
     @NSManaged var metaPayload: Data?
 
     static func entityDescription() -> NSEntityDescription {
@@ -112,12 +113,17 @@ final class PendingTrackEventEntity: NSManagedObject {
         userId.attributeType = .stringAttributeType
         userId.isOptional = true
 
+        let installationId = NSAttributeDescription()
+        installationId.name = "installationId"
+        installationId.attributeType = .stringAttributeType
+        installationId.isOptional = true
+
         let metaPayload = NSAttributeDescription()
         metaPayload.name = "metaPayload"
         metaPayload.attributeType = .binaryDataAttributeType
         metaPayload.isOptional = true
 
-        entity.properties = [eventID, payload, eventType, byteCount, createdAt, userId, metaPayload]
+        entity.properties = [eventID, payload, eventType, byteCount, createdAt, userId, installationId, metaPayload]
         return entity
     }
 }
