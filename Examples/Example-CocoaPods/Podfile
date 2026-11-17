@@ -1,6 +1,0 @@
-platform :ios, '15.0'
-
-target 'Example-CocoaPods' do
-  use_frameworks!
-  pod 'Nubrick', :podspec => '../../Nubrick.podspec'
-end
