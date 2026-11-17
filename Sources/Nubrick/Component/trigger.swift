@@ -73,8 +73,9 @@ class TriggerViewController: UIViewController {
             events.append(NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_APP_FIRSTLY.rawValue))
         }
         events.append(contentsOf: self.userReturnEvents())
+        let userId = user.userId
         Task {
-            await self.performDispatch(events: events)
+            await self.performDispatch(events: events, userId: userId)
         }
 
         // Startup counts as the first entry even when initialized in the background.
@@ -92,8 +93,9 @@ class TriggerViewController: UIViewController {
         self.hasEnteredBackground = false
         var events = [NubrickEvent(TriggerEventNameDefs.USER_ENTER_TO_FOREGROUND.rawValue)]
         events.append(contentsOf: self.userReturnEvents())
+        let userId = user.userId
         Task {
-            await self.performDispatch(events: events)
+            await self.performDispatch(events: events, userId: userId)
         }
     }
 
@@ -117,16 +119,16 @@ class TriggerViewController: UIViewController {
     }
     
     @MainActor
-    func dispatch(event: NubrickEvent, sourceExperimentId: String? = nil) {
+    func dispatch(event: NubrickEvent, userId: String, sourceExperimentId: String? = nil) {
         Task {
-            await self.performDispatch(events: [event], sourceExperimentId: sourceExperimentId)
+            await self.performDispatch(events: [event], userId: userId, sourceExperimentId: sourceExperimentId)
         }
     }
 
     @MainActor
-    func performDispatch(events: [NubrickEvent], sourceExperimentId: String? = nil) async {
+    func performDispatch(events: [NubrickEvent], userId: String, sourceExperimentId: String? = nil) async {
         let recordedEvents = await self.container.recordTriggerEvents(
-            events: events, sourceExperimentId: sourceExperimentId
+            events: events, userId: userId, sourceExperimentId: sourceExperimentId
         )
         for event in events {
             self.onDispatch?(event)

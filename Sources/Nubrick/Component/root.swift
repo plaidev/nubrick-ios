@@ -169,11 +169,9 @@ class ModalRootViewController: UIViewController {
         guard let experimentId = self.experimentId,
               let variantId = self.variantId else { return }
         guard self.modalViewController?.beginDisplayRecording(self.triggerSession) == true else { return }
-        let container = self.container
         let modalViewController = self.modalViewController
         let triggerSession = self.triggerSession
-        Task { @MainActor in
-            _ = await container.recordDisplayedTriggerContent(experimentId: experimentId, variantId: variantId)
+        self.container.recordDisplayedTriggerContent(experimentId: experimentId, variantId: variantId) { _ in
             modalViewController?.finishDisplayRecording(triggerSession)
         }
     }

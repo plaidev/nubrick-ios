@@ -56,8 +56,9 @@ protocol Container : Sendable {
     func sendHttpRequest(req: ApiHttpRequest, assertion: ApiHttpResponseAssertion?, variable: Variable?) async -> Result<JSONData, NubrickError>
     func fetchEmbedding(experimentId: String, componentId: String?) async -> Result<FetchedEmbedding, NubrickError>
     func fetchTriggerContent(events: [NubrickEvent], kinds: [ExperimentKind]) async -> Result<FetchedTriggerContent, NubrickError>
-    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [NubrickEvent]
-    func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool
+    func recordTriggerEvents(events: [NubrickEvent], userId: String, sourceExperimentId: String?) async -> [NubrickEvent]
+    @MainActor
+    func recordDisplayedTriggerContent(experimentId: String, variantId: String, completion: @escaping @MainActor (Bool) -> Void)
     func fetchRemoteConfig(experimentId: String) async -> Result<(String, ExperimentVariant), NubrickError>
 }
 
@@ -230,7 +231,7 @@ final class ContainerImpl: Container {
 
         await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
-        ))
+        ), userId: await self.user.userId)
         guard await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId) else {
             return .failure(NubrickError.irregular("Couldn't save experiment history"))
         }
@@ -251,14 +252,14 @@ final class ContainerImpl: Container {
         }
     }
 
-    func recordTriggerEvents(events: [NubrickEvent], sourceExperimentId: String?) async -> [NubrickEvent] {
+    func recordTriggerEvents(events: [NubrickEvent], userId: String, sourceExperimentId: String?) async -> [NubrickEvent] {
         var recordedEvents = [NubrickEvent]()
         for event in events {
             await self.trackRepository.trackEvent(TrackUserEvent(
                 name: event.name,
                 experimentId: sourceExperimentId,
                 properties: event.properties.isEmpty ? nil : event.properties
-            ))
+            ), userId: userId)
             if await self.databaseRepository.appendUserEvent(name: event.name) {
                 recordedEvents.append(event)
             }
@@ -266,11 +267,16 @@ final class ContainerImpl: Container {
         return recordedEvents
     }
 
-    func recordDisplayedTriggerContent(experimentId: String, variantId: String) async -> Bool {
-        await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
-            experimentId: experimentId, variantId: variantId
-        ))
-        return await self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+    @MainActor
+    func recordDisplayedTriggerContent(experimentId: String, variantId: String, completion: @escaping @MainActor (Bool) -> Void) {
+        let userId = self.user.userId
+        Task {
+            await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
+                experimentId: experimentId, variantId: variantId
+            ), userId: userId)
+            let recorded = await self.databaseRepository.appendExperimentHistory(experimentId: experimentId)
+            completion(recorded)
+        }
     }
 
     func fetchTriggerContent(
@@ -336,7 +342,7 @@ final class ContainerImpl: Container {
 
         await self.trackRepository.trackExperimentEvent(TrackExperimentEvent(
             experimentId: extracted.experimentId, variantId: variantId
-        ))
+        ), userId: await self.user.userId)
         guard await self.databaseRepository.appendExperimentHistory(experimentId: extracted.experimentId) else {
             return .failure(NubrickError.irregular("Couldn't save experiment history"))
         }
@@ -397,10 +403,12 @@ final class ContainerImpl: Container {
             return
         }
         let trackRepository = self.trackRepository
+        let userId = self.user.userId
         Task {
             await trackRepository.sendSurveyResponse(
                 experimentId: experimentId,
                 variantId: variantId,
+                userId: userId,
                 response_data: response_data
             )
         }
