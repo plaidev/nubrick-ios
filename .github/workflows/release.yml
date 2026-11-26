@@ -179,14 +179,11 @@ jobs:
           git checkout -b "$BRANCH_NAME"
 
       # --- Commit release metadata updates ---
-      - name: Commit framework version, Package.swift, and Nubrick.podspec updates
+      - name: Commit framework version and Package.swift updates
         env:
           URL: "https://github.com/${{ github.repository }}/releases/download/${{ env.TAG }}/${{ env.ZIP_NAME }}"
           SHA: ${{ steps.checksum.outputs.sha }}
-          VERSION: ${{ inputs.version }}
         run: |
-          VERSION_NUMBER="${VERSION#v}"  # strip leading 'v'
-
           # Update Package.swift
           perl -0777 -i -pe '
             my ($u,$s) = @ENV{qw/ URL SHA/};
@@ -211,22 +208,15 @@ jobs:
             }egsx;
             ' Package.swift
 
-          # Update Nubrick.podspec
-          sed -i '' "s|\(spec\.version[[:space:]]*=[[:space:]]*\"\)[^\"]*\(\"\)|\1${VERSION_NUMBER}\2|" Nubrick.podspec
-          sed -i '' "s|\(:http[[:space:]]*=>[[:space:]]*\"\)[^\"]*\(\"\)|\1${URL}\2|" Nubrick.podspec
-          sed -i '' "s|\(:sha256[[:space:]]*=>[[:space:]]*\"\)[^\"]*\(\"\)|\1${SHA}\2|" Nubrick.podspec
-          echo "Updated Nubrick.podspec: version=$VERSION_NUMBER, URL, and SHA256"
-
           git add Nubrick/Nubrick.xcodeproj/project.pbxproj
           git add Package.swift
-          git add Nubrick.podspec
-          git commit -m "[bot] Release ${TAG}: update framework version, Package.swift, and Nubrick.podspec [skip ci]"
+          git commit -m "[bot] Release ${TAG}: update framework version and Package.swift [skip ci]"
 
       - name: Validate Package.swift syntax
         run: swift package dump-package > /dev/null
 
       - name: Show diffs
-        run: git --no-pager diff HEAD~1 -- Nubrick/Nubrick.xcodeproj/project.pbxproj Package.swift Nubrick.podspec || true
+        run: git --no-pager diff HEAD~1 -- Nubrick/Nubrick.xcodeproj/project.pbxproj Package.swift || true
 
       - name: Push release branch and create PR
         id: create_pr
@@ -267,12 +257,6 @@ jobs:
 
           # Publish the release pointing to the merge commit
           gh release edit "$TAG" --draft=false --target "$MERGE_SHA"
-
-      - name: Publish to Cocoapods
-        run: |
-          pod trunk push --verbose Nubrick.podspec
-        env:
-            COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
 
       - name: Verify public URL + checksum
         env:
